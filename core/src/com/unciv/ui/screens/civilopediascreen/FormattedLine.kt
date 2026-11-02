@@ -455,7 +455,7 @@ data class FormattedLine (
             x -= h
             width += h + h
             y -= v
-            height += y + y
+            height += v + v
         }
 
         /** Returns a new IntRectangle that represents the intersection of the two rectangles: `this` and [r].
