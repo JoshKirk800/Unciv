@@ -68,6 +68,7 @@ object SimpleHttp {
         with(urlObj.openConnection() as HttpURLConnection) {
             requestMethod = method  // default is GET
             connectTimeout = timeout
+            readTimeout = timeout  // default is no limit: a server that accepts the connection and then stalls would block this thread forever
             instanceFollowRedirects = true
             setRequestProperty(HttpHeaders.UserAgent, UncivGame.getUserAgent("Turn-Checker"))
             setRequestProperty(HttpHeaders.ContentType, "text/plain")
