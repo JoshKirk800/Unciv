@@ -1,5 +1,6 @@
 package com.unciv.logic.civilization
 
+import com.unciv.logic.map.MapSize
 import com.unciv.testing.BaseTestRunner
 import com.unciv.testing.TestGame
 import org.junit.Assert.assertEquals
@@ -9,7 +10,7 @@ import org.junit.runner.RunWith
 
 /** The cost of the next policy follows CvPlayerPolicies::GetNextPolicyCost: whole-number steps, and the highest
  *  number of cities counts (not the current one), without puppets and cities being razed. Expected values are what
- *  that integer arithmetic gives for 25 + (3n)^2.01 plus 10% per extra city. */
+ *  that integer arithmetic gives for 25 + (3n)^2.01 plus 15% per extra city (the Tiny to Medium map size). */
 @RunWith(BaseTestRunner::class)
 class PolicyCostTests {
     private val game = TestGame()
@@ -42,7 +43,7 @@ class PolicyCostTests {
     @Test
     fun `each extra city adds a percentage of the cost`() {
         foundCities(4)
-        assertEquals(135, cost(3))
+        assertEquals(155, cost(3))
     }
 
     @Test
@@ -52,7 +53,7 @@ class PolicyCostTests {
         cities.last().destroyCity()
 
         assertEquals(3, civ.cities.size)
-        assertEquals(135, cost(3))
+        assertEquals(155, cost(3))
     }
 
     @Test
@@ -60,7 +61,7 @@ class PolicyCostTests {
         val cities = foundCities(4)
         cities.last().isBeingRazed = true
 
-        assertEquals(125, cost(3))
+        assertEquals(135, cost(3))
     }
 
     @Test
@@ -68,6 +69,16 @@ class PolicyCostTests {
         val cities = foundCities(4)
         cities.last().isPuppet = true
 
-        assertEquals(125, cost(3))
+        assertEquals(135, cost(3))
+    }
+
+    @Test
+    fun `larger maps add a smaller percentage per extra city`() {
+        foundCities(4)
+
+        game.tileMap.mapParameters.mapSize = MapSize("Large")
+        assertEquals(135, cost(3)) // 10% per city
+        game.tileMap.mapParameters.mapSize = MapSize("Huge")
+        assertEquals(130, cost(3)) // 7.5% per city
     }
 }
