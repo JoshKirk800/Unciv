@@ -404,7 +404,9 @@ class CityStats(val city: City) {
             uniqueUnhappinessModifier += unique.params[0].toFloat()
         }
 
-        newHappinessList["Cities"] = unhappinessFromCity * unhappinessModifier * uniqueUnhappinessModifier.toPercent()
+        // Original game (CvPlayer::GetUnhappinessFromCityForUI): the larger the map, the less the number of cities weighs
+        val mapSizeModifier = civInfo.gameInfo.tileMap.mapParameters.mapSize.getPredefinedOrNextSmaller().cityCountUnhappinessModifier
+        newHappinessList["Cities"] = unhappinessFromCity * unhappinessModifier * uniqueUnhappinessModifier.toPercent() * mapSizeModifier
 
         var unhappinessFromCitizens = city.population.population.toFloat()
 
