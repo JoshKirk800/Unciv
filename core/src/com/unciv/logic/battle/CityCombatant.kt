@@ -37,11 +37,12 @@ class CityCombatant(val city: City) : ICombatant {
     }
 
     override fun getUnitType(): UnitType = UnitType.City
-    override fun getAttackingStrength(defender: ICombatant?): Int = (getCityStrength(defender, CombatAction.Attack) * 0.75).roundToInt()
+    override fun getAttackingStrength(defender: ICombatant?): Int =
+        (getCityStrength(defender, CombatAction.Attack, forRangedStrike = true) * 0.75).roundToInt()
     @Readonly override fun getDefendingStrength(attacker: ICombatant?): Int = getCityStrength(attacker)
 
     @Readonly
-    fun getCityStrength(theirCombatant: ICombatant? = null, combatAction: CombatAction = CombatAction.Defend): Int { // Civ fanatics forum, from a modder who went through the original code
+    fun getCityStrength(theirCombatant: ICombatant? = null, combatAction: CombatAction = CombatAction.Defend, forRangedStrike: Boolean = false): Int { // Civ fanatics forum, from a modder who went through the original code
         val modConstants = getCivInfo().gameInfo.ruleset.modOptions.constants
         var strength = modConstants.cityStrengthBase
         strength += (city.population.population * modConstants.cityStrengthPerPop) // Each 5 pop gives 2 defence
@@ -63,12 +64,16 @@ class CityCombatant(val city: City) : ICombatant {
         if (cityTile.militaryUnit != null)
             strength += cityTile.militaryUnit!!.baseUnit.strength * (cityTile.militaryUnit!!.health / 100f) * modConstants.cityStrengthFromGarrison
 
-        var buildingsStrength = city.getStrength()
+        val buildingsDefense = city.getStrength()
+        var buildingsStrength = buildingsDefense
         val gameContext = GameContext(getCivInfo(), city, ourCombatant = this, theirCombatant = theirCombatant, combatAction = combatAction)
 
         getCivInfo().forEachMatchingUnique(UniqueType.BetterDefensiveBuildings, gameContext) { unique ->
             buildingsStrength *= unique.params[0].toPercent()
         }
+        // CvCity::getStrengthValue(bForRangeStrike): "Strike strikes are weaker" - the defense of the buildings is taken out, what a
+        // policy adds to it stays
+        if (forRangedStrike) buildingsStrength -= buildingsDefense
         strength += buildingsStrength
 
         var extraStrength = 0
