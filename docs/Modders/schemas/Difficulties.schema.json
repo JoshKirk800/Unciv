@@ -37,7 +37,7 @@
         "type": "number",
         "default": 1,
         "title": "Unit Cost Modifier",
-        "description": "Multiplier for unit production costs."
+        "description": "Multiplier for the gold maintenance of the units of a human player (the original's UnitCostPercent), not for production."
       },
       "unitSupplyBase": {
         "type": "integer",
@@ -55,7 +55,7 @@
         "type": "number",
         "default": 1,
         "title": "Building Cost Modifier",
-        "description": "Multiplier for building production costs."
+        "description": "Multiplier for the gold maintenance of the buildings of a human player (the original's BuildingCostPercent), not for production."
       },
       "policyCostModifier": {
         "type": "number",
@@ -101,6 +101,16 @@
         "default": "",
         "title": "AI Difficulty Level",
         "description": "Difficulty level used for AI modifiers. If empty, defaults to Chieftain or the first available difficulty."
+      },
+      "cityStateDifficultyLevel": {
+        "type": "string",
+        "title": "City State Difficulty Level",
+        "description": "The level whose player settings city-state civilizations have. If empty, aiDifficultyLevel."
+      },
+      "barbarianDifficultyLevel": {
+        "type": "string",
+        "title": "Barbarian Difficulty Level",
+        "description": "The level whose player settings the barbarians have. If empty, aiDifficultyLevel."
       },
       "aiCityGrowthModifier": {
         "type": "number",

@@ -378,9 +378,18 @@ class Civilization : IsPartOfGameInfoSerialization {
     //region pure functions
     @Readonly
     fun getDifficulty(): Difficulty {
-        if (isHuman()) return gameInfo.getDifficulty()
-        if (gameInfo.ruleset.difficulties.containsKey(gameInfo.getDifficulty().aiDifficultyLevel)) {
-            return gameInfo.ruleset.difficulties[gameInfo.getDifficulty().aiDifficultyLevel]!!
+        val chosen = gameInfo.getDifficulty()
+        if (isHuman()) return chosen
+        // The handicap of a player: the chosen difficulty for a human; the AI handicap for an AI, and the own handicaps of city states
+        // and barbarians (MINOR_CIV_HANDICAP, BARBARIAN_HANDICAP) if the difficulty names them
+        val ownLevel = when {
+            isBarbarian -> chosen.barbarianDifficultyLevel
+            isCityState -> chosen.cityStateDifficultyLevel
+            else -> null
+        }
+        gameInfo.ruleset.difficulties[ownLevel]?.let { return it }
+        if (gameInfo.ruleset.difficulties.containsKey(chosen.aiDifficultyLevel)) {
+            return gameInfo.ruleset.difficulties[chosen.aiDifficultyLevel]!!
         }
         val chieftainDifficulty = gameInfo.ruleset.difficulties["Chieftain"]
         if (chieftainDifficulty != null) return chieftainDifficulty

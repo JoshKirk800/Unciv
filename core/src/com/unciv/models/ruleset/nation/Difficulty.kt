@@ -29,6 +29,10 @@ class Difficulty : RulesetObject() {
     var isSelectable: Boolean = true
 
     var aiDifficultyLevel: String? = null
+    /** The level whose player settings city-state civilizations have, default [aiDifficultyLevel]. Brave New World: Prince (MINOR_CIV_HANDICAP) */
+    var cityStateDifficultyLevel: String? = null
+    /** The level whose player settings the barbarians have, default [aiDifficultyLevel]. Brave New World: Chieftain (BARBARIAN_HANDICAP) */
+    var barbarianDifficultyLevel: String? = null
     var aiCityGrowthModifier: Float = 1f
     var aiUnitCostModifier: Float = 1f
     var aiBuildingCostModifier: Float = 1f

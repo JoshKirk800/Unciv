@@ -84,8 +84,9 @@ class CivInfoStatsForNextTurn(val civInfo: Civilization) {
         var cost = baseUnitCost * numberOfUnitsToPayFor * (1 + gameProgress)
         cost = cost.pow(1 + gameProgress / 3) // Why 3? To spread 1 to 1.33
 
-        if (!civInfo.isHuman())
-            cost *= civInfo.gameInfo.getDifficulty().aiUnitMaintenanceModifier
+        // CvTreasury::CalculateUnitCost: a human pays the unit cost percentage of the handicap, the others the AI one of the chosen difficulty
+        cost *= if (civInfo.isHuman()) civInfo.getDifficulty().unitCostModifier
+            else civInfo.gameInfo.getDifficulty().aiUnitMaintenanceModifier
 
         return cost.toInt()
     }
