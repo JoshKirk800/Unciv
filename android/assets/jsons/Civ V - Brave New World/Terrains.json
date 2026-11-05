@@ -4,7 +4,6 @@
 		"name": "Ocean",
 		"type": "Water",
 		"food": 1,
-		"gold": 1,
 		"movementCost": 1,
 		"RGB": [43, 87, 151]
 	},
@@ -12,7 +11,6 @@
 		"name": "Coast",
 		"type": "Water",
 		"food": 1,
-        "gold": 1,
 		"movementCost": 1,
 		"RGB": [70, 138, 216],
 		"uniques": ["[+2] to Fertility for Map Generation",
@@ -111,7 +109,6 @@
 		"name": "Lakes",
 		"type": "Water",
 		"food": 2,
-		"gold": 1,
 		"RGB": [0, 171, 169],
 		"uniques": ["Fresh water",
 					"Considered [Food] when determining start locations",
@@ -542,7 +539,6 @@
 		"unbuildable": true,
 		"weight": 10
 	},
-/*
 	// BNW wonders
 	{
 		"name": "King Solomon's Mines",
@@ -557,12 +553,13 @@
 		"unbuildable": true,
 		"weight": 4
 	},
-	{// Will be introduced in Brave New World. Despite being a lake, it cannot be sailed on and it blocks line of sight like a mountain.
+	{// Despite being a lake, it cannot be sailed on. Unlike the mountain-like wonders it has no SeeThrough value in the XML, so it does not block line of sight.
 		"name": "Lake Victoria",
 		"type": "NaturalWonder",
 		"food": 6,
+		"overrideStats": true,
 		"occursOn": ["Plains"],
-		"turnsInto": "Mountain",
+		"turnsInto": "Plains",
 		"impassable": true,
 		"unbuildable": true,
 		"uniques": ["Fresh water","Must be adjacent to [0] [Coast] tiles"],
@@ -580,8 +577,7 @@
 		"uniques": ["Must be adjacent to [0] [Coast] tiles",
 			"Must be adjacent to [2] to [6] [Hill] tiles",
 			"Must be adjacent to [0] to [2] [Mountain] tiles",
-			"Grants [Altitude Training] ([double movement and +10% Strength in hills]) to adjacent [Land] units for the rest of the game"],
+			"Grants [Altitude Training] ([double movement and +10% Strength in hills]) to adjacent [{Military} {Land}] units for the rest of the game"],
 		"weight": 10
 	}
-*/
 ]

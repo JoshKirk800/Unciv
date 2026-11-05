@@ -24,14 +24,6 @@
                 "column": 1
             },
             {
-                "name": "Legalism",
-                "uniques": [
-                    "Provides the cheapest [Culture] building in your first [4] cities for free"
-                ],
-                "row": 1,
-                "column": 3
-            },
-            {
                 "name": "Oligarchy",
                 "uniques": [
                     "Units in cities cost no Maintenance",
@@ -39,7 +31,16 @@
                     "[-100]% weight to this choice for AI decisions"
                 ],
                 "row": 1,
-                "column": 5
+                "column": 3
+            },
+            {
+                "name": "Legalism",
+                "uniques": [
+                    "Provides the cheapest [Culture] building in your first [4] cities for free"
+                ],
+                "requires": ["Oligarchy"],
+                "row": 2,
+                "column": 3
             },
             {
                 "name": "Landed Elite",
@@ -48,7 +49,7 @@
                     "[+2 Food] [in capital]"
                 ],
                 "requires": ["Legalism"],
-                "row": 2,
+                "row": 3,
                 "column": 2
             },
             {
@@ -57,7 +58,7 @@
                     "[+1 Gold, +1 Happiness] per [2] population [in capital]"
                 ],
                 "requires": ["Legalism"],
-                "row": 2,
+                "row": 3,
                 "column": 4
             },
             {
@@ -65,6 +66,7 @@
                 "uniques": [
                     "[+15]% growth [in all cities]",
                     "Provides a [Aqueduct] in your first [4] cities for free",
+                    "May buy [Great Engineer] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
                     "Get the leader title of [Lord [leaderName]]"
                 ]
             }
@@ -80,13 +82,15 @@
             "Domination": 10,
             "Scientific": 10
         },
-        "uniques": ["[+1 Culture] [in all cities]"],
+        "uniques": [
+            "[+1 Culture] [in all cities]"
+        ],
         "policies": [
             {
                 "name": "Republic",
                 "uniques": [
                     "[+1 Production] [in all cities]",
-                    "[+5]% Production when constructing [All] buildings [in all cities]",
+                    "[+5]% Production when constructing [All] buildings [in all cities]"
                 ],
                 "row": 1,
                 "column": 1
@@ -105,7 +109,8 @@
                 "name": "Collective Rule",
                 "uniques": [
                     "[+50]% Production when constructing [Settler] units [in capital]",
-                    "Free [Settler] appears"
+                    "Free [Settler] appears <for [non-[Venice]] Civilizations>",
+                    "Free [Merchant of Venice] appears <for [Venice] Civilizations>"
                 ],
                 "requires": ["Republic"],
                 "row": 2,
@@ -161,7 +166,8 @@
                 "name": "Warrior Code",
                 "uniques": [
                     "[+15]% Production when constructing [Melee] units [in all cities]",
-                    "Free [Great General] appears"
+                    "Free [Great General] appears",
+                    "[Great General] is earned [+50]% faster"
                 ],
                 "row": 1,
                 "column": 2
@@ -169,7 +175,7 @@
             {
                 "name": "Discipline",
                 "uniques": [
-                    "[+15]% Strength <for [Melee] units> <when adjacent to a [Melee] unit>"
+                    "[+15]% Strength <for [Melee] units> <when adjacent to a [Military] unit>"
                 ],
                 "row": 1,
                 "column": 4
@@ -196,10 +202,9 @@
                 "name": "Professional Army",
                 "uniques": [
                     "[-33]% Gold cost of upgrading <for [Military] units>",
-                    "[+1 Happiness] from every [Walls]",
-                    "[+1 Happiness] from every [Castle]",
-                    "[+1 Happiness] from every [Arsenal]",
-                    "[+1 Happiness] from every [Military Base]"
+                    "[+50]% Production when constructing [Barracks] buildings [in all cities]",
+                    "[+50]% Production when constructing [Armory] buildings [in all cities]",
+                    "[+50]% Production when constructing [Military Academy] buildings [in all cities]"
                 ],
                 "requires": ["Military Caste"],
                 "row": 3,
@@ -208,7 +213,8 @@
             {
                 "name": "Honor Complete",
                 "uniques": [
-                    "Earn [10]% of killed [Military] unit's [Cost] as [Gold]",
+                    "Earn [100]% of killed [Military] unit's [Strength] as [Gold]",
+                    "May buy [Great General] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
                     "Get the leader title of [[leaderName] the Great]"
                 ]
             }
@@ -216,7 +222,7 @@
     },
     {
         "name": "Piety",
-        "era": "Classical era",
+        "era": "Ancient era",
         "priorities": {
             "Neutral": 0,
             "Cultural": 0,
@@ -227,7 +233,7 @@
         "uniques": [
             "[+100]% Production when constructing [Shrine] buildings [in all cities]",
             "[+100]% Production when constructing [Temple] buildings [in all cities]",
-            "Only available <before adopting [Rationalism]>",
+            "Only available <when religion is enabled>",
             "[-100]% weight to this choice for AI decisions <when religion is disabled>"
         ],
         "policies": [
@@ -242,39 +248,46 @@
             },
             {
                 "name": "Mandate Of Heaven",
-                "uniques": ["[50]% of excess happiness converted to [Culture]"],
+                "uniques": [
+                    "[Faith] cost of purchasing [Religious] units [-20]%",
+                    "[Faith] cost of purchasing [All] buildings [-20]%"
+                ],
                 "row": 1,
                 "column": 5
             },
             {
                 "name": "Theocracy",
-                "uniques": ["[+10]% [Gold] from every [Temple]"],
+                "uniques": [
+                    "[+25]% [Gold] from every [Temple]",
+                    "[+3 Gold] from every [Holy site]"
+                ],
                 "requires": ["Organized Religion"],
                 "row": 2,
                 "column": 1
             },
             {
-                "name": "Reformation",
+                "name": "Free Religion",
                 "uniques": [
-                    "[+33]% [Culture] [in all cities with a world wonder]",
-                    "Empire enters golden age"
+                    "Comment [Cities with a majority religion also get the Pantheon belief bonus of the second most popular religion]"
                 ],
                 "requires": ["Organized Religion"],
                 "row": 2,
                 "column": 3
             },
             {
-                "name": "Free Religion",
-                "uniques": ["[-10]% Culture cost of adopting new Policies"],
-                "requires": ["Mandate Of Heaven", "Reformation"],
+                "name": "Reformation",
+                "uniques": [
+                    "Comment [If you founded a religion, gain a bonus Reformation belief]"
+                ],
+                "requires": ["Free Religion"],
                 "row": 3,
-                "column": 4
+                "column": 3
             },
             {
                 "name": "Piety Complete",
                 "uniques": [
-                    "[Faith] cost of purchasing items in cities [-20]%",
-                    "[+3 Gold, +3 Culture] from every [Holy site]",
+                    "Free [Great Prophet] appears",
+                    "[+3 Culture] from every [Holy site]",
                     "Get the leader title of [[leaderName] the Pious]"
                 ]
             }
@@ -282,7 +295,7 @@
     },
     {
         "name": "Patronage",
-        "era": "Medieval era",
+        "era": "Classical era",
         "priorities": {
             "Neutral": 5,
             "Cultural": 5,
@@ -304,7 +317,7 @@
                 "column": 2
             },
             {
-                "name": "Aesthetics",
+                "name": "Consulates",
                 "uniques": [
                     "Resting point for Influence with City-States is increased by [20]"
                 ],
@@ -331,20 +344,74 @@
                 "column": 2
             },
             {
-                "name": "Educated Elite",
-                "requires": ["Scholasticism", "Aesthetics"],
+                "name": "Patronage Complete",
                 "uniques": [
-                    "Allied City-States will occasionally gift Great People"
+                    "Allied City-States will occasionally gift Great People",
+                    "Get the leader title of [[leaderName] the Enlightened]"
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Aesthetics",
+        "era": "Classical era",
+        "priorities": {
+            "Neutral": 5,
+            "Cultural": 10,
+            "Diplomatic": 5,
+            "Domination": 5,
+            "Scientific": 5
+        },
+        "uniques": [
+            "[Great Writer] is earned [+25]% faster",
+            "[Great Artist] is earned [+25]% faster"
+        ],
+        "policies": [
+            {
+                "name": "Cultural Centers",
+                "uniques": [
+                    "[+50]% Production when constructing [Monument] buildings [in all cities]",
+                    "[+50]% Production when constructing [Amphitheater] buildings [in all cities]",
+                    "[+50]% Production when constructing [Opera House] buildings [in all cities]",
+                    "[+50]% Production when constructing [Museum] buildings [in all cities]",
+                    "[+50]% Production when constructing [Broadcast Tower] buildings [in all cities]"
                 ],
-                "row": 3,
+                "row": 1,
+                "column": 2
+            },
+            {
+                "name": "Fine Arts",
+                "uniques": [
+                    "[50]% of excess happiness converted to [Culture]"
+                ],
+                "row": 1,
                 "column": 4
             },
             {
-                "name": "Patronage Complete",
+                "name": "Flourishing of the Arts",
                 "uniques": [
-                    "Influence of all other civilizations with all city-states degrades [33]% faster",
-                    "Triggers the following global alert: [Our influence with City-States has started dropping faster!]",
-                    "Get the leader title of [[leaderName] the Enlightened]"
+                    "[+33]% [Culture] [in all cities with a world wonder]",
+                    "Empire enters golden age"
+                ],
+                "requires": ["Cultural Centers", "Fine Arts"],
+                "row": 2,
+                "column": 2
+            },
+            {
+                "name": "Artistic Genius",
+                "uniques": [
+                    "Free [Great Artist] appears"
+                ],
+                "requires": ["Fine Arts"],
+                "row": 2,
+                "column": 4
+            },
+            {
+                "name": "Aesthetics Complete",
+                "uniques": [
+                    "May buy [Great Writer] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
+                    "May buy [Great Artist] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
+                    "Get the leader title of [Master [leaderName]]"
                 ]
             }
         ]
@@ -359,33 +426,33 @@
             "Domination": 5,
             "Scientific": 5
         },
-        "uniques": ["[+25]% [Gold] [in capital]"],
+        "uniques": [
+            "[+25]% [Gold] [in capital]"
+        ],
         "policies": [
             {
-                "name": "Naval Tradition",
+                "name": "Wagon Trains",
                 "uniques": [
-                    "[+1] Movement <for [{Military} {Water}] units>",
-                    "[+1] Sight <for [{Military} {Water}] units>",
-                    "Free [Great Admiral] appears",
-                    "[+2] Movement <for [Great Admiral] units>",
+                    "[-50]% maintenance on road & railroads"
                 ],
                 "row": 1,
                 "column": 2
             },
             {
-                "name": "Trade Unions",
+                "name": "Mercenary Army",
                 "uniques": [
-                    "[-33]% maintenance on road & railroads",
-                    "[+1 Gold] from every [Harbor]",
-                    "[+1 Gold] from every [Seaport]"
+                    "Comment [Allows the purchasing of Landsknechts]"
                 ],
                 "row": 1,
                 "column": 4
             },
             {
-                "name": "Merchant Navy",
-                "uniques": ["[+3 Production] [in all coastal cities]"],
-                "requires": ["Naval Tradition"],
+                "name": "Entrepreneurship",
+                "uniques": [
+                    "[Great Merchant] is earned [+25]% faster",
+                    "[+100]% Gold from Great Merchant trade missions"
+                ],
+                "requires": ["Wagon Trains"],
                 "row": 2,
                 "column": 2
             },
@@ -398,14 +465,16 @@
                     "[+1 Science] from every [Bank]",
                     "[+1 Science] from every [Stock Exchange]"
                 ],
-                "requires": ["Trade Unions"],
+                "requires": ["Mercenary Army"],
                 "row": 2,
                 "column": 4
             },
             {
                 "name": "Protectionism",
-                "uniques": ["[+2] Happiness from each type of luxury resource"],
-                "requires": ["Mercantilism"],
+                "uniques": [
+                    "[+2] Happiness from each type of luxury resource"
+                ],
+                "requires": ["Mercantilism", "Entrepreneurship"],
                 "row": 3,
                 "column": 4
             },
@@ -413,9 +482,73 @@
                 "name": "Commerce Complete",
                 "uniques": [
                     "[+1 Gold] from every [Trading post]",
-                    "[+100]% Gold from Great Merchant trade missions",
                     "May buy [Great Merchant] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
                     "Get the leader title of [Doge [leaderName]]"
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Exploration",
+        "era": "Medieval era",
+        "priorities": {
+            "Neutral": 5,
+            "Cultural": 5,
+            "Diplomatic": 5,
+            "Domination": 5,
+            "Scientific": 5
+        },
+        "uniques": [
+            "[+1] Movement <for [{Military} {Water}] units>",
+            "[+1] Sight <for [{Military} {Water}] units>"
+        ],
+        "policies": [
+            {
+                "name": "Maritime Infrastructure",
+                "uniques": [
+                    "[+3 Production] [in all coastal cities]"
+                ],
+                "row": 1,
+                "column": 2
+            },
+            {
+                "name": "Naval Tradition",
+                "uniques": [
+                    "[+1 Happiness] from every [Harbor]",
+                    "[+1 Happiness] from every [Seaport]",
+                    "[+1 Happiness] from every [Lighthouse]"
+                ],
+                "row": 1,
+                "column": 4
+            },
+            {
+                "name": "Merchant Navy",
+                "uniques": [
+                    "[+1 Gold] from every [Harbor]",
+                    "[+1 Gold] from every [Seaport]",
+                    "[+1 Gold] from every [Lighthouse]",
+                    "[+4 Production, +4 Culture] from every [East India Company]"
+                ],
+                "requires": ["Naval Tradition", "Maritime Infrastructure"],
+                "row": 2,
+                "column": 2
+            },
+            {
+                "name": "Navigation School",
+                "uniques": [
+                    "Free [Great Admiral] appears",
+                    "[+2] Movement <for [Great Admiral] units>",
+                    "[Great Admiral] is earned [+50]% faster"
+                ],
+                "requires": ["Naval Tradition"],
+                "row": 2,
+                "column": 4
+            },
+            {
+                "name": "Exploration Complete",
+                "uniques": [
+                    "May buy [Great Admiral] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
+                    "Get the leader title of [Captain [leaderName]]"
                 ]
             }
         ]
@@ -431,8 +564,7 @@
             "Scientific": 10
         },
         "uniques": [
-            "[+15]% [Science] <while the empire is happy>",
-            "Only available <before adopting [Piety]>"
+            "[+10]% [Science] <while the empire is happy>"
         ],
         "policies": [
             {
@@ -446,13 +578,23 @@
             {
                 "name": "Humanism",
                 "uniques": [
-                    "[+1 Happiness] from every [University]",
-                    "[+1 Happiness] from every [Observatory]",
-                    "[+1 Happiness] from every [Public School]",
-                    "[-50]% weight to this choice for AI decisions"
+                    "[Great Scientist] is earned [+25]% faster"
                 ],
                 "row": 1,
                 "column": 4
+            },
+            {
+                "name": "Sovereignty",
+                "uniques": [
+                    "[+1 Gold] from every [Library]",
+                    "[+1 Gold] from every [University]",
+                    "[+1 Gold] from every [Observatory]",
+                    "[+1 Gold] from every [Research Lab]",
+                    "[+1 Gold] from every [Public School]"
+                ],
+                "requires": ["Secularism"],
+                "row": 2,
+                "column": 2
             },
             {
                 "name": "Free Thought",
@@ -460,28 +602,24 @@
                     "[+1 Science] from every [Trading post]",
                     "[+17]% [Science] from every [University]"
                 ],
-                "requires": ["Secularism"],
-                "row": 2,
-                "column": 2
-            },
-            {
-                "name": "Sovereignty",
-                "uniques": ["[+1 Gold] from all [Science] buildings"],
                 "requires": ["Humanism"],
                 "row": 2,
                 "column": 4
             },
             {
                 "name": "Scientific Revolution",
-                "uniques": ["Science gained from research agreements [+50]%", "[-100]% weight to this choice for AI decisions"],
-                "requires": ["Free Thought"],
+                "uniques": [
+                    "Science gained from research agreements [+50]%",
+                    "[-100]% weight to this choice for AI decisions"
+                ],
+                "requires": ["Sovereignty"],
                 "row": 3,
                 "column": 2
             },
             {
                 "name": "Rationalism Complete",
                 "uniques": [
-                    "[2] Free Technologies",
+                    "Free Technology",
                     "May buy [Great Scientist] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
                     "Get the leader title of [[leaderName] the Wise]"
                 ]
@@ -499,53 +637,132 @@
             "Scientific": 10
         },
         "uniques": [
-            "[+25]% Great Person generation [in all cities]",
+            "[2] Free Social Policies <when number of [Adopted [Freedom] Policies by [Major] Civilizations] is equal to [1]>",
+            "Free Social Policy <when number of [Adopted [Freedom] Policies by [Major] Civilizations] is equal to [2]>",
             "Only available <before adopting [Autocracy]>",
             "Only available <before adopting [Order]>"
         ],
         "policies": [
             {
-                "name": "Constitution",
-                "uniques": ["[+2 Culture] from every [Wonder]", "[-100]% weight to this choice for AI decisions"],
+                "name": "Avant Garde",
+                "uniques": [
+                    "Tenet Level 1",
+                    "[+25]% Great Person generation [in all cities]"
+                ],
                 "row": 1,
                 "column": 1
-            },
-            {
-                "name": "Universal Suffrage",
-                "uniques": ["[+33]% Strength for cities <when defending>", "[-100]% weight to this choice for AI decisions"],
-                "row": 1,
-                "column": 3
             },
             {
                 "name": "Civil Society",
                 "uniques": [
+                    "Tenet Level 1",
                     "[-50]% Food consumption by [Specialists] [in all cities]"
+                ],
+                "row": 1,
+                "column": 3
+            },
+            {
+                "name": "Capitalism",
+                "uniques": [
+                    "Tenet Level 1",
+                    "[+1 Happiness] from every [Mint]",
+                    "[+1 Happiness] from every [Bank]",
+                    "[+1 Happiness] from every [Stock Exchange]"
                 ],
                 "row": 1,
                 "column": 5
             },
             {
-                "name": "Free Speech",
-                "uniques": ["[8] units cost no maintenance"],
-                "requires": ["Constitution"],
+                "name": "Universal Healthcare (Freedom)",
+                "uniques": [
+                    "Tenet Level 1",
+                    "[+1 Happiness] from every [Palace]",
+                    "[+1 Happiness] from every [Heroic Epic]",
+                    "[+1 Happiness] from every [National Epic]",
+                    "[+1 Happiness] from every [Circus Maximus]",
+                    "[+1 Happiness] from every [East India Company]",
+                    "[+1 Happiness] from every [National College]",
+                    "[+1 Happiness] from every [Ironworks]",
+                    "[+1 Happiness] from every [Oxford University]",
+                    "[+1 Happiness] from every [Hermitage]",
+                    "[+1 Happiness] from every [National Intelligence Agency]",
+                    "[+1 Happiness] from every [Grand Temple]"
+                ],
+                "row": 1,
+                "column": 7
+            },
+            {
+                "name": "Volunteer Army",
+                "uniques": [
+                    "Tenet Level 2",
+                    "[6] units cost no maintenance",
+                    "[6] free [Foreign Legion] units appear",
+                    "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
+                ],
                 "row": 2,
                 "column": 1
             },
             {
-                "name": "Democracy",
+                "name": "Urbanization",
                 "uniques": [
-                    "[-50]% Unhappiness from [Specialists] [in all cities]"
+                    "Tenet Level 2",
+                    "[+1 Happiness] from every [Water Mill]",
+                    "[+1 Happiness] from every [Hospital]",
+                    "[+1 Happiness] from every [Medical Lab]",
+                    "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
                 ],
-                "requires": ["Civil Society"],
+                "row": 2,
+                "column": 2
+            },
+            {
+                "name": "Their Finest Hour",
+                "uniques": [
+                    "Tenet Level 2",
+                    "[+33]% Strength for cities",
+                    "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
+                ],
+                "row": 2,
+                "column": 3
+            },
+            {
+                "name": "Universal Suffrage",
+                "uniques": [
+                    "Tenet Level 2",
+                    "[-50]% Unhappiness from [Specialists] [in all cities]",
+                    "[+50]% Golden Age length",
+                    "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
+                ],
                 "row": 2,
                 "column": 5
             },
             {
+                "name": "New Deal",
+                "uniques": [
+                    "Tenet Level 2",
+                    "[+4 Science] from every [Academy]",
+                    "[+4 Gold] from every [Customs house]",
+                    "[+4 Production] from every [Manufactory]",
+                    "[+4 Faith] from every [Holy site]",
+                    "[+4 Culture] from every [Landmark]",
+                    "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
+                ],
+                "row": 2,
+                "column": 6
+            },
+            {
+                "name": "Arsenal of Democracy",
+                "uniques": [
+                    "Tenet Level 2",
+                    "[+15]% Production when constructing [Military] units [in all cities]",
+                    "Gain [15] Influence with a [Military] gift to a City-State",
+                    "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
+                ],
+                "row": 2,
+                "column": 7
+            },
+            {
                 "name": "Freedom Complete",
                 "uniques": [
-                    "[+100]% Yield from every [Great Improvement]",
-                    "[+50]% Golden Age length",
-                    "May buy [Great Artist] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
                     "Get the leader title of [President [leaderName]]"
                 ]
             }
@@ -562,60 +779,150 @@
             "Scientific": 5
         },
         "uniques": [
-            "[-33]% maintenance costs <for [All] units>",
-            "Upon capturing a city, receive [10] times its [Culture] production as [Culture] immediately",
+            "[2] Free Social Policies <when number of [Adopted [Autocracy] Policies by [Major] Civilizations] is equal to [1]>",
+            "Free Social Policy <when number of [Adopted [Autocracy] Policies by [Major] Civilizations] is equal to [2]>",
             "Only available <before adopting [Order]>",
             "Only available <before adopting [Freedom]>"
         ],
         "policies": [
             {
-                "name": "Populism",
-                "uniques": ["[+25]% Strength <for [Wounded] units>", "[+100]% weight to this choice for AI decisions"],
+                "name": "Mobilization",
+                "uniques": [
+                    "Tenet Level 1",
+                    "[Gold] cost of purchasing [All] units [-33]%"
+                ],
                 "row": 1,
-                "column": 2
+                "column": 1
             },
             {
-                "name": "Militarism",
-                "uniques": ["[Gold] cost of purchasing [All] units [-33]%"],
+                "name": "United Front",
+                "uniques": [
+                    "Tenet Level 1",
+                    "Militaristic City-States grant units [2] times as fast when you are at war with a common nation",
+                    "[-100]% weight to this choice for AI decisions"
+                ],
+                "row": 1,
+                "column": 3
+            },
+            {
+                "name": "Industrial Espionage",
+                "uniques": [
+                    "Tenet Level 1",
+                    "[+100]% spy effectiveness [in all cities]"
+                ],
                 "row": 1,
                 "column": 4
             },
             {
-                "name": "Fascism",
+                "name": "Fortified Borders",
                 "uniques": [
-                    "[+100]% [Strategic] resource production",
-                    "[+2] Movement <for [Great General] units>"
+                    "Tenet Level 1",
+                    "[+1 Happiness] from every [Castle]",
+                    "[+1 Happiness] from every [Arsenal]",
+                    "[+1 Happiness] from every [Military Base]"
                 ],
-                "requires": ["Populism", "Militarism"],
+                "row": 1,
+                "column": 6
+            },
+            {
+                "name": "Universal Healthcare (Autocracy)",
+                "uniques": [
+                    "Tenet Level 1",
+                    "[+1 Happiness] from every [Palace]",
+                    "[+1 Happiness] from every [Heroic Epic]",
+                    "[+1 Happiness] from every [National Epic]",
+                    "[+1 Happiness] from every [Circus Maximus]",
+                    "[+1 Happiness] from every [East India Company]",
+                    "[+1 Happiness] from every [National College]",
+                    "[+1 Happiness] from every [Ironworks]",
+                    "[+1 Happiness] from every [Oxford University]",
+                    "[+1 Happiness] from every [Hermitage]",
+                    "[+1 Happiness] from every [National Intelligence Agency]",
+                    "[+1 Happiness] from every [Grand Temple]"
+                ],
+                "row": 1,
+                "column": 7
+            },
+            {
+                "name": "Militarism",
+                "uniques": [
+                    "Tenet Level 2",
+                    "[+2 Happiness] from every [Barracks]",
+                    "[+2 Happiness] from every [Armory]",
+                    "[+2 Happiness] from every [Military Academy]",
+                    "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
+                ],
+                "row": 2,
+                "column": 1
+            },
+            {
+                "name": "Lightning Warfare",
+                "uniques": [
+                    "Tenet Level 2",
+                    "[+3] Movement <for [Great General] units>",
+                    "[+15]% Strength <for [Armored] units> <when attacking>",
+                    "[+1] Movement <for [Armored] units>",
+                    "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
+                ],
                 "row": 2,
                 "column": 2
             },
             {
                 "name": "Police State",
                 "uniques": [
+                    "Tenet Level 2",
                     "[+3 Happiness] from every [Courthouse]",
                     "[+100]% Production when constructing [Courthouse] buildings [in all cities]",
-                    "[-25]% enemy spy effectiveness [in all cities]"
+                    "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
                 ],
-                "requires": ["Militarism"],
+                "row": 2,
+                "column": 3
+            },
+            {
+                "name": "Nationalism",
+                "uniques": [
+                    "Tenet Level 2",
+                    "[-33]% maintenance costs <for [All] units>",
+                    "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
+                ],
                 "row": 2,
                 "column": 4
             },
             {
+                "name": "Third Alternative",
+                "uniques": [
+                    "Tenet Level 2",
+                    "[+100]% [Strategic] resource production",
+                    "[+5 Food, +5 Science] [in capital]",
+                    "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
+                ],
+                "row": 2,
+                "column": 5
+            },
+            {
                 "name": "Total War",
                 "uniques": [
+                    "Tenet Level 2",
                     "[+25]% Production when constructing [Military] units [in all cities]",
-                    "New [Military] units start with [15] XP [in all cities]"
+                    "New [Military] units start with [15] XP [in all cities]",
+                    "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
                 ],
-                "requires": ["Police State", "Fascism"],
+                "row": 2,
+                "column": 6
+            },
+            {
+                "name": "Clausewitz's Legacy",
+                "uniques": [
+                    "Tenet Level 3",
+                    "[+25]% Strength <when attacking> <for [Military] units> <for [50] turns>",
+                    "Only available <when number of [[Adopted [Tenet Level 2] Policies] - [Adopted [Tenet Level 3] Policies]] is more than [1]>"
+                ],
                 "row": 3,
-                "column": 3
+                "column": 4
             },
             {
                 "name": "Autocracy Complete",
                 "uniques": [
-                    "[+25]% Strength <when attacking> <for [Military] units> <for [50] turns>",
-                    "May buy [Great General] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
                     "Get the leader title of [[leaderName] the Terrible]"
                 ]
             }
@@ -632,61 +939,150 @@
             "Scientific": 5
         },
         "uniques": [
-            "[+1 Happiness] [in all cities]",
+            "[2] Free Social Policies <when number of [Adopted [Order] Policies by [Major] Civilizations] is equal to [1]>",
+            "Free Social Policy <when number of [Adopted [Order] Policies by [Major] Civilizations] is equal to [2]>",
             "Only available <before adopting [Autocracy]>",
             "Only available <before adopting [Freedom]>"
         ],
         "policies": [
             {
-                "name": "United Front",
+                "name": "Hero of the People",
                 "uniques": [
-                    "Militaristic City-States grant units [2] times as fast when you are at war with a common nation","[-100]% weight to this choice for AI decisions"
+                    "Tenet Level 1",
+                    "[+25]% Great Person generation [in all cities]"
                 ],
                 "row": 1,
                 "column": 1
             },
             {
-                "name": "Planned Economy",
+                "name": "Socialist Realism",
                 "uniques": [
-                    "[+25]% [Science] from every [Factory]",
-                    "[+100]% Production when constructing [Factory] buildings [in all cities]"
+                    "Tenet Level 1",
+                    "[+2 Happiness] from every [Monument]",
+                    "[+100]% Production when constructing [Monument] buildings [in all cities]"
+                ],
+                "row": 1,
+                "column": 2
+            },
+            {
+                "name": "Skyscrapers",
+                "uniques": [
+                    "Tenet Level 1",
+                    "[Gold] cost of purchasing [All] buildings [-33]%"
                 ],
                 "row": 1,
                 "column": 3
             },
             {
-                "name": "Nationalism",
+                "name": "Patriotic War",
                 "uniques": [
-                    "[+15]% Strength <for [All] units> <when fighting in [Friendly Land] tiles>"
+                    "Tenet Level 1",
+                    "[+15]% Strength <for [Military] units> <when attacking> <when fighting in [Friendly Land] tiles>"
+                ],
+                "row": 1,
+                "column": 4
+            },
+            {
+                "name": "Young Pioneers",
+                "uniques": [
+                    "Tenet Level 1",
+                    "[+1 Happiness] from every [Workshop]",
+                    "[+1 Happiness] from every [Factory]",
+                    "[+1 Happiness] from every [Solar Plant]",
+                    "[+1 Happiness] from every [Nuclear Plant]",
+                    "[+1 Happiness] from every [Hydro Plant]"
                 ],
                 "row": 1,
                 "column": 5
             },
             {
-                "name": "Socialism",
-                "requires": ["Planned Economy"],
+                "name": "Universal Healthcare (Order)",
                 "uniques": [
-                    "[-15]% maintenance cost for [all] buildings [in all cities]"
+                    "Tenet Level 1",
+                    "[+1 Happiness] from every [Palace]",
+                    "[+1 Happiness] from every [Heroic Epic]",
+                    "[+1 Happiness] from every [National Epic]",
+                    "[+1 Happiness] from every [Circus Maximus]",
+                    "[+1 Happiness] from every [East India Company]",
+                    "[+1 Happiness] from every [National College]",
+                    "[+1 Happiness] from every [Ironworks]",
+                    "[+1 Happiness] from every [Oxford University]",
+                    "[+1 Happiness] from every [Hermitage]",
+                    "[+1 Happiness] from every [National Intelligence Agency]",
+                    "[+1 Happiness] from every [Grand Temple]"
+                ],
+                "row": 1,
+                "column": 7
+            },
+            {
+                "name": "Academy of Sciences",
+                "uniques": [
+                    "Tenet Level 2",
+                    "[+1 Happiness] from every [Observatory]",
+                    "[+1 Happiness] from every [Public School]",
+                    "[+1 Happiness] from every [Research Lab]",
+                    "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
+                ],
+                "row": 2,
+                "column": 1
+            },
+            {
+                "name": "Party Leadership",
+                "uniques": [
+                    "Tenet Level 2",
+                    "[+1 Food, +1 Production, +1 Science, +1 Gold, +1 Culture] [in all cities]",
+                    "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
+                ],
+                "row": 2,
+                "column": 2
+            },
+            {
+                "name": "Resettlement",
+                "uniques": [
+                    "Tenet Level 2",
+                    "[3] population [in this city] <upon founding a city>",
+                    "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
                 ],
                 "row": 2,
                 "column": 3
             },
             {
-                "name": "Communism",
-                "requires": ["Socialism"],
+                "name": "Workers' Faculties",
                 "uniques": [
+                    "Tenet Level 2",
+                    "[+25]% [Science] from every [Factory]",
+                    "[+100]% Production when constructing [Factory] buildings [in all cities]",
+                    "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
+                ],
+                "row": 2,
+                "column": 5
+            },
+            {
+                "name": "Five-Year Plan",
+                "uniques": [
+                    "Tenet Level 2",
                     "[+2 Production] [in all cities]",
                     "[+1 Production] from every [Mine]",
-                    "[+1 Production] from every [Quarry]"
+                    "[+1 Production] from every [Quarry]",
+                    "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
+                ],
+                "row": 2,
+                "column": 6
+            },
+            {
+                "name": "Spaceflight Pioneers",
+                "uniques": [
+                    "Tenet Level 3",
+                    "Free [Great Engineer] appears",
+                    "Free [Great Scientist] appears",
+                    "Only available <when number of [[Adopted [Tenet Level 2] Policies] - [Adopted [Tenet Level 3] Policies]] is more than [1]>"
                 ],
                 "row": 3,
-                "column": 3
+                "column": 4
             },
             {
                 "name": "Order Complete",
                 "uniques": [
-                    "[+2 Food, +2 Production, +2 Science, +2 Gold, +2 Culture] [in all cities]",
-                    "May buy [Great Engineer] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
                     "Get the leader title of [Chairman [leaderName]]"
                 ]
             }

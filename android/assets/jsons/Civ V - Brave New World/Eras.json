@@ -4,7 +4,7 @@
 
     {
         "name": "Ancient era",
-        "researchAgreementCost": 150,
+        "researchAgreementCost": 100,
         "startingSettlerCount": 1, // These values should not include the values given in Difficulties.json
         "startingWorkerCount": 0,
         "startingMilitaryUnitCount": 1,
@@ -28,7 +28,7 @@
         "name": "Classical era",
         "researchAgreementCost": 150,
         "startingSettlerCount": 1,
-        "startingWorkerCount": 0,
+        "startingWorkerCount": 1,
         "startingMilitaryUnitCount": 2,
         "startingMilitaryUnit": "Spearman",
         "startingGold": 10,
@@ -50,7 +50,7 @@
     },
     {
         "name": "Medieval era",
-        "researchAgreementCost": 250,
+        "researchAgreementCost": 200,
         "startingSettlerCount": 2,
         "startingWorkerCount": 1,
         "startingMilitaryUnitCount": 3,
@@ -147,7 +147,7 @@
         "startingMilitaryUnit": "Rifleman",
         "startingGold": 200,
         "startingCulture": 500,
-        "settlerPopulation": 3,
+        "settlerPopulation": 4,
         "settlerBuildings": ["Monument","Granary","Lighthouse","Market","Workshop","Amphitheater","Barracks","Library","Colosseum"],
         "startingObsoleteWonders": ["Temple of Artemis", "Stonehenge", "The Great Library", "Mausoleum of Halicarnassus", "The Pyramids", "Statue of Zeus",
             "The Great Lighthouse", "Hanging Gardens", "Terracotta Army", "The Oracle", "Petra", "Great Wall", "Colossus",
@@ -209,7 +209,7 @@
     },
     {
         "name": "Information era",
-        "researchAgreementCost": 400,
+        "researchAgreementCost": 450,
         "startingSettlerCount": 3,
         "startingWorkerCount": 3,
         "startingMilitaryUnitCount": 5,
@@ -217,7 +217,7 @@
         "startingGold": 400,
         "startingCulture": 600,
         "settlerPopulation": 5,
-        "settlerBuildings": ["Monument","Granary","Lighthouse","Market","Workshop","Amphitheater","Barracks","Library","Colosseum","Theatre","Bank"],
+        "settlerBuildings": ["Monument","Granary","Lighthouse","Market","Workshop","Amphitheater","Barracks","Library","Colosseum","Zoo","Bank"],
         "startingObsoleteWonders": ["Temple of Artemis", "Stonehenge", "The Great Library", "Mausoleum of Halicarnassus", "The Pyramids", "Statue of Zeus",
             "The Great Lighthouse", "Hanging Gardens", "Terracotta Army", "The Oracle", "Petra", "Great Wall", "Colossus",
             "Hagia Sophia", "Chichen Itza", "Machu Picchu", "Angkor Wat", "Alhambra", "Notre Dame",
@@ -256,7 +256,7 @@
         "startingGold": 400,
         "startingCulture": 600,
         "settlerPopulation": 5,
-        "settlerBuildings": ["Monument","Granary","Lighthouse","Market","Workshop","Amphitheater","Barracks","Library","Colosseum","Theatre","Bank"],
+        "settlerBuildings": ["Monument","Granary","Lighthouse","Market","Workshop","Amphitheater","Barracks","Library","Colosseum","Zoo","Bank"],
         "startingObsoleteWonders": ["Temple of Artemis", "Stonehenge", "The Great Library", "Mausoleum of Halicarnassus", "The Pyramids", "Statue of Zeus",
             "The Great Lighthouse", "Hanging Gardens", "Terracotta Army", "The Oracle", "Petra", "Great Wall", "Colossus",
             "Hagia Sophia", "Chichen Itza", "Machu Picchu", "Angkor Wat", "Alhambra", "Notre Dame",
