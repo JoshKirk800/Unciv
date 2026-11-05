@@ -35,6 +35,10 @@ class PolicyManager : IsPartOfGameInfoSerialization {
     internal val adoptedPolicies = HashSet<String>()
     private var numberOfAdoptedPolicies = 0
 
+    /** The most cities that counted for the per-city policy cost so far (CvPlayerPolicies::m_iMaxEffectiveCities):
+     *  losing cities does not make policies cheaper. 0 in games saved before this existed - the current count applies then. */
+    private var maxEffectiveCities = 0
+
     private var cultureOfLast8Turns = IntArray(8)
 
     /** Indicates whether we should *check* if policy is adoptible, and if so open */
@@ -100,6 +104,7 @@ class PolicyManager : IsPartOfGameInfoSerialization {
         toReturn.freePolicies = freePolicies
         toReturn.shouldOpenPolicyPicker = shouldOpenPolicyPicker
         toReturn.storedCulture = storedCulture
+        toReturn.maxEffectiveCities = maxEffectiveCities
         toReturn.cultureOfLast8Turns = cultureOfLast8Turns.clone()
         return toReturn
     }
@@ -137,6 +142,7 @@ class PolicyManager : IsPartOfGameInfoSerialization {
     }
 
     fun endTurn(culture: Int) {
+        updateMaxEffectiveCities() // before addCulture, which decides on the cost whether a policy can be adopted
         addCulture(culture)
         addCurrentCultureToCultureOfLast8Turns(culture)
     }
@@ -166,17 +172,30 @@ class PolicyManager : IsPartOfGameInfoSerialization {
         return policyMap
     }
 
+    /** Cities that count for the per-city cost increase: not puppets and not cities being razed, at least one
+     *  (CvPlayerPolicies::GetNextPolicyCost, minus the cities the player has not yet decided about, which Unciv does not have) */
+    @Readonly
+    private fun getEffectiveCityCount() = civInfo.cities.count { !it.isPuppet && !it.isBeingRazed }.coerceAtLeast(1)
+
+    /** Remembers the highest [getEffectiveCityCount] so far, see [maxEffectiveCities] */
+    fun updateMaxEffectiveCities() {
+        maxEffectiveCities = maxOf(maxEffectiveCities, getEffectiveCityCount())
+    }
+
+    /** Follows CvPlayerPolicies::GetNextPolicyCost: every step truncates to a whole number (that is what the integer arithmetic
+     *  of the original does), then the result is rounded down to a multiple of 5. */
     @Readonly
     fun getPolicyCultureCost(numberOfAdoptedPolicies: Int): Int {
-        var policyCultureCost = 25 + (numberOfAdoptedPolicies * 3).toDouble().pow(2.01)
+        var cost = 25 + (numberOfAdoptedPolicies * 3).toDouble().pow(2.01).toInt()
         val worldSizeModifier = civInfo.gameInfo.tileMap.mapParameters.mapSize.getPredefinedOrNextSmaller().policyCostPerCityModifier
-        var cityModifier = worldSizeModifier * (civInfo.cities.count { !it.isPuppet } - 1)
-
+        var cityModifier = worldSizeModifier.toDouble()
         civInfo.forEachMatchingUnique(UniqueType.LessPolicyCostFromCities) { unique -> cityModifier *= 1 - unique.params[0].toFloat() / 100 }
-        civInfo.forEachMatchingUnique(UniqueType.LessPolicyCost) { unique -> policyCultureCost *= unique.params[0].toPercent() }
-        if (civInfo.isHuman()) policyCultureCost *= civInfo.getDifficulty().policyCostModifier
-        policyCultureCost *= civInfo.gameInfo.speed.cultureCostModifier
-        val cost: Int = (policyCultureCost * (1 + cityModifier)).roundToInt()
+        // The cost counts the most cities this civilization ever had: losing cities does not make policies cheaper
+        val effectiveCities = maxOf(maxEffectiveCities, getEffectiveCityCount())
+        cost += (cost * (effectiveCities - 1) * cityModifier).toInt()
+        civInfo.forEachMatchingUnique(UniqueType.LessPolicyCost) { unique -> cost = (cost * unique.params[0].toPercent()).toInt() }
+        if (civInfo.isHuman()) cost = (cost * civInfo.getDifficulty().policyCostModifier).toInt()
+        cost = (cost * civInfo.gameInfo.speed.cultureCostModifier).toInt()
         return cost - (cost % 5)
     }
 
@@ -241,6 +260,7 @@ class PolicyManager : IsPartOfGameInfoSerialization {
     fun adopt(policy: Policy, branchCompletion: Boolean = false) {
 
         if (!branchCompletion) {
+            updateMaxEffectiveCities()
             if (freePolicies > 0) freePolicies--
             else if (!civInfo.gameInfo.gameParameters.godMode) {
                 val cultureNeededForNextPolicy = getCultureNeededForNextPolicy()
