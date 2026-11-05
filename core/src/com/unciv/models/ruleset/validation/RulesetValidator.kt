@@ -184,7 +184,8 @@ open class RulesetValidator protected constructor(
                 difficulty.aiUnhappinessModifier < 0 || difficulty.aiUnitCostModifier < 0 || difficulty.aiUnitMaintenanceModifier < 0 ||
                 difficulty.aiUnitSupplyModifier < 0 || difficulty.aiWonderCostModifier < 0 ||
                 difficulty.buildingCostModifier < 0 || difficulty.policyCostModifier < 0 || difficulty.researchCostModifier < 0 ||
-                difficulty.unhappinessModifier < 0 || difficulty.unitCostModifier < 0)
+                difficulty.unhappinessModifier < 0 || difficulty.unitCostModifier < 0 ||
+                difficulty.aiUnitUpgradeCostModifier < 0 || difficulty.routeCostModifier < 0)
                 lines.add("Difficulty ${difficulty.name} contains one or more negative modifier(s)!", sourceObject = null)
             if (difficulty.turnBarbariansCanEnterPlayerTiles < 0)
                 lines.add("Difficulty ${difficulty.name} has a negative turnBarbariansCanEnterPlayerTiles!",

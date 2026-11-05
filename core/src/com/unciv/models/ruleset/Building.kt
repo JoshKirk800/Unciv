@@ -142,13 +142,14 @@ class Building : RulesetStatsObject(), INonPerpetualConstruction {
         }
 
         // CvPlayer::getProductionNeeded: no handicap for a human (the handicap's building cost percentage is for the gold maintenance of buildings)
+        // A city state also has the AI percentage and era factor of the difficulty, the barbarians do not
         if (civInfo.isCityState)
             productionCost *= 1.5f
-        else if (!civInfo.isHuman())
-            productionCost *= if (isWonder)
-                civInfo.gameInfo.getDifficulty().aiWonderCostModifier
-            else
-                civInfo.gameInfo.getDifficulty().aiBuildingCostModifier
+        if (civInfo.receivesAiHandicap()) {
+            val difficulty = civInfo.gameInfo.getDifficulty()
+            productionCost *= (if (isWonder) difficulty.aiWonderCostModifier else difficulty.aiBuildingCostModifier) *
+                civInfo.getAiPerEraFactor()
+        }
 
         productionCost *= civInfo.gameInfo.speed.productionCostModifier
         productionCost *= civInfo.gameInfo.getStartingEra().constructPercent / 100f

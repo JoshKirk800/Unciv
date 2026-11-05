@@ -44,6 +44,18 @@ class Difficulty : RulesetObject() {
     var aiMajorCivBonusStartingUnits = ArrayList<String>()
     var aiCityStateBonusStartingUnits = ArrayList<String>()
     var aiUnhappinessModifier: Float = 1f
+    /** Change of the AI's production costs, city growth thresholds and unit upgrade costs per era the AI is in (AIPerEraModifier): -0.05 is 5% cheaper per era. */
+    var aiPerEraModifier: Float = 0f
+    /** Multiplier for the gold cost to upgrade a unit of an AI (AIUnitUpgradePercent) */
+    var aiUnitUpgradeCostModifier: Float = 1f
+    /** Experience an AI's military units start with (AIFreeXP) */
+    var aiFreeUnitExperience: Int = 0
+    /** Additional experience gain in combat for the units of an AI, 1 = 100% more (AIFreeXPPercent) */
+    var aiFreeUnitExperiencePercent: Float = 0f
+    /** Additional speed of the workers of an AI, 1 = 100% faster (AIWorkRateModifier) */
+    var aiWorkRateModifier: Float = 0f
+    /** Multiplier for the gold maintenance of the roads and railroads of this level's players (RouteCostPercent) */
+    var routeCostModifier: Float = 1f
     var turnBarbariansCanEnterPlayerTiles: Int = 0
     var clearBarbarianCampReward: Int = 25
 
@@ -93,6 +105,11 @@ class Difficulty : RulesetObject() {
         add("{AI building maintenance modifier}: ${aiBuildingMaintenanceModifier.toPercent()}% ${Fonts.gold}")
         add("{AI unit maintenance modifier}: ${aiUnitMaintenanceModifier.toPercent()}% ${Fonts.gold}")
         add("{AI unhappiness modifier}: ${aiUnhappinessModifier.toPercent()}%")
+        if (aiPerEraModifier != 0f) add("{AI per era modifier}: ${(aiPerEraModifier * 100).toInt()}%")
+        if (aiUnitUpgradeCostModifier != 1f) add("{AI unit upgrade cost modifier}: ${aiUnitUpgradeCostModifier.toPercent()}% ${Fonts.gold}")
+        if (aiFreeUnitExperience != 0) add("{AI free unit experience}: $aiFreeUnitExperience")
+        if (aiFreeUnitExperiencePercent != 0f) add("{AI unit experience gain bonus}: ${(aiFreeUnitExperiencePercent * 100).toInt()}%")
+        if (aiWorkRateModifier != 0f) add("{AI worker speed bonus}: ${(aiWorkRateModifier * 100).toInt()}%")
 
         if (aiFreeTechs.isNotEmpty()) {
             space()

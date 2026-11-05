@@ -24,12 +24,11 @@ class BaseUnitCost(val baseUnit: BaseUnit) {
             productionCost *= unique.params[0].toPercent()
 
         // CvPlayer::getProductionNeeded: no handicap for a human (the handicap's unit cost percentage is for the gold maintenance of units)
-        productionCost *= if (civInfo.isCityState)
-            1.5f
-        else if (civInfo.isHuman())
-            1f
-        else
-            civInfo.gameInfo.getDifficulty().aiUnitCostModifier
+        // A city state also has the AI percentage and era factor of the difficulty, the barbarians do not (CvPlayer::getProductionNeeded)
+        if (civInfo.isCityState)
+            productionCost *= 1.5f
+        if (civInfo.receivesAiHandicap())
+            productionCost *= civInfo.gameInfo.getDifficulty().aiUnitCostModifier * civInfo.getAiPerEraFactor()
 
         productionCost *= civInfo.gameInfo.speed.productionCostModifier
         // Spaceship parts are projects in the original game, which have their own percentage

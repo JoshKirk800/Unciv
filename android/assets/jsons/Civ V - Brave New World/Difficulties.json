@@ -28,6 +28,8 @@
 		"aiCityStateBonusStartingUnits": [],
 		"aiUnhappinessModifier": 1,
 		"aisExchangeTechs": false,
+		"aiUnitUpgradeCostModifier": 0.5,
+		"routeCostModifier": 0.34,
 		"turnBarbariansCanEnterPlayerTiles": 10000,
 		"clearBarbarianCampReward": 50
 	},
@@ -60,6 +62,8 @@
 		"aiCityStateBonusStartingUnits": [],
 		"aiUnhappinessModifier": 1,
 		"aisExchangeTechs": false,
+		"aiUnitUpgradeCostModifier": 0.5,
+		"routeCostModifier": 0.5,
 		"turnBarbariansCanEnterPlayerTiles": 60,
 		"clearBarbarianCampReward": 40
 	},
@@ -92,6 +96,8 @@
 		"aiCityStateBonusStartingUnits": [],
 		"aiUnhappinessModifier": 1,
 		"aisExchangeTechs": false,
+		"aiUnitUpgradeCostModifier": 0.5,
+		"routeCostModifier": 0.75,
 		"turnBarbariansCanEnterPlayerTiles": 20,
 		"clearBarbarianCampReward": 30
 	},
@@ -124,6 +130,7 @@
 		"aiCityStateBonusStartingUnits": [],
 		"aiUnhappinessModifier": 1,
 		"aisExchangeTechs": true,
+		"aiUnitUpgradeCostModifier": 0.5,
 		"turnBarbariansCanEnterPlayerTiles": 0,
 		"clearBarbarianCampReward": 25
 	},
@@ -156,6 +163,10 @@
 		"aiCityStateBonusStartingUnits": [],
 		"aiUnhappinessModifier": 1,
 		"aisExchangeTechs": true,
+		"aiPerEraModifier": -0.02,
+		"aiUnitUpgradeCostModifier": 0.45,
+		"aiFreeUnitExperience": 10,
+		"aiWorkRateModifier": 0.2,
 		"turnBarbariansCanEnterPlayerTiles": 0,
 		"clearBarbarianCampReward": 25
 	},
@@ -188,6 +199,11 @@
 		"aiCityStateBonusStartingUnits": [],
 		"aiUnhappinessModifier": 0.9,
 		"aisExchangeTechs": true,
+		"aiPerEraModifier": -0.03,
+		"aiUnitUpgradeCostModifier": 0.4,
+		"aiFreeUnitExperience": 10,
+		"aiFreeUnitExperiencePercent": 0.25,
+		"aiWorkRateModifier": 0.5,
 		"turnBarbariansCanEnterPlayerTiles": 0,
 		"clearBarbarianCampReward": 25
 	},
@@ -220,6 +236,11 @@
 		"aiCityStateBonusStartingUnits": [],
 		"aiUnhappinessModifier": 0.85,
 		"aisExchangeTechs": true,
+		"aiPerEraModifier": -0.04,
+		"aiUnitUpgradeCostModifier": 0.35,
+		"aiFreeUnitExperience": 30,
+		"aiFreeUnitExperiencePercent": 0.5,
+		"aiWorkRateModifier": 0.75,
 		"turnBarbariansCanEnterPlayerTiles": 0,
 		"clearBarbarianCampReward": 25
 	},
@@ -248,10 +269,15 @@
 		"aiUnitMaintenanceModifier": 0.5,
 		"aiUnitSupplyModifier": 0.5,
 		"aiFreeTechs": ["Pottery", "Animal Husbandry", "Mining", "The Wheel", "Archery"],
-		"aiMajorCivBonusStartingUnits": ["Settler", "Worker", "Scout", "Era Starting Unit", "Era Starting Unit", "Era Starting Unit"],
+		"aiMajorCivBonusStartingUnits": ["Settler", "Worker", "Scout", "Era Starting Unit", "Era Starting Unit", "Worker"],
 		"aiCityStateBonusStartingUnits": [],
 		"aiUnhappinessModifier": 0.75,
 		"aisExchangeTechs": true,
+		"aiPerEraModifier": -0.05,
+		"aiUnitUpgradeCostModifier": 0.3,
+		"aiFreeUnitExperience": 30,
+		"aiFreeUnitExperiencePercent": 1,
+		"aiWorkRateModifier": 1,
 		"turnBarbariansCanEnterPlayerTiles": 0,
 		"clearBarbarianCampReward": 25
 	},
@@ -283,6 +309,8 @@
 		"aiMajorCivBonusStartingUnits": [],
 		"aiCityStateBonusStartingUnits": [],
 		"aiUnhappinessModifier": 1,
+		"aiUnitUpgradeCostModifier": 0.5,
+		"routeCostModifier": 0.5,
 		"turnBarbariansCanEnterPlayerTiles": 0,
 		"clearBarbarianCampReward": 25
 	}

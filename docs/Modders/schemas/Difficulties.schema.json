@@ -187,6 +187,42 @@
         "title": "AI Unhappiness Modifier",
         "description": "Multiplier for AI unhappiness effects."
       },
+      "aiPerEraModifier": {
+        "type": "number",
+        "default": 0,
+        "title": "AI Per Era Modifier",
+        "description": "Change of an AI's production costs, city growth thresholds and unit upgrade costs per era it is in. -0.05 is 5% cheaper per era."
+      },
+      "aiUnitUpgradeCostModifier": {
+        "type": "number",
+        "default": 1,
+        "title": "AI Unit Upgrade Cost Modifier",
+        "description": "Multiplier for the gold cost of unit upgrades of an AI."
+      },
+      "aiFreeUnitExperience": {
+        "type": "integer",
+        "default": 0,
+        "title": "AI Free Unit Experience",
+        "description": "Experience that new military units of an AI start with."
+      },
+      "aiFreeUnitExperiencePercent": {
+        "type": "number",
+        "default": 0,
+        "title": "AI Free Unit Experience Percent",
+        "description": "Additional experience gain in combat for the units of an AI. 1 is 100% more."
+      },
+      "aiWorkRateModifier": {
+        "type": "number",
+        "default": 0,
+        "title": "AI Work Rate Modifier",
+        "description": "Additional speed of the workers of an AI. 1 is twice as fast."
+      },
+      "routeCostModifier": {
+        "type": "number",
+        "default": 1,
+        "title": "Route Cost Modifier",
+        "description": "Multiplier for the gold maintenance of roads and railroads of the players with this level."
+      },
       "aisExchangeTechs": {
         "type": "boolean",
         "default": false,

@@ -141,6 +141,8 @@ class UnitUpgradeManager(val unit: MapUnit) {
         val era = unitToUpgradeTo.era(ruleset)
         if (era != null)
             cost *= (1f + era.eraNumber * constants.eraMultiplier)
+        if (unit.civ.receivesAiHandicap())
+            cost *= unit.civ.gameInfo.getDifficulty().aiUnitUpgradeCostModifier * unit.civ.getAiPerEraFactor()
         cost = (cost * civModifier).pow(constants.exponent)
         cost *= unit.civ.gameInfo.speed.modifier
         goldCostOfUpgrade += (cost / constants.roundTo).toInt() * constants.roundTo
