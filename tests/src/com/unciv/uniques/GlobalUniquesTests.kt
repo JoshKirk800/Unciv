@@ -6,6 +6,7 @@ import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.tile.RoadStatus
 import com.unciv.logic.map.tile.Tile
+import com.unciv.models.Religion
 import com.unciv.models.ruleset.BeliefType
 import com.unciv.models.ruleset.unique.Unique
 import com.unciv.models.ruleset.unique.UniqueTriggerActivation
@@ -27,6 +28,11 @@ class GlobalUniquesTests {
     @Before
     fun initTheWorld() {
         game = TestGame()
+    }
+
+    /** Founder beliefs only work while the founder owns the holy city (CvGameReligions::IsEligibleForFounderBenefits) */
+    private fun foundHolyCity(civ: Civilization, religion: Religion) {
+        game.addCity(civ, game.getTile(0, 3)).religion.religionThisIsTheHolyCityOf = religion.name
     }
 
     // region base stat bonus providing uniques
@@ -255,10 +261,12 @@ class GlobalUniquesTests {
 
     @Test
     fun statsFromGlobalCitiesFollowingReligion() {
+        game.makeHexagonalMap(3)
         val civ1 = game.addCiv()
         val religion = game.addReligion(civ1)
         val belief = game.createBelief(BeliefType.Founder, "[+30 Science] for each global city following this religion")
         religion.addBeliefs(listOf(belief))
+        foundHolyCity(civ1, religion)
         val civ2 = game.addCiv()
         val tile = game.getTile(HexCoord.Zero)
         val cityOfCiv2 = game.addCity(civ2, tile, initialPopulation = 1) // Need someone to be converted
@@ -268,15 +276,17 @@ class GlobalUniquesTests {
 
         civ1.updateStatsForNextTurn()
 
-        Assert.assertTrue(civ1.stats.statsForNextTurn.science == 30f)
+        Assert.assertTrue(civ1.stats.getStatMapForNextTurn()["Religion"]!!.science == 30f)
     }
 
     @Test
     fun happinessFromGlobalCitiesFollowingReligion() {
+        game.makeHexagonalMap(3)
         val civ1 = game.addCiv()
         val religion = game.addReligion(civ1)
         val belief = game.createBelief(BeliefType.Founder, "[+42 Happiness] for each global city following this religion")
         religion.addBeliefs(listOf(belief))
+        foundHolyCity(civ1, religion)
         val civ2 = game.addCiv()
         val tile = game.getTile(HexCoord.Zero)
         val cityOfCiv2 = game.addCity(civ2, tile, initialPopulation = 1) // Need someone to be converted
@@ -284,17 +294,17 @@ class GlobalUniquesTests {
 
         civ1.updateStatsForNextTurn()
 
-        val baseHappiness = civ1.getDifficulty().baseHappiness
-        // Since civ1 has no cities, there are no other happiness sources
-        Assert.assertTrue(civ1.stats.happiness == baseHappiness + 42)
+        Assert.assertTrue(civ1.stats.getHappinessBreakdown()["Religion"] == 42f)
     }
 
     @Test
     fun statsFromGlobalFollowers() {
+        game.makeHexagonalMap(3)
         val civ1 = game.addCiv()
         val religion = game.addReligion(civ1)
         val belief = game.createBelief(BeliefType.Founder, "[+30 Science] from every [3] global followers [in all cities]")
         religion.addBeliefs(listOf(belief))
+        foundHolyCity(civ1, religion)
         val civ2 = game.addCiv()
         val tile = game.getTile(HexCoord.Zero)
         val cityOfCiv2 = game.addCity(civ2, tile, initialPopulation = 9) // Need people to be converted
@@ -302,7 +312,7 @@ class GlobalUniquesTests {
 
         civ1.updateStatsForNextTurn()
 
-        Assert.assertTrue(civ1.stats.statsForNextTurn.science == 90f)
+        Assert.assertTrue(civ1.stats.getStatMapForNextTurn()["Religion"]!!.science == 90f)
     }
 
     // endregion

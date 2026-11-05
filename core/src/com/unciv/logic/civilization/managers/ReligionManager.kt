@@ -552,6 +552,16 @@ class ReligionManager : IsPartOfGameInfoSerialization {
         return civInfo.gameInfo.getCities().firstOrNull { it.isHolyCityOf(religion!!.name) }
     }
 
+    /** The religion whose founder beliefs apply to us, or null: they only work for the founder of a religion (not a pantheon)
+     *  while the founder still owns its holy city - CvGameReligions::IsEligibleForFounderBenefits. A holy city blocked by an
+     *  inquisitor still counts: the original looks only at who owns the holy city's tile. */
+    @Readonly
+    fun getFounderBenefitsReligion(): Religion? {
+        val founded = religion ?: return null
+        if (!founded.isMajorReligion()) return null
+        return if (civInfo.cities.any { it.religion.religionThisIsTheHolyCityOf == founded.name }) founded else null
+    }
+
     @Readonly
     fun getMajorityReligion(): Religion? {
         // let's count for each religion (among those actually presents in civ's cities)
