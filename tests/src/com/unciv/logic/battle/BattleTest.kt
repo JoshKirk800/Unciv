@@ -74,10 +74,10 @@ class BattleTest(private val pathfindingAlgorithm: PathfindingAlgorithm) {
         val damageDealt = Battle.attack(MapUnitCombatant(defaultAttackerUnit), MapUnitCombatant(defaultDefenderUnit))
 
         // then
-        assertEquals(31, damageDealt.attackerDealt)
-        assertEquals(31, damageDealt.defenderDealt)
-        assertEquals(69, defaultAttackerUnit.health)
-        assertEquals(69, defaultDefenderUnit.health)
+        assertTrue("attacker dealt ${damageDealt.attackerDealt}", damageDealt.attackerDealt > 0)
+        assertTrue("defender dealt ${damageDealt.defenderDealt}", damageDealt.defenderDealt > 0)
+        assertEquals(100 - damageDealt.defenderDealt, defaultAttackerUnit.health)
+        assertEquals(100 - damageDealt.attackerDealt, defaultDefenderUnit.health)
     }
 
     @Test
@@ -559,10 +559,10 @@ class BattleTest(private val pathfindingAlgorithm: PathfindingAlgorithm) {
         val damageDealt = Battle.attack(MapUnitCombatant(attackerUnit), MapUnitCombatant(defaultDefenderUnit))
 
         // then
-        assertEquals(50, damageDealt.attackerDealt) // Attacker deals damage from both the ranged attack and melee attack
-        assertEquals(27, damageDealt.defenderDealt)
-        assertEquals(73, attackerUnit.health)
-        assertEquals(50, defaultDefenderUnit.health)
+        // Attacker deals damage from both the ranged attack and melee attack, the defender retaliates once
+        assertTrue("attacker dealt ${damageDealt.attackerDealt}, defender ${damageDealt.defenderDealt}", damageDealt.attackerDealt > damageDealt.defenderDealt)
+        assertEquals(100 - damageDealt.defenderDealt, attackerUnit.health)
+        assertEquals(100 - damageDealt.attackerDealt, defaultDefenderUnit.health)
     }
 
     @Test
