@@ -173,9 +173,11 @@ object AirInterception {
         if (rng.nextFloat() > interceptor.interceptChance() / 100f)
             return Battle.DamageDealt.None
 
+        // CvUnit::GetInterceptionDamage: proportional to the interceptor's full health, not a third of its health loss
         var damage = BattleDamage.calculateDamageToDefender(
             MapUnitCombatant(interceptor),
-            attacker
+            attacker,
+            fullHealthScale = true
         )
 
         var damageFactor = 1f + interceptor.interceptDamagePercentBonus().toFloat() / 100f
