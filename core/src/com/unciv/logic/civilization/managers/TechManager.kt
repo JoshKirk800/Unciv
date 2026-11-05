@@ -107,8 +107,8 @@ class TechManager : IsPartOfGameInfoSerialization {
     @Readonly
     fun costOfTech(techName: String): Int {
         var techCost = getRuleset().technologies[techName]!!.cost.toFloat()
-        if (civInfo.isHuman())
-            techCost *= civInfo.getDifficulty().researchCostModifier
+        // CvTeamTechs::GetResearchCost applies the handicap's ResearchPercent to every team, an AI has the handicap of its AI level
+        techCost *= civInfo.getDifficulty().researchCostModifier
         techCost *= civInfo.gameInfo.speed.scienceCostModifier
         techCost /= getScienceModifier(techName)
         val mapSizePredef = civInfo.gameInfo.tileMap.mapParameters.mapSize.getPredefinedOrNextSmaller()
