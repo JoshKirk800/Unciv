@@ -380,9 +380,8 @@ object Battle {
     internal fun takeDamage(attacker: ICombatant, defender: ICombatant): DamageDealt {
         val attackerContext = GameContext(attacker, defender, defender.getTile(), CombatAction.Attack)
         val defenderContext = GameContext(defender, attacker, defender.getTile(), CombatAction.Defend)
-        var potentialDamageToDefender = BattleDamage.calculateDamageToDefender(attacker, defender)
+        val potentialDamageToDefender = BattleDamage.calculateDamageToDefender(attacker, defender)
         var potentialDamageToAttacker = BattleDamage.calculateDamageToAttacker(attacker, defender)
-        val rng = attackerContext.stateBasedRandom("Battle.takeDamage")
 
         val attackerHealthBefore = attacker.getHealth()
         val defenderHealthBefore = defender.getHealth()
@@ -407,21 +406,16 @@ object Battle {
             val (toDefender, toAttacker) = BattleDamage.resolveMeleeDeaths(attacker, defender, potentialDamageToDefender, potentialDamageToAttacker)
             defender.takeDamage(toDefender)
             attacker.takeDamage(toAttacker)
+        } else if (BattleDamage.isAirStrike(attacker, defender)) {
+            // Original game (CvUnitCombat::GenerateAirCombatInfo, a bombing mission): both damages are applied in full, each capped
+            // at the health of its target (a city keeps 1 HP); nothing corrects the case of both dying
+            defender.takeDamage(potentialDamageToDefender.coerceAtMost(defenderHealthBefore))
+            attacker.takeDamage(potentialDamageToAttacker.coerceAtMost(attackerHealthBefore))
         } else {
-            // Air attacks: the original resolves these in CvUnitCombat::GenerateAirCombatInfo (interception, damage capped at the
-            // target's health), which Unciv does not follow; here either side may defeat the other midway,
-            // so for each round we randomize who gets the attack in.
-            while (potentialDamageToDefender + potentialDamageToAttacker > 0) {
-                if (rng.nextInt(potentialDamageToDefender + potentialDamageToAttacker) < potentialDamageToDefender) {
-                    potentialDamageToDefender--
-                    defender.takeDamage(1)
-                    if (defender.isDefeated()) break
-                } else {
-                    potentialDamageToAttacker--
-                    attacker.takeDamage(1)
-                    if (attacker.isDefeated()) break
-                }
-            }
+            // Air sweep against an air unit (CvUnitCombat::GenerateAirSweepCombatInfo): resolved like a melee fight
+            val (toDefender, toAttacker) = BattleDamage.resolveMeleeDeaths(attacker, defender, potentialDamageToDefender, potentialDamageToAttacker)
+            defender.takeDamage(toDefender)
+            attacker.takeDamage(toAttacker)
         }
 
         val defenderDamageDealt = attackerHealthBefore - attacker.getHealth()

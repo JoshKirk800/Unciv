@@ -253,8 +253,12 @@ object BattleDamage {
         return finalModifier
     }
 
+    /** @param fullHealthScale damage is proportional to the health left, as in the original's air strikes (GetAirCombatDamage,
+     *  GetAirStrikeDefenseDamage, GetInterceptionDamage - a city's too); otherwise each 3 points of health lost reduce it by 1%,
+     *  and a city is not weakened at all (GetCombatDamage) */
     @Readonly
-    private fun getHealthDependantDamageRatio(combatant: ICombatant): Float {
+    private fun getHealthDependantDamageRatio(combatant: ICombatant, fullHealthScale: Boolean = false): Float {
+        if (fullHealthScale) return combatant.getHealth().toFloat() / combatant.getMaxHealth()
         return if (combatant !is MapUnitCombatant
             || combatant.unit.hasUnique(UniqueType.NoDamagePenaltyWoundedUnits, checkCivInfoUniques = true)
         ) 1f
@@ -291,19 +295,25 @@ object BattleDamage {
         Random(combatant.getCivInfo().gameInfo.turns
                 * combatant.getTile().position.toVector2().hashCode().toLong()).nextFloat()
 
+    /** A bombing mission: an air unit attacking something that is not an air unit. The original resolves it separately
+     *  (CvUnitCombat::GenerateAirCombatInfo) and scales damage with the full health of the one dealing it. */
+    @Readonly
+    fun isAirStrike(attacker: ICombatant, defender: ICombatant) = attacker.isAirUnit() && !defender.isAirUnit()
+
     @Readonly
     fun calculateDamageToAttacker(
         attacker: ICombatant,
         defender: ICombatant,
         tileToAttackFrom: Tile = defender.getTile(),
         /** Between 0 and 1. */
-        randomnessFactor: Float = getRandomness(attacker)
+        randomnessFactor: Float = getRandomness(attacker),
+        fullHealthScale: Boolean = isAirStrike(attacker, defender)
     ): Int {
         if (attacker.isRanged() && !attacker.isAirUnit()) return 0
         if (defender.isCivilian()) return 0
         val ratio = getAttackingStrength(attacker, defender, tileToAttackFrom) / getDefendingStrength(
                 attacker, defender, tileToAttackFrom)
-        return (damageModifier(ratio, true, randomnessFactor) * getHealthDependantDamageRatio(defender)).roundToInt()
+        return (damageModifier(ratio, true, randomnessFactor) * getHealthDependantDamageRatio(defender, fullHealthScale)).roundToInt()
     }
 
     @Readonly
@@ -312,13 +322,14 @@ object BattleDamage {
         defender: ICombatant,
         tileToAttackFrom: Tile = defender.getTile(),
         /** Between 0 and 1.  Defaults to turn and location-based random to avoid save scumming */
-        randomnessFactor: Float = getRandomness(defender)
-        ,
+        randomnessFactor: Float = getRandomness(defender),
+        /** Damage follows the full health of the attacker instead of a third of its health loss: bombing missions and interceptions */
+        fullHealthScale: Boolean = isAirStrike(attacker, defender)
     ): Int {
         if (defender.isCivilian()) return BattleConstants.DAMAGE_TO_CIVILIAN_UNIT
         val ratio = getAttackingStrength(attacker, defender, tileToAttackFrom) /
                 getDefendingStrength(attacker, defender, tileToAttackFrom)
-        return (damageModifier(ratio, false, randomnessFactor) * getHealthDependantDamageRatio(attacker)).roundToInt()
+        return (damageModifier(ratio, false, randomnessFactor) * getHealthDependantDamageRatio(attacker, fullHealthScale)).roundToInt()
     }
 
     /** Whether [attacker] lives through attacking [defender]: either the estimated damage to it is less than its health, or it is a melee unit
