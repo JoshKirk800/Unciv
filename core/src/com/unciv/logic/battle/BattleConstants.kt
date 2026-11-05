@@ -9,7 +9,8 @@ object BattleConstants {
     const val MISSING_RESOURCES_MALUS = -25
     const val EMBARKED_DEFENCE_BONUS = 100
     const val FORTIFICATION_BONUS = 20
-    const val DAMAGE_REDUCTION_WOUNDED_UNIT_RATIO_PERCENTAGE = 300f
+    /** WOUNDED_DAMAGE_MULTIPLIER in the G&K GlobalDefines: a wounded unit loses this percentage of the damage it lost in health from its own damage */
+    const val WOUNDED_DAMAGE_MULTIPLIER = 33
     const val DAMAGE_TO_CIVILIAN_UNIT = 40
 
 }
