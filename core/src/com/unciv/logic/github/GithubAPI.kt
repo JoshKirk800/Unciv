@@ -403,24 +403,32 @@ object GithubAPI {
         /** Should accept a number 0-100 */
         updateProgressPercent: ((DownloadAndExtractState, Int?) -> Unit)? = null
     ): FileHandle? {
+        try {
+            return downloadAndExtractToTempFolder(updateProgressPercent)
+        } catch (ex: Throwable) {
+            // A failed download or an archive that isn't a mod leaves the half-extracted temp folder in mods/.
+            // The startup cleanup only removes plain `temp-` files, and the mod loader picks up every folder there.
+            val tempFolder = UncivGame.Current.files.getModsFolder().child(getTempFolderName())
+            if (tempFolder.exists())
+                if (tempFolder.isDirectory) tempFolder.deleteDirectory() else tempFolder.delete()
+            throw ex
+        }
+    }
+
+    /** Mod-specific name of the temporary folder the archive is extracted into */
+    private fun Repo.getTempFolderName() =
+        "temp-" + (if (direct_zip_url.isEmpty()) html_url else toString()).hashCode().toString(16)
+
+    private suspend fun Repo.downloadAndExtractToTempFolder(
+        updateProgressPercent: ((DownloadAndExtractState, Int?) -> Unit)?
+    ): FileHandle? {
         val modsFolder = UncivGame.Current.files.getModsFolder()
         
         var modNameFromFileName = name
 
         val defaultBranch = default_branch
-        val zipUrl: String
-        val tempName: String
-        if (direct_zip_url.isEmpty()) {
-            val gitRepoUrl = html_url
-            // Initiate download - the helper returns null when it fails
-            zipUrl = getUrlForBranchZip(gitRepoUrl, defaultBranch)
-
-            // Get a mod-specific temp file name
-            tempName = "temp-" + gitRepoUrl.hashCode().toString(16)
-        } else {
-            zipUrl = direct_zip_url
-            tempName = "temp-" + toString().hashCode().toString(16)
-        }
+        val tempName = getTempFolderName()
+        val zipUrl = if (direct_zip_url.isEmpty()) getUrlForBranchZip(html_url, defaultBranch) else direct_zip_url
 
         // If the Content-Length header was missing, fall back to the reported repo size (which should be in kB)
         // and assume low compression efficiency - bigger mods typically have mostly images.
