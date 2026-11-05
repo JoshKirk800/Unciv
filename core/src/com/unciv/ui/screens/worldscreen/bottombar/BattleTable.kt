@@ -256,10 +256,14 @@ class BattleTable(val worldScreen: WorldScreen) : Table() {
             }
 
             val attackerHealth = attacker.getHealth()
-            val minRemainingLifeAttacker = max(attackerHealth-maxDamageToAttacker, 0)
-            val maxRemainingLifeAttacker = max(attackerHealth-minDamageToAttacker, 0)
-
             val defenderHealth = defender.getHealth()
+
+            // Taking a city, the attacker survives with at least 1 HP however much damage the city does (see Battle.takeDamage)
+            val cityCertainlyFalls = !attacker.isRanged() && defender.isCity() && minDamageToDefender >= defenderHealth
+            val attackerFloor = if (cityCertainlyFalls) 1 else 0
+            val minRemainingLifeAttacker = max(attackerHealth-maxDamageToAttacker, attackerFloor)
+            val maxRemainingLifeAttacker = max(attackerHealth-minDamageToAttacker, attackerFloor)
+
             val minRemainingLifeDefender = max(defenderHealth-maxDamageToDefender, 0)
             val maxRemainingLifeDefender = max(defenderHealth-minDamageToDefender, 0)
 
@@ -281,8 +285,8 @@ class BattleTable(val worldScreen: WorldScreen) : Table() {
             if (minRemainingLifeDefender == maxRemainingLifeDefender) add("$defenderHealth → $maxRemainingLifeDefender ($avgDamageToDefender)".toLabel())
             else add("$defenderHealth → $minRemainingLifeDefender-$maxRemainingLifeDefender (~$avgDamageToDefender)".toLabel())
 
-            // A city at its minimum health still fights back at full strength, and a melee unit that survives takes it
-            if (!attacker.isRanged() && defender.isCity() && defender.isDefeated() && minRemainingLifeAttacker > 0) {
+            // A city that falls is occupied by the melee unit, which survives it
+            if (cityCertainlyFalls) {
                 row()
                 add()
                 add("Occupied!".toLabel())

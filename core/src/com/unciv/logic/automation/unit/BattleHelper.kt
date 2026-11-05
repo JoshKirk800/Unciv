@@ -18,7 +18,7 @@ object BattleHelper {
             .filter {
                 val defender = it.getTileToAttack().getCombatant()
                 unitView.hasUnique(UniqueType.SelfDestructs) || (defender != null &&
-                (unitView.asCombatant().calculateDamageToAttacker(defender) < unitView.unitHealth
+                (unitView.asCombatant().survivesAttackOn(defender)
                     && unitView.getDamageFromTerrain(it.getTileToAttackFrom()) <= 0))
                     // For mounted units it is fine to attack from these tiles, but with current AI movement logic it is not easy to determine if our unit can meaningfully move away after attacking
                     // Also, AI doesn't build tactical roads
@@ -47,7 +47,7 @@ object BattleHelper {
         val attackableEnemiesNextTurn = unitView.getAttackableEnemies()
                 // Only take enemies we can fight without dying
                 .filter {
-                    unitView.asCombatant().calculateDamageToAttacker(it.getTileToAttack().getCombatant()!!) < unitView.unitHealth
+                    unitView.asCombatant().survivesAttackOn(it.getTileToAttack().getCombatant()!!)
                 }
                 .filter { it.getTileToAttackFrom().isLand }
 

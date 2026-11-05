@@ -3,6 +3,7 @@ package com.unciv.logic.battle
 import com.unciv.logic.automation.unit.BattleHelper
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
+import com.unciv.logic.map.tile.Tile
 import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.testing.BaseTestRunner
@@ -38,8 +39,8 @@ class CityDefenseTests {
         city.health = 1
     }
 
-    private fun meleeUnit(health: Int = 100): MapUnit =
-        game.addDefaultMeleeUnitWithUniques(us, game.getTile(1, 0)).also { it.health = health }
+    private fun meleeUnit(health: Int = 100, tile: Tile = game.getTile(1, 0)): MapUnit =
+        game.addDefaultMeleeUnitWithUniques(us, tile).also { it.health = health }
 
     @Test
     fun `defending strength does not depend on city health`() {
@@ -62,14 +63,53 @@ class CityDefenseTests {
     }
 
     @Test
-    fun `a melee unit that does not survive the fight does not capture the city`() {
+    fun `a unit that would die taking the city survives with 1 HP and takes it`() {
         val unit = meleeUnit(health = 5)
+
+        Battle.attack(MapUnitCombatant(unit), cityCombatant)
+
+        assertEquals("captured", us, city.civ)
+        assertFalse(unit.isDestroyed)
+        assertEquals(1, unit.health)
+    }
+
+    @Test
+    fun `a unit that would die without taking the city dies, and the city keeps what it has left`() {
+        val unit = meleeUnit(health = 5)
+        city.health = cityCombatant.getMaxHealth()
 
         Battle.attack(MapUnitCombatant(unit), cityCombatant)
 
         assertTrue(unit.isDestroyed)
         assertEquals(them, city.civ)
+        assertTrue("city took ${cityCombatant.getMaxHealth() - city.health}", city.health < cityCombatant.getMaxHealth())
+    }
+
+    @Test
+    fun `the city falls when the damage reaches its health, not when it is brought down to 1`() {
+        val unit = meleeUnit()
+        val damage = BattleDamage.calculateDamageToDefender(MapUnitCombatant(unit), cityCombatant)
+        assertTrue("estimate $damage", damage > 1)
+
+        city.health = damage + 1
+        Battle.attack(MapUnitCombatant(unit), cityCombatant)
+        assertEquals("left at 1 HP, still theirs", them, city.civ)
         assertEquals(1, city.health)
+        assertFalse(unit.isDestroyed)
+
+        // now at 1 HP: any melee damage takes it
+        val next = meleeUnit(tile = game.getTile(1, -1))
+        Battle.attack(MapUnitCombatant(next), cityCombatant)
+        assertEquals(us, city.civ)
+    }
+
+    @Test
+    fun `a melee unit that takes a city at minimum health earns the XP`() {
+        val unit = meleeUnit()
+
+        Battle.attack(MapUnitCombatant(unit), cityCombatant)
+
+        assertEquals(5, unit.promotions.XP)
     }
 
     @Test
@@ -84,16 +124,17 @@ class CityDefenseTests {
     }
 
     @Test
-    fun `the AI does not send a unit to die against a city at minimum health, but takes it with a healthy one`() {
+    fun `the AI takes a city at minimum health even with a unit that would otherwise die, but does not throw it at a healthy city`() {
         val wounded = meleeUnit(health = 5)
+        city.health = cityCombatant.getMaxHealth()
         BattleHelper.tryAttackNearbyEnemy(GameView(game.gameInfo, us).getMapUnitView(wounded))
         assertFalse(wounded.isDestroyed)
-        assertEquals(them, city.civ)
-        wounded.destroy()
+        assertEquals("not attacked", cityCombatant.getMaxHealth(), city.health)
 
-        val healthy = meleeUnit()
-        BattleHelper.tryAttackNearbyEnemy(GameView(game.gameInfo, us).getMapUnitView(healthy))
+        city.health = 1
+        BattleHelper.tryAttackNearbyEnemy(GameView(game.gameInfo, us).getMapUnitView(wounded))
         assertEquals(us, city.civ)
+        assertEquals(1, wounded.health)
     }
 
     @Test
@@ -109,14 +150,26 @@ class CityDefenseTests {
     }
 
     @Test
-    fun `a barbarian that does not survive the city does not raid it`() {
+    fun `a barbarian that would die taking the city still raids it and is removed`() {
         them.addGold(100)
         val barbarian = game.addUnit("Brute", game.addBarbarianCiv(), game.getTile(1, 0)).also { it.health = 5 }
 
         Battle.attack(MapUnitCombatant(barbarian), cityCombatant)
 
         assertTrue(barbarian.isDestroyed)
-        assertEquals(1, city.health)
+        assertEquals(them, city.civ)
+        assertEquals(0, them.gold)
+    }
+
+    @Test
+    fun `a barbarian that would die without taking the city does not raid it`() {
+        them.addGold(100)
+        city.health = cityCombatant.getMaxHealth()
+        val barbarian = game.addUnit("Brute", game.addBarbarianCiv(), game.getTile(1, 0)).also { it.health = 5 }
+
+        Battle.attack(MapUnitCombatant(barbarian), cityCombatant)
+
+        assertTrue(barbarian.isDestroyed)
         assertEquals(100, them.gold)
     }
 

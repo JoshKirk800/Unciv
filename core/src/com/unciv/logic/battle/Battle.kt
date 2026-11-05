@@ -143,7 +143,7 @@ object Battle {
             defender.getCivInfo().gameInfo.barbarians.campAttacked(attackedTile.position)
 
         // This needs to come BEFORE the move-to-tile, because if we haven't conquered it we can't move there =)
-        handleCityDefeated(defender, attacker)
+        handleCityDefeated(defender, attacker, damageDealt.cityFell)
 
         
         // Add culture when defeating a barbarian when Honor policy is adopted, gold from enemy killed when honor is complete
@@ -173,7 +173,8 @@ object Battle {
 
         reduceAttackerMovementPointsAndAttacks(attacker, defender, attackedTile)
 
-        if (!isAlreadyDefeatedCity) postBattleAddXp(attacker, defender)
+        // Melee attackers get the XP for a city that was already at its minimum health too (CvUnitCombat::GenerateMeleeCombatInfo)
+        if (!isAlreadyDefeatedCity || attacker.isMelee()) postBattleAddXp(attacker, defender)
 
         if (attacker is CityCombatant) {
             val cityCanBombardNotification = attacker.getCivInfo().notifications
@@ -205,9 +206,12 @@ object Battle {
         }
     }
 
-    private fun handleCityDefeated(defender: ICombatant, attacker: ICombatant) {
-        if (!defender.isDefeated() || defender !is CityCombatant || attacker !is MapUnitCombatant || attacker.isDefeated() ||
-            (!attacker.isMelee() && !attacker.unit.hasUnique(UniqueType.CanDestroyCities, checkCivInfoUniques = true))
+    /** @param cityFell the attack was a melee attack that dealt the city at least its health, see [DamageDealt.cityFell] */
+    private fun handleCityDefeated(defender: ICombatant, attacker: ICombatant, cityFell: Boolean) {
+        // Units that are not melee (CanDestroyCities) only have the city at its minimum health to go by
+        if (defender !is CityCombatant || attacker !is MapUnitCombatant || attacker.isDefeated()
+            || !(cityFell || !attacker.isMelee() && defender.isDefeated())
+            || (!attacker.isMelee() && !attacker.unit.hasUnique(UniqueType.CanDestroyCities, checkCivInfoUniques = true))
             || attacker.unit.hasUnique(UniqueType.CannotCaptureCities, checkCivInfoUniques = true)
         ) return
 
@@ -364,10 +368,11 @@ object Battle {
     /** Holder for battle result - actual damage.
      *  @param attackerDealt Damage done by attacker to defender
      *  @param defenderDealt Damage done by defender to attacker
+     *  @param cityFell A melee attack dealt a city at least as much damage as it had health (the city's health itself never goes below 1)
      */
-    data class DamageDealt(val attackerDealt: Int, val defenderDealt: Int) {
+    data class DamageDealt(val attackerDealt: Int, val defenderDealt: Int, val cityFell: Boolean = false) {
         @Pure operator fun plus(other: DamageDealt) =
-            DamageDealt(attackerDealt + other.attackerDealt, defenderDealt + other.defenderDealt)
+            DamageDealt(attackerDealt + other.attackerDealt, defenderDealt + other.defenderDealt, cityFell || other.cityFell)
         companion object {
             val None = DamageDealt(0, 0)
         }
@@ -382,22 +387,29 @@ object Battle {
 
         val attackerHealthBefore = attacker.getHealth()
         val defenderHealthBefore = defender.getHealth()
+        var cityFell = false
 
         if (defender is MapUnitCombatant && defender.unit.isCivilian() && attacker.isMelee()) {
             BattleUnitCapture.captureCivilianUnit(attacker, defender)
         } else if (attacker.isRanged() && !attacker.isAirUnit()) {  // Air Units are Ranged, but take damage as well
             defender.takeDamage(potentialDamageToDefender) // straight up
+        } else if (defender is CityCombatant && attacker.isMelee()) {
+            // Original game (CvUnitCombat::GenerateMeleeCombatInfo): the city defends at full strength however low its health,
+            // both sides' damage is decided up front and applied together, and the city falls when the damage reaches its health.
+            // A unit that would die in the same fight that takes the city survives with 1 HP.
+            cityFell = potentialDamageToDefender >= defenderHealthBefore
+            if (cityFell && potentialDamageToAttacker >= attackerHealthBefore)
+                potentialDamageToAttacker = attackerHealthBefore - 1
+            defender.takeDamage(potentialDamageToDefender)
+            attacker.takeDamage(potentialDamageToAttacker)
         } else {
             //melee attack is complicated, because either side may defeat the other midway
             //so...for each round, we randomize who gets the attack in. Seems to be a good way to work for now.
-            // A city at its minimum health is only taken by a melee unit that survives the fight, so it keeps fighting back at full strength
-            val defeatedCityFightsOn = defender is CityCombatant && attacker.isMelee()
-
             while (potentialDamageToDefender + potentialDamageToAttacker > 0) {
                 if (rng.nextInt(potentialDamageToDefender + potentialDamageToAttacker) < potentialDamageToDefender) {
                     potentialDamageToDefender--
                     defender.takeDamage(1)
-                    if (defender.isDefeated() && !defeatedCityFightsOn) break
+                    if (defender.isDefeated()) break
                 } else {
                     potentialDamageToAttacker--
                     attacker.takeDamage(1)
@@ -412,7 +424,7 @@ object Battle {
         triggerLosingHPUniques(attacker, attackerContext, attackerDamageDealt, defender, defenderContext, defenderDamageDealt)
 
         plunderFromDamage(attacker, defender, attackerDamageDealt)
-        return DamageDealt(attackerDamageDealt, defenderDamageDealt)
+        return DamageDealt(attackerDamageDealt, defenderDamageDealt, cityFell)
     }
 
     private fun triggerLosingHPUniques(

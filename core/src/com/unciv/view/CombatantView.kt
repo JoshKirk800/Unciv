@@ -60,6 +60,9 @@ sealed class CombatantView constructor(private val combatant: ICombatant, viewer
     @Readonly fun calculateDamageToAttacker(defender: CombatantView, tileToAttackFrom: TileView = defender.getTile(), randomnessFactor: Float? = null): Int =
         BattleDamage.calculateDamageToAttacker(combatant, defender.unwrap(), tileToAttackFrom.unwrap(),
             randomnessFactor ?: BattleDamage.getRandomness(combatant))
+    /** Whether this combatant lives through attacking [defender], see [BattleDamage.attackerSurvives] */
+    @Readonly fun survivesAttackOn(defender: CombatantView, tileToAttackFrom: TileView = defender.getTile()): Boolean =
+        BattleDamage.attackerSurvives(combatant, defender.unwrap(), tileToAttackFrom.unwrap())
 }
 
 /** A [CombatantView] of a unit - carries the [ForeignMapUnitView] it was built from. Use [ForeignMapUnitView.tryGetMapUnitView]
