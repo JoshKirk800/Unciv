@@ -322,12 +322,31 @@ object BattleDamage {
     }
 
     /** Whether [attacker] lives through attacking [defender]: either the estimated damage to it is less than its health, or it is a melee unit
-     *  that takes a city, which it survives however much damage the city does (see [Battle.takeDamage]). */
+     *  that takes a city, which it survives however much damage the city does, or a melee unit that would kill and be killed by a unit
+     *  but has taken less damage in total (see [Battle.takeDamage] and [resolveMeleeDeaths]). */
     @Readonly
     fun attackerSurvives(attacker: ICombatant, defender: ICombatant, tileToAttackFrom: Tile = defender.getTile()): Boolean {
-        if (attacker.isMelee() && defender is CityCombatant
-            && calculateDamageToDefender(attacker, defender, tileToAttackFrom) >= defender.getHealth()) return true
-        return calculateDamageToAttacker(attacker, defender, tileToAttackFrom) < attacker.getHealth()
+        val toDefender = calculateDamageToDefender(attacker, defender, tileToAttackFrom)
+        val toAttacker = calculateDamageToAttacker(attacker, defender, tileToAttackFrom)
+        if (attacker.isMelee() && defender is CityCombatant && toDefender >= defender.getHealth()) return true
+        if (attacker.isMelee() && defender !is CityCombatant && !defender.isCivilian())
+            return resolveMeleeDeaths(attacker, defender, toDefender, toAttacker).second < attacker.getHealth()
+        return toAttacker < attacker.getHealth()
+    }
+
+    /** A melee attack on a unit rolls both damages up front and applies both (CvUnitCombat::GenerateMeleeCombatInfo). If that would kill
+     *  both units, the one that has taken less damage in total - the damage it already had plus what it would take - survives with
+     *  1 HP; on a tie the defender survives.
+     *  @return the damage to the defender and the damage to the attacker after that correction */
+    @Readonly
+    fun resolveMeleeDeaths(attacker: ICombatant, defender: ICombatant, damageToDefender: Int, damageToAttacker: Int): Pair<Int, Int> {
+        val attackerHealth = attacker.getHealth()
+        val defenderHealth = defender.getHealth()
+        if (damageToDefender < defenderHealth || damageToAttacker < attackerHealth) return damageToDefender to damageToAttacker
+        val totalOnDefender = damageToDefender + defender.getMaxHealth() - defenderHealth
+        val totalOnAttacker = damageToAttacker + attacker.getMaxHealth() - attackerHealth
+        return if (totalOnDefender > totalOnAttacker) damageToDefender to attackerHealth - 1
+        else defenderHealth - 1 to damageToAttacker
     }
 
     /** (max, min) bonus damage dealt to [defender] from an additional [UniqueType.ExtraRangedAttack] - `(0, 0)` if not applicable. */
