@@ -603,7 +603,8 @@ class City : IsPartOfGameInfoSerialization, INamed {
             // religion a unique is active. However, since religion uniques only come from the city itself,
             // this will always be true when checked.
             "in cities following this religion" -> true
-            "in cities following our religion" -> viewingCiv?.religionManager?.religion == religion.getMajorityReligion()
+            // CvUnit::GetGenericMaxStrengthModifier: the religion must be the one the civilization has the founder benefits of
+            "in cities following our religion" -> viewingCiv?.religionManager?.getFounderBenefitsReligion().let { it != null && it == religion.getMajorityReligion() }
             else -> civ.matchesFilter(filter, state, false)
         }
     }

@@ -552,9 +552,14 @@ class ReligionManager : IsPartOfGameInfoSerialization {
         return civInfo.gameInfo.getCities().firstOrNull { it.isHolyCityOf(religion!!.name) }
     }
 
-    /** The religion whose founder beliefs apply to us, or null: they only work for the founder of a religion (not a pantheon)
-     *  while the founder still owns its holy city - CvGameReligions::IsEligibleForFounderBenefits. A holy city blocked by an
-     *  inquisitor still counts: the original looks only at who owns the holy city's tile. */
+    /** The religion whose founder benefits apply to us, or null: the founder of a religion (not a pantheon) only has them
+     *  while it still owns the holy city - CvGameReligions::IsEligibleForFounderBenefits. A holy city blocked by an
+     *  inquisitor still counts: the original looks only at who owns the holy city's tile.
+     *
+     *  The original asks for this at the effects of a belief that are tied to the player: yields per city or follower
+     *  (see CivInfoStatsForNextTurn), the city-state resting point, and the strength bonus in cities following the religion
+     *  ("in cities following our religion"). What a belief does to how the religion spreads or what missionaries cost does not
+     *  depend on it, so the beliefs are not hidden from [Civilization.getMatchingUniques]. */
     @Readonly
     fun getFounderBenefitsReligion(): Religion? {
         val founded = religion ?: return null

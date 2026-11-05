@@ -482,7 +482,9 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
 
         if (civInfo.cities.any() && civInfo.getCapital() != null)
             otherCiv.forEachMatchingUnique(UniqueType.RestingPointOfCityStatesFollowingReligionChange) { unique ->
-                if (otherCiv.religionManager.religion?.name == civInfo.getCapital()!!.religion.getMajorityReligionName())
+                // CvPlayerReligions::GetCityStateMinimumInfluence: only for the religion the founder still has the founder benefits of
+                val founderReligionName = otherCiv.religionManager.getFounderBenefitsReligion()?.name
+                if (founderReligionName != null && founderReligionName == civInfo.getCapital()!!.religion.getMajorityReligionName())
                     restingPoint += unique.params[0].toInt()
             }
 

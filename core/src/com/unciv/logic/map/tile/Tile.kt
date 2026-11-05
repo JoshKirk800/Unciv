@@ -438,10 +438,11 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
         return civInfo.isAtWarWith(tileOwner)
     }
 
-    /** Whether this tile belongs to a city whose majority religion is the one [civInfo] founded */
+    /** Whether this tile belongs to a city whose majority religion is the one [civInfo] founded and still has the founder benefits of
+     *  (CvUnit::GetGenericMaxStrengthModifier compares with the founder-benefits religion) */
     @Readonly
     fun isInCityFollowingReligionOf(civInfo: Civilization): Boolean {
-        val ourReligion = civInfo.religionManager.religion ?: return false
+        val ourReligion = civInfo.religionManager.getFounderBenefitsReligion() ?: return false
         return getCity()?.religion?.getMajorityReligion() == ourReligion
     }
 

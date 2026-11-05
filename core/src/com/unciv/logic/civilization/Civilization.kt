@@ -633,7 +633,8 @@ class Civilization : IsPartOfGameInfoSerialization {
         yieldAll(temporaryUniques.getMatchingTagUniques(uniqueType, gameContext))
         yieldAll(getEra().getMatchingUniques(uniqueType, gameContext))
         yieldAll(cityStateFunctions.getUniquesProvidedByCityStates(uniqueType, gameContext))
-        religionManager.getFounderBenefitsReligion()?.let { yieldAll(it.founderBeliefUniqueMap.getMatchingUniques(uniqueType, gameContext)) }
+        if (religionManager.religion != null)
+            yieldAll(religionManager.religion!!.founderBeliefUniqueMap.getMatchingUniques(uniqueType, gameContext))
 
         yieldAll(civResourcesUniqueMap.getMatchingUniques(uniqueType, gameContext))
         yieldAll(gameInfo.getGlobalUniques().getMatchingUniques(uniqueType, gameContext))
@@ -649,7 +650,7 @@ class Civilization : IsPartOfGameInfoSerialization {
         temporaryUniques.forEachMatchingUnique(uniqueType, gameContext, op)
         getEra().forEachMatchingUnique(uniqueType, gameContext, op)
         cityStateFunctions.forEachUniqueProvidedByCityStates(uniqueType, gameContext, op)
-        religionManager.getFounderBenefitsReligion()?.founderBeliefUniqueMap?.forEachMatchingUnique(uniqueType, gameContext, op)
+        religionManager.religion?.founderBeliefUniqueMap?.forEachMatchingUnique(uniqueType, gameContext, op)
         civResourcesUniqueMap.forEachMatchingUnique(uniqueType, gameContext, op)
         gameInfo.getGlobalUniques().forEachMatchingUnique(uniqueType, gameContext, op)
     }
@@ -665,7 +666,8 @@ class Civilization : IsPartOfGameInfoSerialization {
         // Cannont use getTriggeredUniques from uniqueMaps since we don't want to check conditionals yet
         yieldAll(nation.uniqueMap.getAllUniques())
         yieldAll(cities.asSequence().flatMap { city -> city.cityConstructions.builtBuildingUniqueMap.getAllUniques() })
-        religionManager.getFounderBenefitsReligion()?.let { yieldAll(it.founderBeliefUniqueMap.getAllUniques()) }
+        if (religionManager.religion != null)
+            yieldAll(religionManager.religion!!.founderBeliefUniqueMap.getAllUniques())
         yieldAll(policies.policyUniques.getAllUniques())
         yieldAll(tech.techUniques.getAllUniques())
         yieldAll(getEra().uniqueMap.getAllUniques())
@@ -690,7 +692,8 @@ class Civilization : IsPartOfGameInfoSerialization {
         if(!ignoreCities) yieldAll(cities.asSequence()
             .flatMap { city -> city.cityConstructions.builtBuildingUniqueMap.getAllUniques() }
         )
-        religionManager.getFounderBenefitsReligion()?.let { yieldAll(it.founderBeliefUniqueMap.getAllUniques()) }
+        if (religionManager.religion != null)
+            yieldAll(religionManager.religion!!.founderBeliefUniqueMap.getAllUniques())
         yieldAll(policies.policyUniques.getAllUniques())
         yieldAll(tech.techUniques.getAllUniques())
         yieldAll(getEra().uniqueMap.getAllUniques())
@@ -728,7 +731,7 @@ class Civilization : IsPartOfGameInfoSerialization {
                 city.cityConstructions.builtBuildingUniqueMap.forEachUnique(uniqueFilter, listOp)
             }
         }
-        religionManager.getFounderBenefitsReligion()?.founderBeliefUniqueMap?.forEachUnique(uniqueFilter, listOp)
+        religionManager.religion?.founderBeliefUniqueMap?.forEachUnique(uniqueFilter, listOp)
         policies.policyUniques.forEachUnique(uniqueFilter, listOp)
         tech.techUniques.forEachUnique(uniqueFilter, listOp)
         getEra().uniqueMap.forEachUnique(uniqueFilter, listOp)
