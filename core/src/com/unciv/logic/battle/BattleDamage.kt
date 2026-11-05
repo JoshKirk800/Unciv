@@ -246,12 +246,17 @@ object BattleDamage {
         return modifiers
     }
 
+    /** The sum of the modifiers as a factor; a unit never drops below 10% of its strength (CvUnit::GetMaxAttackStrength: "can't drop below 10%") */
     @Readonly
     private fun modifiersToFinalBonus(modifiers: Counter<String>): Float {
         var finalModifier = 1f
         for (modifierValue in modifiers.values) finalModifier += modifierValue / 100f
-        return finalModifier
+        return max(finalModifier, 0.1f)
     }
+
+    /** The original truncates the damage to whole hit points and deals at least 1 (CvUnit::getCombatDamage and the ranged and air versions) */
+    @Pure
+    private fun damageToInt(damage: Float): Int = max(damage.toInt(), 1)
 
     /** @param fullHealthScale damage is proportional to the health left, as in the original's air strikes (GetAirCombatDamage,
      *  GetAirStrikeDefenseDamage, GetInterceptionDamage - a city's too); otherwise each 3 points of health lost reduce it by 1%,
@@ -262,8 +267,8 @@ object BattleDamage {
         return if (combatant !is MapUnitCombatant
             || combatant.unit.hasUnique(UniqueType.NoDamagePenaltyWoundedUnits, checkCivInfoUniques = true)
         ) 1f
-        // Each 3 points of health reduces damage dealt by 1%
-        else 1 - (100 - combatant.getHealth()) / BattleConstants.DAMAGE_REDUCTION_WOUNDED_UNIT_RATIO_PERCENTAGE
+        // A third of the lost health, in whole numbers: WOUNDED_DAMAGE_MULTIPLIER is 33% (CvUnit::getCombatDamage)
+        else (100 - (100 - combatant.getHealth()) * BattleConstants.WOUNDED_DAMAGE_MULTIPLIER / 100) / 100f
     }
 
 
@@ -313,7 +318,7 @@ object BattleDamage {
         if (defender.isCivilian()) return 0
         val ratio = getAttackingStrength(attacker, defender, tileToAttackFrom) / getDefendingStrength(
                 attacker, defender, tileToAttackFrom)
-        return (damageModifier(ratio, true, randomnessFactor) * getHealthDependantDamageRatio(defender, fullHealthScale)).roundToInt()
+        return damageToInt(damageModifier(ratio, true, randomnessFactor) * getHealthDependantDamageRatio(defender, fullHealthScale))
     }
 
     @Readonly
@@ -329,7 +334,7 @@ object BattleDamage {
         if (defender.isCivilian()) return BattleConstants.DAMAGE_TO_CIVILIAN_UNIT
         val ratio = getAttackingStrength(attacker, defender, tileToAttackFrom) /
                 getDefendingStrength(attacker, defender, tileToAttackFrom)
-        return (damageModifier(ratio, false, randomnessFactor) * getHealthDependantDamageRatio(attacker, fullHealthScale)).roundToInt()
+        return damageToInt(damageModifier(ratio, false, randomnessFactor) * getHealthDependantDamageRatio(attacker, fullHealthScale))
     }
 
     /** Whether [attacker] lives through attacking [defender]: either the estimated damage to it is less than its health, or it is a melee unit
