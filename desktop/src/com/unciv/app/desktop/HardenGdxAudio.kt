@@ -138,7 +138,8 @@ class HardenGdxAudio(
                     item.dispose() // this will call stop which will do audio.music.removeValue
                     exceptionHandler?.invoke(ex, item)
                 }
-                i++
+                // dispose() removed the failed item, so the next one has moved into index i - only step forward if this one is still there
+                if (i < music.size && music[i] === item) i++
             }
             updateCallback?.invoke()
         }
