@@ -2,12 +2,15 @@
     "name": "Global Uniques",
     "uniques": [
         "Requires establishing embassies to conduct advanced diplomacy",
-        "[-75]% growth [in all cities] <when between [-10] and [-1] [Happiness]>",
-        "Nullifies Growth [in all cities] <when below [-10] [Happiness]>",
-        "[-50]% [Production] [in all cities] <when below [-10] [Happiness]>",
-        "[-33]% Strength <for [All] units> <when below [-10] [Happiness]>",
-        "Cannot build [Settler] units <when below [-10] [Happiness]>",
-        "Rebel units may spawn <when below [-20] [Happiness]>",
+        // CvPlayer::IsEmpireUnhappy (< 0), IsEmpireVeryUnhappy (<= -10, VERY_UNHAPPY_THRESHOLD), IsEmpireSuperUnhappy (<= -20): 'below' is strict, so [-9] and [-19]
+        "[-75]% growth [in all cities] <when between [-9] and [-1] [Happiness]>",
+        "Nullifies Growth [in all cities] <when below [-9] [Happiness]>",
+        // BNW: -2% per point of unhappiness, at most -40% (VERY_UNHAPPY_*_PENALTY_PER_UNHAPPY and ..._MAX_..._PENALTY; CvCity::getHappinessModifier, CvUnit::GetUnhappinessCombatPenalty)
+        "[-2]% [Production] [in all cities] <for every [min(20, 0 - [Happiness])]>",
+        "[-2]% [Gold] [in all cities] <for every [min(20, 0 - [Happiness])]>",
+        "[-2]% Strength <for [All] units> <for every [min(20, 0 - [Happiness])]>",
+        "Cannot build [Settler] units <when below [-9] [Happiness]>",
+        "Rebel units may spawn <when below [-19] [Happiness]>",
         "[-1] Sight <for [Embarked] units>",
 
         // TODO: Implement the uniques below
