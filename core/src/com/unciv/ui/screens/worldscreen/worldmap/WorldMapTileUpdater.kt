@@ -25,8 +25,11 @@ object WorldMapTileUpdater {
 
      fun WorldMapHolder.updateTiles(civView: CivView) {
         // General update of all tiles
-        for (tileGroup in tileGroups.values)
+        for (tileGroup in tileGroups.values) {
             tileGroup.update(civView)
+            // Dimming is applied below for the current selection only - undo what a previous selection left behind
+            tileGroup.layerImprovement.dimImprovement(false)
+        }
 
         // Update tiles according to selected unit/city
         val unitTable = worldScreen.bottomUnitTable
