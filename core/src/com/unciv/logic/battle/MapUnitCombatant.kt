@@ -50,7 +50,8 @@ class MapUnitCombatant(val unit: MapUnit) : ICombatant {
         unit.forEachMatchingUnique(UniqueType.StrengthAmount, state) { extraStrength += it.params[0].toInt() }
         return if (unit.isEmbarked() && !isCivilian())
             unit.civ.getEra().embarkDefense
-        else if (isRanged() && attackedByRanged)
+        // CvUnit::GetRangeCombatDamage: a ranged unit uses its ranged strength against a ranged attack "UNLESS it's a boat"
+        else if (isRanged() && attackedByRanged && !unit.baseUnit.isWaterUnit)
             unit.baseUnit.rangedStrength + extraStrength
         else unit.baseUnit.strength + extraStrength
     }
