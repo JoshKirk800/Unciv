@@ -510,10 +510,13 @@ class UncivFiles(
         /** Determines whether a filename is acceptable.
          *  - Forbids trailing blanks because Windows has trouble with them.
          *  - Forbids leading blanks because they might confuse users (neither Windows nor Linux have noteworthy problems with them).
+         *  - Forbids the names `.` and `..`: they are valid characters for [fileNameTextFieldFilter] but name a directory
+         *    ([getSave] deletes a directory found where a save file should be, and `saves/..` is the data folder itself).
          *  - Does **not** deal with problems that can be recognized inspecting a single character, use [fileNameTextFieldFilter] for that.
          *  @param  fileName A base file name, not a path.
          */
-        fun isValidFileName(fileName: String) = fileName.isNotEmpty() && !fileName.endsWith(' ') && !fileName.startsWith(' ')
+        fun isValidFileName(fileName: String) =
+            fileName.isNotEmpty() && !fileName.endsWith(' ') && !fileName.startsWith(' ') && fileName != "." && fileName != ".."
     }
 }
 
