@@ -347,6 +347,14 @@ class CivInfoStatsForNextTurn(val civInfo: Civilization) {
 
         statMap.add("Natural Wonders", statsPerNaturalWonder.times(civInfo.naturalWonders.size))
 
+        // Original game (CvPlayer::GetHappinessFromNaturalWonders): every owned tile counts, worked or not
+        for (city in civInfo.cities)
+            for (tile in city.getTiles()) {
+                if (!tile.terrainHasUnique(UniqueType.StatsWhileInBorders)) continue
+                for (unique in tile.getTerrainMatchingUniques(UniqueType.StatsWhileInBorders))
+                    statMap.add(unique.sourceObjectName ?: "Terrain", unique.stats)
+            }
+
         if (statMap.contains(Constants.cityStates)) {
             civInfo.forEachMatchingUnique(UniqueType.BonusStatsFromCityStates) { unique ->
                 val bonusPercent = unique.params[0].toPercent()
