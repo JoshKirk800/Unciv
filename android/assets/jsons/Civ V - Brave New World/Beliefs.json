@@ -113,6 +113,26 @@
         "type": "Pantheon",
         "uniques": ["[+2 Faith] from every [Quarry]"]
     },
+    {
+        "name": "Earth Mother",
+        "type": "Pantheon",
+        "uniques": ["[+1 Faith] from every [Copper]", "[+1 Faith] from every [Iron]", "[+1 Faith] from every [Salt]"]
+    },
+    {
+        "name": "God-King",
+        "type": "Pantheon",
+        "uniques": ["[+1 Culture, +1 Faith, +1 Gold, +1 Production, +1 Science] from every [Palace]"]
+    },
+    {
+        "name": "Sun God",
+        "type": "Pantheon",
+        "uniques": ["[+1 Food] from every [Bananas]", "[+1 Food] from every [Citrus]", "[+1 Food] from every [Wheat]"]
+    },
+    {
+        "name": "Tears of the Gods",
+        "type": "Pantheon",
+        "uniques": ["[+2 Faith] from every [Gems]", "[+2 Faith] from every [Pearls]"]
+    },
 ///////////////////////////////////////// Follower beliefs /////////////////////////////////////////
     {
         "name": "Asceticism",
@@ -177,7 +197,7 @@
     {
         "name": "Religious Art",
         "type": "Follower",
-        "uniques": ["[+8 Culture] from every [Hermitage]"]
+        "uniques": ["[+5 Culture] from every [Hermitage]"]
     },
     {
         "name": "Religious Center",
@@ -226,7 +246,7 @@
     {
         "name": "Peace Loving",
         "type": "Founder",
-        "uniques": ["[+1 Happiness] from every [5] global followers [in non-enemy foreign cities]"]
+        "uniques": ["[+1 Happiness] from every [8] global followers [in non-enemy foreign cities]"]
     },
     {
         "name": "Pilgrimage",
@@ -279,7 +299,7 @@
     {
         "name": "Religious Texts",
         "type": "Enhancer",
-        "uniques": ["[+34]% Natural religion spread [in all cities]", "[+34]% Natural religion spread [in all cities] <after discovering [Printing Press]>"]
+        "uniques": ["[+25]% Natural religion spread [in all cities]", "[+25]% Natural religion spread [in all cities] <after discovering [Printing Press]>"]
     },
     {
         "name": "Religious Unity",
@@ -292,5 +312,39 @@
         "name": "Reliquary",
         "type": "Enhancer",
         "uniques": ["Gain [50] [Faith] <upon expending a [Great Person] unit> <(modified by game speed)>"]
+    },
+
+    ////////////////////////////////// Reformation beliefs ////////////////////////////////////
+    // The engine has no separate Reformation belief type, so these are Enhancer beliefs (founder only)
+
+    {
+        "name": "Charitable Missions",
+        "type": "Enhancer",
+        "uniques": ["Gifts of Gold to City-States generate [30]% more Influence"]
+    },
+    {
+        "name": "Jesuit Education",
+        "type": "Enhancer",
+        "uniques": ["May buy [University] buildings with [Faith] [in cities following this religion]",
+            "May buy [Public School] buildings with [Faith] [in cities following this religion]",
+            "May buy [Research Lab] buildings with [Faith] [in cities following this religion]"]
+    },
+    {
+        "name": "Religious Fervor",
+        "type": "Enhancer",
+        "uniques": ["May buy [{post-[Renaissance era]} {Military} {Land}] units with [Faith] for [2] times their normal Production cost <in [in cities following this religion] cities>"]
+    },
+    {
+        "name": "To the Glory of God",
+        "type": "Enhancer",
+        "uniques": [
+            "May buy [Great Artist] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
+            "May buy [Great Writer] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
+            "May buy [Great Scientist] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
+            "May buy [Great Merchant] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
+            "May buy [Great Engineer] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
+            "May buy [Great General] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
+            "May buy [Great Admiral] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>"
+        ]
     }
 ]
