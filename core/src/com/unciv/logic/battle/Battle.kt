@@ -639,7 +639,9 @@ object Battle {
         val xpBonus = thisCombatant
             .getMatchingUniques(UniqueType.PercentageXPGain, gameContext, true)
             .sumOf { it.params[0].toDouble() }
-        val xpModifier = 1.0 + xpBonus / 100
+        // CvUnit::init: AIFreeXPPercent for every unit not of a human (also city states and barbarians), added to the other bonuses
+        val aiXpBonus = if (civ.isHuman()) 0.0 else civ.gameInfo.getDifficulty().aiFreeUnitExperiencePercent.toDouble()
+        val xpModifier = 1.0 + xpBonus / 100 + aiXpBonus
 
         val xpGained = (baseXP * xpModifier).toInt()
         promotions.XP += xpGained

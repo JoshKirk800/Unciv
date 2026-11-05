@@ -134,6 +134,8 @@ class CivInfoStatsForNextTurn(val civInfo: Civilization) {
         civInfo.forEachMatchingUnique(UniqueType.RoadMaintenance) { unique ->
             transportationUpkeep.timesInPlace(unique.params[0].toPercent())
         }
+        // CvTreasury::GetImprovementGoldMaintenance: after the policies, the player's own handicap
+        transportationUpkeep.timesInPlace(civInfo.getDifficulty().routeCostModifier)
 
         return transportationUpkeep
     }

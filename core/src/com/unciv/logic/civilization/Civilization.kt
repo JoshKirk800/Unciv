@@ -858,6 +858,15 @@ class Civilization : IsPartOfGameInfoSerialization {
 
     @Readonly fun getEra(): Era = tech.era
     @Readonly fun getEraNumber(): Int = getEra().eraNumber
+
+    /** Whether the game difficulty's AI bonuses apply: everybody but the human and the barbarians, so the city states too
+     *  (`!isHuman() && !IsAITeammateOfHuman() && !isBarbarian()` in the original). */
+    @Readonly fun receivesAiHandicap() = !isHuman() && !isBarbarian
+
+    /** The factor of the difficulty's [Difficulty.aiPerEraModifier] for this civ's current era, 1 for civs without AI bonuses */
+    @Readonly fun getAiPerEraFactor(): Float =
+        if (!receivesAiHandicap()) 1f
+        else (1f + gameInfo.getDifficulty().aiPerEraModifier * getEraNumber()).coerceAtLeast(0f)
     @Readonly fun isAtWarWith(otherCiv: Civilization) = diplomacyFunctions.isAtWarWith(otherCiv)
     @Readonly fun isAtWar() = diplomacy.values.any { it.diplomaticStatus == DiplomaticStatus.War && !it.otherCiv.isDefeated() }
     @Readonly fun getCivsAtWarWith() = diplomacy.values.filter { it.diplomaticStatus == DiplomaticStatus.War && !it.otherCiv.isDefeated() }.map { it.otherCiv }

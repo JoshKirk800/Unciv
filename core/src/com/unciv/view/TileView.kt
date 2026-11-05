@@ -301,6 +301,7 @@ class TileView internal constructor(private val tile: Tile, val tileMapView: Til
         civ.forEachMatchingUnique(UniqueType.RoadMaintenance) { unique ->
             maintenance.timesInPlace(unique.params[0].toPercent())
         }
+        maintenance.timesInPlace(civ.getDifficulty().routeCostModifier)
         return maintenance
     }
     @Readonly fun providesResources(viewingCiv: CivView): Boolean = tile.providesResources(viewingCiv.unwrap())

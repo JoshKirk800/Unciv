@@ -40,7 +40,10 @@ class TileImprovement : RulesetStatsObject() {
             .filter { matchesFilter(it.params[1], state) }
         val buildSpeedIncreases = unit.getMatchingUniques(UniqueType.ImprovementTimeIncrease, state, checkCivInfoUniques = true)
             .filter { matchesFilter(it.params[0], state) }
-        val increase = buildSpeedIncreases.sumOf { it.params[1].toDouble() }.toFloat().toPercent()
+        var increase = buildSpeedIncreases.sumOf { it.params[1].toDouble() }.toFloat().toPercent()
+        // CvUnit::workRate: the AI's workers (not the barbarians') are faster on the higher difficulties
+        if (civInfo.receivesAiHandicap())
+            increase *= 1f + civInfo.gameInfo.getDifficulty().aiWorkRateModifier
         val buildTime = if (increase == 0f) 0f
         else (civInfo.gameInfo.speed.improvementBuildLengthModifier * civInfo.gameInfo.getStartingEra().buildPercent / 100f * turnsToBuild / increase)
 

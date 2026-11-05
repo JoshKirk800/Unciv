@@ -109,6 +109,10 @@ class UnitManager(val civInfo: Civilization) {
         //    will trigger *before* the unit actually has the promotion, and then will get the promotion anyway.
         copiedFrom?.copyStatisticsTo(unit)
 
+        // CvUnit::init: military units of an AI start with the difficulty's free experience
+        if (copiedFrom == null && !civInfo.isHuman() && unit.baseUnit.isMilitary)
+            unit.promotions.XP += civInfo.gameInfo.getDifficulty().aiFreeUnitExperience
+
         val triggerNotificationText = "due to gaining a [${unit.name}]"
         for (unique in unit.getUniques().toList()) {
             // Promotion triggerables are ALREADY handled in placeUnitNearTile -> addPromotion, where they were added

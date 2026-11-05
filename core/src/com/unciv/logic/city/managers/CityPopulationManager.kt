@@ -57,8 +57,8 @@ class CityPopulationManager : IsPartOfGameInfoSerialization {
 
         if (city.civ.isCityState)
             foodRequired *= 1.5f
-        if (!city.civ.isHuman())
-            foodRequired *= city.civ.gameInfo.getDifficulty().aiCityGrowthModifier
+        if (city.civ.receivesAiHandicap())
+            foodRequired *= city.civ.gameInfo.getDifficulty().aiCityGrowthModifier * city.civ.getAiPerEraFactor()
         return foodRequired.toInt()
     }
 
