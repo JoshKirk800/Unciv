@@ -321,6 +321,15 @@ object BattleDamage {
         return (damageModifier(ratio, false, randomnessFactor) * getHealthDependantDamageRatio(attacker)).roundToInt()
     }
 
+    /** Whether [attacker] lives through attacking [defender]: either the estimated damage to it is less than its health, or it is a melee unit
+     *  that takes a city, which it survives however much damage the city does (see [Battle.takeDamage]). */
+    @Readonly
+    fun attackerSurvives(attacker: ICombatant, defender: ICombatant, tileToAttackFrom: Tile = defender.getTile()): Boolean {
+        if (attacker.isMelee() && defender is CityCombatant
+            && calculateDamageToDefender(attacker, defender, tileToAttackFrom) >= defender.getHealth()) return true
+        return calculateDamageToAttacker(attacker, defender, tileToAttackFrom) < attacker.getHealth()
+    }
+
     /** (max, min) bonus damage dealt to [defender] from an additional [UniqueType.ExtraRangedAttack] - `(0, 0)` if not applicable. */
     @Readonly
     fun getExtraRangedAttackBonusDamage(attacker: MapUnitCombatant, defender: ICombatant, tileToAttackFrom: Tile): Pair<Int, Int> {

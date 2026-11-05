@@ -487,8 +487,8 @@ object UnitAutomation {
             .filterNot { unitView.getBaseUnit().isRanged() && it.tileToAttack.isCityCenter() && it.tileToAttack.getCity()!!.health == 1 } // occurs fairly often probably because AI dumb
             .filter { unit.getDamageFromTerrain(it.tileToAttackFrom) <= 0 }  // Don't attack from a mountain or near enemy citadels
             .filter {
-            // Ignore units that would 1-shot you if you attacked
-            BattleDamage.calculateDamageToAttacker(MapUnitCombatant(unit), Battle.getMapCombatantOfTile(it.tileToAttack)!!) < unitView.unitHealth }
+            // Ignore units that would 1-shot you if you attacked - unless the unit takes the city, which it survives
+            BattleDamage.attackerSurvives(MapUnitCombatant(unit), Battle.getMapCombatantOfTile(it.tileToAttack)!!) }
             .minByOrNull { it.tileToAttack.aerialDistanceTo(unit.getTile()) }
 
         if (closeEnemy != null) {
