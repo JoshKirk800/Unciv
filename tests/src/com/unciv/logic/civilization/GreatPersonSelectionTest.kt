@@ -28,7 +28,7 @@ import org.mockito.Mockito.`when`
 @RunWith(BaseTestRunner::class)
 class GreatPersonSelectionTest {
     @Test
-    fun `normal choice grants the civilization equivalent in both base rulesets`() {
+    fun `normal choice grants the civilization equivalent in every base ruleset`() {
         for (baseRuleset in BaseRuleset.entries) {
             val scenario = createScenario(baseRuleset, "Mongolia")
             val manager = scenario.civ.greatPeople
@@ -276,7 +276,7 @@ class GreatPersonSelectionTest {
         game.makeHexagonalMap(1, Constants.grassland)
         val ruleset = when (baseRuleset) {
             BaseRuleset.Civ_V_GnK -> game.ruleset
-            BaseRuleset.Civ_V_Vanilla -> RulesetCache[baseRuleset.fullName]!!.clone()
+            BaseRuleset.Civ_V_Vanilla, BaseRuleset.Civ_V_BNW -> RulesetCache[baseRuleset.fullName]!!.clone()
         }
 
         game.gameInfo.ruleset = ruleset
