@@ -301,8 +301,9 @@ class CivInfoStatsForNextTurn(val civInfo: Civilization) {
     @Readonly
     private fun getGlobalStatsFromUniques():StatMap {
         val statMap = StatMap()
-        if (civInfo.religionManager.religion != null) {
-            civInfo.religionManager.religion!!.founderBeliefUniqueMap.forEachMatchingUnique(
+        val founderReligion = civInfo.religionManager.getFounderBenefitsReligion()
+        if (founderReligion != null) {
+            founderReligion.founderBeliefUniqueMap.forEachMatchingUnique(
                 UniqueType.StatsFromGlobalCitiesFollowingReligion, civInfo.state
             ) { unique ->
                 statMap.add(
@@ -311,7 +312,7 @@ class CivInfoStatsForNextTurn(val civInfo: Civilization) {
                 )
             }
 
-            civInfo.religionManager.religion!!.founderBeliefUniqueMap.forEachMatchingUnique(
+            founderReligion.founderBeliefUniqueMap.forEachMatchingUnique(
                 UniqueType.StatsFromGlobalFollowers, civInfo.state
             ) { unique ->
                 statMap.add(
