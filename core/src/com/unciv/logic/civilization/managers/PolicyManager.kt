@@ -194,7 +194,8 @@ class PolicyManager : IsPartOfGameInfoSerialization {
         val effectiveCities = maxOf(maxEffectiveCities, getEffectiveCityCount())
         cost += (cost * (effectiveCities - 1) * cityModifier).toInt()
         civInfo.forEachMatchingUnique(UniqueType.LessPolicyCost) { unique -> cost = (cost * unique.params[0].toPercent()).toInt() }
-        if (civInfo.isHuman()) cost = (cost * civInfo.getDifficulty().policyCostModifier).toInt()
+        // CvPlayerPolicies::GetNextPolicyCost applies the handicap's PolicyPercent to every player; an AI has the handicap of its AI level
+        cost = (cost * civInfo.getDifficulty().policyCostModifier).toInt()
         cost = (cost * civInfo.gameInfo.speed.cultureCostModifier).toInt()
         return cost - (cost % 5)
     }

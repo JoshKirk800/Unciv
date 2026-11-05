@@ -413,7 +413,7 @@ class GameOptionsTable(
     }
 
     private fun Table.addDifficultySelectBox() {
-        addSelectBox("{Difficulty}:", ruleset.difficulties.keys, gameParameters.difficulty)
+        addSelectBox("{Difficulty}:", ruleset.difficulties.filterValues { it.isSelectable }.keys, gameParameters.difficulty)
         { gameParameters.difficulty = it; null }
     }
 

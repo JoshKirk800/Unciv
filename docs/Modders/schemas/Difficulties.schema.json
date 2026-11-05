@@ -90,6 +90,12 @@
         "title": "Player Bonus Starting Units",
         "description": "Units given to human players at the start. Can also be 'Era Starting Unit', which maps to startingMilitaryUnit of the Eras file. All other units must be in Units.json. Applies only to human player civs."
       },
+      "isSelectable": {
+        "type": "boolean",
+        "default": true,
+        "title": "Is Selectable",
+        "description": "False hides the level from the difficulty choice of a new game, for a level that only serves as the handicap of the AI civilizations."
+      },
       "aiDifficultyLevel": {
         "type": "string",
         "default": "",

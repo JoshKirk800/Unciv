@@ -24,6 +24,10 @@ class Difficulty : RulesetObject() {
     var barbarianSpawnDelay: Int = 0
     var playerBonusStartingUnits = ArrayList<String>()
 
+    /** `false` hides this level from the difficulty choice of a new game. For a level that only exists as the handicap of the AI civilizations
+     *  (see [aiDifficultyLevel]), like Brave New World's `HANDICAP_AI_DEFAULT`. */
+    var isSelectable: Boolean = true
+
     var aiDifficultyLevel: String? = null
     var aiCityGrowthModifier: Float = 1f
     var aiUnitCostModifier: Float = 1f

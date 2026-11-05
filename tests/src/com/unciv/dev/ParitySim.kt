@@ -29,7 +29,8 @@ import java.util.Locale
  * (`tools/ab_sim.py` does both and prints the difference). Skipped unless the environment variable PARITY_SIM_OUT is set.
  *
  * Environment: PARITY_SIM_OUT = output file, PARITY_SIM_START = the starting game, PARITY_SIM_TURNS (default 150),
- * PARITY_SIM_CIVS (default 6 AI civilizations), PARITY_SIM_CITYSTATES (default 4), PARITY_SIM_SEED (map seed, default 42).
+ * PARITY_SIM_CIVS (default 6 AI civilizations), PARITY_SIM_CITYSTATES (default 4), PARITY_SIM_SEED (map seed, default 42),
+ * PARITY_SIM_RULESET (full name of the base ruleset, default Civ V - Gods & Kings; only used when the start file is generated).
  *
  * The starting game is a saved file: when PARITY_SIM_START exists it is loaded, otherwise a game is generated and saved there.
  * Generating is not reproducible (the world comes from a random game id), so every run that is to be compared must load the
@@ -57,7 +58,7 @@ class ParitySim {
     private fun env(name: String, default: String) = System.getenv(name) ?: default
 
     private fun startGame(civs: Int, cityStates: Int, seed: Long): GameInfo {
-        val ruleset = RulesetCache[BaseRuleset.Civ_V_GnK.fullName]!!
+        val ruleset = RulesetCache[env("PARITY_SIM_RULESET", BaseRuleset.Civ_V_GnK.fullName)]!!
         val players = ArrayList<Player>()
         for (nation in ruleset.nations.values) {
             if (players.size >= civs) break
