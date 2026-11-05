@@ -498,9 +498,10 @@ class Civilization : IsPartOfGameInfoSerialization {
     fun updateStatsForNextTurn(): Unit = timeThis<Unit>("Civilization.updateStatsForNextTurn") {
         val previousHappiness = stats.happiness
         stats.happiness = stats.getHappinessBreakdown().values.sum().roundToInt()
-        if (stats.happiness != previousHappiness && gameInfo.ruleset.allHappinessLevelsThatAffectUniques.any {
-            stats.happiness < it != previousHappiness < it // If move from being below them to not, or vice versa
-            })
+        if (stats.happiness != previousHappiness && (gameInfo.ruleset.hasUniquesScalingWithHappiness
+                || gameInfo.ruleset.allHappinessLevelsThatAffectUniques.any {
+                    stats.happiness < it != previousHappiness < it // If move from being below them to not, or vice versa
+                }))
             for (city in cities) city.cityStats.update(updateCivStats = false)
         val statMapForNextTurn = stats.getStatMapForNextTurn()
 

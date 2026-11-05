@@ -692,8 +692,8 @@ class CityConstructions : IsPartOfGameInfoSerialization {
 
         /** Same check as [com.unciv.logic.civilization.Civilization.updateStatsForNextTurn] -
          *   but that triggers *stat calculation* whereas this is for *population assignment* */
-        if (previousHappiness != newHappiness && city.civ.gameInfo.ruleset.allHappinessLevelsThatAffectUniques
-                .any { newHappiness < it != previousHappiness < it})
+        if (previousHappiness != newHappiness && (city.civ.gameInfo.ruleset.hasUniquesScalingWithHappiness
+                || city.civ.gameInfo.ruleset.allHappinessLevelsThatAffectUniques.any { newHappiness < it != previousHappiness < it }))
             city.civ.cities.filter { it != city }.forEach { it.reassignPopulationDeferred() }
 
         if (tryAddFreeBuildings)

@@ -185,6 +185,16 @@ class Ruleset {
         }.toSet()
     }
 
+    /** Whether some unique scales with the happiness (`<for every [... [Happiness] ...]>`): then *every* change of happiness can change uniques,
+     *  not only moving across one of [allHappinessLevelsThatAffectUniques] */
+    val hasUniquesScalingWithHappiness by lazy {
+        allUniques().any { unique ->
+            unique.modifiers.any {
+                (it.type == UniqueType.ForEveryCountable || it.type == UniqueType.ForEveryAmountCountable) && it.params.any { param -> "Happiness" in param }
+            }
+        }
+    }
+
     val roadImprovement: TileImprovement? by lazy { RoadStatus.Road.improvement(this) }
     val railroadImprovement: TileImprovement? by lazy { RoadStatus.Railroad.improvement(this) }
     //endregion
