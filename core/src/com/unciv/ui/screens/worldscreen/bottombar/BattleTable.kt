@@ -261,11 +261,19 @@ class BattleTable(val worldScreen: WorldScreen) : Table() {
             // Taking a city, the attacker survives with at least 1 HP however much damage the city does (see Battle.takeDamage)
             val cityCertainlyFalls = !attacker.isRanged() && defender.isCity() && minDamageToDefender >= defenderHealth
             val attackerFloor = if (cityCertainlyFalls) 1 else 0
-            val minRemainingLifeAttacker = max(attackerHealth-maxDamageToAttacker, attackerFloor)
-            val maxRemainingLifeAttacker = max(attackerHealth-minDamageToAttacker, attackerFloor)
+            // A melee attack on a unit that would kill both: the one with less total damage survives with 1 HP (see Battle.takeDamage).
+            // That depends on both rolls, so take every combination of the extremes.
+            val meleeOnUnit = !attacker.isRanged() && !defender.isCity()
+            val outcomes = listOf(minDamageToDefender to minDamageToAttacker, minDamageToDefender to maxDamageToAttacker,
+                maxDamageToDefender to minDamageToAttacker, maxDamageToDefender to maxDamageToAttacker)
+                .map { (toDefender, toAttacker) ->
+                    if (meleeOnUnit) attacker.resolveMeleeDeaths(defender, toDefender, toAttacker) else toDefender to toAttacker
+                }
+            val minRemainingLifeAttacker = max(attackerHealth - outcomes.maxOf { it.second }, attackerFloor)
+            val maxRemainingLifeAttacker = max(attackerHealth - outcomes.minOf { it.second }, attackerFloor)
 
-            val minRemainingLifeDefender = max(defenderHealth-maxDamageToDefender, 0)
-            val maxRemainingLifeDefender = max(defenderHealth-minDamageToDefender, 0)
+            val minRemainingLifeDefender = max(defenderHealth - outcomes.maxOf { it.first }, 0)
+            val maxRemainingLifeDefender = max(defenderHealth - outcomes.minOf { it.first }, 0)
 
             add(getHealthBar(attacker.getMaxHealth(), attacker.getHealth(), maxRemainingLifeAttacker, minRemainingLifeAttacker))
             add(getHealthBar(defender.getMaxHealth(), defender.getHealth(), maxRemainingLifeDefender, minRemainingLifeDefender, true)).row()

@@ -402,9 +402,16 @@ object Battle {
                 potentialDamageToAttacker = attackerHealthBefore - 1
             defender.takeDamage(potentialDamageToDefender)
             attacker.takeDamage(potentialDamageToAttacker)
+        } else if (attacker.isMelee()) {
+            // Original game (CvUnitCombat::GenerateMeleeCombatInfo, ResolveMeleeCombat): both damages are rolled up front and both applied in full;
+            // if that would kill both units, the one that has taken less damage in total survives with 1 HP.
+            val (toDefender, toAttacker) = BattleDamage.resolveMeleeDeaths(attacker, defender, potentialDamageToDefender, potentialDamageToAttacker)
+            defender.takeDamage(toDefender)
+            attacker.takeDamage(toAttacker)
         } else {
-            //melee attack is complicated, because either side may defeat the other midway
-            //so...for each round, we randomize who gets the attack in. Seems to be a good way to work for now.
+            // Air attacks: the original resolves these in CvUnitCombat::GenerateAirCombatInfo (interception, damage capped at the
+            // target's health), which Unciv does not follow; here either side may defeat the other midway,
+            // so for each round we randomize who gets the attack in.
             while (potentialDamageToDefender + potentialDamageToAttacker > 0) {
                 if (rng.nextInt(potentialDamageToDefender + potentialDamageToAttacker) < potentialDamageToDefender) {
                     potentialDamageToDefender--
