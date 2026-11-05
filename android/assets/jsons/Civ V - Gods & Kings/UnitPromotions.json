@@ -298,7 +298,7 @@
 	{
 		"name": "Coastal Raider III",
 		"prerequisites": ["Coastal Raider II"],
-		"uniques": ["[+20]% Strength <vs cities>", "Earn [33]% of the damage done to [City] units as [Gold]"],
+		"uniques": ["[+20]% Strength <vs cities>", "Earn [34]% of the damage done to [City] units as [Gold]"],
 		"unitTypes": ["Melee Water"],
         "column": 12,
         "row": 3

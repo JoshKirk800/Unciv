@@ -15,7 +15,6 @@ import com.unciv.models.ruleset.unique.Unique
 import com.unciv.models.ruleset.unique.UniqueTriggerActivation
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.models.stats.Stat
-import com.unciv.models.stats.Stats
 import com.unciv.models.stats.SubStat
 import com.unciv.ui.components.UnitMovementMemoryType
 import com.unciv.logic.map.mapunit.actions.UnitActionsPillage
@@ -430,7 +429,10 @@ object Battle {
 
         triggerLosingHPUniques(attacker, attackerContext, attackerDamageDealt, defender, defenderContext, defenderDamageDealt)
 
-        plunderFromDamage(attacker, defender, attackerDamageDealt)
+        // Original game (CvUnitCombat::ResolveCityMeleeCombat): plundering a city happens after a melee attack in which neither side was lost -
+        // not when the city fell, not when the attacker died, and not for a ranged attack.
+        if (defender !is CityCombatant || (attacker.isMelee() && !cityFell && !attacker.isDefeated()))
+            plunderFromDamage(attacker, defender, attackerDamageDealt)
         return DamageDealt(attackerDamageDealt, defenderDamageDealt, cityFell)
     }
 
@@ -492,21 +494,21 @@ object Battle {
         // implementation based on the description of the original civilopedia, see issue #4374
         if (plunderingUnit !is MapUnitCombatant) return
         val civ = plunderingUnit.getCivInfo()
-        val plunderedGoods = Stats()
+        val percentByStat = HashMap<Stat, Double>()
 
         for (unique in plunderingUnit.unit.getMatchingUniques(UniqueType.DamageUnitsPlunder, checkCivInfoUniques = true)) {
             if (!plunderedUnit.matchesFilter(unique.params[1])) continue
 
-            val percentage = unique.params[0].toFloat()
-            val amount = percentage / 100f * damageDealt
             val resourceName = unique.params[2]
             val resource = plunderedUnit.getCivInfo().gameInfo.ruleset.getGameResource(resourceName)
                 ?: continue
 
             if (resource is Stat) {
-                plunderedGoods.add(resource, amount)
+                percentByStat[resource] = (percentByStat[resource] ?: 0.0) + unique.params[0].toDouble()
                 continue // Notification and adding to the civ happens all at once for stats further down
             }
+
+            val amount = unique.params[0].toFloat() / 100f * damageDealt
 
             val plunderedAmount = amount.roundToInt()
             civ.addGameResource(resource, plunderedAmount)
@@ -520,10 +522,14 @@ object Battle {
             )
         }
 
-        for ((key, value) in plunderedGoods) {
-            val plunderedAmount = value.toInt()
+        for ((key, percentage) in percentByStat) {
+            // The original adds the percentages of all promotions up first and truncates once (33% + 33% + 34% of 10 damage is 10 gold)
+            val plunderedAmount = (damageDealt * percentage / 100.0).toInt()
             if (plunderedAmount == 0) continue
             civ.addStat(key, plunderedAmount)
+            // CvUnitCombat::ApplyPostCityCombatEffects: the city's owner loses what the plunderer gains, as far as its treasury goes
+            if (key == Stat.Gold && plunderedUnit is CityCombatant)
+                plunderedUnit.getCivInfo().addGold(-minOf(plunderedAmount, plunderedUnit.getCivInfo().gold.coerceAtLeast(0)))
             civ.addNotification(
                 "${plunderingUnit.getNotificationDisplay("Your ")} plundered [${plunderedAmount}] [${key.name}] from [${plunderedUnit.getName()}]",
                 plunderedUnit.getTile().position,
