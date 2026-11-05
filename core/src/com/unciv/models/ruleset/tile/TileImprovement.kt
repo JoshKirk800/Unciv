@@ -42,7 +42,7 @@ class TileImprovement : RulesetStatsObject() {
             .filter { matchesFilter(it.params[0], state) }
         val increase = buildSpeedIncreases.sumOf { it.params[1].toDouble() }.toFloat().toPercent()
         val buildTime = if (increase == 0f) 0f
-        else (civInfo.gameInfo.speed.improvementBuildLengthModifier * turnsToBuild / increase)
+        else (civInfo.gameInfo.speed.improvementBuildLengthModifier * civInfo.gameInfo.getStartingEra().buildPercent / 100f * turnsToBuild / increase)
 
         return buildSpeedUniques.fold(buildTime) { calculatedTurnsToBuild, unique ->
                 calculatedTurnsToBuild * unique.params[0].toPercent()

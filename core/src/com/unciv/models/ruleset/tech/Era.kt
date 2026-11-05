@@ -34,6 +34,24 @@ class Era : RulesetObject() {
     var baseUnitBuyCost = 200
     var embarkDefense = 3
     var startPercent = 0
+
+    // Percentages that apply for the whole game when this is the era it was started in (CvEraInfo in the original game)
+    /** Tech cost */
+    var researchPercent = 100
+    /** Production cost of units */
+    var trainPercent = 100
+    /** Production cost of buildings and wonders */
+    var constructPercent = 100
+    /** Production cost of spaceship parts (the original's projects) */
+    var createPercent = 100
+    /** Points needed for a Great Person (and Great General or Admiral) */
+    var greatPeoplePercent = 100
+    /** Food needed for a city to grow */
+    var growthPercent = 100
+    /** Time workers need to build improvements */
+    var buildPercent = 100
+    /** Gold maintenance of buildings */
+    var buildingMaintenancePercent = 100
     var citySound = "cityClassical"
 
     var friendBonus = HashMap<String, List<String>>()

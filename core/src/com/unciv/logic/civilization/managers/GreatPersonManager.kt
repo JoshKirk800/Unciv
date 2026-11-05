@@ -61,7 +61,7 @@ class GreatPersonManager : IsPartOfGameInfoSerialization {
         if (pointsForNextGreatPersonCounter[key] == 0) {
             pointsForNextGreatPersonCounter[key] = 100
         }
-        return (pointsForNextGreatPersonCounter[key] * civInfo.gameInfo.speed.modifier).toInt()
+        return (pointsForNextGreatPersonCounter[key] * civInfo.gameInfo.speed.modifier * civInfo.gameInfo.getStartingEra().greatPeoplePercent / 100f).toInt()
     }
 
     fun getNewGreatPerson(): String? {
@@ -69,7 +69,7 @@ class GreatPersonManager : IsPartOfGameInfoSerialization {
             if (pointsForNextGreatGeneralCounter[unit] == 0) {
                 pointsForNextGreatGeneralCounter[unit] = 200
             }
-            val requiredPoints = pointsForNextGreatGeneralCounter[unit]
+            val requiredPoints = pointsForNextGreatGeneralCounter[unit] * civInfo.gameInfo.getStartingEra().greatPeoplePercent / 100
             if (value >= requiredPoints) {
                 greatGeneralPointsCounter[unit] -= requiredPoints
                 pointsForNextGreatGeneralCounter[unit] += 50

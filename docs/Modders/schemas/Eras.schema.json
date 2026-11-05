@@ -123,6 +123,62 @@
         "title": "Start Percent",
         "description": "When starting, percentage (0%-100%) of turns skipped in total turns specified in Speed.json."
       },
+      "researchPercent": {
+        "type": "integer",
+        "minimum": 0,
+        "default": 100,
+        "title": "Research Percent",
+        "description": "Percentage applied for the whole game when starting in this era: Tech cost."
+      },
+      "trainPercent": {
+        "type": "integer",
+        "minimum": 0,
+        "default": 100,
+        "title": "Train Percent",
+        "description": "Percentage applied for the whole game when starting in this era: Production cost of units."
+      },
+      "constructPercent": {
+        "type": "integer",
+        "minimum": 0,
+        "default": 100,
+        "title": "Construct Percent",
+        "description": "Percentage applied for the whole game when starting in this era: Production cost of buildings and wonders."
+      },
+      "createPercent": {
+        "type": "integer",
+        "minimum": 0,
+        "default": 100,
+        "title": "Create Percent",
+        "description": "Percentage applied for the whole game when starting in this era: Production cost of spaceship parts (the original game's projects)."
+      },
+      "greatPeoplePercent": {
+        "type": "integer",
+        "minimum": 0,
+        "default": 100,
+        "title": "Great People Percent",
+        "description": "Percentage applied for the whole game when starting in this era: Points needed for a Great Person, Great General or Great Admiral."
+      },
+      "growthPercent": {
+        "type": "integer",
+        "minimum": 0,
+        "default": 100,
+        "title": "Growth Percent",
+        "description": "Percentage applied for the whole game when starting in this era: Food needed for a city to grow."
+      },
+      "buildPercent": {
+        "type": "integer",
+        "minimum": 0,
+        "default": 100,
+        "title": "Build Percent",
+        "description": "Percentage applied for the whole game when starting in this era: Time workers need to build improvements."
+      },
+      "buildingMaintenancePercent": {
+        "type": "integer",
+        "minimum": 0,
+        "default": 100,
+        "title": "Building Maintenance Percent",
+        "description": "Percentage applied for the whole game when starting in this era: Gold maintenance of buildings."
+      },
       "citySound": {
         "type": "string",
         "default": "cityClassical",

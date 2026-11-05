@@ -154,6 +154,7 @@ class Building : RulesetStatsObject(), INonPerpetualConstruction {
         }
 
         productionCost *= civInfo.gameInfo.speed.productionCostModifier
+        productionCost *= civInfo.gameInfo.getStartingEra().constructPercent / 100f
 
         return productionCost.toInt()
     }
