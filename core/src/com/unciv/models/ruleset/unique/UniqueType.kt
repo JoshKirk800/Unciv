@@ -639,6 +639,9 @@ enum class UniqueType(
     ProductionBonusWhenRemoved("Provides a one-time bonus of [stats] to the closest city when cut down", UniqueTarget.Terrain, flags = setOf(UniqueFlag.AcceptsSpeedModifier, UniqueFlag.AcceptsGameProgressModifier)),
     Vegetation("Vegetation", UniqueTarget.Terrain, UniqueTarget.Improvement),  // Improvement included because use as tileFilter works
 
+    StatsWhileInBorders("[stats] while this tile is in your borders", UniqueTarget.Terrain,
+        docDescription = "Civilization-wide stats for each tile with this terrain inside the borders of one of your cities, whether it is worked or not " +
+            "(the original's in-border happiness of Old Faithful and the Fountain of Youth)"),
 
     TileProvidesYieldWithoutPopulation("Tile provides yield without assigned population", UniqueTarget.Terrain, UniqueTarget.Improvement),
     NullifyYields("Nullifies all other stats this tile provides", UniqueTarget.Terrain),

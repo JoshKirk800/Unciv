@@ -2779,6 +2779,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 ??? example  "Vegetation"
 	Applicable to: Terrain, Improvement
 
+??? example  "[stats] while this tile is in your borders"
+	Civilization-wide stats for each tile with this terrain inside the borders of one of your cities, whether it is worked or not (the original's in-border happiness of Old Faithful and the Fountain of Youth)
+
+	Example: "[+1 Gold, +2 Production] while this tile is in your borders"
+
+	Applicable to: Terrain
+
 ??? example  "Tile provides yield without assigned population"
 	Applicable to: Terrain, Improvement
 
