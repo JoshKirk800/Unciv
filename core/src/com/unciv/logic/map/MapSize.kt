@@ -53,16 +53,17 @@ class MapSize private constructor(
         // https://civilization.fandom.com/wiki/Map_(Civ5)
         val techCostMultiplier: Float = 1f,
         val techCostPerCityModifier: Float = 0.05f,
-        /** CvWorldInfo::GetNumCitiesPolicyCostMod: +15% per extra city up to Standard (our Medium), 10% Large, 7.5% Huge (G&K CIV5Worlds.xml) */
-        val policyCostPerCityModifier: Float = 0.15f,
+        /** CvWorldInfo::GetNumCitiesPolicyCostMod (Brave New World CIV5Worlds.xml): +10% per extra city up to Standard (our Medium), 7.5% Large, 5% Huge.
+         *  Gods & Kings has 15 / 10 / 7.5. */
+        val policyCostPerCityModifier: Float = 0.1f,
         /** Multiplies the unhappiness from the number of cities - CvWorldInfo::getNumCitiesUnhappinessPercent, 100% up to Standard (our Medium) */
         val cityCountUnhappinessModifier: Float = 1f,
     ) {
         Tiny(10, 23, 15),
         Small(15, 33, 21),
         Medium(20, 44, 29, 1.1f),
-        Large(30, 66, 43, 1.2f, 0.0375f,0.1f, 0.8f),
-        Huge(40, 87, 57, 1.3f, 0.025f,0.075f, 0.6f);
+        Large(30, 66, 43, 1.2f, 0.0375f,0.075f, 0.8f),
+        Huge(40, 87, 57, 1.3f, 0.025f,0.05f, 0.6f);
         /* - ours are a little lighter than the original values. For reference those are:
             Civ5Duel(40,24,17),
             Civ5Tiny(56,36,25),
