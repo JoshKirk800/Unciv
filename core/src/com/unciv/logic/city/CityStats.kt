@@ -346,6 +346,7 @@ class CityStats(val city: City) {
         if (!city.civ.isHuman()) {
             buildingsMaintenance *= city.civ.gameInfo.getDifficulty().aiBuildingMaintenanceModifier
         }
+        buildingsMaintenance *= city.civ.gameInfo.getStartingEra().buildingMaintenancePercent / 100f
 
         return buildingsMaintenance
     }

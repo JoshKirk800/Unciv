@@ -28,6 +28,7 @@ import com.unciv.models.ruleset.GlobalUniques
 import com.unciv.models.ruleset.Ruleset
 import com.unciv.models.ruleset.RulesetCache
 import com.unciv.models.ruleset.Speed
+import com.unciv.models.ruleset.tech.Era
 import com.unciv.models.ruleset.nation.Difficulty
 import com.unciv.models.ruleset.tile.TileResource
 import com.unciv.models.ruleset.unique.IHasUniques
@@ -338,6 +339,9 @@ class GameInfo : IsPartOfGameInfoSerialization, HasGameInfoSerializationVersion 
     }
 
     @Readonly fun isEspionageEnabled(): Boolean = gameParameters.espionageEnabled
+
+    /** The era the game was started in: its cost percentages apply for the whole game. A neutral era (all 100%) if the ruleset lacks it. */
+    @Readonly fun getStartingEra(): Era = ruleset.eras[gameParameters.startingEra] ?: Era()
 
     @Readonly
     private fun getEquivalentTurn(): Int {

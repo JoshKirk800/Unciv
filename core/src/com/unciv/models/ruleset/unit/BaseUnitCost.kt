@@ -31,6 +31,9 @@ class BaseUnitCost(val baseUnit: BaseUnit) {
             civInfo.gameInfo.getDifficulty().aiUnitCostModifier
 
         productionCost *= civInfo.gameInfo.speed.productionCostModifier
+        // Spaceship parts are projects in the original game, which have their own percentage
+        val startingEra = civInfo.gameInfo.getStartingEra()
+        productionCost *= (if (baseUnit.hasUnique(UniqueType.AddInCapital)) startingEra.createPercent else startingEra.trainPercent) / 100f
         return productionCost.toInt()
     }
 

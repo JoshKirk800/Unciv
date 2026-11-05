@@ -53,6 +53,7 @@ class CityPopulationManager : IsPartOfGameInfoSerialization {
         var foodRequired = 15 + 8 * (population - 1) + floor((population - 1).toDouble().pow(1.5))
 
         foodRequired *= city.civ.gameInfo.speed.modifier
+        foodRequired *= city.civ.gameInfo.getStartingEra().growthPercent / 100f
 
         if (city.civ.isCityState)
             foodRequired *= 1.5f
