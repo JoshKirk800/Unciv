@@ -343,9 +343,9 @@ class CityStats(val city: City) {
     private fun getBuildingMaintenanceCosts(): Float {
         // Same here - will have a different UI display.
         var buildingsMaintenance = city.cityConstructions.getMaintenanceCosts() // this is AFTER the bonus calculation!
-        if (!city.civ.isHuman()) {
-            buildingsMaintenance *= city.civ.gameInfo.getDifficulty().aiBuildingMaintenanceModifier
-        }
+        // CvTreasury::GetBuildingGoldMaintenance: a human pays the building cost percentage of the handicap, the others the AI one of the chosen difficulty
+        buildingsMaintenance *= if (city.civ.isHuman()) city.civ.getDifficulty().buildingCostModifier
+            else city.civ.gameInfo.getDifficulty().aiBuildingMaintenanceModifier
         buildingsMaintenance *= city.civ.gameInfo.getStartingEra().buildingMaintenancePercent / 100f
 
         return buildingsMaintenance

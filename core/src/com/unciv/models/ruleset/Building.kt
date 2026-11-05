@@ -141,17 +141,14 @@ class Building : RulesetStatsObject(), INonPerpetualConstruction {
             productionCost *= unique.params[0].toPercent()
         }
 
+        // CvPlayer::getProductionNeeded: no handicap for a human (the handicap's building cost percentage is for the gold maintenance of buildings)
         if (civInfo.isCityState)
             productionCost *= 1.5f
-        else if (civInfo.isHuman()) {
-            if (!isWonder)
-                productionCost *= civInfo.getDifficulty().buildingCostModifier
-        } else {
+        else if (!civInfo.isHuman())
             productionCost *= if (isWonder)
                 civInfo.gameInfo.getDifficulty().aiWonderCostModifier
             else
                 civInfo.gameInfo.getDifficulty().aiBuildingCostModifier
-        }
 
         productionCost *= civInfo.gameInfo.speed.productionCostModifier
         productionCost *= civInfo.gameInfo.getStartingEra().constructPercent / 100f

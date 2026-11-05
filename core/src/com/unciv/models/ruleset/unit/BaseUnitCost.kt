@@ -23,10 +23,11 @@ class BaseUnitCost(val baseUnit: BaseUnit) {
         for (unique in baseUnit.getMatchingUniques(UniqueType.CostPercentageChange, stateForConditionals))
             productionCost *= unique.params[0].toPercent()
 
+        // CvPlayer::getProductionNeeded: no handicap for a human (the handicap's unit cost percentage is for the gold maintenance of units)
         productionCost *= if (civInfo.isCityState)
             1.5f
         else if (civInfo.isHuman())
-            civInfo.getDifficulty().unitCostModifier
+            1f
         else
             civInfo.gameInfo.getDifficulty().aiUnitCostModifier
 

@@ -85,6 +85,9 @@ internal class BaseRulesetValidator(
             if (difficulty.aiDifficultyLevel != null && !ruleset.difficulties.containsKey(difficulty.aiDifficultyLevel))
                 lines.add("Difficulty ${difficulty.name} contains aiDifficultyLevel ${difficulty.aiDifficultyLevel} which does not exist!",
                     RulesetErrorSeverity.Warning, sourceObject = null)
+            for (level in listOf(difficulty.cityStateDifficultyLevel, difficulty.barbarianDifficultyLevel))
+                if (level != null && !ruleset.difficulties.containsKey(level))
+                    lines.add("Difficulty ${difficulty.name} names the level $level which does not exist!", RulesetErrorSeverity.Warning, sourceObject = null)
             for (tech in difficulty.aiFreeTechs)
                 if (!ruleset.technologies.containsKey(tech))
                     lines.add("Difficulty ${difficulty.name} contains AI free tech $tech which does not exist!", sourceObject = null)

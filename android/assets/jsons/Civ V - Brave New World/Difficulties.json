@@ -14,6 +14,8 @@
 		"barbarianSpawnDelay": 8,
 		"playerBonusStartingUnits": [], // Note that the units from Eras.json are added to this pool. This should only contain bonus starting units.
         "aiDifficultyLevel": "AI Default",
+		"cityStateDifficultyLevel": "Prince", // MINOR_CIV_HANDICAP
+		"barbarianDifficultyLevel": "Chieftain", // BARBARIAN_HANDICAP
 		"aiCityGrowthModifier": 1.6, // that is to say it'll take them 1.6 times as long to grow the city
 		"aiUnitCostModifier": 1.75,
 		"aiBuildingCostModifier": 1.6,
@@ -44,6 +46,8 @@
 		"barbarianSpawnDelay": 5,
 		"playerBonusStartingUnits": [],
         "aiDifficultyLevel": "AI Default",
+		"cityStateDifficultyLevel": "Prince", // MINOR_CIV_HANDICAP
+		"barbarianDifficultyLevel": "Chieftain", // BARBARIAN_HANDICAP
 		"aiCityGrowthModifier": 1.3,
 		"aiUnitCostModifier": 1.3,
 		"aiBuildingCostModifier": 1.3,
@@ -74,6 +78,8 @@
 		"barbarianSpawnDelay": 3,
 		"playerBonusStartingUnits": [],
         "aiDifficultyLevel": "AI Default",
+		"cityStateDifficultyLevel": "Prince", // MINOR_CIV_HANDICAP
+		"barbarianDifficultyLevel": "Chieftain", // BARBARIAN_HANDICAP
 		"aiCityGrowthModifier": 1.1,
 		"aiUnitCostModifier": 1.1,
 		"aiBuildingCostModifier": 1.1,
@@ -104,6 +110,8 @@
 		"barbarianSpawnDelay": 0,
 		"playerBonusStartingUnits": [],
         "aiDifficultyLevel": "AI Default",
+		"cityStateDifficultyLevel": "Prince", // MINOR_CIV_HANDICAP
+		"barbarianDifficultyLevel": "Chieftain", // BARBARIAN_HANDICAP
 		"aiCityGrowthModifier": 1,
 		"aiUnitCostModifier": 1,
 		"aiBuildingCostModifier": 1,
@@ -134,6 +142,8 @@
 		"barbarianSpawnDelay": 0,
 		"playerBonusStartingUnits": [],
         "aiDifficultyLevel": "AI Default",
+		"cityStateDifficultyLevel": "Prince", // MINOR_CIV_HANDICAP
+		"barbarianDifficultyLevel": "Chieftain", // BARBARIAN_HANDICAP
 		"aiCityGrowthModifier": 0.9,
 		"aiUnitCostModifier": 0.85,
 		"aiBuildingCostModifier": 0.85,
@@ -164,6 +174,8 @@
 		"barbarianSpawnDelay": 0,
 		"playerBonusStartingUnits": [],
         "aiDifficultyLevel": "AI Default",
+		"cityStateDifficultyLevel": "Prince", // MINOR_CIV_HANDICAP
+		"barbarianDifficultyLevel": "Chieftain", // BARBARIAN_HANDICAP
 		"aiCityGrowthModifier": 0.8,
 		"aiUnitCostModifier": 0.8,
 		"aiBuildingCostModifier": 0.75,
@@ -194,6 +206,8 @@
 		"barbarianSpawnDelay": 0,
 		"playerBonusStartingUnits": [],
         "aiDifficultyLevel": "AI Default",
+		"cityStateDifficultyLevel": "Prince", // MINOR_CIV_HANDICAP
+		"barbarianDifficultyLevel": "Chieftain", // BARBARIAN_HANDICAP
 		"aiCityGrowthModifier": 0.7,
 		"aiUnitCostModifier": 0.65,
 		"aiBuildingCostModifier": 0.6,
@@ -224,6 +238,8 @@
 		"barbarianSpawnDelay": 0,
 		"playerBonusStartingUnits": [],
         "aiDifficultyLevel": "AI Default",
+		"cityStateDifficultyLevel": "Prince", // MINOR_CIV_HANDICAP
+		"barbarianDifficultyLevel": "Chieftain", // BARBARIAN_HANDICAP
 		"aiCityGrowthModifier": 0.55,
 		"aiUnitCostModifier": 0.5,
 		"aiBuildingCostModifier": 0.5,
