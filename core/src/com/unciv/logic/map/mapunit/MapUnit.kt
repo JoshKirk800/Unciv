@@ -477,10 +477,14 @@ class MapUnit : IsPartOfGameInfoSerialization {
     @Readonly fun getAirUnitMovementRange(): Int = getRange() * 2
 
     @Readonly
-    fun isEmbarked(): Boolean {
+    fun isEmbarked(): Boolean = isEmbarkedAt(currentTile)
+
+    /** Whether this unit is (would be) embarked on [tile]: a land unit that cannot move on water, on a water tile */
+    @Readonly
+    fun isEmbarkedAt(tile: Tile): Boolean {
         if (!baseUnit.isLandUnit) return false
         if (cache.canMoveOnWater) return false
-        return currentTile.isWater
+        return tile.isWater
     }
 
     /** Whether this unit currently has an invisibility unique that hides it from [to] (ignores fog of war,
@@ -1003,7 +1007,10 @@ class MapUnit : IsPartOfGameInfoSerialization {
         destroy()
     }
 
-    fun removeFromTile() = currentTile.removeUnit(this)
+    fun removeFromTile() {
+        currentTile.removeUnit(this)
+        currentTile.promoteEmbarkedUnit() // an embarked unit that shared the tile with us takes our slot
+    }
 
 
     /** Return null if military on tile, or no civilian */
@@ -1065,8 +1072,7 @@ class MapUnit : IsPartOfGameInfoSerialization {
                 throw IllegalStateException("Unit $name of ${civ.civID} at $currentTile can't be put in tile $tile, reason: ${movement.getCannotMoveToReason(tile)}")
             }
             baseUnit.isAirUnit() -> tile.airUnits.add(this)
-            isCivilian() -> tile.civilianUnit = this
-            else -> tile.militaryUnit = this
+            else -> tile.placeUnit(this)
         }
         // this check is here in order to not load the fresh built unit into carrier right after the build
         if (baseUnit.isAirUnit()){

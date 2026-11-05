@@ -82,6 +82,10 @@ object TileDescription {
                     " - " + tileView.militaryUnit!!.civName.tr()
             lineList += FormattedLine(milUnitString, link = "Unit/${tileView.militaryUnit!!.name}")
         }
+        tileView.embarkedUnit?.let {
+            if (isViewableToPlayer && !hideUnits)
+                lineList += FormattedLine(it.name.tr() + " - " + it.civName.tr(), link = "Unit/${it.name}")
+        }
 
         val defenceBonus = tileView.getDefensiveBonus()
         if (defenceBonus != 0f) {
