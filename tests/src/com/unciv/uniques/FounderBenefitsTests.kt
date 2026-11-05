@@ -20,6 +20,7 @@ class FounderBenefitsTests {
     private lateinit var us: Civilization
     private lateinit var them: Civilization
     private lateinit var holyCity: City
+    private lateinit var otherCity: City
 
     @Before
     fun setUp() {
@@ -27,21 +28,23 @@ class FounderBenefitsTests {
         us = game.addCiv()
         them = game.addCiv()
         holyCity = game.addCity(us, game.getTile(0, 0))
-        game.addCity(us, game.getTile(0, 4)) // so that losing the holy city does not eliminate us
+        otherCity = game.addCity(us, game.getTile(0, 4)) // so that losing the holy city does not eliminate us
         val religion = game.addReligion(us)
-        religion.addBeliefs(listOf(game.ruleset.beliefs["Church Property"]!!)) // [+2 Gold] for each global city following this religion
+        // Church Property: [+2 Gold] for each global city following this religion; Religious Texts: [+34]% Natural religion spread
+        religion.addBeliefs(listOf("Church Property", "Religious Texts").map { game.ruleset.beliefs[it]!! })
         holyCity.religion.religionThisIsTheHolyCityOf = religion.name
         holyCity.religion.addPressure(religion.name, 1000)
+        otherCity.religion.addPressure(religion.name, 1000)
     }
 
-    private fun hasFounderBelief() = us.getMatchingUniques(UniqueType.StatsFromGlobalCitiesFollowingReligion).any()
+    private fun hasFounderBelief() = religionGold() > 0f
 
     private fun religionGold() = us.stats.getStatMapForNextTurn()["Religion"]?.gold ?: 0f
 
     @Test
     fun `the founder owning the holy city gets the founder belief`() {
         assertTrue(hasFounderBelief())
-        assertEquals(2f, religionGold(), 0.001f)
+        assertEquals(4f, religionGold(), 0.001f)
     }
 
     @Test
@@ -52,7 +55,7 @@ class FounderBenefitsTests {
 
         holyCity.moveToCiv(us)
         assertTrue(hasFounderBelief())
-        assertEquals(2f, religionGold(), 0.001f)
+        assertEquals(4f, religionGold(), 0.001f)
     }
 
     @Test
@@ -65,5 +68,22 @@ class FounderBenefitsTests {
     fun `a religion without a holy city gives the founder no founder belief`() {
         holyCity.religion.religionThisIsTheHolyCityOf = null
         assertFalse(hasFounderBelief())
+    }
+
+    @Test
+    fun `beliefs that change how a religion spreads keep working without the holy city`() {
+        holyCity.moveToCiv(them)
+
+        assertTrue(us.getMatchingUniques(UniqueType.NaturalReligionSpreadStrength).any())
+    }
+
+    @Test
+    fun `our religion in a strength bonus means the religion the founder benefits apply to`() {
+        val filter = "in cities following our religion"
+        assertTrue(otherCity.getCenterTile().matchesFilter(filter, us))
+
+        holyCity.moveToCiv(them)
+
+        assertFalse(otherCity.getCenterTile().matchesFilter(filter, us))
     }
 }

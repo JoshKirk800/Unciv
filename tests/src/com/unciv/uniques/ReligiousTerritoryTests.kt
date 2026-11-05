@@ -6,6 +6,7 @@ import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.Tile
+import com.unciv.models.ruleset.BeliefType
 import com.unciv.testing.BaseTestRunner
 import com.unciv.testing.TestGame
 import org.junit.Assert.assertEquals
@@ -43,6 +44,9 @@ class ReligiousTerritoryTests {
         theirOtherCity = game.addCity(them, game.getTile(-5, 0))
 
         val ourReligion = game.addReligion(us)
+        // a founded religion has a founder belief and its founder only has the founder benefits while it owns the holy city
+        ourReligion.addBeliefs(listOf(game.createBelief(BeliefType.Founder)))
+        ourFollowingCity.religion.religionThisIsTheHolyCityOf = ourReligion.name
         val theirReligion = game.addReligion(them)
         ourFollowingCity.religion.addPressure(ourReligion.name, 1000)
         theirFollowingCity.religion.addPressure(ourReligion.name, 1000)
