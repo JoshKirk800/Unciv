@@ -384,14 +384,10 @@ class CityStats(val city: City) {
                             statsFromUniquesBySource: StatTreeNode = getStatsFromUniquesBySource()) {
         val civInfo = city.civ
         val newHappinessList = LinkedHashMap<String, Float>()
-        // This calculation seems weird to me.
-        // Suppose we calculate the modifier for an AI (non-human) player when the game settings has difficulty level 'prince'.
-        // We first get the difficulty modifier for this civilization, which results in the 'chieftain' modifier (0.6) being used,
-        // as this is a non-human player. Then we multiply that by the ai modifier in general, which is 1.0 for prince.
-        // The end result happens to be 0.6, which seems correct. However, if we were playing on chieftain difficulty,
-        // we would get back 0.6 twice and the modifier would be 0.36. Thus, in general there seems to be something wrong here
-        // I don't know enough about the original whether they do something similar or not and can't be bothered to find where
-        // in the source code this calculation takes place, but it would surprise me if they also did this double multiplication thing. ~xlenstra
+        // The original multiplies twice for an AI as well: the AI player's own handicap (Chieftain, AI_HANDICAP: CvPlayer::getHandicapInfo) gives the
+        // city count and population part (NumCitiesUnhappinessMod, PopulationUnhappinessMod 60%), then the game's handicap scales the total
+        // by AIUnhappinessPercent (CvPlayer::GetUnhappiness). Here [Civilization.getDifficulty] is the AI's level and
+        // aiUnhappinessModifier the game difficulty's percentage. (Unciv's "Prince" AI level is its own, the original has no such exception.)
         var unhappinessModifier = civInfo.getDifficulty().unhappinessModifier
         if (!civInfo.isHuman())
             unhappinessModifier *= civInfo.gameInfo.getDifficulty().aiUnhappinessModifier
