@@ -67,6 +67,8 @@ class MapUnitCache(private val mapUnit: MapUnit) {
     var hasUniqueToCreateWaterImprovements = false
 
     var hasStrengthBonusInRadiusUnique = false
+    var hasSappingBonusUnique = false
+    var hasHeavyChargeUnique = false
     var hasCitadelPlacementUnique = false
     
     var state = GameContext.EmptyState
@@ -122,6 +124,8 @@ class MapUnitCache(private val mapUnit: MapUnit) {
         canEnterCityStates = mapUnit.hasUnique(UniqueType.CanTradeWithCityStateForGoldAndInfluence)
 
         hasStrengthBonusInRadiusUnique = mapUnit.hasUnique(UniqueType.StrengthBonusInRadius, GameContext.IgnoreConditionals)
+        hasSappingBonusUnique = mapUnit.hasUnique(UniqueType.SappingBonusInRadius, GameContext.IgnoreConditionals)
+        hasHeavyChargeUnique = mapUnit.hasUnique(UniqueType.HeavyCharge, GameContext.IgnoreConditionals)
         hasCitadelPlacementUnique = mapUnit.getMatchingUniques(UniqueType.ConstructImprovementInstantly)
             .mapNotNull { mapUnit.civ.gameInfo.ruleset.tileImprovements[it.params[0]] }
             .any { it.hasUnique(UniqueType.OneTimeTakeOverTilesInRadius) }
