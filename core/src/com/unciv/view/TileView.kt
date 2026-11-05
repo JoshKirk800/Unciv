@@ -73,6 +73,13 @@ class TileView internal constructor(private val tile: Tile, val tileMapView: Til
             if (!isVisible(unit)) return null
             return toForeignMapUnitView(unit)
         }
+    /** An embarked unit sharing the tile with a ship, which holds the slot of [militaryUnit] or [civilianUnit] */
+    val embarkedUnit: ForeignMapUnitView?
+        get() {
+            val unit = tile.embarkedUnit ?: return null
+            if (!isVisible(unit)) return null
+            return toForeignMapUnitView(unit)
+        }
     @Readonly fun getVisibleUnits(): List<ForeignMapUnitView> {
         if (viewer == null) return emptyList()
         return tile.getUnits()

@@ -53,6 +53,10 @@ class UnitMovement(val unit: MapUnit) {
     @Cache private val aStarPathingWithoutEscort by lazy { PathingMap.createUnitPathingMap(unit, includeEscortUnit = false) }
     @Cache private val roadPathing by lazy { PathingMap.createRoadPathingMap(unit.civ, unit.currentTile) }
 
+    /** True while this unit is moving after its escort partner, which has already entered the destination: the pair may then
+     *  end up as two embarked units on one tile, though [getCannotMoveToReason] would refuse two embarked units. */
+    private var followingEscortPartner = false
+
     class ParentTileAndTotalMovement(val tile: Tile, val parentTile: Tile, val totalMovement: Float)
 
     @Readonly fun isUnknownTileWeShouldAssumeToBePassable(tile: Tile) = !unit.civ.hasExplored(tile)
@@ -581,7 +585,9 @@ class UnitMovement(val unit: MapUnit) {
                 unit.putInTile(tile) // Required for ruins,
 
                 if (escortUnit != null) {
-                    escortUnit.movement.moveToTile(tile)
+                    escortUnit.movement.followingEscortPartner = true
+                    try { escortUnit.movement.moveToTile(tile) }
+                    finally { escortUnit.movement.followingEscortPartner = false }
                     unit.startEscorting() // Need to re-apply this
                 }
 
@@ -747,15 +753,27 @@ class UnitMovement(val unit: MapUnit) {
             && !unit.getOtherEscortUnit()!!.movement.canMoveTo(tile, assumeCanPassThrough, allowSwap, includeOtherEscortUnit = false))
             return CannotMoveToReason.EscortCannotMove
 
-        val tileIsEmpty = if (unit.isCivilian())
-            (tile.civilianUnit == null || (allowSwap && tile.civilianUnit!!.owner == unit.owner))
-                && (tile.militaryUnit == null || tile.militaryUnit!!.owner == unit.owner)
-        else
-        // can skip checking for airUnit since not a city
-            (tile.militaryUnit == null || (allowSwap && tile.militaryUnit!!.owner == unit.owner))
-                && (tile.civilianUnit == null || tile.civilianUnit!!.owner == unit.owner || unit.civ.isAtWarWith(tile.civilianUnit!!.civ))
+        // The unit in our own slot (military or civilian) blocks us, unless we own it and swap places - or it is an embarked unit and we
+        // are a ship, or the other way around: the original game treats any two embarked units as one kind, and ships as another,
+        // so embarked and naval units do not compete (CvUnit::AreUnitsOfSameType). They share the tile through Tile.embarkedUnit.
+        val slotUnit = if (unit.isCivilian()) tile.civilianUnit else tile.militaryUnit
+        if (slotUnit != null && !(allowSwap && slotUnit.owner == unit.owner)) {
+            val sharesWithEmbarkedOrNaval = slotUnit.owner == unit.owner && tile.embarkedUnit == null
+                && unit.isEmbarkedAt(tile) != slotUnit.isEmbarkedAt(tile)
+            if (!sharesWithEmbarkedOrNaval) return CannotMoveToReason.TileIsNotEmpty
+        }
 
-        if (!tileIsEmpty) return CannotMoveToReason.TileIsNotEmpty
+        // Units of other civilizations block us, except civilians that a military unit captures by moving there
+        // (can skip checking for airUnit since not a city)
+        fun MapUnit?.blocksUs() = this != null && owner != unit.owner
+            && !(unit.isMilitary() && isCivilian() && unit.civ.isAtWarWith(civ))
+        if (tile.militaryUnit.blocksUs() || tile.civilianUnit.blocksUs() || tile.embarkedUnit.blocksUs())
+            return CannotMoveToReason.TileIsNotEmpty
+
+        // Two embarked units, military and civilian, are one kind in the original game and cannot share a tile - except an
+        // escorting pair: the leader enters first, the follower then joins it
+        if (!followingEscortPartner && !unit.isEscorting() && unit.isEmbarkedAt(tile) && tile.hasOwnEmbarkedUnitOfOtherKind(unit))
+            return CannotMoveToReason.TileIsNotEmpty
 
         return null
     }

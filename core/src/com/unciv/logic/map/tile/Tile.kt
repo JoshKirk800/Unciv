@@ -43,6 +43,10 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
     //region Serialized fields
     var militaryUnit: MapUnit? = null
     var civilianUnit: MapUnit? = null
+    /** An embarked unit that shares the tile with a ship: embarked units do not compete with naval ones for a slot (in the original game any two
+     *  embarked units are the same kind, and ships are another). Only set while a non-embarked unit holds the slot of the same kind
+     *  (military or civilian) - see [placeUnit]. The embarked unit is promoted to that slot when it becomes free ([removeUnit]). */
+    var embarkedUnit: MapUnit? = null
     var airUnits = ArrayList<MapUnit>(0)
 
     var position = HexCoord()
@@ -240,6 +244,7 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
         if (addUnits) {
             if (militaryUnit != null) toReturn.militaryUnit = militaryUnit!!.clone()
             if (civilianUnit != null) toReturn.civilianUnit = civilianUnit!!.clone()
+            if (embarkedUnit != null) toReturn.embarkedUnit = embarkedUnit!!.clone()
             toReturn.airUnits = ArrayList(airUnits.map { it.clone() })
         }
         toReturn.position = position
@@ -275,16 +280,17 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
     }
     @Readonly fun isHill() = getHillTerrain() != null
 
-    /** Returns military, civilian and air units in tile */
+    /** Returns military, civilian, embarked-sharing-with-a-ship and air units in tile */
     @Readonly
     fun getUnits(): Sequence<MapUnit> {
         // common case - do not allocate memory for a new sequence
-        if (militaryUnit == null && civilianUnit == null && airUnits.isEmpty())
+        if (militaryUnit == null && civilianUnit == null && embarkedUnit == null && airUnits.isEmpty())
             return emptySequence()
 
         return sequence {
             if (militaryUnit != null) yield(militaryUnit!!)
             if (civilianUnit != null) yield(civilianUnit!!)
+            if (embarkedUnit != null) yield(embarkedUnit!!)
             if (airUnits.isNotEmpty()) yieldAll(airUnits)
         }
     }
@@ -1035,7 +1041,44 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
             airUnits.contains(mapUnit) -> airUnits.remove(mapUnit)
             civilianUnit == mapUnit -> civilianUnit = null
             militaryUnit == mapUnit -> militaryUnit = null
+            embarkedUnit == mapUnit -> embarkedUnit = null
         }
+    }
+
+    /** Puts a non-air [unit] into its slot (military or civilian). An embarked unit does not compete with a ship for the slot:
+     *  it goes to [embarkedUnit] if the slot is held by a non-embarked unit, and a ship arriving where an embarked unit holds the slot
+     *  pushes that unit to [embarkedUnit]. [UnitMovement.canMoveTo][com.unciv.logic.map.mapunit.movement.UnitMovement.canMoveTo] guarantees there is room. */
+    fun placeUnit(unit: MapUnit) {
+        val holder = if (unit.isCivilian()) civilianUnit else militaryUnit
+        val slotUnit = when {
+            holder == null -> unit
+            embarkedUnit == null && unit.isEmbarkedAt(this) && !holder.isEmbarkedAt(this) -> { embarkedUnit = unit; return }
+            embarkedUnit == null && !unit.isEmbarkedAt(this) && holder.isEmbarkedAt(this) -> { embarkedUnit = holder; unit }
+            else -> throw IllegalStateException("Unit ${unit.name} can't be placed in $this: its slot is taken by ${holder.name}")
+        }
+        if (unit.isCivilian()) civilianUnit = slotUnit else militaryUnit = slotUnit
+    }
+
+    /** When a unit left, an [embarkedUnit] that was only in the overflow slot because of it moves into the slot that became free */
+    fun promoteEmbarkedUnit() {
+        val embarked = embarkedUnit ?: return
+        if (embarked.isCivilian()) {
+            if (civilianUnit != null) return
+            civilianUnit = embarked
+        } else {
+            if (militaryUnit != null) return
+            militaryUnit = embarked
+        }
+        embarkedUnit = null
+    }
+
+    /** Whether a unit of [unit]'s owner that is embarked here is of the other kind (military or civilian) than [unit] */
+    @Readonly
+    fun hasOwnEmbarkedUnitOfOtherKind(unit: MapUnit): Boolean {
+        val otherKindSlot = if (unit.isCivilian()) militaryUnit else civilianUnit
+        if (otherKindSlot != null && otherKindSlot.owner == unit.owner && otherKindSlot.isEmbarkedAt(this)) return true
+        val overflow = embarkedUnit
+        return overflow != null && overflow.owner == unit.owner && overflow.isCivilian() != unit.isCivilian()
     }
 
     fun setImprovementBasic(tileImprovement: TileImprovement?) {
@@ -1282,6 +1325,7 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
         if (improvement != null) lineList += improvement!!
         if (civilianUnit != null) lineList += civilianUnit!!.name + " - " + civilianUnit!!.civ.civID
         if (militaryUnit != null) lineList += militaryUnit!!.name + " - " + militaryUnit!!.civ.civID
+        if (embarkedUnit != null) lineList += embarkedUnit!!.name + " - " + embarkedUnit!!.civ.civID
         if (this::baseTerrainObject.isInitialized && isImpassible()) lineList += Constants.impassable
         return lineList.joinToString()
     }
