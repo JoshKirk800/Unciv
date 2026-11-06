@@ -82,6 +82,26 @@ class ReligionManager : IsPartOfGameInfoSerialization {
 
     fun startTurn() {
         if (canGenerateProphet()) generateProphet()
+        checkReformationBelief()
+    }
+
+    /** CvPlayerReligions::HasAddedReformationBelief: whether the religion we founded already has a Reformation belief */
+    @Readonly
+    fun hasAddedReformationBelief(): Boolean = religion?.getBeliefs(BeliefType.Reformation)?.any() == true
+
+    /** The bonus Reformation belief of a policy with [UniqueType.BonusReformationBelief]: a civ that has founded a religion
+     *  (CvReligionClasses.cpp:438, run at the start of every turn, and CvPlayer.cpp:21384 when the policy is adopted) may add one,
+     *  once. It is offered as a free belief, like the ones of [UniqueType.OneTimeFreeBelief], and picked in the same screen. */
+    fun checkReformationBelief() {
+        if (!civInfo.gameInfo.isReligionEnabled() || !civInfo.isMajorCiv) return
+        val founded = religion ?: return
+        if (!founded.isMajorReligion()) return // no religion founded yet: asked again when it is
+        if (!civInfo.hasUnique(UniqueType.BonusReformationBelief)) return
+        if (hasAddedReformationBelief() || freeBeliefs[BeliefType.Reformation.name] > 0) return
+        if (numberOfBeliefsAvailable(BeliefType.Reformation) == 0) return
+        freeBeliefs.add(BeliefType.Reformation.name, 1)
+        civInfo.addNotification("You can now add a Reformation belief to your religion!",
+            Notification.NotificationCategory.Religion, NotificationIcon.Faith)
     }
 
     fun endTurn(faithFromNewTurn: Int) {
@@ -282,9 +302,8 @@ class ReligionManager : IsPartOfGameInfoSerialization {
     @Readonly
     fun numberOfBeliefsAvailable(type: BeliefType): Int {
         val gameInfo = civInfo.gameInfo
-        val numberOfBeliefs = if (type == BeliefType.Any) gameInfo.ruleset.beliefs.values.count()
-        else gameInfo.ruleset.beliefs.values.count { it.type == type }
-        return numberOfBeliefs - gameInfo.religions.flatMap { it.value.getBeliefs(type) }.distinct().count()
+        val numberOfBeliefs = gameInfo.ruleset.beliefs.values.count { type.includes(it.type) }
+        return numberOfBeliefs - gameInfo.religions.flatMap { it.value.getBeliefs(type) }.filter { type.includes(it.type) }.distinct().count()
         // We need to do the distinct above, as pantheons and religions founded out of those pantheons might share beliefs
     }
 
@@ -386,7 +405,7 @@ class ReligionManager : IsPartOfGameInfoSerialization {
             val numberToAdd = min(number, availableBeliefs[type])
             beliefsToChoose.add(type, numberToAdd)
             availableBeliefs[type] = availableBeliefs[type] - numberToAdd
-            if (type != BeliefType.Any) {
+            if (type != BeliefType.Any && type != BeliefType.Reformation) {
                 // deduct from BeliefType.Any as well
                 availableBeliefs[BeliefType.Any] = availableBeliefs[BeliefType.Any] - numberToAdd
             }
@@ -468,6 +487,7 @@ class ReligionManager : IsPartOfGameInfoSerialization {
             }
         }
 
+        checkReformationBelief() // a religion founded after the policy was adopted
         civInfo.updateStatsForNextTurn()  // a belief can have an immediate effect on stats
     }
 
@@ -536,6 +556,14 @@ class ReligionManager : IsPartOfGameInfoSerialization {
         if (religion == null) return 0
         return civInfo.gameInfo.getCities()
             .count { it.religion.getMajorityReligion() == religion }
+    }
+
+    /** As above, only the cities that match [cityFilter] (as seen by us) count: with `in foreign cities`, CvPlayerReligions::GetNumForeignCitiesFollowing */
+    @Readonly
+    fun numberOfCitiesFollowingThisReligion(cityFilter: String): Int {
+        if (religion == null) return 0
+        return civInfo.gameInfo.getCities()
+            .count { it.religion.getMajorityReligion() == religion && it.matchesFilter(cityFilter, civInfo) }
     }
 
     @Readonly

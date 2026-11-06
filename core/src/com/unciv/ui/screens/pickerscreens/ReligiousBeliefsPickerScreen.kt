@@ -75,6 +75,8 @@ class ReligiousBeliefsPickerScreen (
 
         setOKAction(
             if (pickIconAndName) "Choose a Religion"
+            else if (numberOfBeliefsCanChoose[BeliefType.Reformation] > 0)
+                "Add a Reformation belief to [${currentReligion.getReligionDisplayName()}]"
             else "Enhance [${currentReligion.getReligionDisplayName()}]"
         ) {
             if (civInfo.religionManager.religionState == ReligionState.FoundingReligion)
@@ -198,7 +200,7 @@ class ReligiousBeliefsPickerScreen (
         rightBeliefsToChoose.clear()
         rightSelection.clear()
         val availableBeliefs = ruleset.beliefs.values
-            .filter { it.type == beliefType || beliefType == BeliefType.Any }
+            .filter { beliefType.includes(it.type) }
 
         val civReligionManager = currentReligion.foundingCiv.religionManager
 

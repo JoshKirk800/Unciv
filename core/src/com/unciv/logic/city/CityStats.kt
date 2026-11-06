@@ -232,6 +232,13 @@ class CityStats(val city: City) {
             }
         }
 
+        // "[stats] for each major religion with followers in the city [cityFilter]" (Candi)
+        city.forEachMatchingUnique(UniqueType.StatsPerReligionWithFollowers) { unique ->
+            if (city.matchesFilter(unique.params[1]))
+                sourceToStats.addStats(unique.stats.times(city.religion.getNumberOfMajorReligionsWithFollowers()),
+                    unique.getSourceNameForUser(), unique.sourceObjectName ?: "")
+        }
+
         city.forEachMatchingUnique(UniqueType.StatsFromCitiesOnSpecificTiles) { unique ->
             if (city.getCenterTile().matchesTerrainFilter(unique.params[1], city.civ))
                 addUniqueStats(unique)

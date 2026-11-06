@@ -47,9 +47,11 @@ class CityCombatant(val city: City) : ICombatant {
         var strength = modConstants.cityStrengthBase
         strength += (city.population.population * modConstants.cityStrengthPerPop) // Each 5 pop gives 2 defence
         val cityTile = city.getCenterTile()
+        // Terrain bonus (hills) is added after the player-wide multiplier below, CvCity.cpp:10386-10395
+        var terrainStrength = 0
         for (terrain in cityTile.allTerrains)
             terrain.forEachMatchingUnique(UniqueType.GrantsCityStrength, GameContext.EmptyState) { unique ->
-                strength += unique.params[0].toInt()
+                terrainStrength += unique.params[0].toInt()
             }
         // as tech progresses so does city strength
         val techCount = getCivInfo().gameInfo.ruleset.technologies.size
@@ -71,10 +73,16 @@ class CityCombatant(val city: City) : ICombatant {
         getCivInfo().forEachMatchingUnique(UniqueType.BetterDefensiveBuildings, gameContext) { unique ->
             buildingsStrength *= unique.params[0].toPercent()
         }
+        strength += buildingsStrength
+
+        // Player-wide multiplier on base + population + techs + garrison + buildings, CvCity.cpp:10383-10387 (Their Finest Hour)
+        getCivInfo().forEachMatchingUnique(UniqueType.CityStrengthMultiplier, gameContext) { unique ->
+            strength *= unique.params[0].toPercent()
+        }
         // CvCity::getStrengthValue(bForRangeStrike): "Strike strikes are weaker" - the defense of the buildings is taken out, what a
         // policy adds to it stays
-        if (forRangedStrike) buildingsStrength -= buildingsDefense
-        strength += buildingsStrength
+        if (forRangedStrike) strength -= buildingsDefense
+        strength += terrainStrength
 
         var extraStrength = 0
         city.forEachMatchingUnique(UniqueType.StrengthAmount, gameContext) { extraStrength += it.params[0].toInt() }

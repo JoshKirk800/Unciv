@@ -7,11 +7,14 @@ import com.unciv.logic.civilization.NotificationCategory
 import com.unciv.logic.civilization.NotificationIcon
 import com.unciv.models.Counter
 import com.unciv.models.Religion
+import com.unciv.models.ruleset.Belief
+import com.unciv.models.ruleset.BeliefType
 import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unique.Unique
 import com.unciv.models.ruleset.unique.UniqueMap.Companion.NO_UNIQUE_FILTER
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.ui.components.extensions.toPercent
+import yairm210.purity.annotations.LocalState
 import yairm210.purity.annotations.Readonly
 
 class CityReligionManager : IsPartOfGameInfoSerialization {
@@ -60,12 +63,40 @@ class CityReligionManager : IsPartOfGameInfoSerialization {
         getAffectedBySurroundingCities()
     }
 
+    /** CvCityReligions::GetSecondaryReligion: the major religion other than the majority one that has the most followers
+     *  here, a tie going to the one with more pressure. Pantheons do not count. */
+    @Readonly
+    private fun getSecondaryReligion(majority: String): Religion? {
+        var best: String? = null
+        for ((name, count) in followers) {
+            if (name == majority || count <= 0) continue
+            if (city.civ.gameInfo.religions[name]?.isMajorReligion() != true) continue
+            if (best == null || count > followers[best] || (count == followers[best] && pressures[name] > pressures[best]))
+                best = name
+        }
+        return best?.let { city.civ.gameInfo.religions[it] }
+    }
+
+    /** CvCityReligions::GetSecondaryReligionPantheonBelief (CvReligionClasses.cpp:2808): with [UniqueType.SecondaryReligionPantheon]
+     *  the first Pantheon belief of the second most popular religion works in the city like one of the majority religion */
+    @Readonly
+    fun getSecondaryPantheonBelief(): Belief? {
+        if (followers.size < 2) return null // cheap test first: this is asked for every unique lookup of a city
+        val majority = getMajorityReligionName() ?: return null
+        var enabled = false
+        city.civ.forEachMatchingUnique(UniqueType.SecondaryReligionPantheon) { enabled = true }
+        if (!enabled) return null
+        return getSecondaryReligion(majority)?.getBeliefs(BeliefType.Pantheon)?.firstOrNull()
+    }
+
     @Readonly
     @Deprecated(message = "forEachUnique is faster. If not viable, then this can still be used",
         replaceWith = ReplaceWith("forEachUnique"))
     fun getUniques(uniqueType: UniqueType): Sequence<Unique> {
         val majorityReligion = getMajorityReligion() ?: return emptySequence()
-        return majorityReligion.followerBeliefUniqueMap.getUniques(uniqueType)
+        val uniques = majorityReligion.followerBeliefUniqueMap.getUniques(uniqueType)
+        val secondary = getSecondaryPantheonBelief() ?: return uniques
+        return uniques + secondary.uniqueMap.getUniques(uniqueType)
     }
 
     @Readonly
@@ -75,19 +106,28 @@ class CityReligionManager : IsPartOfGameInfoSerialization {
     fun forEachMatchingUnique(uniqueType: UniqueType, gameContext: GameContext=city.state, filter:(Unique)->Boolean, op: (unique: Unique)->Unit) {
         val majorityReligion = getMajorityReligion() ?: return
         majorityReligion.followerBeliefUniqueMap.forEachMatchingUnique(uniqueType, gameContext, filter, op)
+        getSecondaryPantheonBelief()?.uniqueMap?.forEachMatchingUnique(uniqueType, gameContext, filter, op)
     }
 
     @Readonly
     fun getAllUniques(): Sequence<Unique> {
         val majorityReligion = getMajorityReligion() ?: return emptySequence()
-        return majorityReligion.followerBeliefUniqueMap.getAllUniques()
+        val uniques = majorityReligion.followerBeliefUniqueMap.getAllUniques()
+        val secondary = getSecondaryPantheonBelief() ?: return uniques
+        return uniques + secondary.uniqueMap.getAllUniques()
     }
 
     @Readonly
     fun forEachUnique(filter:(Unique)->Boolean, op: (unique: Unique)->Unit) {
         val majorityReligion = getMajorityReligion() ?: return
         majorityReligion.followerBeliefUniqueMap.forEachUnique(filter, op)
+        getSecondaryPantheonBelief()?.uniqueMap?.forEachUnique(filter, op)
     }
+
+    /** CvCityReligions::GetNumReligionsWithFollowers (CvReligionClasses.cpp:2585): the major religions with at least one follower in the city */
+    @Readonly
+    fun getNumberOfMajorReligionsWithFollowers(): Int =
+        followers.count { it.value > 0 && city.civ.gameInfo.religions[it.key]?.isMajorReligion() == true }
 
     @Readonly fun getPressures(): Counter<String> = pressures.clone()
 
@@ -108,12 +148,43 @@ class CityReligionManager : IsPartOfGameInfoSerialization {
         if (shouldUpdateFollowers) updateNumberOfFollowers()
     }
 
+    /** The pressure of a Spread Religion action that leaves the other religions in place: as [addPressure], and the religion with
+     *  [UniqueType.ErodesOtherReligionPressure] takes that share of the added amount away from each other major religion
+     *  (CvCityReligions::AddReligiousPressure, CvReligionClasses.cpp:3119; pantheons and atheism are not eroded) */
+    fun addPressureFromSpreading(religionName: String, amount: Int) {
+        if (!city.civ.gameInfo.isReligionEnabled()) return // No religion, no pressures
+        var erosionPercent = 0
+        city.civ.gameInfo.religions[religionName]?.founderBeliefUniqueMap
+            ?.forEachMatchingUnique(UniqueType.ErodesOtherReligionPressure, city.state) { erosionPercent += it.params[0].toInt() }
+        if (erosionPercent > 0) {
+            val erosion = amount * erosionPercent / 100
+            for ((name, pressure) in pressures.toList()) { // a copy, as the pressures change
+                if (name == religionName || name == Constants.noReligionName) continue
+                if (city.civ.gameInfo.religions[name]?.isMajorReligion() != true) continue
+                pressures.add(name, -minOf(pressure, erosion))
+            }
+        }
+        addPressure(religionName, amount)
+    }
+
+    /** Removes the pressure of all religions but [religion] and atheism. A religion with [UniqueType.ReligionPressureRetention] keeps
+     *  that share of its pressure (CvCityReligions::RemoveOtherReligions, CvReligionClasses.cpp:3381, and AddProphetSpread, 3051) */
     fun removeAllPressuresExceptFor(religion: String) {
         val pressureFromThisReligion = pressures[religion]
         // Atheism is never removed
         val pressureFromAtheism = pressures[Constants.noReligionName]
+        val retainedPressures = Counter<String>()
+        for ((name, pressure) in pressures) {
+            if (name == religion || name == Constants.noReligionName) continue
+            val other = city.civ.gameInfo.religions[name] ?: continue
+            if (!other.isMajorReligion()) continue
+            var retention = 0
+            other.founderBeliefUniqueMap.forEachMatchingUnique(UniqueType.ReligionPressureRetention, city.state) { retention += it.params[0].toInt() }
+            if (retention > 0) retainedPressures.add(name, pressure * retention.coerceAtMost(100) / 100)
+        }
         clearAllPressures()
         pressures.add(religion, pressureFromThisReligion)
+        for ((name, pressure) in retainedPressures) pressures.add(name, pressure)
         if (pressureFromAtheism != 0) pressures[Constants.noReligionName] = pressureFromAtheism
         updateNumberOfFollowers()
     }
@@ -268,16 +339,62 @@ class CityReligionManager : IsPartOfGameInfoSerialization {
             addPressure(religionThisIsTheHolyCityOf!!,5 * pressureFromAdjacentCities, false)
         }
 
+        // CvGameReligions::SpreadReligionToOneCity (CvReligionClasses.cpp:334): the spies of a religion with Underground Sect, first
+        for ((religionName, times) in getSpyPressureTimes())
+            if (pressures.containsKey(religionName)) // the original only adds to a presence that is already there
+                addPressure(religionName, times * pressureFromAdjacentCities, false)
+
+        val tradeConnections = getTradeConnections()
         for (otherCity in city.civ.gameInfo.getCities()) {
             if (otherCity == city) continue
-            val majorityReligionOfCity = otherCity.religion.getMajorityReligionName() ?: continue
-            if (!this.city.civ.gameInfo.religions[majorityReligionOfCity]!!.isMajorReligion()) continue
-            if (otherCity.getCenterTile().aerialDistanceTo(city.getCenterTile())
-                    > otherCity.religion.getSpreadRange()) continue
-            addPressure(majorityReligionOfCity, otherCity.religion.pressureAmountToAdjacentCities(city), false)
+            val (religionName, pressure) = getPressureFrom(otherCity, tradeConnections) ?: continue
+            addPressure(religionName, pressure, false)
         }
 
         updateNumberOfFollowers()
+    }
+
+    /** For each religion whose founder has a living spy in this city: how many times the natural pressure it adds, by [UniqueType.SpyReligionPressure] */
+    @Readonly
+    private fun getSpyPressureTimes(): Counter<String> {
+        val result = Counter<String>()
+        for (spyCiv in city.civ.gameInfo.civilizations) {
+            val religion = spyCiv.religionManager.religion?.takeIf { it.isMajorReligion() } ?: continue
+            var times = 0
+            religion.founderBeliefUniqueMap.forEachMatchingUnique(UniqueType.SpyReligionPressure, spyCiv.state) { times += it.params[0].toInt() }
+            if (times > 0 && spyCiv.espionageManager.getSpiesInCity(city).any { it.isAlive() })
+                result.add(religion.name, times)
+        }
+        return result
+    }
+
+    /** The cities that a trade route of anyone links this city to, in either direction (CvGameTrade::IsCityConnectedToCity, CvTradeClasses.cpp:661),
+     *  each with whether a route starts there and ends here (IsCityConnectedFromCityToCity, 691) */
+    @Readonly
+    private fun getTradeConnections(): Map<City, Boolean> {
+        @LocalState val connections = HashMap<City, Boolean>()
+        for (civ in city.civ.gameInfo.civilizations) {
+            for (route in civ.tradeRoutes.routes) {
+                val origin = route.getOriginCity() ?: continue
+                val destination = route.getDestinationCity() ?: continue
+                if (destination == city) connections[origin] = true
+                else if (origin == city) connections.putIfAbsent(destination, false)
+            }
+        }
+        return connections
+    }
+
+    /** The religion that [sender] spreads to this city naturally every turn and how much pressure that is, if any
+     *  (CvGameReligions::GetAdjacentCityReligiousPressure, CvReligionClasses.cpp:1662): the sender must be close enough, or be connected by a trade route
+     *  in either direction; a city that is both makes the pressure only once */
+    @Readonly
+    private fun getPressureFrom(sender: City, tradeConnections: Map<City, Boolean>): Pair<String, Int>? {
+        val majorityReligion = sender.religion.getMajorityReligion() ?: return null
+        if (!majorityReligion.isMajorReligion()) return null
+        val tradeConnection = tradeConnections[sender]
+        if (tradeConnection == null
+            && sender.getCenterTile().aerialDistanceTo(city.getCenterTile()) > sender.religion.getSpreadRange()) return null
+        return majorityReligion.name to sender.religion.pressureAmountToAdjacentCities(city, tradeConnection == true)
     }
 
     @Readonly
@@ -305,18 +422,14 @@ class CityReligionManager : IsPartOfGameInfoSerialization {
         if (city.isHolyCity()) {
             addedPressure[religionThisIsTheHolyCityOf!!] = 5 * pressureFromAdjacentCities
         }
-        val allCitiesWithin10Tiles =
-            city.civ.gameInfo.getCities()
-                .filter {
-                    it != city
-                    && it.getCenterTile().aerialDistanceTo(city.getCenterTile()) <= it.religion.getSpreadRange()
-                }
-        for (city in allCitiesWithin10Tiles) {
-            val majorityReligionOfCity = city.religion.getMajorityReligion() ?: continue
-            if (!majorityReligionOfCity.isMajorReligion()) continue
-            addedPressure.add(majorityReligionOfCity.name, city.religion.pressureAmountToAdjacentCities(
-                this.city
-            ))
+        for ((religionName, times) in getSpyPressureTimes())
+            if (pressures.containsKey(religionName))
+                addedPressure.add(religionName, times * pressureFromAdjacentCities)
+        val tradeConnections = getTradeConnections()
+        for (otherCity in city.civ.gameInfo.getCities()) {
+            if (otherCity == city) continue
+            val (religionName, pressure) = getPressureFrom(otherCity, tradeConnections) ?: continue
+            addedPressure.add(religionName, pressure)
         }
         return addedPressure
     }
@@ -335,8 +448,14 @@ class CityReligionManager : IsPartOfGameInfoSerialization {
     }
 
     @Readonly
-    private fun pressureAmountToAdjacentCities(pressuredCity: City): Int {
+    private fun pressureAmountToAdjacentCities(pressuredCity: City, viaTradeRouteFromHere: Boolean = false): Int {
         var pressure = pressureFromAdjacentCities.toFloat()
+
+        // A trade route that starts here (CvReligionClasses.cpp:1705): the trait of the civilization, Arabia
+        if (viaTradeRouteFromHere)
+            city.civ.forEachMatchingUnique(UniqueType.TradeRouteReligionPressure) { unique ->
+                pressure *= unique.params[0].toPercent()
+            }
 
         // Follower beliefs of this religion
         city.forEachMatchingUnique(UniqueType.NaturalReligionSpreadStrength) { unique ->

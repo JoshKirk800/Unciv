@@ -5,6 +5,7 @@ import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.NotificationCategory
 import com.unciv.models.Counter
+import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unique.UniqueType
 import yairm210.purity.annotations.Readonly
 
@@ -127,7 +128,31 @@ class CultureManager : IsPartOfGameInfoSerialization {
 
         for (unique in city.getMatchingUniques(UniqueType.FlatTourism, state))
             if (city.matchesFilter(unique.params[1])) base += unique.params[0].toInt()
+
+        // Sacred Sites (CvCultureClasses.cpp:4081): the beliefs of the majority religion of the city count, whoever founded it
+        city.religion.getMajorityReligion()?.founderBeliefUniqueMap
+            ?.forEachMatchingUnique(UniqueType.FlatTourismFromFaithBuildings, state) { unique ->
+                if (city.matchesFilter(unique.params[2]))
+                    base += unique.params[0].toInt() * getNumBuildingsOnlyBoughtWith(city, unique.params[1])
+            }
         return base
+    }
+
+    /** CvCityBuildings::GetNumBuildingsFromFaith (CvBuildingClasses.cpp:3185): the buildings of the city that cannot be built and that
+     *  some belief of the ruleset lets you buy with [stat] */
+    @Readonly
+    private fun getNumBuildingsOnlyBoughtWith(city: City, stat: String): Int {
+        val beliefs = city.getRuleset().beliefs.values
+        return city.cityConstructions.getBuiltBuildings().count { building ->
+            building.hasUnique(UniqueType.Unbuildable) && beliefs.any { belief ->
+                belief.getMatchingUniques(UniqueType.BuyBuildingsWithStat, GameContext.IgnoreConditionals)
+                    .any { it.params[1] == stat && building.matchesFilter(it.params[0]) }
+                || belief.getMatchingUniques(UniqueType.BuyBuildingsForAmountStat, GameContext.IgnoreConditionals)
+                    .any { it.params[2] == stat && building.matchesFilter(it.params[0]) }
+                || belief.getMatchingUniques(UniqueType.BuyBuildingsIncreasingCost, GameContext.IgnoreConditionals)
+                    .any { it.params[2] == stat && building.matchesFilter(it.params[0]) }
+            }
+        }
     }
 
     /** The culture the world wonders of the city give by themselves */

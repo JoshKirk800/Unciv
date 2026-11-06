@@ -43,6 +43,8 @@ enum class UniqueType(
 
     StatsFromSpecialist("[stats] from every specialist [cityFilter]", UniqueTarget.Global, UniqueTarget.FollowerBelief),
     StatsPerPopulation("[stats] per [positiveAmount] population [cityFilter]", UniqueTarget.Global, UniqueTarget.FollowerBelief),
+    StatsPerReligionWithFollowers("[stats] for each major religion with followers in the city [cityFilter]", UniqueTarget.Global, UniqueTarget.FollowerBelief,
+        docDescription = "Counts the religions of which at least one citizen of the city is a follower, pantheons not included. Whole numbers of the stats only, as in the original (CvCity::GetYieldPerReligionTimes100)"),
     StatsPerPolicies("[stats] per [positiveAmount] social policies adopted", UniqueTarget.Global, docDescription = "Only works for civ-wide stats"),
     StatsPerStat("[stats] per every [positiveAmount] [civWideStat]", UniqueTarget.Global),
 
@@ -55,6 +57,10 @@ enum class UniqueType(
     StatsFromTradeRoute("[stats] from each Trade Route", UniqueTarget.Global, UniqueTarget.FollowerBelief),
     FlatTourism("[relativeAmount] Tourism [cityFilter]", UniqueTarget.Global, UniqueTarget.FollowerBelief,
         docDescription = "Added to the tourism of the city before the percentages, see ModConstants and the unique `[relativeAmount]% Tourism [cityFilter]`"),
+    FlatTourismFromFaithBuildings("[relativeAmount] Tourism from every building that can only be bought with [stat] [cityFilter]", UniqueTarget.FounderBelief,
+        docDescription = "Read from the founder beliefs of the majority religion of each city, not of the founder of the religion. " +
+            "Added to the tourism of the city before the percentages, like `[relativeAmount] Tourism [cityFilter]`. " +
+            "A building counts if it is in the city, cannot be built, and some belief of the ruleset lets you buy it with the stat (CvCityBuildings::GetNumBuildingsFromFaith)"),
     TourismPercent("[relativeAmount]% Tourism [cityFilter]", UniqueTarget.Global, UniqueTarget.FollowerBelief,
         docDescription = "All such bonuses of a city are added up and applied to its tourism, if the sum is positive"),
     TourismPercentUnlessBlocked("[relativeAmount]% Tourism [cityFilter] unless the target has a [buildingName]", UniqueTarget.Global,
@@ -91,6 +97,9 @@ enum class UniqueType(
         docDescription = "Marks the resolution which the World Congress proposes itself to choose the World Leader. A civilization that wins it wins the Diplomatic Victory"),
     StatsFromGlobalCitiesFollowingReligion("[stats] for each global city following this religion", UniqueTarget.FounderBelief),
     StatsFromGlobalFollowers("[stats] from every [positiveAmount] global followers [cityFilter]", UniqueTarget.FounderBelief),
+    StatsFromGlobalCitiesFollowingReligionPer("[stats] from every [positiveAmount] global cities following this religion [cityFilter]", UniqueTarget.FounderBelief,
+        docDescription = "Counts the cities of every civilization that have the religion of the founder as their majority religion and match the filter, " +
+            "rounded down to a multiple of the amount, so that `[+1 Happiness] from every [2] global cities following this religion [in all cities]` gives 1 for 2 or 3 cities"),
 
     // Stat percentage boosts
     StatPercentBonus("[relativeAmount]% [stat]", UniqueTarget.Global, UniqueTarget.FollowerBelief,
@@ -291,6 +300,9 @@ enum class UniqueType(
     /// City Strength
     BetterDefensiveBuildings("[relativeAmount]% City Strength from defensive buildings", UniqueTarget.Global,
         docDescription = MULTIPLICATIVE_BONUS_EXPLANATION),
+    CityStrengthMultiplier("[relativeAmount]% City Strength", UniqueTarget.Global,
+        docDescription = "Multiplies the base, population, technology, garrison and building part of the strength of all your cities, " +
+            "before the terrain bonus and the additive combat modifiers are added. $MULTIPLICATIVE_BONUS_EXPLANATION"),
     StrengthForCities("[relativeAmount]% Strength for cities", UniqueTarget.Global, UniqueTarget.FollowerBelief,
         docDescription = ADDITIVE_BONUS_EXPLANATION),
 
@@ -328,6 +340,10 @@ enum class UniqueType(
     GoldFromEncampmentsAndCities("Receive [relativeAmount]% Gold from Barbarian encampments and pillaging Cities", UniqueTarget.Global),
     GainFromEncampment("When conquering an encampment, earn [amount] Gold and recruit a Barbarian unit", UniqueTarget.Global),
     GainFromDefeatingUnit("When defeating a [mapUnitFilter] unit, earn [amount] Gold and recruit it", UniqueTarget.Global),
+    ConvertAdjacentBarbarians("[mapUnitFilter] units convert adjacent Barbarian units", UniqueTarget.FounderBelief,
+        docDescription = "When such a unit of the founder of the religion moves next to a Barbarian unit, or a Barbarian unit moves next to it, " +
+            "the Barbarian unit (the best defender of its tile) joins the founder, with no movement left. " +
+            "A Barbarian camp under it is cleared, without the gold (CvBeliefHelpers::ConvertBarbarianUnit)"),
 
     /// Religion
     DisablesReligion("Starting in this era disables religion", UniqueTarget.Era),
@@ -339,6 +355,25 @@ enum class UniqueType(
     ReligionSpreadDistance("Religion naturally spreads to cities [amount] tiles away", UniqueTarget.Global, UniqueTarget.FollowerBelief),
     MayNotGenerateGreatProphet("May not generate great prophet equivalents naturally", UniqueTarget.Global),
     FaithCostOfGreatProphetChange("[relativeAmount]% Faith cost of generating Great Prophet equivalents", UniqueTarget.Global),
+    SecondaryReligionPantheon("Cities with a majority religion also get the Pantheon belief bonus of the second most popular religion", UniqueTarget.Global,
+        docDescription = "The second most popular religion of a city is the one with the most followers among the major religions other than its majority religion " +
+            "(ties go to the one with more pressure). Its Pantheon belief, the first one if it has several, applies to the city as if it were the belief of the majority religion"),
+    BonusReformationBelief("If you founded a religion, gain a bonus Reformation belief", UniqueTarget.Global,
+        docDescription = "Once, as soon as the civilization has founded a religion that has no Reformation belief yet: " +
+            "a free belief of the type `Reformation` can be chosen, like with `Gain a free [beliefType] belief`"),
+    ErodesOtherReligionPressure("Spreading religion erodes [positiveAmount]% of the pressure it adds from the other religions in the city", UniqueTarget.FounderBelief,
+        docDescription = "Read from the founder beliefs of the religion that is spread. Applies to units that do not remove the other religions altogether (see `Removes other religions when spreading religion`). " +
+            "Pantheons and the citizens of no religion are not eroded"),
+    ReligionPressureRetention("[positiveAmount]% of the pressure of this religion in a city remains when other religions are removed from it", UniqueTarget.FounderBelief,
+        docDescription = "Read from the founder beliefs of the religion that would be removed, which keeps that share of its pressure instead of losing all of it " +
+            "when a unit removes other religions (Inquisitors, Great Prophets)"),
+    SpyReligionPressure("Spies exert [positiveAmount] times the natural religious pressure on the cities they occupy", UniqueTarget.FounderBelief,
+        docDescription = "Every turn, each living spy of the founder of a religion adds this multiple of the pressure that a nearby city exerts to the religion in the city the spy is in, " +
+            "if the religion already has a presence there"),
+    TradeRouteReligionPressure("[relativeAmount]% religious pressure along trade routes that start in our cities", UniqueTarget.Global,
+        docDescription = "Cities linked by a trade route, of any civilization and in either direction, push the religion they follow on each other every turn as if they were close enough " +
+            "(once only if they are). The pressure along a route that starts in a city of the civilization with this unique is changed by this percentage. " +
+            MULTIPLICATIVE_BONUS_EXPLANATION),
 
     /// Espionage
     SpyEffectiveness("[relativeAmount]% spy effectiveness [cityFilter]", UniqueTarget.Global),
@@ -507,6 +542,7 @@ enum class UniqueType(
     CanAirsweep("Can perform Air Sweep", UniqueTarget.Unit),
 
     CanSpeedupConstruction("Can speed up construction of a building", UniqueTarget.Unit),
+    CanSpeedupSpaceshipPartConstruction("Units that can speed up construction of a building can also speed up construction of spaceship parts", UniqueTarget.Global),
     CanSpeedupWonderConstruction("Can speed up the construction of a wonder", UniqueTarget.Unit),
     CanHurryResearch("Can hurry technology research", UniqueTarget.Unit),
     CanHurryPolicy("Can generate a large amount of culture", UniqueTarget.Unit),
@@ -654,7 +690,7 @@ enum class UniqueType(
     CanMoveOnWater("May travel on Water tiles without embarking", UniqueTarget.Unit),
     CanPassImpassable("Can pass through impassable tiles", UniqueTarget.Unit),
     IgnoresTerrainCost("Ignores terrain cost", UniqueTarget.Unit),
-    IgnoresZOC("Ignores Zone of Control", UniqueTarget.Unit),
+    IgnoresZOC("Ignores Zone of Control", UniqueTarget.Unit, UniqueTarget.Global),
     RoughTerrainPenalty("Rough terrain penalty", UniqueTarget.Unit),
     CanEnterIceTiles("Can enter ice tiles", UniqueTarget.Unit),
     CannotEmbark("Cannot embark", UniqueTarget.Unit),
@@ -1125,6 +1161,9 @@ enum class UniqueType(
     TriggerUpponEndingGoldenAge("upon ending a Golden Age", UniqueTarget.TriggerCondition),
     /** Can be placed upon both units and as global */
     TriggerUponConqueringCity("upon conquering a city", UniqueTarget.TriggerCondition, UniqueTarget.UnitTriggerCondition),
+    TriggerUponAcquiringCity("upon acquiring a city", UniqueTarget.TriggerCondition,
+        docDescription = "Triggers once for each city that changes hands to this civilization in any way: conquest, liberation, marriage with a City-State, or a trade. " +
+            "Not for founded cities. The relevant city is the acquired one, so `in this city` filters work (CvPlayer::acquireCity)"),
     TriggerUponLosingCity("upon losing a city", UniqueTarget.TriggerCondition),
     TriggerUponFoundingCity("upon founding a city", UniqueTarget.TriggerCondition),
     TriggerUponBuildingImprovement("upon building a [improvementFilter] improvement", UniqueTarget.TriggerCondition, UniqueTarget.UnitTriggerCondition),
