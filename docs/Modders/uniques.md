@@ -53,6 +53,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Triggerable
 
+??? example  "[positiveAmount] Free Tenets"
+	Tenets are the policies of an ideology. A free tenet can be spent on those only, and does not make the next policy dearer
+
+	Example: "[3] Free Tenets"
+
+	Applicable to: Triggerable
+
 ??? example  "Empire enters golden age"
 	Applicable to: Triggerable
 
@@ -649,6 +656,27 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Global
 
+??? example  "[amount] Influence per turn with City-States we have a trade route with"
+	Added to the per-turn influence change with each City-State that is connected to us by a trade route in either direction, scaled by the gold gift modifier of the game speed. Unlike the normal recovery, it is not capped at the resting point.
+
+	Example: "[3] Influence per turn with City-States we have a trade route with"
+
+	Applicable to: Global
+
+??? example  "[amount] Influence per turn with City-States we could demand tribute from"
+	Added to the per-turn influence change with each City-State from which our tribute demand would currently succeed (the same check as the Afraid relationship), scaled by the gold gift modifier of the game speed. Unlike the normal recovery, it is not capped at the resting point.
+
+	Example: "[3] Influence per turn with City-States we could demand tribute from"
+
+	Applicable to: Global
+
+??? example  "[relativeAmount]% strength when intimidating City-States"
+	Increases the military part of the willingness of City-States to pay tribute (military rank and military presence near the City-State) by this percentage.
+
+	Example: "[+20]% strength when intimidating City-States"
+
+	Applicable to: Global
+
 ??? example  "Allied City-States provide [stat] equal to [relativeAmount]% of what they produce for themselves"
 	Example: "Allied City-States provide [Culture] equal to [+20]% of what they produce for themselves"
 
@@ -1166,6 +1194,20 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Global
 
+??? example  "[relativeAmount]% enemy spy stealing risk [cityFilter]"
+	Scales the dice roll (random roll plus the defending counter-intelligence spy's skill) that decides how an enemy spy fares when stealing technology in matching cities of this civilization; a higher roll means more detection, and from 200 the spy is killed. `[+100]` doubles the roll. Does not affect election rigging.
+
+	Example: "[+20]% enemy spy stealing risk [in all cities]"
+
+	Applicable to: Global
+
+??? example  "[relativeAmount]% votes when rigging City-State elections"
+	Multiplies the votes our spies get in City-State elections. Note that the original reads this modifier from the City-State's own policies, which would never help the spy's owner; here it is read from the spy's owner.
+
+	Example: "[+20]% votes when rigging City-State elections"
+
+	Applicable to: Global
+
 ??? example  "New spies start with [amount] level(s)"
 	Example: "New spies start with [3] level(s)"
 
@@ -1303,6 +1345,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 ??? example  "No damage penalty for wounded units"
 	Applicable to: Global, Unit
+
+??? example  "[amount]% wounded unit damage penalty"
+	Percentage points added to the share of its lost health that a wounded unit loses in strength and damage dealt (33 by default), so `[-25]` leaves 8. The sum is not reduced below 0. Does not apply to cities, and `No damage penalty for wounded units` still removes the penalty entirely.
+
+	Example: "[3]% wounded unit damage penalty"
+
+	Applicable to: Global
 
 ??? example  "Unable to capture cities"
 	Applicable to: Global, Unit
@@ -1513,6 +1562,11 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 	Applicable to: Nation, Tech, Policy, FounderBelief, FollowerBelief, Building, Unit, UnitType, Promotion, Terrain, Improvement, Resource, Ruins, Speed, Difficulty, EventChoice
 
 ## Policy uniques
+??? example  "Is an ideology"
+	Marks a policy branch as an ideology: a civilization has at most one (the others of the rules must make them exclusive, as `Only available <before adopting [policy]>`), adopting it costs nothing and is not a purchase, and its tenets are the policies of the branch that have a `Tenet Level [amount]` tag. Tenets of a level above 1 are limited by the rules of the ruleset, see the Brave New World ideologies for the usual way. See also `[positiveAmount] Free Tenets`
+
+	Applicable to: Policy
+
 ??? example  "Only available"
 	Meant to be used together with conditionals, like "Only available &lt;after adopting [policy]&gt; &lt;while the empire is happy&gt;". Only allows Building when ALL conditionals are met. Will also block Upgrade and Transform actions. See also CanOnlyBeBuiltWhen
 
@@ -4687,7 +4741,7 @@ There is a conversion affecting dashes and leading/trailing blanks. Please make 
 *[tech]: The name of any tech.
 *[terrainFeature]: The name of any terrain that is a terrain feature according to the json file.
 *[tileFilter]: Anything that can be used either in an improvementFilter or in a terrainFilter can be used here, plus 'unimproved'
-*[tourismRelation]: One of `Shared Religion`, `Open Borders`, `Trade Route`, `Lower Happiness` or `Common Enemies`.
+*[tourismRelation]: One of `Shared Religion`, `Open Borders`, `Trade Route`, `Lower Happiness`, `Common Enemies`, `Shared Ideology` or `Different Ideologies`.
 *[tradeRouteFilter]: A trade route matches if its unit is of that domain (`Land` or `Water`), if it is of that kind (`International`, `Domestic`, `Food` or `Production`), or if the civilization on the other end matches a civ filter. `All` matches every route.
 *[unitNameGroup]: The name of a unit name group found in UnitNameGroups.json, or one of their unique tags.
 *[unitTriggerTarget]: `This Unit` or `Target Unit`.
