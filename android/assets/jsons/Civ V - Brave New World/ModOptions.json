@@ -1,3 +1,9 @@
 {
     "isBaseRuleset": true,
+    // Score values of Brave New World (GlobalDefines.xml SCORE_*_MULTIPLIER)
+    "constants": {
+        "scoreFromPopulation": 4,
+        "scoreFromWonders": 25,
+        "scoreFromGreatWorks": 4
+    },
 }
