@@ -2,9 +2,11 @@ package com.unciv.logic.civilization
 
 import com.unciv.Constants
 import com.unciv.logic.civilization.managers.TradeRouteManager
+import com.unciv.logic.map.mapunit.actions.UnitActions
 import com.unciv.logic.map.tile.RoadStatus
 import com.unciv.logic.city.City
 import com.unciv.models.TradeRoute
+import com.unciv.models.UnitActionType
 import com.unciv.models.TradeRouteKind
 import com.unciv.models.ruleset.RejectionReasonType
 import com.unciv.models.ruleset.unit.BaseUnit
@@ -232,6 +234,44 @@ class TradeRouteTests {
         assertTrue(civA.tradeRoutes.routes.isEmpty())
         assertEquals(100, enemy.gold - goldBefore)
         assertEquals("no unit comes back", 0, waitingUnits(civA))
+    }
+
+    @Test
+    fun `a military unit can plunder the trader beneath it without waiting for the route to move`() {
+        val (origin, destination) = twoCities(8)
+        val enemy = game.addCiv()
+        enemy.diplomacyFunctions.makeCivilizationsMeet(civA)
+        enemy.getDiplomacyManager(civA)!!.declareWar()
+        val route = establish(origin, destination)!!
+        val attacker = game.addDefaultMeleeUnitWithUniques(enemy, game.getTile(route.path[3]))
+        route.pathIndex = 3
+        val moves = attacker.currentMovement
+        val action = UnitActions.getUnitActions(attacker, UnitActionType.Pillage)
+            .single { it.title == "Plunder trade route" }
+
+        action.action!!.invoke()
+
+        assertTrue(civA.tradeRoutes.routes.isEmpty())
+        assertEquals(100, enemy.gold)
+        assertEquals("trade plunder does not consume the unit's movement", moves, attacker.currentMovement)
+    }
+
+    @Test
+    fun `barbarians get a bonus unit with no moves after plundering a route`() {
+        val (origin, destination) = twoCities(8)
+        val barbarians = game.addBarbarianCiv()
+        game.gameInfo.barbarians.setTransients(game.gameInfo)
+        val route = establish(origin, destination)!!
+        val plunderer = game.addUnit("Brute", barbarians, game.getTile(route.path[3]))
+        val previousUnits = barbarians.units.getCivUnits().toSet()
+
+        civA.tradeRoutes.startTurn()
+
+        assertTrue("the route was plundered", civA.tradeRoutes.routes.isEmpty())
+        assertTrue(plunderer in barbarians.units.getCivUnits())
+        val newUnits = barbarians.units.getCivUnits().filterNot { it in previousUnits }.toList()
+        assertEquals("one bonus barbarian despite the early turn", 1, newUnits.size)
+        assertEquals(0f, newUnits.single().currentMovement)
     }
 
     @Test
