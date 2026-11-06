@@ -29,6 +29,8 @@ enum class AlertType : IsPartOfGameInfoSerialization {
     RejectingDemand,
 
     GoldenAge,
+    /** A dig is complete and its civilization chooses what to do with the finds, [PopupAlert.value] is the position "x,y" of the tile */
+    ArchaeologyChoice,
     DeclarationOfFriendship,
     StartIntro,
     DiplomaticMarriage,

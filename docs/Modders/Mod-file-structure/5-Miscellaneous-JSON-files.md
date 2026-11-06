@@ -303,6 +303,16 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | influencePercentPopular                  | Int    | 60                            | As above, for Popular |
 | influencePercentInfluential              | Int    | 100                           | As above, for Influential |
 | influencePercentDominant                 | Int    | 200                           | As above, for Dominant |
+| archaeologySitesPerCivMin                | Int    | 5                             | Archaeological sites that appear for each major civilization, at least. See the unique `Archaeological sites appear around the world` |
+| archaeologySitesPerCivMax                | Int    | 8                             | ... and at most |
+| archaeologyPercentHidden                 | Int    | 30                            | Percent of the sites that are hidden until a policy is adopted (the resource `archaeologyHiddenSiteResource`) |
+| archaeologyPercentHiddenWriting          | Int    | 30                            | Percent of the hidden sites that hold a writing |
+| archaeologySiteResource                  | String | Antiquity site                | The resource of a site |
+| archaeologyHiddenSiteResource            | String | Hidden Antiquity site         | The resource of a hidden site |
+| archaeologicalDigImprovement            | String | Archaeological Dig            | The improvement of a dig, see the unique `Excavate what was found here` |
+| landmarkImprovement                      | String | Landmark                      | The improvement that can be chosen after a dig |
+| archaeologySiteTech                      | String | Archaeology                   | The technology whose civilizations are told when the sites appear |
+| landmarkInfluenceWithCityStates          | Int    | 50                            | Influence with a city-state when a Landmark is built on its land |
 | tradeRouteBaseGold                       | Float  | 1                             | Gold a trade route is worth before additions, for both ends. See the unique `Can establish trade routes` |
 | tradeRouteCityGoldDivisor                | Int    | 20                            | Each end of an international route adds the gold of the city at the other end divided by this |
 | tradeRouteGoldPerDifferentResource       | Float  | 0.5                           | Gold per resource of the other civilization that the route brings that the origin does not have |

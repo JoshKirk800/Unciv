@@ -50,6 +50,35 @@ class CultureRulesetTests {
     }
 
     @Test
+    fun `sites appear with Archaeology, and are dug by an archaeologist whose finds are chosen`() {
+        assertTrue("Archaeological sites appear around the world" in bnw.technologies["Archaeology"]!!.uniques)
+        assertEquals("Archaeology", bnw.tileResources["Antiquity site"]!!.revealedBy)
+        assertEquals("the policy that completes Exploration", "Exploration Complete", bnw.tileResources["Hidden Antiquity site"]!!.revealedBy)
+        assertTrue(bnw.policies.containsKey("Exploration Complete"))
+
+        val digging = bnw.tileImprovements["Archaeological Dig"]!!
+        assertEquals(6, digging.turnsToBuild)
+        for (unique in listOf("Excavate what was found here", "Remove [Antiquity site] resources from this tile", "Remove [Hidden Antiquity site] resources from this tile", "Can be built outside your borders"))
+            assertTrue(unique, unique in digging.uniques)
+
+        val archaeologist = bnw.units["Archaeologist"]!!
+        assertEquals(200, archaeologist.cost)
+        assertEquals("Archaeology", archaeologist.requiredTech)
+        assertTrue("Can build [Archaeological Dig] improvements on tiles" in archaeologist.uniques)
+        assertTrue("Only available <in cities with a [University]>" in archaeologist.uniques)
+    }
+
+    @Test
+    fun `a Landmark is only made by archaeology, the Great Artist of Brave New World cannot, that of Gods and Kings can`() {
+        val landmark = bnw.tileImprovements["Landmark"]!!
+        assertTrue("Unbuildable" in landmark.uniques)
+        assertTrue("[+1 Culture] for every era since the site of this improvement was formed" in landmark.uniques)
+        assertEquals(0f, landmark.culture, 0f)
+        assertFalse(bnw.units["Great Artist"]!!.uniques.any { "Landmark" in it })
+        assertTrue(gnk.units["Great Artist"]!!.uniques.any { "Landmark" in it })
+    }
+
+    @Test
     fun `the Eiffel Tower and the Mughal Fort make tourism once their technology is known`() {
         assertTrue("[+12] Tourism [in this city] <after discovering [Radio]>" in bnw.buildings["Eiffel Tower"]!!.uniques)
         assertTrue("[+2] Tourism [in this city] <after discovering [Flight]>" in bnw.buildings["Mughal Fort"]!!.uniques)

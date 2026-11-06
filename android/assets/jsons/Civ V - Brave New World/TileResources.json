@@ -1,4 +1,21 @@
 [
+
+	// Archaeological sites. They are not generated with the map but appear when the first civilization learns Archaeology
+	{
+		"name": "Antiquity site",
+		"resourceType": "Bonus",
+		"terrainsCanBeFoundOn": ["Grassland", "Plains", "Desert", "Tundra", "Snow", "Hill", "Forest", "Jungle", "Marsh"],
+		"revealedBy": "Archaeology",
+		"improvedBy": ["Archaeological Dig"]
+	},
+	{
+		"name": "Hidden Antiquity site",
+		"resourceType": "Bonus",
+		"terrainsCanBeFoundOn": ["Grassland", "Plains", "Desert", "Tundra", "Snow", "Hill", "Forest", "Jungle", "Marsh"],
+		"revealedBy": "Exploration Complete",
+		"improvedBy": ["Archaeological Dig"]
+	},
+
 	// Bonus resources
 	{
 		"name": "Cattle",

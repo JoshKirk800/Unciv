@@ -64,6 +64,16 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 ??? example  "Free Great Person"
 	Applicable to: Triggerable
 
+??? example  "Archaeological sites appear around the world"
+	Only once in a game: the first time this is triggered. 5 to 8 sites for each major civilization (see `archaeologySitesPerCivMin` and following in ModConstants) become resources of the ruleset's archaeological site resources, on tiles with a history of battle, ruins, razed cities or camps. Put it on the technology that reveals them
+
+	Applicable to: Triggerable
+
+??? example  "Excavate what was found here"
+	For the improvement that an archaeologist builds on a site: when it is complete, its civilization chooses between an artifact or writing for a Great Work slot, culture, or a Landmark, and the archaeologist is used up
+
+	Applicable to: Triggerable
+
 ??? example  "[positiveAmount] Tourism towards all civilizations we have met"
 	Added to the influence of this civilization on each of them, not changed by modifiers
 
@@ -2778,6 +2788,11 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Unit
 
+??? example  "Can excavate archaeological sites"
+	The unit can dig up sites if it can also build the improvement, and the AI sends it to them. Needed for what its finds are put to
+
+	Applicable to: Unit
+
 ??? example  "Will not be displayed in Civilopedia"
 	Supports conditionals that need only a Game as context and nothing else.
 
@@ -3152,6 +3167,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 	Example: "[+1 Gold, +2 Production]"
 
 	Applicable to: Global, Terrain, Improvement
+
+??? example  "[stats] for every era since the site of this improvement was formed"
+	Counts the eras the civilization has gone through since the era of what happened on this tile, see archaeology. Nothing if it is the same era or the tile has no history
+
+	Example: "[+1 Gold, +2 Production] for every era since the site of this improvement was formed"
+
+	Applicable to: Improvement
 
 ??? example  "Consumes [amount] [resource]"
 	Example: "Consumes [3] [Iron]"

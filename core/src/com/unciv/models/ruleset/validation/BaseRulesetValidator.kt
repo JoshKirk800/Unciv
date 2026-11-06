@@ -366,8 +366,8 @@ internal class BaseRulesetValidator(
 
     override fun addResourceErrors(lines: RulesetErrorList) {
         for (resource in ruleset.tileResources.values) {
-            if (resource.revealedBy != null && !ruleset.technologies.containsKey(resource.revealedBy!!))
-                lines.add("${resource.name} revealed by tech ${resource.revealedBy} which does not exist!", sourceObject = resource)
+            if (resource.revealedBy != null && !ruleset.technologies.containsKey(resource.revealedBy!!) && !ruleset.policies.containsKey(resource.revealedBy!!))
+                lines.add("${resource.name} revealed by tech or policy ${resource.revealedBy} which does not exist!", sourceObject = resource)
             if (resource.improvement != null && !ruleset.tileImprovements.containsKey(resource.improvement!!))
                 lines.add("${resource.name} improved by improvement ${resource.improvement} which does not exist!", sourceObject = resource)
             for (improvement in resource.improvedBy)

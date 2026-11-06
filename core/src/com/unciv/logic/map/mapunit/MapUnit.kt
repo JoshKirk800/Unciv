@@ -17,6 +17,7 @@ import com.unciv.logic.map.mapunit.movement.UnitMovement
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.Counter
 import com.unciv.models.UnitActionType
+import com.unciv.models.ruleset.ArtifactClasses
 import com.unciv.models.ruleset.Ruleset
 import com.unciv.models.ruleset.tile.TileImprovement
 import com.unciv.models.ruleset.unique.*
@@ -1110,6 +1111,7 @@ class MapUnit : IsPartOfGameInfoSerialization {
         civ.gameInfo.getAliveCityStates()
             .forEach { it.questManager.barbarianCampCleared(civ, tile.position) }
 
+        tile.addArchaeologyRecord(ArtifactClasses.BarbarianCamp, civ)
         tile.removeImprovement()
 
         var goldGained = civ.getDifficulty().clearBarbarianCampReward.toFloat()
@@ -1179,6 +1181,7 @@ class MapUnit : IsPartOfGameInfoSerialization {
     }
 
     private fun getAncientRuinBonus(tile: Tile) {
+        tile.addArchaeologyRecord(ArtifactClasses.AncientRuin, civ)
         tile.removeImprovement()
         civ.ruinsManager.selectNextRuinsReward(this)
     }

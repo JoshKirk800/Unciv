@@ -6,6 +6,7 @@ import com.unciv.UncivGame
 import com.unciv.logic.automation.civilization.NextTurnAutomation
 import com.unciv.logic.city.City
 import com.unciv.logic.city.GreatWorkFunctions
+import com.unciv.logic.map.tile.ArchaeologyFunctions
 import com.unciv.logic.civilization.*
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
 import com.unciv.logic.civilization.diplomacy.DiplomaticModifiers
@@ -535,6 +536,26 @@ object UniqueTriggerActivation {
                     if (civInfo.isAI() || UncivGame.Current.worldScreen?.autoPlay?.isAutoPlayingAndFullAutoPlayAI() == true) {
                         NextTurnAutomation.chooseGreatPerson(GameView(civInfo.gameInfo, civInfo).civView)
                     }
+                    true
+                }
+            }
+
+            UniqueType.OneTimeSpawnArchaeologySites -> {
+                if (civInfo.gameInfo.archaeologyTriggered) return null
+                return {
+                    val gameInfo = civInfo.gameInfo
+                    val sites = ArchaeologyFunctions.spawnSites(gameInfo, Random(gameInfo.turns.toLong() * 31 + gameInfo.tileMap.mapParameters.seed))
+                    for (otherCiv in gameInfo.civilizations.filter { it.isMajorCiv && !it.isDefeated() && it.tech.isResearched(gameInfo.ruleset.modOptions.constants.archaeologySiteTech) })
+                        otherCiv.addNotification("Archaeological sites have appeared around the world!", NotificationCategory.General, "StatIcons/Culture")
+                    sites.isNotEmpty()
+                }
+            }
+
+            UniqueType.OneTimeExcavation -> {
+                val dig = tile ?: return null
+                return {
+                    ArchaeologyFunctions.onDigCompleted(civInfo, dig, unit,
+                        civInfo.isAI() || UncivGame.Current.worldScreen?.autoPlay?.isAutoPlayingAndFullAutoPlayAI() == true)
                     true
                 }
             }

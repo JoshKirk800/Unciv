@@ -23,7 +23,8 @@ object ResourceDescriptions {
         if (!resource.revealedBy.isNullOrEmpty()) {
             textList += FormattedLine()
             textList += FormattedLine("Revealed by:")
-            textList += FormattedLine(resource.revealedBy!!, link = "Technology/${resource.revealedBy}", indent = 1)
+            val revealedByPolicy = resource.revealedBy!! !in ruleset.technologies && resource.revealedBy!! in ruleset.policies
+            textList += FormattedLine(resource.revealedBy!!, link = (if (revealedByPolicy) "Policy/" else "Technology/") + resource.revealedBy, indent = 1)
         }
 
         if (resource.terrainsCanBeFoundOn.isNotEmpty()) {

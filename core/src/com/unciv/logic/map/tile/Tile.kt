@@ -15,6 +15,7 @@ import com.unciv.logic.map.mapgenerator.MapResourceSetting
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.mapunit.UnitTurnManager
 import com.unciv.logic.map.mapunit.movement.UnitMovement
+import com.unciv.models.ruleset.ArtifactClasses
 import com.unciv.models.ruleset.Ruleset
 import com.unciv.models.ruleset.tile.ResourceType
 import com.unciv.models.ruleset.tile.Terrain
@@ -64,6 +65,9 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
 
     var improvement: String? = null
     var improvementIsPillaged = false
+
+    /** What an archaeologist can find on this tile, kept from the things that happened here until the archaeological sites appear */
+    var archaeologyRecord: ArchaeologyRecord? = null
 
     internal class ImprovementQueueEntry(
         val improvement: String, turnsToImprovement: Int
@@ -255,6 +259,7 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
         toReturn.resource = resource
         toReturn.resourceAmount = resourceAmount
         toReturn.improvement = improvement
+        toReturn.archaeologyRecord = archaeologyRecord?.clone()
         @LocalState val cloneImprovementQueue = toReturn.improvementQueue
         cloneImprovementQueue.addAll(improvementQueue.map { it.clone() })
         toReturn.improvementIsPillaged = improvementIsPillaged
@@ -1185,6 +1190,18 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
 
         setImprovement(queueEntry.improvement, worker.civ, worker)
         return true
+    }
+
+    /**
+     * Remembers that something happened here that an archaeologist can find later (CvPlot::AddArchaeologicalRecord): a battle, a cleared camp,
+     * ruins, a razed city. Only the most memorable of them is kept. Nothing is remembered once the archaeological sites have appeared.
+     * @param civ1 the civilization the find is attributed to (barbarians do not leave finds), [civ2] the other one if there was one
+     */
+    fun addArchaeologyRecord(kind: String, civ1: Civilization, civ2: Civilization? = null, era: String = civ1.getEra().name) {
+        if (!tileMap.hasGameInfo() || tileMap.gameInfo.archaeologyTriggered || !civ1.isMajorCiv) return
+        val current = archaeologyRecord
+        if (current != null && ArtifactClasses.rank(kind) <= ArtifactClasses.rank(current.kind)) return
+        archaeologyRecord = ArchaeologyRecord(kind, era, civ1.civName, civ2?.takeIf { !it.isBarbarian }?.civName)
     }
 
     /** Sets tile improvement to pillaged (without prior checks for validity)

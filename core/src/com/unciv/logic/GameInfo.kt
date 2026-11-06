@@ -147,6 +147,9 @@ class GameInfo : IsPartOfGameInfoSerialization, HasGameInfoSerializationVersion 
     /** List of unit names that have been taken in this game from UnitNameGroups.json. */
     var unitNamesTaken = ArrayList<String>()
 
+    /** Whether the archaeological sites have appeared. They appear once, when the first civilization learns what makes them (see [com.unciv.models.ruleset.unique.UniqueType.OneTimeSpawnArchaeologySites]) */
+    var archaeologyTriggered = false
+
     //endregion
     //region Fields - Transient
 
@@ -219,6 +222,7 @@ class GameInfo : IsPartOfGameInfoSerialization, HasGameInfoSerializationVersion 
         toReturn.historyStartTurn = historyStartTurn
         toReturn.lastUnitId = lastUnitId
         toReturn.unitNamesTaken.addAll(unitNamesTaken)
+        toReturn.archaeologyTriggered = archaeologyTriggered
 
         return toReturn
     }

@@ -169,6 +169,22 @@ class ModConstants {
     var influencePercentInfluential = 100
     var influencePercentDominant = 200
 
+    // Archaeology (CvGame.cpp and GlobalDefines.xml, Brave New World). The sites appear once, with 5 to 8 for every major civilization;
+    // this share of them is hidden until a policy is adopted, and this share of those holds a writing
+    var archaeologySitesPerCivMin = 5
+    var archaeologySitesPerCivMax = 8
+    var archaeologyPercentHidden = 30
+    var archaeologyPercentHiddenWriting = 30
+    // The resources a site is, and the improvements that digging and a Landmark are
+    var archaeologySiteResource = "Antiquity site"
+    var archaeologyHiddenSiteResource = "Hidden Antiquity site"
+    var archaeologicalDigImprovement = "Archaeological Dig"
+    var landmarkImprovement = "Landmark"
+    // The technology that makes the visible sites known, whose civilizations are told when they appear
+    var archaeologySiteTech = "Archaeology"
+    // Influence with a city-state when we build a Landmark on its land
+    var landmarkInfluenceWithCityStates = 50
+
     // UI: If set >= 0, ImprovementPicker will silently skip improvements whose tech requirement is more advanced than your current Era + this
     var maxImprovementTechErasForward = -1
 
