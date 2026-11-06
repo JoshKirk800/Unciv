@@ -13,6 +13,7 @@ import com.unciv.models.metadata.GameSettings
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.ui.screens.pickerscreens.ImprovementPickerScreen
 import com.unciv.ui.screens.pickerscreens.PromotionPickerScreen
+import com.unciv.ui.screens.pickerscreens.TradeRoutePickerScreen
 
 /**
  *  Actions offered as buttons that don't change the game by themselves, but only open some UI element
@@ -23,6 +24,7 @@ object UiOnlyUnitActions {
     fun getUnitActions(unit: MapUnit): Sequence<UiUnitAction> = sequenceOf(
         getConstructImprovementAction(unit),
         getConnectRoadAction(unit),
+        getEstablishTradeRouteAction(unit),
         getPromoteAction(unit),
         getShowUnitDestinationAction(unit),
         getSwapAction(unit),
@@ -111,6 +113,15 @@ object UiOnlyUnitActions {
                     !worldScreen.bottomUnitTable.selectedUnitIsConnectingRoad
                 worldScreen.shouldUpdate = true
             }
+        )
+    }
+
+    private fun getEstablishTradeRouteAction(unit: MapUnit): UiUnitAction? {
+        if (!unit.hasUnique(UniqueType.EstablishTradeRoutes)) return null
+        val city = unit.getTile().getCity()?.takeIf { it.civ == unit.civ }
+        val canEstablish = city != null && unit.civ.tradeRoutes.getDestinations(city, unit.baseUnit).isNotEmpty()
+        return UiUnitAction(UiUnitActionType.EstablishTradeRoute,
+            action = { GUI.pushScreen { TradeRoutePickerScreen(unit) } }.takeIf { canEstablish }
         )
     }
 

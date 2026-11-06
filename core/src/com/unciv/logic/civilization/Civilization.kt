@@ -186,6 +186,7 @@ class Civilization : IsPartOfGameInfoSerialization {
     var goldenAges = GoldenAgeManager()
     var greatPeople = GreatPersonManager()
     var espionageManager = EspionageManager()
+    var tradeRoutes = TradeRouteManager()
     var victoryManager = VictoryManager()
     var ruinsManager = RuinsManager()
     var diplomacy = HashMap<String, DiplomacyManager>()
@@ -338,6 +339,7 @@ class Civilization : IsPartOfGameInfoSerialization {
         toReturn.greatPeople = greatPeople.clone()
         toReturn.ruinsManager = ruinsManager.clone()
         toReturn.espionageManager = espionageManager.clone()
+        toReturn.tradeRoutes = tradeRoutes.clone()
         toReturn.victoryManager = victoryManager.clone()
         toReturn.allyCivName = allyCivName
         for (diplomacyManager in diplomacy.values.map { it.clone() })
@@ -1010,6 +1012,7 @@ class Civilization : IsPartOfGameInfoSerialization {
         tech.setTransients(this)
         ruinsManager.setTransients(this)
         espionageManager.setTransients(this)
+        tradeRoutes.setTransients(this)
         victoryManager.civInfo = this
 
         for (diplomacyManager in diplomacy.values) {
@@ -1234,6 +1237,7 @@ class Civilization : IsPartOfGameInfoSerialization {
         }
         if (gameInfo.isEspionageEnabled())
             espionageManager.removeAllSpies()
+        tradeRoutes.clear()
     }
 
     /** Reveals the entire map to a human player defeated in a singleplayer game, so they can watch the game play out. */

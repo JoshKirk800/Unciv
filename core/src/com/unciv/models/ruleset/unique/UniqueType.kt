@@ -193,6 +193,24 @@ enum class UniqueType(
     StatsFromNaturalWonders("[stats] for every known Natural Wonder", UniqueTarget.Global),
     StatBonusWhenDiscoveringNaturalWonder("[stats] for discovering a Natural Wonder (bonus enhanced to [stats] if first to discover it)", UniqueTarget.Global),
 
+    /// Trade routes
+    TradeRouteSlots("[relativeAmount] Trade Route slots", UniqueTarget.Global),
+    TradeRouteSlotsPercent("[relativeAmount]% Trade Route slots", UniqueTarget.Global,
+        docDescription = "The sum of all [TradeRouteSlots] is multiplied by 100% plus all of these, and rounded down"),
+    TradeRouteRange("[relativeAmount] range for [tradeRouteFilter] trade routes", UniqueTarget.Global,
+        docDescription = "Added to the base range of the trade unit, before [TradeRouteRangePercent]. Only the filters `Land` and `Water` are meaningful"),
+    TradeRouteRangePercent("[relativeAmount]% range for [tradeRouteFilter] trade routes", UniqueTarget.Global,
+        docDescription = "Counts for routes starting in the city this takes effect in (use `<in this city>` for buildings). Only the filters `Land` and `Water` are meaningful"),
+    TradeRouteGold("[relativeAmount] Gold on [tradeRouteFilter] trade routes", UniqueTarget.Global,
+        docDescription = "Added to the gold an international route brings its origin city, before the bonus for sea or rivers is applied. As a building effect use `<in this city>`, which makes it count for routes starting in that city only"),
+    TradeRouteGoldForOrigin("[relativeAmount] Gold on incoming [tradeRouteFilter] trade routes for their origin", UniqueTarget.Global,
+        docDescription = "Added to the gold the origin of an international route gets when it ends in the city this takes effect in (use `<in this city>` for buildings). Buildings count only for routes between major civilizations"),
+    TradeRouteGoldForDestination("[relativeAmount] Gold from incoming [tradeRouteFilter] trade routes", UniqueTarget.Global,
+        docDescription = "Added to the gold the destination of an international route gets, when it ends in the city this takes effect in (use `<in this city>` for buildings). Buildings count only for routes between major civilizations"),
+    TradeRouteResourceGoldPercent("[relativeAmount]% Gold from resource diversity on trade routes", UniqueTarget.Global,
+        docDescription = "A route gets gold for each luxury or strategic resource that only one of its two cities has. Applies to the city the route starts in"),
+    DomesticTradeRouteYieldPercent("[relativeAmount]% yields from trade routes within your civilization", UniqueTarget.Global),
+
     /// Great Persons
     GreatPersonPointPercentage("[relativeAmount]% Great Person generation [cityFilter]", UniqueTarget.Global, UniqueTarget.FollowerBelief),
     PercentGoldFromTradeMissions("[relativeAmount]% Gold from Great Merchant trade missions", UniqueTarget.Global, UniqueTarget.Unit),
@@ -397,6 +415,8 @@ enum class UniqueType(
 
     RemovesAnnexUnhappiness("Removes extra unhappiness from annexed cities", UniqueTarget.Building),
     ConnectTradeRoutes("Connects trade routes over water", UniqueTarget.Building),
+    AllowsDomesticTradeRoutes("Allows [stat] trade routes between your cities", UniqueTarget.Building,
+        docDescription = "In this city, food or production routes to other cities of the same civilization can start. Only Food and Production are meaningful for [stat]."),
     GainBuildingWhereBuildable("Automatically built in all cities where it is buildable", UniqueTarget.Building),
 
     CreatesOneImprovement("Creates a [improvementName] improvement on a specific tile", UniqueTarget.Building,
@@ -434,6 +454,9 @@ enum class UniqueType(
     CanSpeedupWonderConstruction("Can speed up the construction of a wonder", UniqueTarget.Unit),
     CanHurryResearch("Can hurry technology research", UniqueTarget.Unit),
     CanHurryPolicy("Can generate a large amount of culture", UniqueTarget.Unit),
+    EstablishTradeRoutes("Can establish trade routes with a base range of [positiveAmount] tiles, travelling [positiveAmount] tiles per turn", UniqueTarget.Unit,
+        docDescription = "Such a unit is used up when it establishes a route, and a new one appears in the city of origin when the route ends. " +
+            "Trade routes over land or water follow the domain of the unit. The number of routes is limited by [TradeRouteSlots]."),
     CanTradeWithCityStateForGoldAndInfluence("Can undertake a trade mission with City-State, giving a large sum of gold and [amount] Influence", UniqueTarget.Unit),
     CanTransform("Can transform to [unit]", UniqueTarget.UnitAction,
         docDescription = "By default consumes all movement"),

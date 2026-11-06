@@ -62,6 +62,7 @@ class TurnManager(val civInfo: Civilization) {
 
         civInfo.cache.updateViewableTiles() // adds explored tiles so that the units will be able to perform automated actions better
         civInfo.cache.updateCitiesConnectedToCapital()
+        civInfo.tradeRoutes.startTurn()
         startTurnFlags()
         updateRevolts()
 

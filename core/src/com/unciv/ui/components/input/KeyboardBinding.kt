@@ -145,6 +145,7 @@ enum class KeyboardBinding(
     ShowAdditionalActions(Category.UnitActions,"Show more", Input.Keys.PAGE_DOWN),
     HideAdditionalActions(Category.UnitActions,"Back", Input.Keys.PAGE_UP),
     AddInCapital(Category.UnitActions, "Add in capital", 'g'),
+    EstablishTradeRoute(Category.UnitActions, "Establish trade route", 'g'),
 
     // The AutoPlayMenu reuses the AutoPlay binding, under Worldscreen above - otherwise clear labeling would be tricky
     AutoPlayMenuEndTurn(Category.AutoPlayMenu, "AutoPlay End Turn", 't'),

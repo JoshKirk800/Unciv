@@ -33,6 +33,8 @@ object DeclareWar {
 
         notifyOfWar(diplomacyManager, declareWarReason)
 
+        civInfo.tradeRoutes.onWarDeclared(otherCiv)
+
         onWarDeclared(diplomacyManager, true, declareWarReason.warType)
         onWarDeclared(otherCivDiplomacy, false, declareWarReason.warType)
 
