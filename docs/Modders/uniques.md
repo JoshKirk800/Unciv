@@ -903,6 +903,11 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Global, Unit
 
+??? example  "[positiveAmount] unique Luxury resources appear under the first [amount] cities founded in different foreign landmasses"
+	Example: "[3] unique Luxury resources appear under the first [3] cities founded in different foreign landmasses"
+
+	Applicable to: Global
+
 ??? example  "Gain a free [buildingName] [cityFilter]"
 	Free buildings CANNOT be self-removing - this leads to an endless loop of trying to add the building
 
@@ -941,6 +946,11 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Global, FollowerBelief
 
+??? example  "[nonNegativeAmount] additional tiles claimed when founding a city"
+	Example: "[3] additional tiles claimed when founding a city"
+
+	Applicable to: Global
+
 ??? example  "Each city founded increases culture cost of policies [relativeAmount]% less than normal"
 	Example: "Each city founded increases culture cost of policies [+20]% less than normal"
 
@@ -963,6 +973,9 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Example: "[+20]% Science cost of researching new Technologies"
 
+	Applicable to: Global
+
+??? example  "Gain the cheapest researchable Technology known by the city's owner when conquering a city for the first time"
 	Applicable to: Global
 
 ??? example  "[stats] for every known Natural Wonder"
@@ -2526,6 +2539,9 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Unit
 
+??? example  "May choose the reward when entering Ancient Ruins"
+	Applicable to: Unit, Promotion
+
 ??? example  "Can be added to [comment] in the Capital"
 	Example: "Can be added to [comment] in the Capital"
 
@@ -2566,6 +2582,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 ??? example  "Can undertake a trade mission with City-State, giving a large sum of gold and [amount] Influence"
 	Example: "Can undertake a trade mission with City-State, giving a large sum of gold and [3] Influence"
+
+	Applicable to: Unit
+
+??? example  "Can sell [positiveAmount] exotic goods"
+	Each unit can sell this many times beside peaceful foreign territory. Each sale earns 100–400 Gold and 10–30 XP, scaling with distance from the owner's capital divided by half the sum of the map width and height (CvUnit::sellExoticGoods).
+
+	Example: "Can sell [3] exotic goods"
 
 	Applicable to: Unit
 
@@ -2763,6 +2786,16 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Global, Unit
 
+??? example  "Heals [amount] damage if it kills a non-Barbarian unit"
+	Example: "Heals [3] damage if it kills a non-Barbarian unit"
+
+	Applicable to: Unit
+
+??? example  "Takes [amount] damage at turn end in enemy territory"
+	Example: "Takes [3] damage at turn end in enemy territory"
+
+	Applicable to: Unit
+
 ??? example  "Can only heal by pillaging"
 	Applicable to: Global, Unit
 
@@ -2867,6 +2900,11 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 	Does not apply to units destroyed by nuclear explosions, which do not count as combat defeats.
 
 	Example: "May capture killed [Wounded] units"
+
+	Applicable to: Unit
+
+??? example  "Replaced by a random promotion from [promotionList] after combat"
+	Example: "Replaced by a random promotion from [Shock I, Drill I] after combat"
 
 	Applicable to: Unit
 
@@ -3076,6 +3114,9 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 	Meant to be used together with conditionals, like "Unavailable &lt;after generating a Great Prophet&gt;".
 
 	Applicable to: Resolution, Tech, Policy, FounderBelief, FollowerBelief, Building, Unit, Promotion, Improvement, Ruins, Event, EventChoice, Victory
+
+??? example  "May choose the reward when entering Ancient Ruins"
+	Applicable to: Unit, Promotion
 
 ??? example  "Not shown on world screen"
 	This unique is automatically hidden from users.
@@ -3487,6 +3528,9 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 ??? example  "Can be built outside your borders"
 	Applicable to: Improvement
 
+??? example  "Can only be built in City-State territory"
+	Applicable to: Improvement
+
 ??? example  "Can be built just outside your borders"
 	Applicable to: Improvement
 
@@ -3501,6 +3545,11 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 	Applicable to: Improvement
 
 ??? example  "Can only be built to improve a resource"
+	Applicable to: Improvement
+
+??? example  "Provides [positiveAmount] untradable copies of each Luxury resource connected by this City-State to the builder"
+	Example: "Provides [3] untradable copies of each Luxury resource connected by this City-State to the builder"
+
 	Applicable to: Improvement
 
 ??? example  "Does not need removal of [terrainFeature]"
@@ -3646,6 +3695,11 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 	Applicable to: Resource
 
 ??? example  "Can only be created by Mercantile City-States"
+	Applicable to: Resource
+
+??? example  "Unique Luxury for [civFilter]"
+	Example: "Unique Luxury for [City-States]"
+
 	Applicable to: Resource
 
 ??? example  "Stockpiled"
@@ -4924,6 +4978,7 @@ There is a conversion affecting dashes and leading/trailing blanks. Please make 
 *[policyFilter]: The name of any policy, a filtering Unique, any branch (matching only the branch itself), a branch name with " Completed" appended (matches if the branch is completed), or a policy branch as `[branchName] branch` (matching all policies in that branch).
 *[positiveAmount]: This indicates a positive whole number, larger than zero, a '+' sign is optional.
 *[promotion]: The name of any promotion.
+*[promotionList]: Comma-separated names of promotions.
 *[relativeAmount]: This indicates a number, usually with a + or - sign, such as `+25` (this kind of parameter is often followed by '%' which is nevertheless not part of the value).
 *[resolution]: The name of any resolution of the World Congress.
 *[resource]: The name of any resource.
