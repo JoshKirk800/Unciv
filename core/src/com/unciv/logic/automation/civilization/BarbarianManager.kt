@@ -176,11 +176,13 @@ class BarbarianManager : IsPartOfGameInfoSerialization {
      * Attempts to spawn a random barbarian [MapUnit] at or near the provided [Tile].
      * @param allegiance Which [Civilization] should the unit belong to? Defaults to the barbarian civilization.
      *                   If non-barbarian, there are fewer restrictions on whether a unit can be spawned or not.
+     * @param ignoreNearbyLimit Trade-route plunder spawns a bonus unit regardless of the normal turn and nearby-unit limits.
      * @return The newly spawned [MapUnit], or null if unsuccessful.
      */
     fun spawnBarbarian(
         tile: Tile,
-        allegiance: Civilization = gameInfo.getBarbarianCivilization()
+        allegiance: Civilization = gameInfo.getBarbarianCivilization(),
+        ignoreNearbyLimit: Boolean = false
     ): MapUnit? {
         if (allegiance.isBarbarian) {
             // Empty camp - spawn a defender
@@ -189,14 +191,15 @@ class BarbarianManager : IsPartOfGameInfoSerialization {
                 return spawnUnit(tile.position, false)
 
             // Don't spawn wandering barbs too early
-            if (gameInfo.turns < 10)
+            if (gameInfo.turns < 10 && !ignoreNearbyLimit)
                 return null
 
-            var nearbyBarbarians = 0
-            tile.forEachTileInDistance(4) { if (it.militaryUnit?.civ?.isBarbarian == true) nearbyBarbarians++ }
-            // Too many barbarians around already?
-            if (nearbyBarbarians > 2)
-                return null
+            if (!ignoreNearbyLimit) {
+                var nearbyBarbarians = 0
+                tile.forEachTileInDistance(4) { if (it.militaryUnit?.civ?.isBarbarian == true) nearbyBarbarians++ }
+                // Too many barbarians around already?
+                if (nearbyBarbarians > 2) return null
+            }
         }
 
         val canSpawnNaval = gameInfo.turns > 30

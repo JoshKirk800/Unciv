@@ -62,6 +62,9 @@ class WorldMapHolder(
     internal val unitMovementPaths: HashMap<MapUnitView, ArrayList<TileView>> = HashMap()
 
     internal val unitConnectRoadPaths: HashMap<MapUnitView, List<TileView>> = HashMap()
+    /** Tiles with trader icons at the last map refresh, retained so unchanged markers need no new actors. */
+    internal val tradeRouteMarkerTiles = HashSet<TileView>()
+    internal val nextTradeRouteMarkerTiles = HashSet<TileView>()
 
     private lateinit var tileGroupMap: TileGroupMap<WorldTileGroup>
 

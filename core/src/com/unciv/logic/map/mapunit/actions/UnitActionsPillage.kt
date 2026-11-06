@@ -17,7 +17,15 @@ import kotlin.random.Random
 object UnitActionsPillage {
 
     internal fun getPillageActions(unit: MapUnit, tile: Tile): Sequence<UnitAction> =
-        sequenceOf(getPillageAction(unit, tile)).filterNotNull()
+        sequenceOf(getPillageAction(unit, tile), getTradeRoutePlunderAction(unit)).filterNotNull()
+
+    /** CvUnit::plunderTradeRoute selects the first opposing trader on this tile and leaves the unit's moves intact. */
+    private fun getTradeRoutePlunderAction(unit: MapUnit): UnitAction? {
+        if (!unit.isMilitary() || unit.isEmbarked()) return null
+        val route = unit.civ.tradeRoutes.getPlunderableRoutes(unit).firstOrNull() ?: return null
+        return UnitAction(UnitActionType.Pillage, title = "Plunder trade route",
+            action = { unit.civ.tradeRoutes.plunder(route, unit) }.takeIf { unit.hasMovement() })
+    }
 
     internal fun getPillageAction(unit: MapUnit, tile: Tile): UnitAction? {
         val improvementName = unit.currentTile.getImprovementToPillageName()

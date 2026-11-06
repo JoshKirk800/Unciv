@@ -28,6 +28,7 @@ enum class QuestName(
     BullyCityState("Bully City State", QuestImplementation.BullyCityState()),
     DenounceCiv("Denounce Civilization", QuestImplementation.DenounceCiv()),
     SpreadReligion("Spread Religion", QuestImplementation.SpreadReligion()),
+    TradeRoute("Trade Route", QuestImplementation.TradeRoute()),
     ;
     companion object {
         fun find(value: String) = entries.firstOrNull { it.value == value } ?: None
