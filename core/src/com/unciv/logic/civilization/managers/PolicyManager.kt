@@ -2,6 +2,8 @@ package com.unciv.logic.civilization.managers
 
 import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.civilization.Civilization
+import com.unciv.logic.civilization.CivFlags
+import com.unciv.logic.civilization.NotificationCategory
 import com.unciv.models.ruleset.Policy
 import com.unciv.models.ruleset.Policy.PolicyBranchType
 import com.unciv.models.ruleset.PolicyBranch
@@ -31,6 +33,9 @@ class PolicyManager : IsPartOfGameInfoSerialization {
     internal val policyUniques = UniqueMap()
 
     var freePolicies = 0
+
+    /** Policies of ideologies (tenets) that can be adopted at no cost. Free policies can be spent on tenets as well, but these only on tenets */
+    var freeTenets = 0
     var storedCulture = 0
     internal val adoptedPolicies = HashSet<String>()
     private var numberOfAdoptedPolicies = 0
@@ -45,7 +50,7 @@ class PolicyManager : IsPartOfGameInfoSerialization {
     var shouldOpenPolicyPicker = false
 
     /** Used by NextTurnAction.PickPolicy.isChoice */
-    @Readonly fun shouldShowPolicyPicker() = (shouldOpenPolicyPicker || freePolicies > 0) && canAdoptPolicy()
+    @Readonly fun shouldShowPolicyPicker() = (shouldOpenPolicyPicker || freePolicies > 0 || freeTenets > 0 || canChooseIdeology()) && canAdoptPolicy()
 
     /** A [Map] pairing each [PolicyBranch] to its priority ([Int]). */
     val priorityMap: Map<PolicyBranch, Int>
@@ -102,6 +107,7 @@ class PolicyManager : IsPartOfGameInfoSerialization {
         toReturn.numberOfAdoptedPolicies = numberOfAdoptedPolicies
         toReturn.adoptedPolicies.addAll(adoptedPolicies)
         toReturn.freePolicies = freePolicies
+        toReturn.freeTenets = freeTenets
         toReturn.shouldOpenPolicyPicker = shouldOpenPolicyPicker
         toReturn.storedCulture = storedCulture
         toReturn.maxEffectiveCities = maxEffectiveCities
@@ -250,12 +256,34 @@ class PolicyManager : IsPartOfGameInfoSerialization {
         return true
     }
 
+    /** The ideology that [civInfo] follows, if any. The first of the branches that are ideologies and adopted (CvPlayerPolicies::GetLateGamePolicyTree) */
+    @Readonly
+    fun getIdeology(): PolicyBranch? =
+        civInfo.gameInfo.ruleset.policyBranches.values.firstOrNull { it.isIdeology && isAdopted(it.name) }
+
+    /** An ideology is chosen, not bought (CvPlayerPolicies::CanUnlockPolicyBranch is false for it, the choice is made by SetPolicyBranchUnlocked) */
+    @Readonly
+    private fun isFreeToAdopt(policy: Policy) = policy is PolicyBranch && policy.isIdeology
+
+    /** Whether there is an ideology that can be chosen now: the ruleset has them, [civInfo] has none yet, and the rules of one of them allow it */
+    @Readonly
+    fun canChooseIdeology(): Boolean = !civInfo.isSpectator && getIdeology() == null &&
+        civInfo.gameInfo.ruleset.policyBranches.values.any { it.isIdeology && isAdoptable(it) }
+
+    /** Whether [policy] can be paid for: it is free to adopt, a free tenet or free policy is available for it, or the culture is. Not whether the rules allow it, see [isAdoptable] */
+    @Readonly
+    fun canPayFor(policy: Policy, cultureCost: Int = getCultureNeededForNextPolicy()): Boolean =
+        isFreeToAdopt(policy) || (policy.isTenet && freeTenets > 0) || freePolicies > 0 || storedCulture >= cultureCost
+
+    /** Whether [policy] can be adopted now (CvPlayerPolicies::CanAdoptPolicy) */
+    @Readonly
+    fun canAdopt(policy: Policy): Boolean = !civInfo.isSpectator && canPayFor(policy) && isAdoptable(policy)
+
     @Readonly
     fun canAdoptPolicy(): Boolean {
         if (civInfo.isSpectator) return false
-        if (freePolicies == 0 && storedCulture < getCultureNeededForNextPolicy()) return false
-        if (allPoliciesAdopted(true)) return false
-        return true
+        val cost = getCultureNeededForNextPolicy()
+        return getRulesetPolicies().values.any { canPayFor(it, cost) && isAdoptable(it) } // payment first: it is cheap, and the rules look at the whole branch
     }
 
 
@@ -263,7 +291,10 @@ class PolicyManager : IsPartOfGameInfoSerialization {
 
         if (!branchCompletion) {
             updateMaxEffectiveCities()
-            if (freePolicies > 0) freePolicies--
+            // The order of CvPlayer::doAdoptPolicy: free tenets for tenets, then free policies, then culture
+            if (isFreeToAdopt(policy)) { /* chosen, not bought */ }
+            else if (policy.isTenet && freeTenets > 0) freeTenets--
+            else if (freePolicies > 0) freePolicies--
             else if (!civInfo.gameInfo.gameParameters.godMode) {
                 val cultureNeededForNextPolicy = getCultureNeededForNextPolicy()
                 if (cultureNeededForNextPolicy > storedCulture) throw Exception(
@@ -341,6 +372,47 @@ class PolicyManager : IsPartOfGameInfoSerialization {
             city.cityStats.update()
             city.reassignPopulationDeferred()
         }
+    }
+
+    /** The tenets of [branch] that are adopted */
+    @Readonly
+    fun getAdoptedTenets(branch: PolicyBranch): List<Policy> =
+        adoptedPolicies.mapNotNull { getRulesetPolicies()[it] }.filter { it.branch == branch && it.isTenet }
+
+    /**
+     * Changes the ideology (CvPlayerPolicies::DoSwitchIdeologies): all tenets of the old one are lost and as many as there were,
+     * less `ideologyTenetsLostOnSwitch`, come back as free tenets, the stored culture is gone, and the civilization is in anarchy for a number of turns.
+     * The new ideology gives the free tenets of an adopter again, as when it was first chosen.
+     */
+    fun switchIdeology(newBranch: PolicyBranch) {
+        val old = getIdeology() ?: return
+        if (old == newBranch || !newBranch.isIdeology) return
+        val constants = civInfo.gameInfo.ruleset.modOptions.constants
+        val numTenets = getAdoptedTenets(old).size
+        val tenetsLost = minOf(numTenets, constants.ideologyTenetsLostOnSwitch)
+
+        for (policy in getAdoptedPoliciesMatching("[${old.name}] branch", forRemoval = true).toList())
+            removePolicy(policy, assumeWasFree = true)
+        // What the original does with its counters comes down to this: the policies that cost the next one more are fewer by the tenets lost
+        numberOfAdoptedPolicies = maxOf(0, numberOfAdoptedPolicies - tenetsLost)
+        freeTenets += numTenets - tenetsLost
+        storedCulture = 0
+
+        val freeBefore = freeTenets
+        adopt(newBranch)
+        // The ones the new ideology gave are not new costs either (see the cost of the next policy)
+        numberOfAdoptedPolicies += freeTenets - freeBefore
+
+        civInfo.addFlag(CivFlags.Anarchy.name, constants.ideologyAnarchyTurns)
+        civInfo.culture.publicOpinion.turnIdeologySwitch = civInfo.gameInfo.turns
+        civInfo.culture.publicOpinion.update()
+        for (city in civInfo.cities) city.cityStats.update()
+        shouldOpenPolicyPicker = freeTenets > 0
+        for (otherCiv in civInfo.gameInfo.civilizations.filter { it.isMajorCiv && !it.isDefeated() && it != civInfo })
+            otherCiv.addNotification(
+                if (otherCiv.knows(civInfo)) "[${civInfo.civName}] has changed its ideology to [${newBranch.name}]"
+                else "A civilization we have not met has changed its ideology to [${newBranch.name}]",
+                NotificationCategory.Diplomacy, "StatIcons/Culture")
     }
 
     /**

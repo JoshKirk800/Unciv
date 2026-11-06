@@ -169,6 +169,17 @@ class ModConstants {
     var influencePercentInfluential = 100
     var influencePercentDominant = 200
 
+    // Ideologies (CvPolicyClasses.cpp and GlobalDefines.xml, Brave New World)
+    // Changing the ideology costs this many tenets (those that are left become free tenets) and this many turns of anarchy
+    var ideologyTenetsLostOnSwitch = 2
+    var ideologyAnarchyTurns = 2
+    // Percent less tourism between civilizations that follow different ideologies
+    var tourismModifierDifferentIdeologies = -34
+
+    // The public opinion gets worse (Dissidents, Civil Resistance, Revolutionary Wave) from these differences of the pressure of other ideologies on the own
+    var publicOpinionCivilResistance = 3
+    var publicOpinionRevolutionaryWave = 5
+
     // Archaeology (CvGame.cpp and GlobalDefines.xml, Brave New World). The sites appear once, with 5 to 8 for every major civilization;
     // this share of them is hidden until a policy is adopted, and this share of those holds a writing
     var archaeologySitesPerCivMin = 5

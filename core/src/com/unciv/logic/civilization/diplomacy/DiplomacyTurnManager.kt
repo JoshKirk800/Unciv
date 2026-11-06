@@ -77,6 +77,26 @@ object DiplomacyTurnManager {
         otherCiv.getDiplomacyManager(civInfo)!!.trades.add(treaty.reverse())
     }
 
+    /** The extra influence per turn the policies of [otherCiv] give with this City-State, before it is applied (CvMinorCivAI::GetFriendshipChangePerTurnTimes100, CvMinorCivAI.cpp:5314-5341).
+     *  Run from the City-State's DiplomacyManager. */
+    @Readonly
+    private fun DiplomacyManager.getCityStateInfluencePerTurnBonus(): Float {
+        var bonus = 0
+
+        // POLICYMOD_PROTECTED_MINOR_INFLUENCE: IsPlayerConnectedToPlayer, i.e. a trade route in either direction
+        if (otherCiv.hasUnique(UniqueType.CityStateInfluenceWithTradeRoute)
+            && (otherCiv.tradeRoutes.routes.any { it.getDestinationCiv() == civInfo }
+                || civInfo.tradeRoutes.routes.any { it.getDestinationCiv() == otherCiv }))
+            otherCiv.forEachMatchingUnique(UniqueType.CityStateInfluenceWithTradeRoute) { bonus += it.params[0].toInt() }
+
+        // POLICYMOD_AFRAID_INFLUENCE: CanMajorBullyGold is "bully metric >= 0". The closest equivalent here is a tribute willingness of
+        // at least 0 for gold (the same threshold that enables the Demand Tribute button), not the "> 0" that shows the Afraid relationship
+        if (otherCiv.hasUnique(UniqueType.CityStateInfluenceWhenAfraid) && civInfo.cityStateFunctions.getTributeWillingness(otherCiv) >= 0)
+            otherCiv.forEachMatchingUnique(UniqueType.CityStateInfluenceWhenAfraid) { bonus += it.params[0].toInt() }
+
+        // "Mod everything by game speed": GetGoldGiftMod
+        return bonus * civInfo.gameInfo.speed.goldGiftModifier
+    }
 
     private fun DiplomacyManager.nextTurnCityStateInfluence() {
         val initialRelationshipLevel = relationshipIgnoreAfraid()  // Enough since only >= Friend is notified
@@ -85,7 +105,18 @@ object DiplomacyTurnManager {
         // We don't use `getInfluence()` here, as then during war with the ally of this CS,
         // our influence would be set to -59, overwriting the old value, which we want to keep
         // as it should be restored once the war ends (though we keep influence degradation from time during the war)
-        if (influence > restingPoint) {
+        val perTurnBonus = getCityStateInfluencePerTurnBonus()
+        if (perTurnBonus != 0f) {
+            // CvMinorCivAI::DoFriendship (CvMinorCivAI.cpp:5192-5203): the bonus is added on top of the decay or recovery and,
+            // unlike the recovery, is not stopped at the resting point; only a decay never takes us below it
+            val baseChange = when {
+                influence > restingPoint -> -getCityStateInfluenceDegrade()
+                influence < restingPoint -> getCityStateInfluenceRecovery()
+                else -> 0f
+            }
+            val newInfluence = influence + baseChange + perTurnBonus
+            setInfluence(if (influence >= restingPoint) max(restingPoint, newInfluence) else newInfluence)
+        } else if (influence > restingPoint) {
             val decrement = getCityStateInfluenceDegrade()
             setInfluence(max(restingPoint, influence - decrement))
         } else if (influence < restingPoint) {

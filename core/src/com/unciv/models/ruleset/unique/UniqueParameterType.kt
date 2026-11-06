@@ -216,7 +216,7 @@ enum class UniqueParameterType(
 
     /** Implemented by [Civ.matchesFilter][com.unciv.logic.civilization.Civilization.matchesFilter] */
     CivFilter("civFilter", Constants.cityStates) {
-        override val staticKnownValues = setOf(Constants.aiPlayer, Constants.humanPlayer, "Open Borders", "Friendly", "Hostile", "Known")
+        override val staticKnownValues = setOf(Constants.aiPlayer, Constants.humanPlayer, "Open Borders", "Friendly", "Hostile", "Known", "Same Ideology", "Different Ideology")
 
         override fun getErrorSeverity(parameterText: String, ruleset: Ruleset) = getErrorSeverityForFilter(parameterText, ruleset)
 
@@ -597,7 +597,7 @@ enum class UniqueParameterType(
     },
 
     /** The relations that change the tourism one civilization makes towards another, see [com.unciv.logic.civilization.managers.TourismRelation] */
-    TourismRelation("tourismRelation", "Shared Religion", "One of `Shared Religion`, `Open Borders`, `Trade Route`, `Lower Happiness` or `Common Enemies`") {
+    TourismRelation("tourismRelation", "Shared Religion", "One of `Shared Religion`, `Open Borders`, `Trade Route`, `Lower Happiness`, `Common Enemies`, `Shared Ideology` or `Different Ideologies`") {
         override fun getKnownValuesForAutocomplete(ruleset: Ruleset) = com.unciv.logic.civilization.managers.TourismRelation.entries.map { it.label }.toSet()
     },
 

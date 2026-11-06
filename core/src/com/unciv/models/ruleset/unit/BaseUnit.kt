@@ -194,7 +194,7 @@ class BaseUnit : RulesetObject(), INonPerpetualConstruction {
 
     override fun canBePurchasedWithStat(city: City?, stat: Stat): Boolean {
         if (city == null) return super.canBePurchasedWithStat(null, stat)
-        if (hasUnique(UniqueType.CannotBePurchased)) return false
+        if (hasUnique(UniqueType.CannotBePurchased, city.state)) return false
         if (getRejectionReasons(city.cityConstructions, city.cityConstructions.queueWithoutOneOf(name)).any { it.type != RejectionReasonType.Unbuildable  })
             return false
         if (costFunctions.canBePurchasedWithStat(city, stat)) return true

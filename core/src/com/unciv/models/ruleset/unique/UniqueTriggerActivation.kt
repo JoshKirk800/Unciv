@@ -437,6 +437,22 @@ object UniqueTriggerActivation {
                     true
                 }
             }
+            UniqueType.OneTimeAmountFreeTenets -> {
+                if (civInfo.isSpectator) return null
+                val newFreeTenets = unique.params[0].toInt()
+
+                return {
+                    civInfo.policies.freeTenets += newFreeTenets
+
+                    val notificationText = getNotificationText(
+                        notification, triggerNotificationText,
+                        "You may choose [$newFreeTenets] free Tenets"
+                    )
+                    if (notificationText != null)
+                        civInfo.addNotification(notificationText, PolicyAction(), NotificationCategory.General, NotificationIcon.Culture)
+                    true
+                }
+            }
             UniqueType.OneTimeAdoptPolicyOrBelief -> {
                 val name = unique.params[0]
                 val policy = civInfo.gameInfo.ruleset.policies[name]

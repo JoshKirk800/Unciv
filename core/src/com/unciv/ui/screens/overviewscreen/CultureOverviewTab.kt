@@ -7,6 +7,7 @@ import com.unciv.logic.city.GreatWorkSlot
 import com.unciv.logic.civilization.managers.CultureManager
 import com.unciv.logic.civilization.managers.InfluenceLevel
 import com.unciv.logic.civilization.managers.InfluenceTrend
+import com.unciv.logic.civilization.managers.PublicOpinionType
 import com.unciv.models.ruleset.Building
 import com.unciv.models.ruleset.MilestoneType
 import com.unciv.models.ruleset.GreatWorkInstance
@@ -70,13 +71,14 @@ class CultureOverviewTab(
         }
         val known = others.filter { civ.knows(it) }
         if (known.isNotEmpty()) {
-            for (header in listOf("Civilization", "Tourism per turn", "Influence", "Level", "Trend", "Turns to Influential", "Bonuses"))
+            for (header in listOf("Civilization", "Ideology", "Tourism per turn", "Influence", "Level", "Trend", "Turns to Influential", "Bonuses"))
                 add(header.toLabel()).pad(3f)
             row()
             addSeparator()
             for (other in known.sortedBy { it.civName }) {
                 val level = culture.getInfluenceLevel(other) ?: InfluenceLevel.Unknown
                 add(other.civName.toLabel(hideIcons = true)).left()
+                add((other.getIdeology()?.name ?: "").toLabel())
                 add(culture.getInfluencePerTurn(other).toString().toLabel())
                 add("${culture.getInfluencePercent(other)}%".toLabel())
                 add(level.label.toLabel(if (level >= InfluenceLevel.Influential) Color.GREEN else Color.WHITE))
@@ -93,6 +95,7 @@ class CultureOverviewTab(
                 row()
             }
         }
+        addPublicOpinion()
         val cities = civ.cities.filter { culture.getCityTourism(it) > 0 }.sortedByDescending { culture.getCityTourism(it) }
         if (cities.isNotEmpty()) {
             add("Tourism of our cities".toLabel(fontSize = Constants.headingFontSize)).colspan(COLUMNS).padTop(15f).row()
@@ -102,6 +105,32 @@ class CultureOverviewTab(
             }
         }
         add("Great Works".toLabel(fontSize = Constants.headingFontSize)).colspan(COLUMNS).padTop(20f).row()
+    }
+
+    /** What the other ideologies do to us, see [com.unciv.logic.civilization.managers.PublicOpinion] */
+    private fun addPublicOpinion() {
+        val ideology = civ.getIdeology() ?: return
+        val opinion = civ.culture.publicOpinion
+        add("Public Opinion".toLabel(fontSize = Constants.headingFontSize)).colspan(COLUMNS).padTop(15f).row()
+        add("Our ideology is [${ideology.name}]".tr().toLabel()).colspan(COLUMNS).row()
+        val color = when (opinion.type) {
+            PublicOpinionType.Content -> Color.GREEN
+            PublicOpinionType.Dissidents -> Color.WHITE
+            PublicOpinionType.CivilResistance -> Color.YELLOW
+            PublicOpinionType.RevolutionaryWave -> Color.RED
+        }
+        add(opinion.type.label.toLabel(color)).colspan(COLUMNS).row()
+        for ((name, total) in opinion.pressure.entries.sortedByDescending { it.value }) {
+            val civs = opinion.pressureByCiv[name]!!.keys.mapNotNull { id -> civ.gameInfo.civilizations.firstOrNull { it.civID == id }?.civName }
+            add("Pressure for [$name]: [$total] ([${civs.joinToString()}])".tr().toLabel()).colspan(COLUMNS).row()
+        }
+        if (opinion.pressure.isEmpty())
+            add("No other ideology presses on us".toLabel()).colspan(COLUMNS).row()
+        opinion.preferredIdeology?.let {
+            add("The people would prefer [$it]".tr().toLabel(Color.ORANGE)).colspan(COLUMNS).row()
+        }
+        if (opinion.unhappiness > 0)
+            add("The public opinion makes [${opinion.unhappiness}] unhappiness".tr().toLabel(Color.RED)).colspan(COLUMNS).row()
     }
 
     private fun addBuilding(building: Building, slots: List<GreatWorkSlot>) {

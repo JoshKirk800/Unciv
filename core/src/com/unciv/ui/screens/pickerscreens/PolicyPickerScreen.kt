@@ -82,8 +82,7 @@ private fun Policy.isPickable(viewingCiv: Civilization, canChangeState: Boolean)
         && !viewingCiv.isDefeated()
         && !viewingCiv.policies.isAdopted(this.name)
         && policyBranchType != PolicyBranchType.BranchComplete
-        && viewingCiv.policies.isAdoptable(this)
-        && viewingCiv.policies.canAdoptPolicy()
+        && viewingCiv.policies.canAdopt(this)
 
 private class PolicyButton(viewingCiv: Civilization, canChangeState: Boolean, val policy: Policy, size: Float = 30f) : BorderedTable(
     path = "PolicyScreen/PolicyButton",
@@ -174,6 +173,8 @@ class PolicyPickerScreen(
                 "All policies adopted"
             policies.freePolicies > 0 ->
                 "Adopt free policy"
+            policies.freeTenets > 0 ->
+                "Adopt free tenet"
             else ->
                 "{Adopt policy}\n(${policies.storedCulture}/${policies.getCultureNeededForNextPolicy()})"
         }.tr())
@@ -268,12 +269,26 @@ class PolicyPickerScreen(
         selectedPolicyButton = button
         selectedPolicyButton?.isSelected = true
 
-        descriptionLabel.setText(policy.getDescription())
+        descriptionLabel.setText(policy.getDescription() + getLockedReasons(policy))
         descriptionLabel.clearListeners()
         descriptionLabel.onActivation {
             openCivilopedia(policy.makeLink())
         }
         descriptionLabel.keyShortcuts.add(KeyboardBinding.Civilopedia)
+    }
+
+    /** Why a policy that is not adopted cannot be adopted now, as far as its own rules say, which `getDescription` leaves out */
+    private fun getLockedReasons(policy: Policy): String {
+        if (viewingCiv.policies.isAdopted(policy.name) || policy.policyBranchType == PolicyBranchType.BranchComplete) return ""
+        var text = ""
+        val state = viewingCiv.state
+        for (unique in policy.getMatchingUniques(UniqueType.OnlyAvailable, com.unciv.models.ruleset.unique.GameContext.IgnoreConditionals)) {
+            if (!unique.conditionalsApply(state))
+                text += "\n• " + UniqueType.OnlyAvailable.text.tr() + ": " + unique.modifiers.joinToString { it.text.tr() }
+        }
+        for (unique in policy.getMatchingUniques(UniqueType.Unavailable, state))
+            text += "\n• " + UniqueType.Unavailable.text.tr() + ": " + unique.modifiers.joinToString { it.text.tr() }
+        return text
     }
 
     /**
@@ -319,12 +334,16 @@ class PolicyPickerScreen(
             label.wrap = true
             labelTable.add(label).pad(7f, 20f, 10f, 20f).grow().row()
 
-            if (branch.uniqueMap.getUniques(UniqueType.OnlyAvailable).any()) {
-                var warning = UniqueType.OnlyAvailable.text.tr() + ":\n"
-                for (unique in branch.uniqueMap.getUniques(UniqueType.OnlyAvailable))
-                    for (conditional in unique.modifiers) {
-                        warning += "• " + conditional.text.tr() + "\n"
-                    }
+            if (branch.uniqueMap.getUniques(UniqueType.OnlyAvailable).any() || branch.uniqueMap.getUniques(UniqueType.Unavailable).any()) {
+                var warning = ""
+                for (type in listOf(UniqueType.OnlyAvailable, UniqueType.Unavailable)) {
+                    if (branch.uniqueMap.getUniques(type).none()) continue
+                    warning += type.text.tr() + ":\n"
+                    for (unique in branch.uniqueMap.getUniques(type))
+                        for (conditional in unique.modifiers) {
+                            warning += "• " + conditional.text.tr() + "\n"
+                        }
+                }
                 val warningLabel = ColorMarkupLabel(warning, Color.RED, fontSize = 13)
                 warningLabel.setAlignment(Align.topLeft)
                 warningLabel.wrap = true
@@ -566,7 +585,10 @@ class PolicyPickerScreen(
     private fun getTopButton(branch: PolicyBranch): Table {
 
         val text: String
-        val isPickable = branch.isPickable(viewingCiv, canChangeState)
+        // Only the ideology the people prefer can be changed to, and it ends the old one (see PolicyManager.switchIdeology)
+        val canSwitch = canChangeState && branch.isIdeology && viewingCiv.getIdeology() != null && !viewingCiv.policies.isAdopted(branch.name)
+            && viewingCiv.culture.publicOpinion.preferredIdeology == branch.name
+        val isPickable = canSwitch || branch.isPickable(viewingCiv, canChangeState)
         var isAdoptedBranch = false
         var percentage = 0f
 
@@ -585,6 +607,8 @@ class PolicyPickerScreen(
             text = "{Completed} ($amountDone/$amountToDo)"
             lockIcon.isVisible = false
             isAdoptedBranch = true
+        } else if (canSwitch) {
+            text = "Change ideology"
         } else if (viewingCiv.gameInfo.ruleset.eras[branch.era]!!.eraNumber > viewingCiv.getEraNumber()) {
             text = branch.era
         } else {
@@ -640,10 +664,24 @@ class PolicyPickerScreen(
         lockIcon.setPosition(table.width, table.height / 2 - lockIcon.height/2)
 
         table.onClick {
-            if (branch.isPickable(viewingCiv, canChangeState))
+            if (canSwitch) {
+                val old = viewingCiv.getIdeology()!!
+                val constants = viewingCiv.gameInfo.ruleset.modOptions.constants
+                val kept = maxOf(0, viewingCiv.policies.getAdoptedTenets(old).size - constants.ideologyTenetsLostOnSwitch)
                 ConfirmPopup(
                     this,
-                    "Are you sure you want to adopt [${branch.name}]?",
+                    "Are you sure you want to change your ideology to [${branch.name}]? All tenets of [${old.name}] are lost, [$kept] of them become free tenets, " +
+                        "your stored culture is lost, and for [${constants.ideologyAnarchyTurns}] turns you have no production, science, culture, faith or gold.",
+                    "Change ideology", true, action = {
+                        viewingCiv.policies.switchIdeology(branch)
+                        game.replaceCurrentScreen{ recreate() }
+                    }
+                ).open(force = true)
+            } else if (branch.isPickable(viewingCiv, canChangeState))
+                ConfirmPopup(
+                    this,
+                    if (branch.isIdeology) "Are you sure you want to choose [${branch.name}] as your ideology? It costs no culture, and you can only change it later by a revolution."
+                    else "Are you sure you want to adopt [${branch.name}]?",
                     "Adopt", true, action = {
                         viewingCiv.policies.adopt(branch, false)
                         game.replaceCurrentScreen{ recreate() }

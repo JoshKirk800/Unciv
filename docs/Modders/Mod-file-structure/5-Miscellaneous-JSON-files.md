@@ -313,6 +313,9 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | landmarkImprovement                      | String | Landmark                      | The improvement that can be chosen after a dig |
 | archaeologySiteTech                      | String | Archaeology                   | The technology whose civilizations are told when the sites appear |
 | landmarkInfluenceWithCityStates          | Int    | 50                            | Influence with a city-state when a Landmark is built on its land |
+| ideologyTenetsLostOnSwitch               | Int    | 2                             | Tenets that are lost for good when a civilization changes its ideology (see the unique `Is an ideology`); the others become free tenets |
+| ideologyAnarchyTurns                     | Int    | 2                             | Turns without gold, science, culture, faith and production after a change of ideology |
+| tourismModifierDifferentIdeologies       | Int    | -34                           | Percent change of the tourism towards a civilization that follows another ideology (`Different Ideologies` of the tourism relations) |
 | tradeRouteBaseGold                       | Float  | 1                             | Gold a trade route is worth before additions, for both ends. See the unique `Can establish trade routes` |
 | tradeRouteCityGoldDivisor                | Int    | 20                            | Each end of an international route adds the gold of the city at the other end divided by this |
 | tradeRouteGoldPerDifferentResource       | Float  | 0.5                           | Gold per resource of the other civilization that the route brings that the origin does not have |

@@ -317,9 +317,19 @@ object NextTurnAutomation {
         - Choose a random candidate closest to completion.
         - Pick a random child policy of a chosen branch and adopt it.
         */
+        // An ideology is chosen before anything is bought (CvPlayer::doTurn), and the free tenets go to tenets (they can buy nothing else)
+        PolicyAutomation.considerIdeologySwitch(civInfo)
+        PolicyAutomation.chooseIdeology(civInfo, rng)?.let { civInfo.policies.adopt(it) }
+        while (civInfo.policies.freeTenets > 0) {
+            val tenet = PolicyAutomation.chooseTenet(civInfo, rng) ?: break
+            civInfo.policies.adopt(tenet)
+        }
+
         while (civView.canAdoptPolicy()) {
+            // Choosing an ideology costs nothing and is done above, so it is not what makes a policy adoptable here
             val incompleteBranches: Set<PolicyBranch> = civInfo.policies.incompleteBranches
-            val adoptableBranches: Set<PolicyBranch> = civInfo.policies.adoptableBranches
+            val adoptableBranches: Set<PolicyBranch> = civInfo.policies.adoptableBranches.filterNot { it.isIdeology }.toSet()
+            if (civInfo.policies.freePolicies == 0 && civInfo.policies.storedCulture < civInfo.policies.getCultureNeededForNextPolicy()) return
 
             // Skip the whole thing if all branches are completed
             if (incompleteBranches.isEmpty() && adoptableBranches.isEmpty()) return
@@ -363,6 +373,7 @@ object NextTurnAutomation {
                 else targetBranch.policies.filter { civInfo.policies.isAdoptable(it) }
                     .randomWeighted(rng) { it.getWeightForAiDecision(civInfo.state) }
 
+            if (!civInfo.policies.canAdopt(policyToAdopt)) return
             civInfo.policies.adopt(policyToAdopt)
         }
     }

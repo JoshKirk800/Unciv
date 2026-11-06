@@ -155,6 +155,10 @@ class TurnManager(val civInfo: Civilization) {
             when (flag) {
                 CivFlags.RevoltSpawning.name -> doRevoltSpawn()
                 CivFlags.TurnsTillCityStateElection.name -> civInfo.cityStateFunctions.holdElections()
+                CivFlags.Anarchy.name -> {
+                    civInfo.removeFlag(flag)
+                    for (city in civInfo.cities) city.cityStats.update()
+                }
             }
         }
         handleDiplomaticVictoryFlags()

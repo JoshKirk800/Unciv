@@ -295,8 +295,14 @@ object BattleDamage {
         return if (combatant !is MapUnitCombatant
             || combatant.unit.hasUnique(UniqueType.NoDamagePenaltyWoundedUnits, checkCivInfoUniques = true)
         ) 1f
-        // A third of the lost health, in whole numbers: WOUNDED_DAMAGE_MULTIPLIER is 33% (CvUnit::getCombatDamage)
-        else (100 - (100 - combatant.getHealth()) * BattleConstants.WOUNDED_DAMAGE_MULTIPLIER / 100) / 100f
+        else {
+            // The multiplier is WOUNDED_DAMAGE_MULTIPLIER plus the owner's WoundedUnitDamageMod, never below 0
+            // (CvUnit.cpp:2796-2802, strength reduction 9851-9862, projected damage 10893-10899)
+            var multiplier = BattleConstants.WOUNDED_DAMAGE_MULTIPLIER
+            combatant.unit.forEachMatchingUnique(UniqueType.WoundedUnitDamagePenalty, checkCivInfoUniques = true) { multiplier += it.params[0].toInt() }
+            // A third of the lost health, in whole numbers: WOUNDED_DAMAGE_MULTIPLIER is 33% (CvUnit::getCombatDamage)
+            (100 - (100 - combatant.getHealth()) * max(multiplier, 0) / 100) / 100f
+        }
     }
 
 

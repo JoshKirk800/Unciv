@@ -38,7 +38,11 @@ enum class TourismRelation(val label: String) {
     OpenBorders("Open Borders"),
     TradeRoute("Trade Route"),
     LowerHappiness("Lower Happiness"),
-    CommonEnemies("Common Enemies");
+    CommonEnemies("Common Enemies"),
+    /** Both civilizations follow the same ideology */
+    SharedIdeology("Shared Ideology"),
+    /** Both follow an ideology, and not the same one */
+    DifferentIdeologies("Different Ideologies");
 
     companion object {
         @Readonly
@@ -75,6 +79,10 @@ class CultureManager : IsPartOfGameInfoSerialization {
     var numCivsInfluentialLastTurn = 0
         private set
 
+    /** What the people think of the ideology of the civilization */
+    var publicOpinion = PublicOpinion()
+        private set
+
     @Transient
     lateinit var civ: Civilization
         private set
@@ -87,11 +95,13 @@ class CultureManager : IsPartOfGameInfoSerialization {
         toReturn.reportedTwoCivsAway = reportedTwoCivsAway
         toReturn.reportedOneCivAway = reportedOneCivAway
         toReturn.numCivsInfluentialLastTurn = numCivsInfluentialLastTurn
+        toReturn.publicOpinion = publicOpinion.clone()
         return toReturn
     }
 
     fun setTransients(civ: Civilization) {
         this.civ = civ
+        publicOpinion.setTransients(civ)
     }
 
     //region Tourism of the cities
@@ -172,6 +182,8 @@ class CultureManager : IsPartOfGameInfoSerialization {
             TourismRelation.TradeRoute -> areConnectedByTrade(other)
             TourismRelation.LowerHappiness -> civ.stats.happiness > other.stats.happiness
             TourismRelation.CommonEnemies -> getNumCommonEnemies(other) > 0
+            TourismRelation.SharedIdeology -> civ.getIdeology().let { it != null && it == other.getIdeology() }
+            TourismRelation.DifferentIdeologies -> civ.getIdeology().let { mine -> mine != null && other.getIdeology().let { it != null && it != mine } }
         }
     }
 
@@ -192,6 +204,7 @@ class CultureManager : IsPartOfGameInfoSerialization {
             TourismRelation.SharedReligion -> constants.tourismModifierSharedReligion
             TourismRelation.OpenBorders -> constants.tourismModifierOpenBorders
             TourismRelation.TradeRoute -> constants.tourismModifierTradeRoute
+            TourismRelation.DifferentIdeologies -> constants.tourismModifierDifferentIdeologies
             else -> 0
         }
         for (unique in civ.getMatchingUniques(UniqueType.TourismTowardsPercent)) {
@@ -313,6 +326,7 @@ class CultureManager : IsPartOfGameInfoSerialization {
     /** Adds this turn's tourism to the influence on every civilization met, and tells how that is going (CvPlayerCulture::DoTurn) */
     fun endTurn() {
         for (other in getOtherMajorCivs()) addInfluence(other, getInfluencePerTurn(other))
+        publicOpinion.update()
         reportProgress()
     }
 

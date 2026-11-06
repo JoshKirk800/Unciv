@@ -291,6 +291,14 @@ class CivInfoStatsForNextTurn(val civInfo: Civilization) {
                 statMap[key] = value + (statMap[key] ?: 0f)
         }
 
+        // Not in a city but in the total of the civilization: the other ideologies are what the people of all cities suffer under
+        val publicOpinionUnhappiness = civInfo.culture.publicOpinion.unhappiness
+        if (publicOpinionUnhappiness > 0) {
+            var unhappiness = publicOpinionUnhappiness.toFloat()
+            if (!civInfo.isHuman()) unhappiness *= civInfo.gameInfo.getDifficulty().aiUnhappinessModifier // as for the other unhappiness, see CityStats
+            statMap["Public Opinion"] = -unhappiness
+        }
+
         val transportUpkeep = getTransportationUpkeep()
         if (transportUpkeep.happiness != 0f)
             statMap["Transportation Upkeep"] = -transportUpkeep.happiness
