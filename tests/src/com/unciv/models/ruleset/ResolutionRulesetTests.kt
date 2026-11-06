@@ -21,13 +21,15 @@ class ResolutionRulesetTests {
     private val vanilla = RulesetCache[BaseRuleset.Civ_V_Vanilla.fullName]!!
 
     @Test
-    fun `Brave New World has the fifteen resolutions without projects`() {
+    fun `Brave New World has the eighteen resolutions including the projects`() {
         assertEquals(
             listOf("World Leader", "Choose Host", "Embargo City-States", "Embargo", "Ban Luxury", "Standing Army Tax", "Scholars In Residence",
                 "Cultural Heritage Sites", "Natural Heritage Sites", "Nuclear Non-Proliferation", "World Religion", "World Ideology",
-                "Arts Funding", "Sciences Funding", "Historical Landmarks"),
+                "Arts Funding", "Sciences Funding", "Historical Landmarks", "World's Fair", "International Games", "International Space Station"),
             bnw.resolutions.keys.toList()
         )
+        assertEquals(listOf("World's Fair", "International Games", "International Space Station"), bnw.resolutions.values.filter { it.isProject }.map { it.name })
+        assertEquals(listOf(350, 720, 850), bnw.resolutions.values.filter { it.isProject }.map { it.projectCostPerPlayer })
     }
 
     @Test
@@ -140,5 +142,33 @@ class ResolutionValidationTests {
         testGame.ruleset.resolutions[resolution.name] = resolution
         val errors = testGame.ruleset.getErrorList()
         assertTrue(errors.any { "Broken Embargo" in it.text && "OtherMajorCiv" in it.text })
+    }
+
+    @Test
+    fun `a reward on a resolution that is no project, or for a tier that does not exist, is a ruleset error`() {
+        val testGame = TestGame()
+        testGame.ruleset.resolutions["Misplaced Reward"] = Resolution().apply {
+            name = "Misplaced Reward"
+            uniques = arrayListOf("Gain [5] Golden Age points <upon reaching contribution tier [1] of a World Congress project>")
+        }
+        testGame.ruleset.resolutions["World's Fair"] = Resolution().apply {
+            name = "World's Fair"
+            projectCostPerPlayer = 10
+            uniques = arrayListOf("Gain [5] Golden Age points <upon reaching contribution tier [4] of a World Congress project>")
+        }
+        val errors = testGame.ruleset.getErrorList()
+        assertTrue(errors.any { "Misplaced Reward" in it.text && "no project" in it.text })
+        assertTrue(errors.any { "World's Fair" in it.text && "not 1, 2 or 3" in it.text })
+    }
+
+    @Test
+    fun `a project that the cities cannot contribute to is a ruleset error`() {
+        val testGame = TestGame()
+        testGame.ruleset.resolutions["Moon Base"] = Resolution().apply {
+            name = "Moon Base"
+            projectCostPerPlayer = 100
+        }
+        val errors = testGame.ruleset.getErrorList()
+        assertTrue(errors.any { "Moon Base" in it.text && "can only contribute" in it.text })
     }
 }

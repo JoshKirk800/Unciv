@@ -453,7 +453,7 @@ class LeagueTests {
         assertFalse("c has no proposal", league.canProposeEnact(resolution("Standing Army Tax"), null, c))
         assertFalse("there is no choice", league.canProposeEnact(resolution("Standing Army Tax"), "x", a))
         assertEquals(setOf("Standing Army Tax", "Scholars In Residence", "Cultural Heritage Sites", "Natural Heritage Sites",
-            "Arts Funding", "Sciences Funding", "Embargo"), league.getProposableResolutions(a).map { it.name }.toSet())
+            "Arts Funding", "Sciences Funding", "Embargo", "World's Fair"), league.getProposableResolutions(a).map { it.name }.toSet())
     }
 
     @Test
