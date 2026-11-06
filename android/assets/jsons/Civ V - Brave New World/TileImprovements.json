@@ -203,9 +203,18 @@
 	{
 		"name": "Landmark",
 		"terrainsCanBeBuiltOn": ["Land"],
-		"culture": 6,
-		"uniques": ["Great Improvement", "Removes removable features when built",
-            "Will not be replaced by automated units", "Pillaging this improvement yields approximately [+20 Gold]"]
+		"uniques": ["Unbuildable", "Removes removable features when built", "Will not be replaced by automated units",
+            "[+1 Culture] for every era since the site of this improvement was formed",
+            "Pillaging this improvement yields approximately [+20 Gold]"]
+	},
+	{
+		"name": "Archaeological Dig",
+		"terrainsCanBeBuiltOn": ["Land"],
+		"turnsToBuild": 6,
+		"techRequired": "Archaeology",
+		"uniques": ["Can only be built to improve a resource", "Can be built outside your borders", "Removes removable features when built", "Unpillagable",
+            "Will not be replaced by automated units",
+            "Remove [Antiquity site] resources from this tile", "Remove [Hidden Antiquity site] resources from this tile", "Excavate what was found here"]
 	},
 	{
 		"name": "Manufactory",
