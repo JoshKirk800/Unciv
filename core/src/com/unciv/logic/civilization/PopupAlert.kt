@@ -41,7 +41,10 @@ enum class AlertType : IsPartOfGameInfoSerialization {
     GameHasBeenWon,
     Event,
     
-    Denounced
+    Denounced,
+
+    /** A session of the World Congress has finished, its outcomes are in `League.lastResults` */
+    LeagueSessionResult
 }
 
 class PopupAlert : IsPartOfGameInfoSerialization {

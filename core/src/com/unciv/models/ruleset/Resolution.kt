@@ -55,6 +55,12 @@ class Resolution : RulesetObject() {
     var embargoesPlayer = false
     /** The luxury the proposer chose gives no happiness and cannot be traded */
     var bansLuxuryHappiness = false
+    /**
+     * More than 0 makes this resolution a League project (World's Fair, International Games, International Space Station): enacting it starts the project
+     * instead of putting an effect in force. Its cost for each civilization at Standard speed (CostPerPlayer, CIV5LeagueProjects.xml).
+     * The rewards are the uniques with the conditional [UniqueType.TriggerUponProjectTier].
+     */
+    var projectCostPerPlayer = 0
 
     override fun getUniqueTarget() = UniqueTarget.Resolution
 
@@ -66,6 +72,9 @@ class Resolution : RulesetObject() {
 
     /** The resolution elects the World Leader, winning the Diplomatic Victory */
     val isWorldLeader get() = hasUnique(UniqueType.ElectsWorldLeader)
+
+    /** The resolution starts a League project, see [projectCostPerPlayer]; it never stays in effect and cannot be repealed */
+    val isProject get() = projectCostPerPlayer > 0
 
     /** Whether the game settings allow this resolution (see [UniqueType.OnlyAvailable]) */
     @Readonly

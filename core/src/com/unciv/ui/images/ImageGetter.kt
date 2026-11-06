@@ -280,8 +280,12 @@ object ImageGetter {
         if (ruleset.units.containsKey(construction)) {
             return PortraitUnit(construction, size)
         }
-        if (PerpetualConstruction.perpetualConstructionsMap.containsKey(construction))
-            return getImage("OtherIcons/Convert$construction").toGroup(size)
+        if (PerpetualConstruction.perpetualConstructionsMap.containsKey(construction)) {
+            // League projects have no conversion icon
+            val icon = if (PerpetualConstruction.perpetualConstructionsMap[construction] is PerpetualConstruction.Project) "OtherIcons/Diplomacy"
+                else "OtherIcons/Convert$construction"
+            return getImage(icon).toGroup(size)
+        }
         return getStatIcon(construction).surroundWithCircle(size).surroundWithThinCircle()
     }
 

@@ -392,6 +392,29 @@ The conditional `<when the [resolution] resolution is in effect>` can be used an
 | embargoesCityStates           | Boolean | false    | Trade routes with city-states are forbidden                                                                                 |
 | embargoesPlayer               | Boolean | false    | Trade routes with the civilization chosen by the proposer are forbidden. `proposerDecision` must be `OtherMajorCiv`         |
 | bansLuxuryHappiness           | Boolean | false    | The luxury chosen by the proposer gives no happiness and cannot be traded. `proposerDecision` must be `Luxury`              |
+| projectCostPerPlayer          | Integer | 0        | More than 0 makes the resolution a League project, see below                                                                |
+
+### League projects
+
+A resolution with `projectCostPerPlayer` is a project (World's Fair, International Games, International Space Station in Brave New World). It must be a plain resolution (`voterDecision` `YesNo`, no `proposerDecision`, not `exclusive`), and its name must be one of those three, as the cities contribute to it through the construction of the same name.
+Enacting it starts the project; it is never in effect and cannot be repealed, and cannot be proposed again while it runs or after it is complete, so it happens once per game.
+Cities of major civilizations can then build the project construction (production goes to the contribution of the civilization). The cost is `projectCostPerPlayer` times the construction percent of the game speed and of the starting era, times the major civilizations there ever were.
+When the contributions add up to the cost every living major civilization gets the rewards of its contribution tier, each tier adding to the lower ones: tier 1 from `leagueProjectTier1Threshold` times the share of a civilization (cost per civilization), tier 2 from `leagueProjectTier2Threshold` times it, tier 3 only for the highest contributor (the first of them if equal) with at least the tier 2 amount.
+The rewards are the `uniques` of the resolution that are triggerable and have the conditional `<upon reaching contribution tier [positiveAmount] of a World Congress project>`; a timed unique (`<for [20] turns>`) works too. Examples:
+
+```json
+{
+    "name": "World's Fair",
+    "projectCostPerPlayer": 350,
+    "uniques": [
+        "Gain [500] Golden Age points <upon reaching contribution tier [1] of a World Congress project>",
+        "[1] Free Social Policies <upon reaching contribution tier [2] of a World Congress project>",
+        "[+100]% Culture <for [20] turns> <upon reaching contribution tier [3] of a World Congress project>"
+    ]
+}
+```
+
+Other uniques made for the rewards are `Permanently gain [stats]`, `Gain [positiveAmount] turns of Science`, `Gain [amount] Influence with all City-States we have met` and `Gain a free [buildingName] [cityFilter]`. A building given that way can have the unique `Unbuildable`, as the International Space Station Complex of Brave New World.
 
 ## Specialists.json
 

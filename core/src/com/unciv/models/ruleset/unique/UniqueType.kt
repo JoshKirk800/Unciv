@@ -1039,6 +1039,13 @@ enum class UniqueType(
     OneTimeGainResource("Instantly gain [amount] [stockpile]", UniqueTarget.Triggerable, flags = setOf(UniqueFlag.AcceptsSpeedModifier)),
     OneTimeGainStat("Gain [amount] [civWideStat]", UniqueTarget.Triggerable, flags = setOf(UniqueFlag.AcceptsSpeedModifier)),
     OneTimeGainStatRange("Gain [amount]-[amount] [civWideStat]", UniqueTarget.Triggerable, flags = setOf(UniqueFlag.AcceptsSpeedModifier)),
+    OneTimeGainGoldenAgePoints("Gain [positiveAmount] Golden Age points", UniqueTarget.Triggerable,
+        docDescription = "Added to the progress towards the next Golden Age (not changed by the game speed, as in the original's league project rewards)"),
+    OneTimeGainPermanentStats("Permanently gain [stats]", UniqueTarget.Triggerable,
+        docDescription = "The civilization-wide stats (for example `+3 Happiness`) are added for the rest of the game, as a unique of the civilization that is never removed"),
+    OneTimeGainScienceTurns("Gain [positiveAmount] turns of Science", UniqueTarget.Triggerable,
+        docDescription = "The Science per turn the civilization makes now, times the number of turns, goes to its current research or, if it has none, to its overflow. The original uses the Science of the previous turns, which Unciv does not record"),
+    OneTimeGainCityStateInfluence("Gain [amount] Influence with all City-States we have met", UniqueTarget.Triggerable),
     OneTimeGainPantheon("Gain enough Faith for a Pantheon", UniqueTarget.Triggerable),
     OneTimeGainProphet("Gain enough Faith for [positiveAmount]% of a Great Prophet", UniqueTarget.Triggerable),
     OneTimeGainTechPercent("Research [relativeAmount]% of [tech]", UniqueTarget.Triggerable),
@@ -1133,6 +1140,8 @@ enum class UniqueType(
     TriggerUponFoundingPantheon("upon founding a Pantheon", UniqueTarget.TriggerCondition),
     TriggerUponFoundingReligion("upon founding a Religion", UniqueTarget.TriggerCondition),
     TriggerUponEnhancingReligion("upon enhancing a Religion", UniqueTarget.TriggerCondition),
+    TriggerUponProjectTier("upon reaching contribution tier [positiveAmount] of a World Congress project", UniqueTarget.TriggerCondition,
+        docDescription = "Only used on the resolutions that are projects (`projectCostPerPlayer` in Resolutions.json): the effect is triggered for every civilization that completes the project with this contribution tier or a higher one"),
 
     //endregion
 

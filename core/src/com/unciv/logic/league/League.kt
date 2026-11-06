@@ -4,8 +4,12 @@ import com.unciv.logic.GameInfo
 import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
+import com.unciv.logic.civilization.AlertType
 import com.unciv.logic.civilization.NotificationCategory
+import com.unciv.logic.civilization.OverviewAction
+import com.unciv.ui.screens.overviewscreen.EmpireOverviewCategories
 import com.unciv.logic.civilization.NotificationIcon
+import com.unciv.logic.civilization.PopupAlert
 import com.unciv.models.Counter
 import com.unciv.models.ruleset.Resolution
 import com.unciv.models.ruleset.ResolutionDecision
@@ -65,6 +69,8 @@ class League : IsPartOfGameInfoSerialization {
     var lastResults = ArrayList<LeagueResultEntry>()
     /** [GameInfo.turns] when [lastResults] were recorded, -1 for never */
     var lastResultsTurn = -1
+    /** The League projects started by the World Congress, see `LeagueProjects.kt`; each is there once, running or complete */
+    var projects = ArrayList<LeagueProject>()
 
     @Transient
     lateinit var gameInfo: GameInfo
@@ -92,6 +98,7 @@ class League : IsPartOfGameInfoSerialization {
         toReturn.activeResolutions.addAll(activeResolutions.map { it.clone() })
         toReturn.lastResults.addAll(lastResults.map { it.clone() })
         toReturn.lastResultsTurn = lastResultsTurn
+        toReturn.projects.addAll(projects.map { it.clone() })
         return toReturn
     }
 
@@ -305,6 +312,7 @@ class League : IsPartOfGameInfoSerialization {
             }
             else -> checkFinishSession()
         }
+        checkProjects()
     }
 
     /** One row in [members] for each living major civilization, none for the others */
@@ -575,6 +583,8 @@ class League : IsPartOfGameInfoSerialization {
         if (resolution.isWorldLeader && hasWorldLeader()) return false
         if (proposals.any { !it.repeal && it.resolution == resolution.name && (resolution.exclusive || it.proposerChoice == choice) }) return false
         if (activeResolutions.any { it.resolution == resolution.name && (resolution.exclusive || it.choice == choice) }) return false
+        // A project runs once per game: not again while running or after it is complete (CvVotingClasses.cpp:2532-2545)
+        if (resolution.isProject && getProject(resolution.name) != null) return false
         val tech = resolution.requiredTechAnyMember
         if (tech != null && gameInfo.civilizations.none { it.isAlive() && it.tech.isResearched(tech) }) return false
         return true
@@ -583,7 +593,7 @@ class League : IsPartOfGameInfoSerialization {
     /** CvLeague::CanProposeRepeal (CvVotingClasses.cpp:2550-2590): [proposer] may propose, the resolution is in effect and no repeal of it is proposed */
     fun canProposeRepeal(activeResolutionId: Int, proposer: Civilization): Boolean =
         canPropose(proposer)
-            && activeResolutions.any { it.id == activeResolutionId }
+            && activeResolutions.any { it.id == activeResolutionId && gameInfo.ruleset.resolutions[it.resolution]?.isProject != true } // a project is no resolution in effect
             && proposals.none { it.repeal && it.targetId == activeResolutionId }
 
     /** Puts [resolution] with [choice] on the table, costing [proposer] his proposal (CvLeague::DoProposeEnact, CvVotingClasses.cpp:2263-2304) */
@@ -728,6 +738,9 @@ class League : IsPartOfGameInfoSerialization {
         }
         lastResults = results
         lastResultsTurn = gameInfo.turns
+        if (results.isNotEmpty())
+            for (civ in gameInfo.getAliveMajorCivs().filter { it.isHuman() })
+                civ.popupAlerts.add(PopupAlert(AlertType.LeagueSessionResult, ""))
 
         val special = currentSpecialSession != null
         proposals.removeAll { !it.onHold }
@@ -759,6 +772,7 @@ class League : IsPartOfGameInfoSerialization {
                 // The victory itself is found by the game as for the vote of Gods & Kings (GameInfo.processDiplomaticVictory)
                 decision?.let { gameInfo.getCivilizationOrNull(it) }?.victoryManager?.hasEverWonDiplomaticVote = true
             }
+            resolution.isProject -> startProject(resolution)
             else -> {
                 val active = ActiveResolution(proposal.id, resolution.name, proposal.proposer, proposal.proposerChoice, gameInfo.turns)
                 activeResolutions.add(active)
@@ -791,9 +805,9 @@ class League : IsPartOfGameInfoSerialization {
     fun notifyStartTurn(civ: Civilization) {
         if (!civ.isMajorCiv || !civ.isAlive()) return
         if (canPropose(civ))
-            civ.addNotification("Your proposal is wanted by the World Congress", NotificationCategory.Diplomacy, NotificationIcon.Diplomacy)
+            civ.addNotification("Your proposal is wanted by the World Congress", OverviewAction(EmpireOverviewCategories.WorldCongress), NotificationCategory.Diplomacy, NotificationIcon.Diplomacy)
         if (sessionSoonTurn == gameInfo.turns && !inSession)
-            civ.addNotification("World Congress session in [$turnsUntilSession] turns", NotificationCategory.Diplomacy, NotificationIcon.Diplomacy)
+            civ.addNotification("World Congress session in [$turnsUntilSession] turns", OverviewAction(EmpireOverviewCategories.WorldCongress), NotificationCategory.Diplomacy, NotificationIcon.Diplomacy)
     }
 
     //endregion

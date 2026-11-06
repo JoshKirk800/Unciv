@@ -15,6 +15,8 @@ import com.unciv.ui.popups.ConfirmPopup
 import com.unciv.ui.screens.cityscreen.CityScreen
 import com.unciv.ui.screens.espionage.EspionageScreen
 import com.unciv.ui.screens.pickerscreens.DiplomaticVotePickerScreen
+import com.unciv.ui.screens.leaguescreens.LeagueProposalPickerScreen
+import com.unciv.ui.screens.leaguescreens.LeagueVoteScreen
 import com.unciv.ui.screens.pickerscreens.PantheonPickerScreen
 import com.unciv.ui.screens.pickerscreens.PolicyPickerScreen
 import com.unciv.ui.screens.pickerscreens.ReligiousBeliefsPickerScreen
@@ -127,6 +129,20 @@ enum class NextTurnAction(protected val text: String, val color: Color) {
             worldScreen.selectedGameView.civView.mayVoteForDiplomaticVictory()
         override fun action(worldScreen: WorldScreen) =
             worldScreen.game.pushScreen { DiplomaticVotePickerScreen(worldScreen.selectedGameView.civView.getCiv()) }.let {  }
+    },
+    WorldCongressPropose("Propose to the World Congress", Color.MAROON) {
+        override val icon = "NotificationIcons/WorldCongressVote"
+        override fun isChoice(worldScreen: WorldScreen) =
+            worldScreen.selectedGameView.civView.canProposeToLeague()
+        override fun action(worldScreen: WorldScreen) =
+            worldScreen.game.pushScreen { LeagueProposalPickerScreen(worldScreen.selectedGameView.civView.getCiv()) }.let {  }
+    },
+    WorldCongressDelegates("Cast your delegates in the World Congress", Color.MAROON) {
+        override val icon = "NotificationIcons/WorldCongressVote"
+        override fun isChoice(worldScreen: WorldScreen) =
+            worldScreen.selectedGameView.civView.canVoteInLeague()
+        override fun action(worldScreen: WorldScreen) =
+            worldScreen.game.pushScreen { LeagueVoteScreen(worldScreen.selectedGameView.civView.getCiv()) }.let {  }
     },
     NextUnit("Next unit", Color.LIGHT_GRAY) {
         override fun isChoice(worldScreen: WorldScreen) =

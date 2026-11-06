@@ -13,6 +13,14 @@ class TemporaryUnique() : IsPartOfGameInfoSerialization {
         turnsLeft = turns
     }
 
+    /** A unique of the civilization that has the text [uniqueText] and the source of [source]; a negative number of [turns] means it is never removed */
+    constructor(uniqueText: String, source: Unique, turns: Int) : this() {
+        unique = uniqueText
+        sourceObjectType = source.sourceObjectType
+        sourceObjectName = source.sourceObjectName
+        turnsLeft = turns
+    }
+
     var unique: String = ""
 
     private var sourceObjectType: UniqueTarget? = null

@@ -168,6 +168,11 @@ class ModConstants {
     var leagueWorldLeaderCityStateConstant = -13.758f
     /** Proposals the host of the World Congress makes in a regular session */
     var leagueRegularHostProposals = 1
+    /** League projects: the contribution tier 1 and 2 begin at these multiples of a civilization's share of the cost (LEAGUE_PROJECT_REWARD_TIER_1_THRESHOLD and _2_) */
+    var leagueProjectTier1Threshold = 0.5f
+    var leagueProjectTier2Threshold = 1f
+    /** League projects: the civilizations are told when a project has reached this percent of its cost (PROJECT_PROGRESS_PERCENT_WARNING) */
+    var leagueProjectProgressWarningPercent = 33
 
     // Great Works: culture that each one gives its city, before the bonuses of policies
     var greatWorkBaseCulture = 2

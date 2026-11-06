@@ -337,6 +337,9 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | leagueWorldLeaderCityStateCoefficient    | Float  | 16.023                        | See above (c) |
 | leagueWorldLeaderCityStateConstant       | Float  | -13.758                       | See above (d) |
 | leagueRegularHostProposals               | Int    | 1                             | Proposals the host makes in a regular session |
+| leagueProjectTier1Threshold              | Float  | 0.5                           | Contribution tier 1 of a World Congress project begins at this multiple of a civilization's share of the project cost |
+| leagueProjectTier2Threshold              | Float  | 1                             | The same for tier 2. Tier 3 goes to the highest contributor, who must have at least this much |
+| leagueProjectProgressWarningPercent      | Int    | 33                            | Percent of its cost at which the civilizations are told how far a project is |
 | goldGiftDegradationMultiplier            | Float  | 1.0                           | [^V]  |
 
 Legend:

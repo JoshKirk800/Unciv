@@ -13,6 +13,7 @@ import com.unciv.models.ruleset.BeliefType
 import com.unciv.models.ruleset.Building
 import com.unciv.models.ruleset.EventChoice
 import com.unciv.models.ruleset.IRulesetObject
+import com.unciv.models.ruleset.PerpetualConstruction
 import com.unciv.models.ruleset.ResolutionDecision
 import com.unciv.models.ruleset.Ruleset
 import com.unciv.models.ruleset.RulesetCache
@@ -433,6 +434,20 @@ open class RulesetValidator protected constructor(
             if (resolution.votesForFollowingIdeology != 0 || resolution.ideologyPressure != 0)
                 if (resolution.proposerDecision != ResolutionDecision.Ideology)
                     lines.add("Resolution ${resolution.name} has ideology effects, so its proposerDecision must be Ideology!", sourceObject = resolution)
+            if (resolution.projectCostPerPlayer < 0)
+                lines.add("Resolution ${resolution.name} has a negative projectCostPerPlayer!", sourceObject = resolution)
+            if (resolution.isProject && PerpetualConstruction.perpetualConstructionsMap[resolution.name] !is PerpetualConstruction.Project)
+                lines.add("Resolution ${resolution.name} is a project, but the cities can only contribute to the projects World's Fair, International Games and International Space Station!", sourceObject = resolution)
+            if (resolution.isProject && (resolution.voterDecision != ResolutionDecision.YesNo || resolution.proposerDecision != ResolutionDecision.None
+                    || resolution.exclusive || resolution.isHostElection || resolution.isWorldLeader || !resolution.playerProposable))
+                lines.add("Resolution ${resolution.name} is a project, so it must be a plain proposable resolution with voterDecision YesNo, proposerDecision None and not exclusive!", sourceObject = resolution)
+            for (unique in resolution.uniqueObjects) {
+                val tierConditional = unique.getModifiers(UniqueType.TriggerUponProjectTier).firstOrNull() ?: continue
+                if (!resolution.isProject)
+                    lines.add("Resolution ${resolution.name} has the reward \"${unique.text}\" but is no project (projectCostPerPlayer)!", sourceObject = resolution)
+                else if (tierConditional.params[0].toIntOrNull() !in 1..3)
+                    lines.add("Resolution ${resolution.name} has the reward \"${unique.text}\" for a tier that is not 1, 2 or 3!", sourceObject = resolution)
+            }
             uniqueValidator.checkUniques(resolution, lines, reportRulesetSpecificErrors)
         }
     }

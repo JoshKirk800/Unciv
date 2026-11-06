@@ -81,6 +81,12 @@
         "description": "Ideological pressure of the chosen ideology on every civilization.",
         "default": 0
       },
+      "projectCostPerPlayer": {
+        "type": "integer",
+        "title": "Project Cost Per Player",
+        "description": "More than 0 makes the resolution a League project: enacting it starts the project, to which the cities contribute production. The cost for each civilization at Standard speed.",
+        "default": 0
+      },
       "embargoesCityStates": {
         "type": "boolean",
         "title": "Embargoes City-States",
