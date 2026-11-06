@@ -22,6 +22,16 @@
 		"hurryCostModifier": 20
 	},
 	{
+		"name": "Caravan",
+		"unitType": "Civilian",
+		"movement": 1,
+		"cost": 75,
+		"hurryCostModifier": 20,
+		"requiredTech": "Animal Husbandry",
+		"uniques": ["Can establish trade routes with a base range of [10] tiles, travelling [2] tiles per turn", "[-100]% maintenance costs",
+			"Unbuildable <for [City-State] Civilizations>"]
+	},
+	{
 		"name": "Scout",
 		"unitType": "Scout",
 		"movement": 2,
@@ -178,6 +188,16 @@
 		"requiredTech": "Sailing",
 		"uniques": ["Cannot enter ocean tiles <before discovering [Astronomy]>", "May create improvements on water resources",
             "Uncapturable", "Automation is a primary action"]
+	},
+	{
+		"name": "Cargo Ship",
+		"unitType": "Civilian Water",
+		"movement": 1,
+		"cost": 100,
+		"hurryCostModifier": 20,
+		"requiredTech": "Sailing",
+		"uniques": ["Can establish trade routes with a base range of [20] tiles, travelling [4] tiles per turn", "[-100]% maintenance costs",
+			"Unbuildable <for [City-State] Civilizations>"]
 	},
 	{
 		"name": "Trireme",

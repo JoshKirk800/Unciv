@@ -40,7 +40,8 @@
 		"hurryCostModifier": 25,
 		"uniques": ["[+1 Food] from [Deer] tiles [in this city]",
 			"[+1 Food] from [Bananas] tiles [in this city]",
-			"[+1 Food] from [Wheat] tiles [in this city]"],
+			"[+1 Food] from [Wheat] tiles [in this city]",
+			"Allows [Food] trade routes between your cities <in this city>"],
 		"requiredTech": "Pottery"
 	},
 	{
@@ -264,6 +265,13 @@
 		"requiredTech": "Horseback Riding"
 	},
 	{
+		"name": "Caravansary",
+		"cost": 120,
+		"hurryCostModifier": 25,
+		"uniques": ["[+50]% range for [Land] trade routes <in this city>", "[+2] Gold on [Land] trade routes <in this city>"],
+		"requiredTech": "Horseback Riding"
+	},
+	{
 		"name": "Ducal Stable",
 		"replaces": "Stable",
 		"uniqueTo": "Poland",
@@ -404,6 +412,7 @@
 		"specialistSlots": {"Merchant": 1},
 		"hurryCostModifier": 25,
 		"percentStatBonus": {"gold": 25},
+		"uniques": ["[+1] Gold on incoming [International] trade routes for their origin <in this city>", "[+1] Gold from incoming [International] trade routes <in this city>"],
 		"requiredTech": "Currency"
 	},
 	{
@@ -415,7 +424,8 @@
 		"hurryCostModifier": 25,
 		"percentStatBonus": {"gold": 25},
 		"uniques": ["Provides 1 extra copy of each improved luxury resource near this City",
-			"[+2 Gold] from [Oil] tiles [in this city]", "[+2 Gold] from [Oasis] tiles [in this city]"],
+			"[+2 Gold] from [Oil] tiles [in this city]", "[+2 Gold] from [Oasis] tiles [in this city]",
+			"[+1] Gold on incoming [International] trade routes for their origin <in this city>", "[+1] Gold from incoming [International] trade routes <in this city>"],
 		"requiredTech": "Currency"
 	},
 	{
@@ -431,7 +441,8 @@
 		"culture": 1,
 		"isWonder": true,
 		"greatPersonPoints": {"Great Engineer": 1},
-		"uniques": ["Must be next to [Desert]", "[+6 Culture] [in this city] <after discovering [Archaeology]>", "[+1 Food, +1 Production] from [Desert] tiles without [Flood plains] [in this city]"],
+		"uniques": ["Must be next to [Desert]", "[+6 Culture] [in this city] <after discovering [Archaeology]>", "[+1 Food, +1 Production] from [Desert] tiles without [Flood plains] [in this city]",
+			"[+1] Trade Route slots", "Free [Caravan] appears"],
 		"requiredTech": "Currency",
 		"quote": "'...who drinks the water I shall give him, says the Lord, will have a spring inside him welling up for eternal life. Let them bring me to your holy mountain in the place where you dwell. Across the desert and through the mountain to the Canyon of the Crescent Moon...' - Indiana Jones"
 	},
@@ -468,7 +479,8 @@
 		"gold": 5,
 		"greatPersonPoints": {"Great Merchant": 1},
 		"isWonder": true,
-		"uniques": ["Must be next to [Coast]"],
+		"uniques": ["Must be next to [Coast]", "[+1] Trade Route slots", "Free [Cargo Ship] appears",
+			"[+1] Gold on incoming [International] trade routes for their origin <in this city>", "[+2] Gold from incoming [International] trade routes <in this city>"],
 		"requiredTech": "Iron Working",
 		"quote": "'Why man, he doth bestride the narrow world like a colossus, and we petty men walk under his huge legs, and peep about to find ourselves dishonorable graves.' - William Shakespeare, Julius Caesar"
 	},
@@ -543,7 +555,8 @@
 		"cost": 125,
 		"gold": 4,
 		"isNationalWonder": true,
-		"uniques": ["Only available <if [Market] is constructed in all [non-[Puppeted]] cities>", "Cost increases by [30] per owned city"],
+		"uniques": ["Only available <if [Market] is constructed in all [non-[Puppeted]] cities>", "Cost increases by [30] per owned city",
+			"[+2] Gold on incoming [International] trade routes for their origin <in this city>", "[+4] Gold from incoming [International] trade routes <in this city>"],
 		"requiredTech": "Guilds"
 	},
 	{
@@ -572,6 +585,7 @@
 		"specialistSlots": {"Engineer": 1},
 		"hurryCostModifier": 25,
 		"percentStatBonus": {"production": 10},
+		"uniques": ["Allows [Production] trade routes between your cities <in this city>"],
 		"requiredTech": "Metal Casting"
 	},
 	{
@@ -583,7 +597,7 @@
 		"production": 2,
 		"specialistSlots": {"Engineer": 1},
 		"hurryCostModifier": 25,
-		"uniques": ["[+1 Production] from [Forest] tiles [in this city]"],
+		"uniques": ["[+1 Production] from [Forest] tiles [in this city]", "Allows [Production] trade routes between your cities <in this city>"],
 		"requiredTech": "Metal Casting"
 	},
 	{
@@ -601,7 +615,8 @@
 		"cost": 120,
 		"maintenance": 2,
 		"hurryCostModifier": 25,
-		"uniques": ["Connects trade routes over water", "Must be next to [Coast]"],
+		"uniques": ["Connects trade routes over water", "Must be next to [Coast]",
+			"[+50]% range for [Water] trade routes <in this city>", "[+1] Gold on [Water] trade routes <in this city>"],
 		"requiredTech": "Compass"
 	},
 	{
@@ -758,6 +773,7 @@
 		"hurryCostModifier": 15,
 		"percentStatBonus": {"gold": 25},
 		"requiredBuilding": "Market",
+		"uniques": ["[+1] Gold on incoming [International] trade routes for their origin <in this city>", "[+1] Gold from incoming [International] trade routes <in this city>"],
 		"requiredTech": "Banking"
 	},
 	{
@@ -770,6 +786,7 @@
 		"hurryCostModifier": 15,
 		"percentStatBonus": {"gold": 25},
 		"requiredBuilding": "Market",
+		"uniques": ["[+1] Gold on incoming [International] trade routes for their origin <in this city>", "[+1] Gold from incoming [International] trade routes <in this city>"],
 		"requiredTech": "Banking"
 	},
 	{
@@ -781,6 +798,8 @@
 		"hurryCostModifier": 15,
 		"percentStatBonus": {gold: 25},
 		"requiredBuilding": "Market",
+		"uniques": ["[+1] Gold on incoming [International] trade routes for their origin <in this city>", "[+1] Gold from incoming [International] trade routes <in this city>",
+			"[+5]% [Production] [in this city] <for every [[City-State] Trade Routes]>"],
 		"requiredTech": "Banking"
 	},
 	{
@@ -791,19 +810,6 @@
 		"uniques": ["Only available <when espionage is enabled>", "[-25]% enemy spy effectiveness [in this city]", "Destroyed when the city is captured"],
 		"requiredTech": "Banking"
 	},
-	// will be introduced in BNW expansion pack
-//	{
-//		"name": "Hanse",
-//		"replaces": "Bank",
-//		"uniqueTo": "Germany",
-//		"gold": 2,
-//		"specialistSlots": {"Merchant": 1},
-//		"hurryCostModifier": 15,
-//		"percentStatBonus": {"gold": 25},
-//		"uniques": ["+5% Production for every Trade Route with a City-State in the empire"],
-//		"requiredBuilding": "Market",
-//		"requiredTech": "Banking"
-//	},
 	{
 		"name": "Forbidden Palace",
 		"culture": 1,

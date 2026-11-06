@@ -32,6 +32,7 @@
 				"name": "Animal Husbandry",
 				"row": 5,
 				"prerequisites": ["Agriculture"],
+				"uniques": ["[+1] Trade Route slots"],
 				"quote": "'Thou shalt not muzzle the ox when he treadeth out the corn.' - Bible Deuteronomy 25:4"
 			},
 			{
@@ -62,7 +63,7 @@
 				"name": "Sailing",
 				"row": 1,
 				"prerequisites": ["Pottery"],
-                "uniques": ["[+100]% weight to this choice for AI decisions"],
+                "uniques": ["[+100]% weight to this choice for AI decisions", "[+1] Trade Route slots"],
 				"quote": "'He who commands the sea has command of everything.' - Themistocles"
 			},
 			{
@@ -175,7 +176,7 @@
 				"name": "Engineering",
 				"row": 8,
 				"prerequisites": ["Mathematics","Construction"],
-				"uniques": ["Roads connect tiles across rivers","[+100]% weight to this choice for AI decisions"],
+				"uniques": ["Roads connect tiles across rivers","[+100]% weight to this choice for AI decisions", "[+1] Trade Route slots"],
 				"quote": "'Instrumental or mechanical science is the noblest and, above all others, the most useful.' - Leonardo da Vinci"
 			},
 			{
@@ -235,7 +236,7 @@
 				"cost": 375,
 				"row": 1,
 				"prerequisites": ["Optics","Theology"],
-                "uniques": ["[-50]% weight to this choice for AI decisions"],
+                "uniques": ["[-50]% weight to this choice for AI decisions", "[+1] Trade Route slots", "[+10] range for [Water] trade routes"],
 				"quote": "'I find the great thing in this world is not so much where we stand, as in what direction we are moving.' - Oliver Wendell Holmes"
 			},
 			{
@@ -303,7 +304,7 @@
 				"name": "Banking",
 				"row": 6,
 				"prerequisites": ["Chivalry", "Education"],
-                "uniques": ["[+100]% weight to this choice for AI decisions"],
+                "uniques": ["[+100]% weight to this choice for AI decisions", "[+1] Trade Route slots"],
 				"quote": "'Happiness: a good bank account, a good cook and a good digestion' - Jean Jacques Rousseau"
 			},
 			{
@@ -425,7 +426,7 @@
 				"name": "Biology",
 				"row": 2,
 				"prerequisites": ["Archaeology","Scientific Theory"],
-                "uniques": ["[+100]% weight to this choice for AI decisions"],
+                "uniques": ["[+100]% weight to this choice for AI decisions", "[+1] Trade Route slots"],
 				"quote": "'If the brain were so simple we could understand it, we would be so simple we couldn't.' - Lyall Watson"
 			},
 			{
@@ -461,7 +462,7 @@
 				"name": "Refrigeration",
 				"row": 2,
 				"prerequisites": ["Biology", "Electricity"], //todo: offshore platform should need this
-                "uniques": ["[-75]% weight to this choice for AI decisions"],
+                "uniques": ["[-75]% weight to this choice for AI decisions", "[+10] range for [Water] trade routes"],
 				"quote": "'And homeless near a thousand homes I stood, and near a thousand tables pined and wanted food.' - William Wordsworth"
 			},
 			{
@@ -488,7 +489,7 @@
 				"name": "Railroads",
 				"row": 8,
 				"prerequisites": ["Steam Power","Dynamite"],
-                "uniques": ["[+100]% weight to this choice for AI decisions"],
+                "uniques": ["[+100]% weight to this choice for AI decisions", "[+1] Trade Route slots"],
 				"quote": "'The introduction of so powerful an agent as steam to a carriage on wheels will make a great change in the situation of man.' - Thomas Jefferson"
 			}
 		]
@@ -523,7 +524,7 @@
 				"name": "Combustion",
 				"row": 8,
 				"prerequisites": ["Railroads"],
-                "uniques": ["[-50]% weight to this choice for AI decisions"],
+                "uniques": ["[-50]% weight to this choice for AI decisions", "[+10] range for [Land] trade routes"],
 				"quote": "'Any man who can drive safely while kissing a pretty girl is simply not giving the kiss the attention it deserves.' - Albert Einstein"
 			}
 		]
@@ -539,6 +540,7 @@
 				"name": "Pharmaceuticals",
 				"row": 2,
 				"prerequisites": ["Plastics","Refrigeration"],
+				"uniques": ["[+1] Trade Route slots"],
 				"quote": "'In nothing do men more nearly approach the gods than in giving health to men.' - Cicero"
 			},
 			{
