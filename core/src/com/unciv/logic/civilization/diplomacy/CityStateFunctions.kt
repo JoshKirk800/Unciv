@@ -82,8 +82,14 @@ class CityStateFunctions(val civInfo: Civilization) {
         fun getVotesFromSpy(spy: Spy?): Float {
             if (spy == null) return 20f
             var votes = (civInfo.getDiplomacyManagerOrMeet(spy.civInfo).influence / 2)
-            votes += (spy.getSkillModifierPercent() * spy.getEfficiencyModifier()).toFloat() // ranges from 30 to 90
-            return votes
+            // CvEspionageClasses.cpp:1350-1360: the rigging rate depends on the spy's rank only, SpyEffectiveness (Industrial Espionage, which in the
+            // original only speeds up stealing technology) and EnemySpyEffectiveness do not apply
+            votes += spy.getSkillModifierPercent() // ranges from 30 to 90
+            // CvMinorCivAI.cpp:8527 multiplies the votes by RIGGING_ELECTION_MODIFIER (Covert Action) of m_pPlayer, which is the City-State itself
+            // and so never the spy's owner; following the help text ("Chance of rigging election in City-States doubled") it is read from the spy's civ
+            var votePercent = 0
+            spy.civInfo.forEachMatchingUnique(UniqueType.RiggingElectionVotes) { votePercent += it.params[0].toInt() }
+            return votes * max(100 + votePercent, 0) / 100f
         }
 
         val parties: MutableList<Spy?> = spies.toMutableList()
@@ -458,8 +464,16 @@ class CityStateFunctions(val civInfo: Civilization) {
         if (civInfo.getDiplomacyManager(demandingCiv)!!.getInfluence() < -30)
             modifiers["Influence below -30"] = -300
 
-        // Slight optimization, we don't do the expensive stuff if we have no chance of getting a >= 0 result
-        if (!requireWholeList && modifiers.values.sum() < -200)
+        // CvMinorCivAI::CalculateBullyMetric (CvMinorCivAI.cpp:7963-7982): the policy modifier (Gunboat Diplomacy) is applied to the sum of the
+        // global military score (our rank) and the local power score (force near the City-State), which here is scaling both entries.
+        // Unlike the original the bonus is not a separate entry of the table, so it is not shown separately in the diplomacy screen.
+        var intimidationPercent = 0
+        demandingCiv.forEachMatchingUnique(UniqueType.CityStateIntimidationStrength) { intimidationPercent += it.params[0].toInt() }
+        fun intimidationStrength(value: Int) = if (intimidationPercent == 0) value else value * max(100 + intimidationPercent, 0) / 100
+
+        // Slight optimization, we don't do the expensive stuff if we have no chance of getting a >= 0 result (not with a bonus to the military parts)
+        val canShortcut = !requireWholeList && intimidationPercent <= 0
+        if (canShortcut && modifiers.values.sum() < -200)
             return modifiers
 
         // highest force is rank=0
@@ -469,9 +483,9 @@ class CityStateFunctions(val civInfo: Civilization) {
         val numAlivePlayers = max(civInfo.gameInfo.getAliveMajorCivs().size, 1)
         val globalModifier = civInfo.gameInfo.ruleset.modOptions.constants.tributeGlobalModifier
         // apparently lowest force gets some pity points
-        modifiers["Military Rank"] = globalModifier * (numAlivePlayers - forceRank) / numAlivePlayers
+        modifiers["Military Rank"] = intimidationStrength(globalModifier * (numAlivePlayers - forceRank) / numAlivePlayers)
 
-        if (!requireWholeList && modifiers.values.sum() < -100)
+        if (canShortcut && modifiers.values.sum() < -100)
             return modifiers
 
         val bullyRange = (civInfo.gameInfo.tileMap.tileMatrix.size / 10).coerceIn(5, 10)   // Longer range for larger maps
@@ -489,14 +503,14 @@ class CityStateFunctions(val civInfo: Civilization) {
         val forceRatio = forceNearCity.toFloat() / csForce.toFloat()
         val localModifier = civInfo.gameInfo.ruleset.modOptions.constants.tributeLocalModifier
 
-        modifiers["Military near City-State"] = when {
+        modifiers["Military near City-State"] = intimidationStrength(when {
             forceRatio > 3f -> localModifier
             forceRatio > 2f -> localModifier * 4/5
             forceRatio > 1.5f -> localModifier * 3/5
             forceRatio > 1f -> localModifier * 2/5
             forceRatio > 0.5f -> localModifier / 5
             else -> 0
-        }
+        })
 
         return modifiers
     }

@@ -122,6 +122,14 @@ enum class UniqueType(
     CityStateCanGiftGreatPeople("Allied City-States will occasionally gift Great People", UniqueTarget.Global),  // used in Policy
     CityStateInfluenceDegradation("[relativeAmount]% City-State Influence degradation", UniqueTarget.Global),
     CityStateRestingPoint("Resting point for Influence with City-States is increased by [amount]", UniqueTarget.Global),
+    CityStateInfluenceWithTradeRoute("[amount] Influence per turn with City-States we have a trade route with", UniqueTarget.Global,
+        docDescription = "Added to the per-turn influence change with each City-State that is connected to us by a trade route in either direction, " +
+            "scaled by the gold gift modifier of the game speed. Unlike the normal recovery, it is not capped at the resting point."),
+    CityStateInfluenceWhenAfraid("[amount] Influence per turn with City-States we could demand tribute from", UniqueTarget.Global,
+        docDescription = "Added to the per-turn influence change with each City-State from which our tribute demand would currently succeed " +
+            "(the same check as the Afraid relationship), scaled by the gold gift modifier of the game speed. Unlike the normal recovery, it is not capped at the resting point."),
+    CityStateIntimidationStrength("[relativeAmount]% strength when intimidating City-States", UniqueTarget.Global,
+        docDescription = "Increases the military part of the willingness of City-States to pay tribute (military rank and military presence near the City-State) by this percentage."),
 
     CityStateStatPercent("Allied City-States provide [stat] equal to [relativeAmount]% of what they produce for themselves", UniqueTarget.Global),
     CityStateResources("[relativeAmount]% resources gifted by City-States",  UniqueTarget.Global),
@@ -318,6 +326,12 @@ enum class UniqueType(
     /// Espionage
     SpyEffectiveness("[relativeAmount]% spy effectiveness [cityFilter]", UniqueTarget.Global),
     EnemySpyEffectiveness("[relativeAmount]% enemy spy effectiveness [cityFilter]", UniqueTarget.Global),
+    EnemySpyStealingRisk("[relativeAmount]% enemy spy stealing risk [cityFilter]", UniqueTarget.Global,
+        docDescription = "Scales the dice roll (random roll plus the defending counter-intelligence spy's skill) that decides how an enemy spy fares when stealing technology " +
+            "in matching cities of this civilization; a higher roll means more detection, and from 200 the spy is killed. `[+100]` doubles the roll. Does not affect election rigging."),
+    RiggingElectionVotes("[relativeAmount]% votes when rigging City-State elections", UniqueTarget.Global,
+        docDescription = "Multiplies the votes our spies get in City-State elections. " +
+            "Note that the original reads this modifier from the City-State's own policies, which would never help the spy's owner; here it is read from the spy's owner."),
     SpyStartingLevel("New spies start with [amount] level(s)", UniqueTarget.Global),
     CounterIntelligenceSpyRankBonus("Spies in [cityFilter] cities act as though they have [relativeAmount] levels for [spyAction]", UniqueTarget.Global,
         docDescription = "Temporary effective rank change ([relativeAmount] added to rank, e.g. +1) for spies doing the given action in a matching city. " +
@@ -377,6 +391,10 @@ enum class UniqueType(
      * Restricts Upgrade/Transform pathways.
      * @See [CanOnlyBeBuiltWhen]
      */
+    IdeologyBranch("Is an ideology", UniqueTarget.Policy,
+        docDescription = "Marks a policy branch as an ideology: a civilization has at most one (the others of the rules must make them exclusive, as `Only available <before adopting [policy]>`), " +
+            "adopting it costs nothing and is not a purchase, and its tenets are the policies of the branch that have a `Tenet Level [amount]` tag. " +
+            "Tenets of a level above 1 are limited by the rules of the ruleset, see the Brave New World ideologies for the usual way. See also `[positiveAmount] Free Tenets`"),
     OnlyAvailable("Only available", UniqueTarget.Unit, UniqueTarget.Building, UniqueTarget.Improvement,
         UniqueTarget.Policy, UniqueTarget.Tech, UniqueTarget.Promotion, UniqueTarget.Ruins,
         UniqueTarget.FollowerBelief, UniqueTarget.FounderBelief, UniqueTarget.Event, UniqueTarget.EventChoice,
@@ -533,6 +551,9 @@ enum class UniqueType(
     NoDefensiveTerrainBonus("No defensive terrain bonus", UniqueTarget.Unit, UniqueTarget.Global),
     NoDefensiveTerrainPenalty("No defensive terrain penalty", UniqueTarget.Unit, UniqueTarget.Global),
     NoDamagePenaltyWoundedUnits("No damage penalty for wounded units", UniqueTarget.Unit, UniqueTarget.Global),
+    WoundedUnitDamagePenalty("[amount]% wounded unit damage penalty", UniqueTarget.Global,
+        docDescription = "Percentage points added to the share of its lost health that a wounded unit loses in strength and damage dealt (33 by default), " +
+            "so `[-25]` leaves 8. The sum is not reduced below 0. Does not apply to cities, and `No damage penalty for wounded units` still removes the penalty entirely."),
     Uncapturable("Uncapturable", UniqueTarget.Unit),
     WithdrawsBeforeMeleeCombat("Withdraws before melee combat", UniqueTarget.Unit),
     CannotCaptureCities("Unable to capture cities", UniqueTarget.Unit, UniqueTarget.Global),
@@ -958,6 +979,8 @@ enum class UniqueType(
     OneTimeFreeUnitRuins("Free [unit] found in the ruins", UniqueTarget.Ruins), // Differs from "Free [] appears" in that it spawns near the ruins instead of in a city
     OneTimeFreePolicy("Free Social Policy", UniqueTarget.Triggerable), // used in Buildings
     OneTimeAmountFreePolicies("[positiveAmount] Free Social Policies", UniqueTarget.Triggerable),  // Not used in Vanilla
+    OneTimeAmountFreeTenets("[positiveAmount] Free Tenets", UniqueTarget.Triggerable,
+        docDescription = "Tenets are the policies of an ideology. A free tenet can be spent on those only, and does not make the next policy dearer"),
     OneTimeEnterGoldenAge("Empire enters golden age", UniqueTarget.Triggerable),  // used in Policies, Buildings
     OneTimeEnterGoldenAgeTurns("Empire enters a [positiveAmount]-turn Golden Age", UniqueTarget.Triggerable),
     OneTimeFreeGreatPerson("Free Great Person", UniqueTarget.Triggerable),  // used in Policies, Buildings

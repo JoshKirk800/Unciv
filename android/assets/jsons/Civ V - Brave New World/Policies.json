@@ -666,8 +666,10 @@
             "Scientific": 10
         },
         "uniques": [
-            "[2] Free Social Policies <when number of [Adopted [Freedom] Policies by [Major] Civilizations] is equal to [1]>",
-            "Free Social Policy <when number of [Adopted [Freedom] Policies by [Major] Civilizations] is equal to [2]>",
+            "Is an ideology",
+            "Unavailable <before the [Modern era]> <when number of [[Factory] Buildings] is less than [3]>",
+            "[2] Free Tenets <when number of [Adopted [Freedom] Policies by [Major] Civilizations] is equal to [1]>",
+            "[1] Free Tenets <when number of [Adopted [Freedom] Policies by [Major] Civilizations] is equal to [2]>",
             "Only available <before adopting [Autocracy]>",
             "Only available <before adopting [Order]>"
         ],
@@ -715,8 +717,7 @@
                     "[+1 Happiness] from every [Oxford University]",
                     "[+1 Happiness] from every [Hermitage]",
                     "[+1 Happiness] from every [National Intelligence Agency]",
-                    "[+1 Happiness] from every [Grand Temple]"
-                ],
+                    "[+1 Happiness] from every [Grand Temple]", "[+1 Happiness] from every [National Visitor Center]"],
                 "row": 1,
                 "column": 7
             },
@@ -790,6 +791,62 @@
                 "column": 7
             },
             {
+                "name": "Creative Expression",
+                "uniques": [
+                    "Tenet Level 1",
+                    "[+1 Culture] from each Great Work"
+                ],
+                "row": 1,
+                "column": 2
+            },
+            {
+                "name": "Economic Union",
+                "uniques": [
+                    "Tenet Level 1",
+                    "[+3] Gold on [Same Ideology] trade routes"
+                ],
+                "row": 1,
+                "column": 6
+            },
+            {
+                "name": "Media Culture",
+                "uniques": [
+                    "Tenet Level 3",
+                    "[+34]% Tourism [in all cities] <in cities with a [Broadcast Tower]>",
+                    "Only available <when number of [[Adopted [Tenet Level 2] Policies] - [Adopted [Tenet Level 3] Policies]] is more than [1]>"
+                ],
+                "row": 3,
+                "column": 3
+            },
+            {
+                "name": "Space Procurements",
+                "uniques": [
+                    "Tenet Level 3",
+                    "Only available <when number of [[Adopted [Tenet Level 2] Policies] - [Adopted [Tenet Level 3] Policies]] is more than [1]>"
+                ],
+                "row": 3,
+                "column": 5
+            },
+            {
+                "name": "Treaty Organization",
+                "uniques": [
+                    "Tenet Level 3",
+                    "[+4] Influence per turn with City-States we have a trade route with",
+                    "Only available <when number of [[Adopted [Tenet Level 2] Policies] - [Adopted [Tenet Level 3] Policies]] is more than [1]>"
+                ],
+                "row": 3,
+                "column": 4
+            },
+            {
+                "name": "Covert Action",
+                "uniques": [
+                    "Tenet Level 1",
+                    "[+100]% votes when rigging City-State elections"
+                ],
+                "row": 1,
+                "column": 4
+            },
+            {
                 "name": "Freedom Complete",
                 "uniques": [
                     "Get the leader title of [President [leaderName]]"
@@ -808,8 +865,10 @@
             "Scientific": 5
         },
         "uniques": [
-            "[2] Free Social Policies <when number of [Adopted [Autocracy] Policies by [Major] Civilizations] is equal to [1]>",
-            "Free Social Policy <when number of [Adopted [Autocracy] Policies by [Major] Civilizations] is equal to [2]>",
+            "Is an ideology",
+            "Unavailable <before the [Modern era]> <when number of [[Factory] Buildings] is less than [3]>",
+            "[2] Free Tenets <when number of [Adopted [Autocracy] Policies by [Major] Civilizations] is equal to [1]>",
+            "[1] Free Tenets <when number of [Adopted [Autocracy] Policies by [Major] Civilizations] is equal to [2]>",
             "Only available <before adopting [Order]>",
             "Only available <before adopting [Freedom]>"
         ],
@@ -867,8 +926,7 @@
                     "[+1 Happiness] from every [Oxford University]",
                     "[+1 Happiness] from every [Hermitage]",
                     "[+1 Happiness] from every [National Intelligence Agency]",
-                    "[+1 Happiness] from every [Grand Temple]"
-                ],
+                    "[+1 Happiness] from every [Grand Temple]", "[+1 Happiness] from every [National Visitor Center]"],
                 "row": 1,
                 "column": 7
             },
@@ -940,6 +998,36 @@
                 "column": 6
             },
             {
+                "name": "Elite Forces",
+                "uniques": [
+                    "Tenet Level 1",
+                    "[-25]% wounded unit damage penalty"
+                ],
+                "row": 1,
+                "column": 2
+            },
+            {
+                "name": "Futurism",
+                "uniques": [
+                    "Tenet Level 1",
+                    "[250] Tourism towards all civilizations we have met <upon gaining a [Great Writer] unit>",
+                    "[250] Tourism towards all civilizations we have met <upon gaining a [Great Artist] unit>",
+                    "[250] Tourism towards all civilizations we have met <upon gaining a [Great Musician] unit>"
+                ],
+                "row": 1,
+                "column": 5
+            },
+            {
+                "name": "Cult of Personality",
+                "uniques": [
+                    "Tenet Level 3",
+                    "[+50]% Tourism towards civilizations with [Common Enemies]",
+                    "Only available <when number of [[Adopted [Tenet Level 2] Policies] - [Adopted [Tenet Level 3] Policies]] is more than [1]>"
+                ],
+                "row": 3,
+                "column": 3
+            },
+            {
                 "name": "Clausewitz's Legacy",
                 "uniques": [
                     "Tenet Level 3",
@@ -948,6 +1036,17 @@
                 ],
                 "row": 3,
                 "column": 4
+            },
+            {
+                "name": "Gunboat Diplomacy",
+                "uniques": [
+                    "Tenet Level 3",
+                    "[+6] Influence per turn with City-States we could demand tribute from",
+                    "[+50]% strength when intimidating City-States",
+                    "Only available <when number of [[Adopted [Tenet Level 2] Policies] - [Adopted [Tenet Level 3] Policies]] is more than [1]>"
+                ],
+                "row": 3,
+                "column": 5
             },
             {
                 "name": "Autocracy Complete",
@@ -968,8 +1067,10 @@
             "Scientific": 5
         },
         "uniques": [
-            "[2] Free Social Policies <when number of [Adopted [Order] Policies by [Major] Civilizations] is equal to [1]>",
-            "Free Social Policy <when number of [Adopted [Order] Policies by [Major] Civilizations] is equal to [2]>",
+            "Is an ideology",
+            "Unavailable <before the [Modern era]> <when number of [[Factory] Buildings] is less than [3]>",
+            "[2] Free Tenets <when number of [Adopted [Order] Policies by [Major] Civilizations] is equal to [1]>",
+            "[1] Free Tenets <when number of [Adopted [Order] Policies by [Major] Civilizations] is equal to [2]>",
             "Only available <before adopting [Autocracy]>",
             "Only available <before adopting [Freedom]>"
         ],
@@ -1038,8 +1139,7 @@
                     "[+1 Happiness] from every [Oxford University]",
                     "[+1 Happiness] from every [Hermitage]",
                     "[+1 Happiness] from every [National Intelligence Agency]",
-                    "[+1 Happiness] from every [Grand Temple]"
-                ],
+                    "[+1 Happiness] from every [Grand Temple]", "[+1 Happiness] from every [National Visitor Center]"],
                 "row": 1,
                 "column": 7
             },
@@ -1099,6 +1199,26 @@
                 "column": 6
             },
             {
+                "name": "Cultural Revolution",
+                "uniques": [
+                    "Tenet Level 2",
+                    "[+34]% Tourism towards civilizations with [Shared Ideology]",
+                    "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
+                ],
+                "row": 2,
+                "column": 4
+            },
+            {
+                "name": "Dictatorship of the Proletariat",
+                "uniques": [
+                    "Tenet Level 3",
+                    "[+34]% Tourism towards civilizations with [Lower Happiness]",
+                    "Only available <when number of [[Adopted [Tenet Level 2] Policies] - [Adopted [Tenet Level 3] Policies]] is more than [1]>"
+                ],
+                "row": 3,
+                "column": 5
+            },
+            {
                 "name": "Iron Curtain",
                 "uniques": [
                     "Tenet Level 3",
@@ -1118,6 +1238,15 @@
                 ],
                 "row": 3,
                 "column": 4
+            },
+            {
+                "name": "Double Agents",
+                "uniques": [
+                    "Tenet Level 1",
+                    "[+100]% enemy spy stealing risk [in all cities]"
+                ],
+                "row": 1,
+                "column": 6
             },
             {
                 "name": "Order Complete",

@@ -769,6 +769,8 @@ class Civilization : IsPartOfGameInfoSerialization {
             "Friendly" -> state?.civInfo?.let { it.civID == civID || (it.diplomacy[civID]?.isRelationshipLevelGE(RelationshipLevel.Friend) == true) } ?: false
             "Hostile" -> state?.civInfo?.let { isAtWarWith(it) } ?: false
             "Known" -> state?.civInfo?.let { it == this || knows(it) } ?: false
+            "Same Ideology" -> state?.civInfo?.let { other -> getIdeology()?.let { it == other.getIdeology() } } ?: false
+            "Different Ideology" -> state?.civInfo?.let { other -> getIdeology()?.let { mine -> other.getIdeology()?.let { it != mine } } } ?: false
             else -> nation.matchesFilter(filter, state, false)
         }
     }
@@ -863,6 +865,8 @@ class Civilization : IsPartOfGameInfoSerialization {
     }
 
     @Readonly fun getEra(): Era = tech.era
+    /** The ideology of this civilization, if it has chosen one */
+    @Readonly fun getIdeology() = policies.getIdeology()
     @Readonly fun getEraNumber(): Int = getEra().eraNumber
 
     /** Whether the game difficulty's AI bonuses apply: everybody but the human and the barbarians, so the city states too
@@ -1395,4 +1399,6 @@ enum class CivFlags {
     RecentlyBullied,
     TurnsTillCallForBarbHelp,
     RevoltSpawning,
+    /** After a change of ideology: no gold, science, culture, faith or production for as many turns */
+    Anarchy,
 }

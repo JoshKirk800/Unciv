@@ -12,6 +12,7 @@ import com.unciv.models.ruleset.unique.Unique
 import com.unciv.models.ruleset.unique.UniqueType
 import yairm210.purity.annotations.Readonly
 import kotlin.math.ceil
+import kotlin.math.max
 import kotlin.random.Random
 
 
@@ -218,12 +219,16 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
             .randomOrNull(Random(randomSeed)) // Could be improved to for example steal the most expensive tech or the tech that has the least progress as of yet
 
         // Lower is better
-        var spyResult = Random(randomSeed).nextInt(300)
-        // Add our spies experience
-        spyResult -= getSkillModifierPercent()
-        // Subtract the experience of the counter intelligence spies
         val defendingSpy = city.civ.espionageManager.getSpyAssignedToCity(city)
-        spyResult += defendingSpy?.getSkillModifierPercent() ?: 0
+        // The roll, with the experience of the counter intelligence spy added
+        var spyResult = Random(randomSeed).nextInt(300) + (defendingSpy?.getSkillModifierPercent() ?: 0)
+        // CvEspionageClasses.cpp:430-437, 466-470: the city owner's CatchSpiesModifier (Double Agents) multiplies this roll
+        val riskPercent = city.getMatchingUniques(UniqueType.EnemySpyStealingRisk, city.state, includeCivUniques = true)
+            .filter { city.matchesFilter(it.params[1]) }
+            .sumOf { it.params[0].toInt() }
+        spyResult = spyResult * max(100 + riskPercent, 0) / 100
+        // Subtract our spies experience
+        spyResult -= getSkillModifierPercent()
 
         val detectionString = when {
             spyResult >= 200 -> { // The spy was killed in the attempt (should be able to happen even if there's nothing to steal?)

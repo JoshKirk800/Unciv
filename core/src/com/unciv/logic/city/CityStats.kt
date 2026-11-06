@@ -1,6 +1,7 @@
 package com.unciv.logic.city
 
 import com.unciv.logic.automation.Timers.Companion.timeThis
+import com.unciv.logic.civilization.CivFlags
 import com.unciv.logic.civilization.managers.TradeRouteManager
 import com.unciv.logic.map.tile.RoadStatus
 import com.unciv.models.Counter
@@ -627,7 +628,17 @@ class CityStats(val city: City) {
         if (city.isInResistance())
             newFinalStatList.clear()  // NOPE
 
-        if (newFinalStatList.values.map { it.production }.sum() < 1)  // Minimum production for things to progress
+        // Anarchy after a change of ideology: no income, only the costs
+        val inAnarchy = city.civ.hasFlag(CivFlags.Anarchy.name)
+        if (inAnarchy) for (entry in newFinalStatList.values) {
+            entry.production = 0f
+            entry.science = 0f
+            entry.culture = 0f
+            entry.faith = 0f
+            entry.gold = minOf(entry.gold, 0f)
+        }
+
+        if (!inAnarchy && newFinalStatList.values.map { it.production }.sum() < 1)  // Minimum production for things to progress
             newFinalStatList["Production"] = Stats(production = 1f)
         finalStatList = newFinalStatList
     }

@@ -19,6 +19,12 @@ open class Policy : RulesetObject() {
     var column: Int = 0
     var requires: ArrayList<String>? = null
 
+    /** The level of this policy if it is a tenet of an ideology, from its `Tenet Level N` tag, else 0 */
+    val tenetLevel: Int by lazy {
+        uniques.firstNotNullOfOrNull { it.removePrefix(tenetLevelPrefix).takeIf { _ -> it.startsWith(tenetLevelPrefix) }?.toIntOrNull() } ?: 0
+    }
+    val isTenet: Boolean get() = tenetLevel > 0
+
     /** Indicates whether a [Policy] is a [PolicyBranch] starting policy, a normal one, or the branch completion */
     enum class PolicyBranchType {BranchStart, Member, BranchComplete}
 
@@ -31,6 +37,7 @@ open class Policy : RulesetObject() {
 
     companion object {
         const val branchCompleteSuffix = " Complete"
+        const val tenetLevelPrefix = "Tenet Level "
         /** Some tests to count policies by completion or not use only the String collection without instantiating them.
          *  To keep the hardcoding in one place, this is public and should be used instead of duplicating it.
          */

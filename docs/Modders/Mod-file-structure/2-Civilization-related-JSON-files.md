@@ -228,6 +228,14 @@ The properties of the 'opener' are defined with the branch level, while the 'fin
 on the member level which _must_ be named as `branch name + " Complete"`, case sensitive. For
 example, the finisher of a policy branch "Tradition" will have the name "Tradition Complete".
 
+### Ideologies
+
+A branch with the unique `Is an ideology` is an ideology (Brave New World has Freedom, Order and Autocracy). Choosing it costs no culture and does not make the next policy dearer,
+and its member policies are tenets. A tenet has the tag unique `Tenet Level [number]` (the tag has no parameter in the usual sense: write `"Tenet Level 2"`), and is bought with free tenets
+(`[amount] Free Tenets`, which pay for tenets only) or free policies or culture like other policies. The rules about which tenets can be adopted when are ordinary uniques of the tenets,
+for example `Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>`. A civilization can change its ideology
+(see the constants `ideologyTenetsLostOnSwitch` and `ideologyAnarchyTurns` in [ModConstants](5-Miscellaneous-JSON-files.md#modconstants)), which makes it lose its tenets and have no income for some turns.
+
 ### Branch structure
 
 Each policy branch has the following structure:
