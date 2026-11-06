@@ -53,6 +53,19 @@ enum class UniqueType(
     // This is a doozy
     StatsFromObject("[stats] from every [tileFilter/specialist/buildingFilter]", UniqueTarget.Global, UniqueTarget.FollowerBelief),
     StatsFromTradeRoute("[stats] from each Trade Route", UniqueTarget.Global, UniqueTarget.FollowerBelief),
+    FlatTourism("[relativeAmount] Tourism [cityFilter]", UniqueTarget.Global, UniqueTarget.FollowerBelief,
+        docDescription = "Added to the tourism of the city before the percentages, see ModConstants and the unique `[relativeAmount]% Tourism [cityFilter]`"),
+    TourismPercent("[relativeAmount]% Tourism [cityFilter]", UniqueTarget.Global, UniqueTarget.FollowerBelief,
+        docDescription = "All such bonuses of a city are added up and applied to its tourism, if the sum is positive"),
+    TourismPercentUnlessBlocked("[relativeAmount]% Tourism [cityFilter] unless the target has a [buildingName]", UniqueTarget.Global,
+        docDescription = "As `[relativeAmount]% Tourism [cityFilter]`, but a civilization with the building does not get this part of the tourism"),
+    GreatWorksTourismPercent("[relativeAmount]% Tourism from Great Works [cityFilter]", UniqueTarget.Global,
+        docDescription = "The tourism that the Great Works of the city make, which is `greatWorkBaseTourism` in ModConstants for each, is increased by the sum of these. Theming bonuses are not included"),
+    LandmarksTourismPercent("[positiveAmount]% of the Culture from wonders, natural wonders and improved tiles becomes Tourism [cityFilter]", UniqueTarget.Global,
+        docDescription = "Counts the culture of the world wonders of the city, and of its worked natural wonder and improved tiles"),
+    TourismTowardsPercent("[relativeAmount]% Tourism towards civilizations with [tourismRelation]", UniqueTarget.Global,
+        docDescription = "Added to the modifier of the tourism of this civilization towards another, which the original reads from the capital. " +
+            "For `Common Enemies` the amount is given for every other civilization that both are at war with"),
     StatsFromGreatWorks("[stats] from each Great Work", UniqueTarget.Global,
         docDescription = "Added to the culture a city gets from each of its Great Works (see `greatWorkBaseCulture` in ModConstants), in every city of the civilization"),
     ThemingBonusPercent("[relativeAmount]% Theming bonuses [cityFilter]", UniqueTarget.Global,
@@ -946,6 +959,11 @@ enum class UniqueType(
     OneTimeEnterGoldenAge("Empire enters golden age", UniqueTarget.Triggerable),  // used in Policies, Buildings
     OneTimeEnterGoldenAgeTurns("Empire enters a [positiveAmount]-turn Golden Age", UniqueTarget.Triggerable),
     OneTimeFreeGreatPerson("Free Great Person", UniqueTarget.Triggerable),  // used in Policies, Buildings
+    OneTimeGainTourism("[positiveAmount] Tourism towards all civilizations we have met", UniqueTarget.Triggerable,
+        docDescription = "Added to the influence of this civilization on each of them, not changed by modifiers"),
+    OneTimeConcertTour("Perform a concert tour: [positiveAmount] times our Tourism towards the civilization whose territory we are in, [positiveAmount]% of that towards each other civilization we have met", UniqueTarget.UnitTriggerable,
+        docDescription = "The unit has to be in the territory of another living major civilization. The first amount is made at least 100, " +
+            "and is multiplied twice by the game speed, as in the original"),
     OneTimeCreateGreatWork("Create a Great Work", UniqueTarget.UnitTriggerable,
         docDescription = "The unit creates the Great Work that goes with its name (see `creator` in GreatWorks.json), in a free slot of a city of the civilization. " +
             "The unit must be in or next to one of the civilization's cities. Can only be used by units that have a name from a unit name group"),

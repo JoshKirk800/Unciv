@@ -119,6 +119,8 @@ class CityConquestFunctions(val city: City) {
             city.getCenterTile().position, NotificationCategory.General, NotificationIcon.Gold)
 
         val reconqueredCityWhileStillInResistance = city.previousOwner == receivingCiv.civID && city.isInResistance()
+        // Tourism makes a conquest gentler, as it makes the people of the city see the conqueror as one of their own (CvPlayer::acquireCity)
+        val influenceReduction = conqueringCiv.culture.getConquestReductionPercent(conqueredCiv)
 
         destroyBuildingsOnCapture()
 
@@ -130,13 +132,14 @@ class CityConquestFunctions(val city: City) {
         city.avoidGrowth = false // reset settings
         city.setCityFocus(CityFocus.NoFocus) // reset settings
         if (city.population.population > 1)
-            city.population.addPopulation(-1 - city.population.population / 4) // so from 2-4 population, remove 1, from 5-8, remove 2, etc.
+            city.population.addPopulation(-(1 + city.population.population / 4) * (100 - influenceReduction) / 100) // so from 2-4 population, remove 1, from 5-8, remove 2, etc.
         city.reassignAllPopulation()
 
-        if (!reconqueredCityWhileStillInResistance && city.foundingCivObject != receivingCiv) {
+        val resistanceTurns = city.population.population * (100 - influenceReduction) / 100
+        if (!reconqueredCityWhileStillInResistance && city.foundingCivObject != receivingCiv && resistanceTurns > 0) {
             // add resistance
             // I checked, and even if you puppet there's resistance for conquering
-            city.setFlag(CityFlags.Resistance, city.population.population)
+            city.setFlag(CityFlags.Resistance, resistanceTurns)
         } else {
             // reconquering or liberating city in resistance so eliminate it
             city.removeFlag(CityFlags.Resistance)

@@ -151,6 +151,24 @@ class ModConstants {
     // Great Works: culture that each one gives its city, before the bonuses of policies
     var greatWorkBaseCulture = 2
 
+    // Tourism (CvCultureClasses.cpp and GlobalDefines.xml, the values are those of Brave New World)
+    // Tourism each Great Work gives its city, before bonuses
+    var greatWorkBaseTourism = 2
+    // Percent more tourism towards civilizations that share our religion, have open borders with us or are connected to us by trade routes.
+    // The original takes the same value for all three
+    var tourismModifierSharedReligion = 25
+    var tourismModifierOpenBorders = 25
+    var tourismModifierTradeRoute = 25
+    // A concert tour is worth at least this much tourism, before the game speed
+    var concertTourMinimumTourism = 100
+    // A civilization is Exotic, Familiar, Popular, Influential or Dominant over another once its tourism towards it, added up over the game,
+    // is this percent of the culture the other has made in the whole game
+    var influencePercentExotic = 10
+    var influencePercentFamiliar = 30
+    var influencePercentPopular = 60
+    var influencePercentInfluential = 100
+    var influencePercentDominant = 200
+
     // UI: If set >= 0, ImprovementPicker will silently skip improvements whose tech requirement is more advanced than your current Era + this
     var maxImprovementTechErasForward = -1
 

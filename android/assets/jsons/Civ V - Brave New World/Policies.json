@@ -416,6 +416,17 @@
                 "column": 4
             },
             {
+                "name": "Cultural Exchange",
+                "uniques": [
+                    "[+15]% Tourism towards civilizations with [Shared Religion]",
+                    "[+15]% Tourism towards civilizations with [Open Borders]",
+                    "[+15]% Tourism towards civilizations with [Trade Route]"
+                ],
+                "requires": ["Flourishing of the Arts"],
+                "row": 3,
+                "column": 2
+            },
+            {
                 "name": "Aesthetics Complete",
                 "uniques": [
                     "May buy [Great Writer] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",

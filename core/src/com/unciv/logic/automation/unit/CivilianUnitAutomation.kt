@@ -110,6 +110,8 @@ object CivilianUnitAutomation {
 
         if (mapUnit.hasUnique(UniqueType.OneTimeCreateGreatWork) && GreatWorkAutomation.automate(mapUnit))
             return
+        if (mapUnit.hasUnique(UniqueType.OneTimeConcertTour) && ConcertTourAutomation.automate(mapUnit))
+            return
 
         val isLateGame = isLateGame(unit.civ())
         // Great scientist -> Hurry research if late game

@@ -12,6 +12,7 @@ import com.unciv.models.ruleset.unique.UniqueTarget
 import com.unciv.models.stats.Stat
 import com.unciv.models.translations.getPlaceholderParameters
 import com.unciv.models.translations.getPlaceholderText
+import com.unciv.logic.civilization.managers.InfluenceLevel
 import com.unciv.models.translations.tr
 import com.unciv.ui.components.extensions.toTextButton
 import com.unciv.ui.objectdescriptions.uniquesToCivilopediaTextLines
@@ -33,6 +34,8 @@ enum class MilestoneType(val text: String) {
     MoreCountableThanEachPlayer("Have more [countable] than each player's [countable]"),
     /** Reach an absolute amount of a countable - unlike [MoreCountableThanEachPlayer] this does not depend on the other players */
     HaveCountable("Have at least [amount] [countable]"),
+    /** Tourism has made this civilization at least that influential over each other living major civilization, those it has not met included (CvGame::testVictory for an `Influential` victory) */
+    InfluentialOverAllCivs("Be [Influential] over all other civilizations"),
 }
 
 class Victory : RulesetObject() {
@@ -173,6 +176,10 @@ class Milestone(val uniqueDescription: String, private val parentVictory: Victor
             MilestoneType.BuildingBuiltGlobally -> civInfo.gameInfo.getCities().any {
                 it.cityConstructions.isBuilt(params[0])
             }
+            MilestoneType.InfluentialOverAllCivs -> {
+                val others = civInfo.culture.getOtherMajorCivs()
+                others.isNotEmpty() && others.all { isInfluentialEnough(civInfo, it) }
+            }
             MilestoneType.WinDiplomaticVote -> civInfo.victoryManager.hasEverWonDiplomaticVote
             MilestoneType.ScoreAfterTimeOut -> {
                 civInfo.gameInfo.turns >= civInfo.gameInfo.gameParameters.maxTurns
@@ -196,6 +203,13 @@ class Milestone(val uniqueDescription: String, private val parentVictory: Victor
         if (achieved) textButton.color = Color.GREEN
         else textButton.color = Color.GRAY
         return textButton
+    }
+
+    /** Whether [civInfo] is at least as influential over [other] as the milestone asks. A civilization it has not met counts as not influenced */
+    @Readonly
+    private fun isInfluentialEnough(civInfo: Civilization, other: Civilization): Boolean {
+        val required = InfluenceLevel.fromLabel(params[0]) ?: return false
+        return (civInfo.culture.getInfluenceLevel(other) ?: return false) >= required
     }
 
     @Readonly
@@ -242,6 +256,15 @@ class Milestone(val uniqueDescription: String, private val parentVictory: Victor
                 val relevantCivs = civInfo.gameInfo.civilizations.filter { getMoreCountableThanOtherCivRelevant(civInfo, it) }
                 val amountToDo = relevantCivs.size
                 val amountDone = relevantCivs.count { getMoreCountableThanOtherCivPercent(civInfo, it) > 100f }
+                if (civInfo.shouldHideCivCount())
+                    "{$uniqueDescription} (${amountDone.tr()}/?)"
+                else
+                    "{$uniqueDescription} (${amountDone.tr()}/${amountToDo.tr()})"
+            }
+            MilestoneType.InfluentialOverAllCivs -> {
+                val others = civInfo.culture.getOtherMajorCivs()
+                val amountToDo = others.size
+                val amountDone = if (completed) amountToDo else others.count { isInfluentialEnough(civInfo, it) }
                 if (civInfo.shouldHideCivCount())
                     "{$uniqueDescription} (${amountDone.tr()}/?)"
                 else
@@ -367,6 +390,17 @@ class Milestone(val uniqueDescription: String, private val parentVictory: Victor
                 if (hideCivCount) buttons.add(getMilestoneButton("[${Constants.unknownNationName}]", false))
             }
 
+            MilestoneType.InfluentialOverAllCivs -> {
+                val hideCivCount = civInfo.shouldHideCivCount()
+                for (otherCiv in civInfo.culture.getOtherMajorCivs()) {
+                    if (hideCivCount && !civInfo.knows(otherCiv)) continue
+                    val civName = if (civInfo.knows(otherCiv)) otherCiv.civName else Constants.unknownNationName
+                    val percent = civInfo.culture.getInfluencePercent(otherCiv)
+                    buttons.add(getMilestoneButton("[$civName] [$percent]%", isInfluentialEnough(civInfo, otherCiv)))
+                }
+                if (hideCivCount) buttons.add(getMilestoneButton("[${Constants.unknownNationName}]", false))
+            }
+
             MilestoneType.WorldReligion -> {
                 val hideCivCount = civInfo.shouldHideCivCount()
                 val majorCivs = civInfo.gameInfo.civilizations.filter { it.isMajorCiv && it.isAlive() }
@@ -434,7 +468,7 @@ class Milestone(val uniqueDescription: String, private val parentVictory: Victor
                 Victory.Focus.Production
             }
             MilestoneType.DestroyAllPlayers, MilestoneType.CaptureAllCapitals -> Victory.Focus.Military
-            MilestoneType.CompletePolicyBranches -> Victory.Focus.Culture
+            MilestoneType.CompletePolicyBranches, MilestoneType.InfluentialOverAllCivs -> Victory.Focus.Culture
             MilestoneType.MoreCountableThanEachPlayer -> getFocusFromCountable(params[0], ruleset)
             MilestoneType.HaveCountable -> getFocusFromCountable(params[1], ruleset)
             MilestoneType.WinDiplomaticVote -> Victory.Focus.CityStates

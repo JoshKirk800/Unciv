@@ -686,7 +686,7 @@
 		"culture": 2,
 		"hurryCostModifier": 25,
 		"requiredBuilding": "Walls",
-		"uniques": ["Destroyed when the city is captured"],
+		"uniques": ["Destroyed when the city is captured", "[+2] Tourism [in this city] <after discovering [Flight]>"],
 		"requiredTech": "Chivalry"
 	},
 	{
@@ -1115,7 +1115,7 @@
 		"happiness": 5,
 		"greatPersonPoints": {"Great Merchant": 2},
 		"isWonder": true,
-		"uniques": [],
+		"uniques": ["[+12] Tourism [in this city] <after discovering [Radio]>"],
 		"requiredTech": "Radio",
 		"quote": "'We live only to discover beauty, all else is a form of waiting' - Kahlil Gibran"
 	},
@@ -1147,8 +1147,25 @@
 		"name": "Airport",
 		"cost": 400,
 		"maintenance": 5,
-		"uniques": ["Can carry [4] extra [Air] units"],
+		"uniques": ["Can carry [4] extra [Air] units", "[+50]% Tourism from Great Works [in this city]", "[50]% of the Culture from wonders, natural wonders and improved tiles becomes Tourism [in this city]"],
 		"requiredTech": "Radar"
+	},
+	{
+		"name": "Hotel",
+		"cost": 300,
+		"hurryCostModifier": 25,
+		"uniques": ["[+50]% Tourism from Great Works [in this city]", "[50]% of the Culture from wonders, natural wonders and improved tiles becomes Tourism [in this city]"],
+		"requiredTech": "Refrigeration"
+	},
+	{
+		"name": "National Visitor Center",
+		"cost": 400,
+		"maintenance": 2,
+		"hurryCostModifier": -1,
+		"isNationalWonder": true,
+		"uniques": ["Only available <if [Hotel] is constructed in all [non-[Puppeted]] cities>", "Cost increases by [30] per owned city", "Cannot be hurried",
+			"[+100]% Tourism from Great Works [in this city]", "[100]% of the Culture from wonders, natural wonders and improved tiles becomes Tourism [in this city]"],
+		"requiredTech": "Telecommunications"
 	},
 	{
 		"name": "Military Base",
@@ -1342,13 +1359,6 @@
 
 	// All Eras
 
-	{
-		"name": "Utopia Project",
-		"cost": 1500,
-		"isNationalWonder": true,
-		"uniques": ["Unavailable <when number of [Completed Policy branches] is less than [5]>", "Triggers a global alert upon build start",
-			"Triggers a Cultural Victory upon completion", "Only available <when [Cultural] Victory is enabled>", "Cannot be hurried"]
-	},
 
 	// Religious buildings
 

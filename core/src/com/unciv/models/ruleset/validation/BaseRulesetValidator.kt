@@ -568,6 +568,12 @@ internal class BaseRulesetValidator(
                         "Victory type ${victoryType.name} has milestone \"${milestone.uniqueDescription}\" with an invalid amount or an unknown countable!",
                         RulesetErrorSeverity.Error,
                     )
+                if (milestone.type == MilestoneType.InfluentialOverAllCivs
+                    && com.unciv.logic.civilization.managers.InfluenceLevel.fromLabel(milestone.params[0]) == null)
+                    lines.add(
+                        "Victory type ${victoryType.name} has milestone \"${milestone.uniqueDescription}\" with an unknown influence level!",
+                        RulesetErrorSeverity.Error, sourceObject = victoryType
+                    )
             }
         }
     }
