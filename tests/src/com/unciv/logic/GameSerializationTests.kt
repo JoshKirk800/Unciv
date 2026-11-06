@@ -14,6 +14,14 @@ import com.unciv.models.metadata.GameParameters
 import com.unciv.models.metadata.GameSettings
 import com.unciv.models.metadata.GameSetupInfo
 import com.unciv.models.metadata.Player
+import com.unciv.logic.league.ActiveResolution
+import com.unciv.logic.league.League
+import com.unciv.logic.league.LeagueMember
+import com.unciv.logic.league.LeagueProposal
+import com.unciv.logic.league.LeagueResultEntry
+import com.unciv.logic.league.LeagueVote
+import com.unciv.models.Counter
+import com.unciv.models.metadata.BaseRuleset
 import com.unciv.models.ruleset.RulesetCache
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.testing.BaseTestRunner
@@ -52,10 +60,14 @@ class GameSerializationTests {
     fun prepareGame() {
         saveZippedBackup = UncivFiles.saveZipped
         RulesetCache.loadRulesets(noMods = true)
+        game = startGame(BaseRuleset.Civ_V_GnK)
+    }
 
+    private fun startGame(baseRuleset: BaseRuleset): GameInfo {
         // Create a tiny game with just 1 human player and the barbarians
         // Must be 1 human otherwise GameInfo.setTransients crashes on the `if (currentPlayer == "")` line
         val param = GameParameters().apply {
+            this.baseRuleset = baseRuleset.fullName
             numberOfCityStates = 0
             players.clear()
             players.add(Player("Rome", PlayerType.Human))
@@ -73,11 +85,11 @@ class GameSerializationTests {
         settingsBackup = UncivGame.Current.files.getGeneralSettings()
 
         UncivGame.Current.settings = GameSettings()
-        game = GameStarter.startNewGame(setup)
-        UncivGame.Current.gameInfo = game
+        val started = GameStarter.startNewGame(setup)
+        UncivGame.Current.gameInfo = started
 
         // Found a city otherwise too many classes have no instance and are not tested
-        val civ = game.getCurrentPlayerCivilization()
+        val civ = started.getCurrentPlayerCivilization()
         val unit = civ.units.getCivUnits().first { it.hasUnique(UniqueType.FoundCity) }
         val tile = unit.getTile()
         unit.civ.addCity(tile.position)
@@ -86,11 +98,12 @@ class GameSerializationTests {
         unit.destroy()
 
         // Ensure some diplomacy objects are instantiated
-        val otherCiv = game.getCivilization("Greece")
+        val otherCiv = started.getCivilization("Greece")
         civ.diplomacyFunctions.makeCivilizationsMeet(otherCiv)
 
         // Ensure a barbarian encampment is included
-        game.barbarians.placeBarbarianEncampment(forTesting = true)
+        started.barbarians.placeBarbarianEncampment(forTesting = true)
+        return started
     }
 
     @Test
@@ -193,6 +206,42 @@ class GameSerializationTests {
             Assert.assertNotNull(callbackException)
         } finally {
             saveDirectory.delete()
+        }
+    }
+
+    @Test
+    fun foundedLeagueSurvivesSaveAndLoad() {
+        val bnw = startGame(BaseRuleset.Civ_V_BNW)
+        val rome = bnw.getCivilization("Rome")
+        val greece = bnw.getCivilization("Greece")
+        val league = League()
+        league.setTransients(bnw)
+        league.host = rome.civID
+        league.lastSpecialSession = "Renaissance era"
+        league.lastEraTrigger = "Renaissance era"
+        league.turnsUntilSession = 17
+        league.nextProposalId = 4
+        league.members[rome.civID] = LeagueMember().apply { extraDelegates = 2; proposalsLeft = 1 }
+        league.members[greece.civID] = LeagueMember().apply { delegatesLeft = 3 }
+        league.proposals.add(LeagueProposal(3, "Embargo", false, rome.civID, greece.civID).apply { votes.add(LeagueVote(greece.civID, 2, "Yes")) })
+        league.activeResolutions.add(ActiveResolution(2, "Standing Army Tax", rome.civID, null, 40))
+        league.lastResults.add(LeagueResultEntry("Choose Host", rome.civID, true, false, Counter<String>().apply { add(rome.civID, 5) }))
+        league.setTransients(bnw)
+        bnw.league = league
+        val saveFile = File.createTempFile("unciv-save-", ".json")
+        try {
+            UncivFiles.saveZipped = false
+            UncivGame.Current.files.saveGame(bnw, FileHandle(saveFile))
+            val loadedGame = UncivGame.Current.files.loadGameFromFile(FileHandle(saveFile))
+
+            val loaded = loadedGame.league!!
+            Assert.assertEquals(json().toJson(league), json().toJson(loaded))
+            Assert.assertTrue(loaded.isActive("Standing Army Tax"))
+            Assert.assertEquals(17, loaded.turnsUntilSession)
+            Assert.assertTrue("the uniques of the resolution in effect are rebuilt",
+                loadedGame.getCivilization("Greece").hasUnique(UniqueType.UnitGoldMaintenancePercent))
+        } finally {
+            saveFile.delete()
         }
     }
 
