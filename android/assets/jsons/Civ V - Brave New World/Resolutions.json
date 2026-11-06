@@ -1,5 +1,6 @@
 [
-    // The resolutions of the World Congress (CIV5Resolutions.xml). Not included: the League projects World's Fair, International Games and International Space Station
+    // The resolutions of the World Congress (CIV5Resolutions.xml). The League projects (World's Fair, International Games and International Space Station)
+    // have projectCostPerPlayer (CIV5LeagueProjects.xml): enacting them starts the project, and the rewards (CIV5LeagueProjectRewards.xml) are the uniques of their tiers
     {
         "name": "World Leader",
         "voterDecision": "MajorCiv",
@@ -82,5 +83,36 @@
         "name": "Historical Landmarks",
         "requiredTechAnyMember": "Archaeology",
         "uniques": ["[+2 Culture] from every [Great Improvement]", "[+4 Culture] from every [Landmark]"]
+    },
+    {
+        "name": "World's Fair",
+        "projectCostPerPlayer": 350,
+        "uniques": [
+            "Gain [500] Golden Age points <upon reaching contribution tier [1] of a World Congress project>",
+            "[1] Free Social Policies <upon reaching contribution tier [2] of a World Congress project>",
+            "[+100]% [Culture] <for [20] turns> <upon reaching contribution tier [3] of a World Congress project>"
+        ]
+    },
+    {
+        "name": "International Games",
+        "requiredTechAnyMember": "Radio",
+        "projectCostPerPlayer": 720,
+        "uniques": [
+            "Permanently gain [+3 Happiness] <upon reaching contribution tier [1] of a World Congress project>",
+            "Permanently gain [+3 Happiness] <upon reaching contribution tier [2] of a World Congress project>",
+            "Gain [30] Influence with all City-States we have met <upon reaching contribution tier [2] of a World Congress project>",
+            "[1] Free Social Policies <upon reaching contribution tier [3] of a World Congress project>",
+            "[+100]% Tourism [in all cities] <for [20] turns> <upon reaching contribution tier [3] of a World Congress project>"
+        ]
+    },
+    {
+        "name": "International Space Station",
+        "requiredTechAnyMember": "Satellites",
+        "projectCostPerPlayer": 850,
+        "uniques": [
+            "Gain [4] turns of Science <upon reaching contribution tier [1] of a World Congress project>",
+            "Free [Great Scientist] appears <upon reaching contribution tier [2] of a World Congress project>",
+            "Gain a free [International Space Station Complex] [in capital] <upon reaching contribution tier [3] of a World Congress project>"
+        ]
     }
 ]

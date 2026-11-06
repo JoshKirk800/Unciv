@@ -1384,5 +1384,15 @@
 		"faith": 2,
 		"happiness": 2,
 		"uniques": ["Unbuildable", "Only available <when religion is enabled>"]
+	},
+	{
+		// The reward of the top contributor of the International Space Station project (BUILDING_INTERNATIONAL_SPACE_STATION, Cost -1 = never built by a city).
+		// Not named like the project, as the construction of that name is what the cities contribute with. Great Scientists giving 33% more Science (GreatScientistBeakerModifier) has no equivalent
+		"name": "International Space Station Complex",
+		"cost": 0,
+		"uniques": ["Unbuildable", "[+1 Production] from every [Scientist]", "[+1 Science] from every [Engineer]"],
+		"civilopediaText": [
+			{ "text": "May only be built collaboratively through the World Congress: it is the reward of the civilization that contributes most to the International Space Station project." }
+		]
 	}
 ]
