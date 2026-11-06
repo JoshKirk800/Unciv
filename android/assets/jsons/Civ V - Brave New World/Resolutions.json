@@ -1,0 +1,86 @@
+[
+    // The resolutions of the World Congress (CIV5Resolutions.xml). Not included: the League projects World's Fair, International Games and International Space Station
+    {
+        "name": "World Leader",
+        "voterDecision": "MajorCiv",
+        "playerProposable": false,
+        "leadersVoteBonusOnFail": 2,
+        "uniques": ["Elects the World Leader", "Only available <when [Diplomatic] Victory is enabled>"]
+    },
+    {
+        "name": "Choose Host",
+        "voterDecision": "MajorCiv",
+        "playerProposable": false,
+        "uniques": ["Elects the host of the World Congress"]
+    },
+    {
+        "name": "Embargo City-States",
+        "embargoesCityStates": true
+    },
+    {
+        "name": "Embargo",
+        "proposerDecision": "OtherMajorCiv",
+        "embargoesPlayer": true
+    },
+    {
+        "name": "Ban Luxury",
+        "proposerDecision": "Luxury",
+        "bansLuxuryHappiness": true
+    },
+    {
+        "name": "Standing Army Tax",
+        "uniques": ["[+25]% unit gold maintenance"]
+    },
+    {
+        "name": "Scholars In Residence",
+        "uniques": ["[+20]% research of technologies known by any civilization"]
+    },
+    {
+        "name": "Cultural Heritage Sites",
+        "uniques": ["[+3 Culture] from every [World Wonder]"]
+    },
+    {
+        "name": "Natural Heritage Sites",
+        "uniques": ["[+5 Culture] from every [Natural Wonder]"]
+    },
+    {
+        "name": "Nuclear Non-Proliferation",
+        "requiredTechAnyMember": "Advanced Ballistics"
+    },
+    {
+        "name": "World Religion",
+        "proposerDecision": "Religion",
+        "exclusive": true,
+        "votesForFollowingReligion": 2,
+        "holyCityTourismPercent": 50,
+        "religionSpreadStrengthPercent": 25,
+        "uniques": ["Only available <when religion is enabled>"]
+    },
+    {
+        "name": "World Ideology",
+        "proposerDecision": "Ideology",
+        "requiredTechAnyMember": "Radio",
+        "exclusive": true,
+        "votesForFollowingIdeology": 2,
+        "ideologyPressure": 2
+    },
+    {
+        "name": "Arts Funding",
+        "uniques": [
+            "[Great Artist] is earned [+33]% faster", "[Great Writer] is earned [+33]% faster", "[Great Musician] is earned [+33]% faster",
+            "[Great Scientist] is earned [-33]% faster", "[Great Engineer] is earned [-33]% faster", "[Great Merchant] is earned [-33]% faster"
+        ]
+    },
+    {
+        "name": "Sciences Funding",
+        "uniques": [
+            "[Great Artist] is earned [-33]% faster", "[Great Writer] is earned [-33]% faster", "[Great Musician] is earned [-33]% faster",
+            "[Great Scientist] is earned [+33]% faster", "[Great Engineer] is earned [+33]% faster", "[Great Merchant] is earned [+33]% faster"
+        ]
+    },
+    {
+        "name": "Historical Landmarks",
+        "requiredTechAnyMember": "Archaeology",
+        "uniques": ["[+2 Culture] from every [Great Improvement]", "[+4 Culture] from every [Landmark]"]
+    }
+]

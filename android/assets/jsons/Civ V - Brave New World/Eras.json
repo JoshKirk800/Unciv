@@ -102,7 +102,8 @@
         "buildPercent": 90,
         "buildingMaintenancePercent": 75,
         "citySound": "cityRenaissance",
-        "uniques": ["Every major Civilization gains a spy once a civilization enters this era"],
+        "uniques": ["Every major Civilization gains a spy once a civilization enters this era",
+            "World Congress sessions: every [30] turns, [1] delegates per civilization, [1] for the host and [0] per allied City-State"],
         "iconRGB": [104, 58, 183]
     },
     {
@@ -135,7 +136,8 @@
         "uniques": ["May not generate great prophet equivalents naturally",
             "May buy [Great Prophet] units for [200] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([100])",
             "Starting in this era disables religion",
-            "Every major Civilization gains a spy once a civilization enters this era"
+            "Every major Civilization gains a spy once a civilization enters this era",
+            "World Congress sessions: every [25] turns, [2] delegates per civilization, [1] for the host and [1] per allied City-State"
         ]
     },
     {
@@ -169,7 +171,8 @@
         "uniques": ["May not generate great prophet equivalents naturally",
             "May buy [Great Prophet] units for [200] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([100])",
             "Starting in this era disables religion",
-            "Every major Civilization gains a spy once a civilization enters this era"
+            "Every major Civilization gains a spy once a civilization enters this era",
+            "World Congress sessions: every [20] turns, [3] delegates per civilization, [2] for the host and [1] per allied City-State"
         ]
     },
     {
@@ -204,7 +207,9 @@
         "uniques": ["May not generate great prophet equivalents naturally",
             "May buy [Great Prophet] units for [200] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([100])",
             "Starting in this era disables religion",
-            "Every major Civilization gains a spy once a civilization enters this era"
+            "Every major Civilization gains a spy once a civilization enters this era",
+            "World Congress sessions: every [10] turns, [4] delegates per civilization, [2] for the host and [2] per allied City-State",
+            "The World Congress becomes the United Nations"
         ]
     },
     {

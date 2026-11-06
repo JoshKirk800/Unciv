@@ -825,7 +825,7 @@
 		"name": "Forbidden Palace",
 		"culture": 1,
 		"isWonder": true,
-		"uniques": ["[-10]% Unhappiness from [Population] [in all non-occupied cities]", "Only available <after adopting [Patronage]>"],
+		"uniques": ["[-10]% Unhappiness from [Population] [in all non-occupied cities]", "Only available <after adopting [Patronage]>", "[2] World Congress Delegates"],
 		"requiredTech": "Banking",
 		"quote": "'Most of us can, as we choose, make of this world either a palace or a prison' - John Lubbock"
 	},
@@ -1345,16 +1345,6 @@
 		"requiredBuilding": "Factory",
 		"uniques": ["[+50]% Production when constructing [Spaceship part] units [in this city]"],
 		"requiredTech": "Robotics"
-	},
-	// Column 16
-	{
-		"name": "United Nations",
-		"isWonder": true,
-		"culture": 1,
-		"greatPersonPoints": {"Great Merchant": 2},
-		"requiredTech": "Globalization",
-		"uniques": ["Triggers voting for the Diplomatic Victory", "Only available <when [Diplomatic] Victory is enabled>", "Triggers a global alert upon completion"],
-		"quote": "'More than ever before in human history, we share a common destiny. We can master it only if we face it together. And that is why we have the United Nations.' - Kofi Annan"
 	},
 
 	// All Eras
