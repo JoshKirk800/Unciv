@@ -89,6 +89,9 @@ class CityPopulationManager : IsPartOfGameInfoSerialization {
     fun getPopulationFilterAmount(filter: String): Int {
         return when (filter) {
             "Specialists" -> getNumberOfSpecialists()
+            // Universal Suffrage halves specialist unhappiness rounding the removed part up: (specialists + 1) / 2 (CvPlayer.cpp:11325-11330).
+            // Half of this amount is that, for an amount that is exactly the specialists rounded up to an even number.
+            "Specialists (rounded up to even)" -> getNumberOfSpecialists().let { it + it % 2 }
             "Population" -> population
             "Followers of the Majority Religion", "Followers of this Religion" -> city.religion.getFollowersOfMajorityReligion()
             "Unemployed" -> getFreePopulation()

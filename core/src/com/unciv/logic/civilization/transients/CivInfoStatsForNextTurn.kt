@@ -336,6 +336,14 @@ class CivInfoStatsForNextTurn(val civInfo: Civilization) {
                     ).toFloat() / unique.params[1].toFloat()
                 )
             }
+
+            // Whole multiples only: (int)(cities * 0.5) for Ceremonial Burial in CvPlayer::GetHappinessFromReligion (CvPlayer.cpp:10927)
+            founderReligion.founderBeliefUniqueMap.forEachMatchingUnique(
+                UniqueType.StatsFromGlobalCitiesFollowingReligionPer, civInfo.state
+            ) { unique ->
+                val cities = civInfo.religionManager.numberOfCitiesFollowingThisReligion(unique.params[2])
+                statMap.add("Religion", unique.stats * (cities / unique.params[1].toInt()))
+            }
         }
 
         civInfo.forEachMatchingUnique(UniqueType.StatsPerPolicies) { unique ->

@@ -514,7 +514,7 @@
 		"maintenance": 1,
 		"faith": 2,
 		"hurryCostModifier": 25,
-		"uniques": ["[+25]% Great Person generation [in this city]"],
+		"uniques": ["[+25]% Great Person generation [in this city]", "[+2 Faith] for each major religion with followers in the city [in this city]"],
 		"requiredTech": "Theology"
 	},
 	{

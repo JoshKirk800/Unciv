@@ -464,6 +464,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Global, FollowerBelief
 
+??? example  "[stats] for each major religion with followers in the city [cityFilter]"
+	Counts the religions of which at least one citizen of the city is a follower, pantheons not included. Whole numbers of the stats only, as in the original (CvCity::GetYieldPerReligionTimes100)
+
+	Example: "[+1 Gold, +2 Production] for each major religion with followers in the city [in all cities]"
+
+	Applicable to: Global, FollowerBelief
+
 ??? example  "[stats] per [positiveAmount] social policies adopted"
 	Only works for civ-wide stats
 
@@ -1124,6 +1131,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Global
 
+??? example  "[relativeAmount]% City Strength"
+	Multiplies the base, population, technology, garrison and building part of the strength of all your cities, before the terrain bonus and the additive combat modifiers are added. Multiple bonuses stack multiplicatively: +50% + +50% = x1.5 * x1.5 = +125%
+
+	Example: "[+20]% City Strength"
+
+	Applicable to: Global
+
 ??? example  "[relativeAmount]% Strength for cities"
 	Multiple bonuses stack additively: +50% + +50% = +100%
 
@@ -1236,6 +1250,23 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Global
 
+??? example  "Cities with a majority religion also get the Pantheon belief bonus of the second most popular religion"
+	The second most popular religion of a city is the one with the most followers among the major religions other than its majority religion (ties go to the one with more pressure). Its Pantheon belief, the first one if it has several, applies to the city as if it were the belief of the majority religion
+
+	Applicable to: Global
+
+??? example  "If you founded a religion, gain a bonus Reformation belief"
+	Once, as soon as the civilization has founded a religion that has no Reformation belief yet: a free belief of the type `Reformation` can be chosen, like with `Gain a free [beliefType] belief`
+
+	Applicable to: Global
+
+??? example  "[relativeAmount]% religious pressure along trade routes that start in our cities"
+	Cities linked by a trade route, of any civilization and in either direction, push the religion they follow on each other every turn as if they were close enough (once only if they are). The pressure along a route that starts in a city of the civilization with this unique is changed by this percentage. Multiple bonuses stack multiplicatively: +50% + +50% = x1.5 * x1.5 = +125%
+
+	Example: "[+20]% religious pressure along trade routes that start in our cities"
+
+	Applicable to: Global
+
 ??? example  "[relativeAmount]% spy effectiveness [cityFilter]"
 	Example: "[+20]% spy effectiveness [in all cities]"
 
@@ -1318,6 +1349,9 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 ??? example  "Cannot build [buildingFilter] buildings"
 	Example: "Cannot build [Culture] buildings"
 
+	Applicable to: Global
+
+??? example  "Units that can speed up construction of a building can also speed up construction of spaceship parts"
 	Applicable to: Global
 
 ??? example  "[relativeAmount]% Strength"
@@ -1475,6 +1509,11 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 ??? example  "[greatPerson] is earned [relativeAmount]% faster"
 	Example: "[Great General] is earned [+20]% faster"
+
+	Applicable to: Global, Unit
+
+??? example  "Ignores Zone of Control"
+	Due to performance considerations, this unique is cached, thus conditionals that may change within a turn may not work.
 
 	Applicable to: Global, Unit
 
@@ -1696,6 +1735,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
     Uniques for Founder and Enhancer type Beliefs, that will apply to the founder of this religion
 
+??? example  "[relativeAmount] Tourism from every building that can only be bought with [stat] [cityFilter]"
+	Read from the founder beliefs of the majority religion of each city, not of the founder of the religion. Added to the tourism of the city before the percentages, like `[relativeAmount] Tourism [cityFilter]`. A building counts if it is in the city, cannot be built, and some belief of the ruleset lets you buy it with the stat (CvCityBuildings::GetNumBuildingsFromFaith)
+
+	Example: "[+20] Tourism from every building that can only be bought with [Culture] [in all cities]"
+
+	Applicable to: FounderBelief
+
 ??? example  "[stats] for each global city following this religion"
 	Example: "[+1 Gold, +2 Production] for each global city following this religion"
 
@@ -1706,10 +1752,45 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: FounderBelief
 
+??? example  "[stats] from every [positiveAmount] global cities following this religion [cityFilter]"
+	Counts the cities of every civilization that have the religion of the founder as their majority religion and match the filter, rounded down to a multiple of the amount, so that `[+1 Happiness] from every [2] global cities following this religion [in all cities]` gives 1 for 2 or 3 cities
+
+	Example: "[+1 Gold, +2 Production] from every [3] global cities following this religion [in all cities]"
+
+	Applicable to: FounderBelief
+
 ??? example  "[relativeAmount]% [stat] from every follower, up to [relativeAmount]%"
 	Example: "[+20]% [Culture] from every follower, up to [+20]%"
 
 	Applicable to: FounderBelief, FollowerBelief
+
+??? example  "[mapUnitFilter] units convert adjacent Barbarian units"
+	When such a unit of the founder of the religion moves next to a Barbarian unit, or a Barbarian unit moves next to it, the Barbarian unit (the best defender of its tile) joins the founder, with no movement left. A Barbarian camp under it is cleared, without the gold (CvBeliefHelpers::ConvertBarbarianUnit)
+
+	Example: "[Wounded] units convert adjacent Barbarian units"
+
+	Applicable to: FounderBelief
+
+??? example  "Spreading religion erodes [positiveAmount]% of the pressure it adds from the other religions in the city"
+	Read from the founder beliefs of the religion that is spread. Applies to units that do not remove the other religions altogether (see `Removes other religions when spreading religion`). Pantheons and the citizens of no religion are not eroded
+
+	Example: "Spreading religion erodes [3]% of the pressure it adds from the other religions in the city"
+
+	Applicable to: FounderBelief
+
+??? example  "[positiveAmount]% of the pressure of this religion in a city remains when other religions are removed from it"
+	Read from the founder beliefs of the religion that would be removed, which keeps that share of its pressure instead of losing all of it when a unit removes other religions (Inquisitors, Great Prophets)
+
+	Example: "[3]% of the pressure of this religion in a city remains when other religions are removed from it"
+
+	Applicable to: FounderBelief
+
+??? example  "Spies exert [positiveAmount] times the natural religious pressure on the cities they occupy"
+	Every turn, each living spy of the founder of a religion adds this multiple of the pressure that a nearby city exerts to the religion in the city the spy is in, if the religion already has a presence there
+
+	Example: "Spies exert [3] times the natural religious pressure on the cities they occupy"
+
+	Applicable to: FounderBelief
 
 ??? example  "Only available"
 	Meant to be used together with conditionals, like "Only available &lt;after adopting [policy]&gt; &lt;while the empire is happy&gt;". Only allows Building when ALL conditionals are met. Will also block Upgrade and Transform actions. See also CanOnlyBeBuiltWhen
@@ -1763,6 +1844,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 ??? example  "[stats] per [positiveAmount] population [cityFilter]"
 	Example: "[+1 Gold, +2 Production] per [3] population [in all cities]"
+
+	Applicable to: Global, FollowerBelief
+
+??? example  "[stats] for each major religion with followers in the city [cityFilter]"
+	Counts the religions of which at least one citizen of the city is a follower, pantheons not included. Whole numbers of the stats only, as in the original (CvCity::GetYieldPerReligionTimes100)
+
+	Example: "[+1 Gold, +2 Production] for each major religion with followers in the city [in all cities]"
 
 	Applicable to: Global, FollowerBelief
 
@@ -2861,7 +2949,7 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 ??? example  "Ignores Zone of Control"
 	Due to performance considerations, this unique is cached, thus conditionals that may change within a turn may not work.
 
-	Applicable to: Unit
+	Applicable to: Global, Unit
 
 ??? example  "Rough terrain penalty"
 	Due to performance considerations, this unique is cached, thus conditionals that may change within a turn may not work.
@@ -4499,6 +4587,11 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 ??? example  "&lt;upon conquering a city&gt;"
 	Applicable to: TriggerCondition, UnitTriggerCondition
+
+??? example  "&lt;upon acquiring a city&gt;"
+	Triggers once for each city that changes hands to this civilization in any way: conquest, liberation, marriage with a City-State, or a trade. Not for founded cities. The relevant city is the acquired one, so `in this city` filters work (CvPlayer::acquireCity)
+
+	Applicable to: TriggerCondition
 
 ??? example  "&lt;upon losing a city&gt;"
 	Applicable to: TriggerCondition

@@ -324,7 +324,7 @@ enum class UniqueParameterType(
     PopulationFilter("populationFilter", "Followers of this Religion", null, "Population Filters",
         severityDefault = UniqueType.UniqueParameterErrorSeverity.RulesetInvariant
     ) {
-        override val staticKnownValues = setOf("Population", "Specialists", "Unemployed", "Followers of the Majority Religion", "Followers of this Religion")
+        override val staticKnownValues = setOf("Population", "Specialists", "Specialists (rounded up to even)", "Unemployed", "Followers of the Majority Religion", "Followers of this Religion")
         override fun getKnownValuesForAutocomplete(ruleset: Ruleset): Set<String> =
             staticKnownValues + ruleset.specialists.keys
     },

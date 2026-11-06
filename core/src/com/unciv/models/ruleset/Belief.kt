@@ -92,8 +92,12 @@ class Belief() : RulesetObject() {
         fun getCivilopediaBeliefsEntry(ruleset: Ruleset) = Belief().apply {
             name = "Beliefs"
             civilopediaText = buildCivilopediaText {
-                add("There are four types of beliefs: Pantheon, Founder, Follower and Enhancer beliefs.")
+                if (ruleset.beliefs.values.any { it.type == BeliefType.Reformation })
+                    add("There are five types of beliefs: Pantheon, Founder, Follower, Enhancer and Reformation beliefs.")
+                else add("There are four types of beliefs: Pantheon, Founder, Follower and Enhancer beliefs.")
                 add("Pantheon and Follower beliefs apply to each city following your religion, while Founder and Enhancer beliefs only apply to the founder of a religion.")
+                if (ruleset.beliefs.values.any { it.type == BeliefType.Reformation })
+                    add("Reformation beliefs are a fifth type: like Enhancer beliefs they only apply to the founder of a religion, but they can only be added through a policy, not when founding or enhancing a religion.")
             }
         }
 
@@ -120,9 +124,17 @@ enum class BeliefType(val color: String, val isFollower: Boolean = false, val is
     Founder("#c00000", isFounder = true),
     Follower("#ccaa44", isFollower = true),
     Enhancer("#72cc45", isFounder = true),
+    /** The beliefs that a policy with [UniqueType.BonusReformationBelief] adds to a founded religion (`Reformation` in the original's Beliefs table).
+     *  They act like [Enhancer] beliefs but are never offered when founding or enhancing, not even as [Any] */
+    Reformation("#d9822b", isFounder = true),
     Any("") {
         override fun getSubCategory() = null
     },
     ;
     internal open fun getSubCategory(): String? = name
+
+    /** Whether a belief of type [other] may be picked where a belief of this type is to be chosen.
+     *  [Any] stands for every type but [Reformation], as the original offers those only through the Reformation policy */
+    @Readonly
+    fun includes(other: BeliefType) = this == other || (this == Any && other != Reformation && other != None)
 }

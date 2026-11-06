@@ -105,9 +105,11 @@ object UnitActionsReligion {
                     unit.civ.addStat(Stat.valueOf(unique.params[1]), followersOfOtherReligions * unique.params[0].toInt())
                 }
                 val previousReligion = city.religion.getMajorityReligion()
-                city.religion.addPressure(unit.religion!!, getPressureAddedFromSpread(unit))
-                if (unit.hasUnique(UniqueType.RemoveOtherReligions))
+                if (unit.hasUnique(UniqueType.RemoveOtherReligions)) {
+                    city.religion.addPressure(unit.religion!!, getPressureAddedFromSpread(unit))
                     city.religion.removeAllPressuresExceptFor(unit.religion!!)
+                } else // only a spreader that leaves the other religions in place erodes them, with Evangelism
+                    city.religion.addPressureFromSpreading(unit.religion!!, getPressureAddedFromSpread(unit))
                 
                 val newReligion = city.religion.getMajorityReligion()
                 if (previousReligion != newReligion && newReligion != null && city.civ != unit.civ) {

@@ -83,7 +83,7 @@ class Religion() : INamed, IsPartOfGameInfoSerialization {
     fun addBeliefs(beliefs: Iterable<Belief>){
         for (belief in beliefs){
             when (belief.type){
-                BeliefType.Founder, BeliefType.Enhancer -> founderBeliefs.add(belief.name)
+                BeliefType.Founder, BeliefType.Enhancer, BeliefType.Reformation -> founderBeliefs.add(belief.name)
                 BeliefType.Pantheon, BeliefType.Follower -> followerBeliefs.add(belief.name)
                 else -> continue // 'None' and 'Any' are not valid for beliefs, they're used for internal purposes
             }
@@ -130,7 +130,8 @@ class Religion() : INamed, IsPartOfGameInfoSerialization {
         return mapToExistingBeliefs(followerBeliefs).filter { it.type == BeliefType.Pantheon } +
             mapToExistingBeliefs(founderBeliefs).filter { it.type == BeliefType.Founder } +
             mapToExistingBeliefs(followerBeliefs).filter { it.type == BeliefType.Follower } +
-            mapToExistingBeliefs(founderBeliefs).filter { it.type == BeliefType.Enhancer }
+            mapToExistingBeliefs(founderBeliefs).filter { it.type == BeliefType.Enhancer } +
+            mapToExistingBeliefs(founderBeliefs).filter { it.type == BeliefType.Reformation }
     }
 
     @Readonly fun hasBelief(belief: String) = followerBeliefs.contains(belief) || founderBeliefs.contains(belief)

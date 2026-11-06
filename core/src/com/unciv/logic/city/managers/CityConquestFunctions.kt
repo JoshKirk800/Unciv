@@ -389,6 +389,11 @@ class CityConquestFunctions(val city: City) {
 
         newCiv.cache.updateOurTiles()
         oldCiv.cache.updateOurTiles()
+
+        // Policies such as Iron Curtain grant their free building on every acquisition, not only on conquest (CvPlayer.cpp:2340-2356, in acquireCity)
+        newCiv.forEachTriggeredUnique(UniqueType.TriggerUponAcquiringCity, GameContext(civInfo = newCiv, city = city), ignoreCities = false) { unique ->
+            UniqueTriggerActivation.triggerUnique(unique, newCiv, city, triggerNotificationText = "due to acquiring [${city.name}]")
+        }
     }
 
 }

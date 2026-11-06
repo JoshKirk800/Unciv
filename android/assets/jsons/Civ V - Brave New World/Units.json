@@ -625,16 +625,15 @@
 	{
 		"name": "Landsknecht",
 		"unitType": "Sword",
-		"replaces": "Pikeman",
-		"uniqueTo": "Germany",
 		"movement": 2,
 		"strength": 16,
 		"cost": 45,
 		"requiredTech": "Civil Service",
-		"uniques": ["[+50]% Strength <vs [Mounted] units>", "Can move immediately once bought" ],
+		"uniques": ["[+50]% Strength <vs [Mounted] units>", "Can move immediately once bought",
+			"Unbuildable", "Can be purchased with [Gold] [in all cities]", "Only available <after adopting [Mercenary Army]>"],
 		"upgradesTo": "Lancer",
 		"attackSound": "metalhit"
-		//"Requires [Mercenary Army]" in BNW
+		// XML: PurchaseOnly=true (CvCity.cpp:2332) and PolicyType=POLICY_TRADE_UNIONS, i.e. Mercenary Army (CvPlayer.cpp:6712-6719)
 	},
 	{
 		"name": "Galleass",

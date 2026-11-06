@@ -219,7 +219,7 @@
     {
         "name": "Ceremonial Burial",
         "type": "Founder",
-        "uniques": ["[+1 Happiness] for each global city following this religion"]
+        "uniques": ["[+1 Happiness] from every [2] global cities following this religion [in all cities]"]
     },
     {
         "name": "Church Property",
@@ -251,7 +251,7 @@
     {
         "name": "Pilgrimage",
         "type": "Founder",
-        "uniques": ["[+2 Faith] for each global city following this religion"]
+        "uniques": ["[+2 Faith] from every [1] global cities following this religion [in foreign cities]"]
     },
     {
         "name": "Tithe",
@@ -315,28 +315,43 @@
     },
 
     ////////////////////////////////// Reformation beliefs ////////////////////////////////////
-    // The engine has no separate Reformation belief type, so these are Enhancer beliefs (founder only)
+    // Only added through the Reformation policy (the original's `Reformation` flag of the Beliefs table), not chosen when founding or enhancing a religion. Founder-side: they apply to the founder like Enhancer beliefs
 
     {
         "name": "Charitable Missions",
-        "type": "Enhancer",
+        "type": "Reformation",
         "uniques": ["Gifts of Gold to City-States generate [30]% more Influence"]
     },
     {
+        "name": "Evangelism",
+        "type": "Reformation",
+        "uniques": ["Spreading religion erodes [100]% of the pressure it adds from the other religions in the city"]
+    },
+    {
+        "name": "Heathen Conversion",
+        "type": "Reformation",
+        "uniques": ["[Missionary] units convert adjacent Barbarian units"]
+    },
+    {
         "name": "Jesuit Education",
-        "type": "Enhancer",
+        "type": "Reformation",
         "uniques": ["May buy [University] buildings with [Faith] [in cities following this religion]",
             "May buy [Public School] buildings with [Faith] [in cities following this religion]",
             "May buy [Research Lab] buildings with [Faith] [in cities following this religion]"]
     },
     {
         "name": "Religious Fervor",
-        "type": "Enhancer",
+        "type": "Reformation",
         "uniques": ["May buy [{post-[Renaissance era]} {Military} {Land}] units with [Faith] for [2] times their normal Production cost <in [in cities following this religion] cities>"]
     },
     {
+        "name": "Sacred Sites",
+        "type": "Reformation",
+        "uniques": ["[+2] Tourism from every building that can only be bought with [Faith] [in all cities]"]
+    },
+    {
         "name": "To the Glory of God",
-        "type": "Enhancer",
+        "type": "Reformation",
         "uniques": [
             "May buy [Great Artist] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
             "May buy [Great Writer] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
@@ -346,5 +361,15 @@
             "May buy [Great General] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
             "May buy [Great Admiral] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>"
         ]
+    },
+    {
+        "name": "Underground Sect",
+        "type": "Reformation",
+        "uniques": ["Spies exert [5] times the natural religious pressure on the cities they occupy"]
+    },
+    {
+        "name": "Unity of the Prophets",
+        "type": "Reformation",
+        "uniques": ["[50]% of the pressure of this religion in a city remains when other religions are removed from it"]
     }
 ]

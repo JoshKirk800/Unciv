@@ -491,7 +491,7 @@ object ReligionAutomation {
     private fun pickBeliefOfType(civInfo: Civilization, beliefType: BeliefType, additionalBeliefsToExclude: HashSet<Belief> = hashSetOf()): Belief? {
         return civInfo.gameInfo.ruleset.beliefs.values
             .filter {
-                (it.type == beliefType || beliefType == BeliefType.Any)
+                beliefType.includes(it.type)
                     && !additionalBeliefsToExclude.contains(it)
                     && civInfo.religionManager.getReligionWithBelief(it) == null
                     && it.getMatchingUniques(UniqueType.OnlyAvailable, GameContext.IgnoreConditionals)

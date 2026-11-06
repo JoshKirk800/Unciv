@@ -198,6 +198,7 @@ Allowed values:
 
 - `Population`
 - `Specialists`
+- `Specialists (rounded up to even)`: the number of specialists, plus one if odd, so that "-50%" removes half of them rounded up
 - `Unemployed`
 - `Followers of the Majority Religion` or `Followers of this Religion`, both of which only apply when this religion is the majority religion in that city
 - Specialist names

@@ -86,7 +86,7 @@ object Automation {
         if (areWeRankingSpecialist) {
             // Specialist Happiness Percentage Change 0f-1f
             city.forEachMatchingUnique(UniqueType.UnhappinessFromPopulationTypePercentageChange, city.state) { unique: Unique ->
-                if (unique.params[1] == "Specialists" && city.matchesFilter(unique.params[2]))
+                if (unique.params[1].startsWith("Specialists") && city.matchesFilter(unique.params[2]))
                     yieldStats.happiness -= (unique.params[0].toFloat() / 100f)  // relative val is negative, make positive
             }
             if (yieldStats.science == 3f || yieldStats.science >= 5f )

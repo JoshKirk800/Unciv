@@ -268,7 +268,7 @@
             {
                 "name": "Free Religion",
                 "uniques": [
-                    "Comment [Cities with a majority religion also get the Pantheon belief bonus of the second most popular religion]"
+                    "Cities with a majority religion also get the Pantheon belief bonus of the second most popular religion"
                 ],
                 "requires": ["Organized Religion"],
                 "row": 2,
@@ -277,7 +277,7 @@
             {
                 "name": "Reformation",
                 "uniques": [
-                    "Comment [If you founded a religion, gain a bonus Reformation belief]"
+                    "If you founded a religion, gain a bonus Reformation belief"
                 ],
                 "requires": ["Free Religion"],
                 "row": 3,
@@ -373,7 +373,8 @@
         },
         "uniques": [
             "[Great Writer] is earned [+25]% faster",
-            "[Great Artist] is earned [+25]% faster"
+            "[Great Artist] is earned [+25]% faster",
+            "[Great Musician] is earned [+25]% faster"
         ],
         "policies": [
             {
@@ -431,6 +432,7 @@
                 "uniques": [
                     "May buy [Great Writer] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
                     "May buy [Great Artist] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
+                    "May buy [Great Musician] units for [1000] [Faith] [in all cities in which the majority religion is a major religion] at an increasing price ([500]) <starting from the [Industrial era]>",
                     "Get the leader title of [Master [leaderName]]", "[+100]% Theming bonuses [in all cities]"]
             }
         ]
@@ -470,7 +472,8 @@
                 "name": "Entrepreneurship",
                 "uniques": [
                     "[Great Merchant] is earned [+25]% faster",
-                    "[+100]% Gold from Great Merchant trade missions"
+                    "[+100]% Gold from Great Merchant trade missions",
+                    "[+1] Movement <for [Embarked] units>"
                 ],
                 "requires": ["Wagon Trains"],
                 "row": 2,
@@ -748,7 +751,7 @@
                 "name": "Their Finest Hour",
                 "uniques": [
                     "Tenet Level 2",
-                    "[+33]% Strength for cities",
+                    "[+33]% City Strength",
                     "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
                 ],
                 "row": 2,
@@ -758,7 +761,7 @@
                 "name": "Universal Suffrage",
                 "uniques": [
                     "Tenet Level 2",
-                    "[-50]% Unhappiness from [Specialists] [in all cities]",
+                    "[-50]% Unhappiness from [Specialists (rounded up to even)] [in all cities]",
                     "[+50]% Golden Age length",
                     "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
                 ],
@@ -947,8 +950,9 @@
                 "uniques": [
                     "Tenet Level 2",
                     "[+3] Movement <for [Great General] units>",
-                    "[+15]% Strength <for [Armored] units> <when attacking>",
+                    "[+15]% Strength <for [Armored] units> <when attacking> <vs [Non-City]>",
                     "[+1] Movement <for [Armored] units>",
+                    "Ignores Zone of Control <for [Armored] units>",
                     "Only available <when number of [[Adopted [Tenet Level 1] Policies] - [Adopted [Tenet Level 2] Policies]] is more than [1]>"
                 ],
                 "row": 2,
@@ -1031,7 +1035,7 @@
                 "name": "Clausewitz's Legacy",
                 "uniques": [
                     "Tenet Level 3",
-                    "[+25]% Strength <when attacking> <for [Military] units> <for [50] turns>",
+                    "[+25]% Strength <when attacking> <for [Melee] units> <for [50] turns>",
                     "Only available <when number of [[Adopted [Tenet Level 2] Policies] - [Adopted [Tenet Level 3] Policies]] is more than [1]>"
                 ],
                 "row": 3,
@@ -1107,7 +1111,7 @@
                 "name": "Patriotic War",
                 "uniques": [
                     "Tenet Level 1",
-                    "[+15]% Strength <for [Military] units> <when attacking> <when fighting in [Friendly Land] tiles>"
+                    "[+15]% Strength <for [Melee] units> <when attacking> <when fighting in [Friendly Land] tiles>"
                 ],
                 "row": 1,
                 "column": 4
@@ -1223,6 +1227,7 @@
                 "uniques": [
                     "Tenet Level 3",
                     "[+50]% yields from trade routes within your civilization",
+                    "Gain a free [Courthouse] [in this city] <upon acquiring a city>",
                     "Only available <when number of [[Adopted [Tenet Level 2] Policies] - [Adopted [Tenet Level 3] Policies]] is more than [1]>"
                 ],
                 "row": 3,
@@ -1234,6 +1239,7 @@
                     "Tenet Level 3",
                     "Free [Great Engineer] appears",
                     "Free [Great Scientist] appears",
+                    "Units that can speed up construction of a building can also speed up construction of spaceship parts",
                     "Only available <when number of [[Adopted [Tenet Level 2] Policies] - [Adopted [Tenet Level 3] Policies]] is more than [1]>"
                 ],
                 "row": 3,

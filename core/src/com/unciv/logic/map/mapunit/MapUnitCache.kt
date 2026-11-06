@@ -79,7 +79,7 @@ class MapUnitCache(private val mapUnit: MapUnit) {
         allTilesCosts1 = mapUnit.hasUnique(UniqueType.AllTilesCost1Move)
         canPassThroughImpassableTiles = mapUnit.hasUnique(UniqueType.CanPassImpassable)
         ignoresTerrainCost = mapUnit.hasUnique(UniqueType.IgnoresTerrainCost)
-        ignoresZoneOfControl = mapUnit.hasUnique(UniqueType.IgnoresZOC)
+        ignoresZoneOfControl = mapUnit.hasUnique(UniqueType.IgnoresZOC, checkCivInfoUniques = true)
         roughTerrainPenalty = mapUnit.hasUnique(UniqueType.RoughTerrainPenalty)
         cannotMove = mapUnit.hasUnique(UniqueType.CannotMove) || mapUnit.baseUnit.movement == 0
         canMoveOnWater = mapUnit.hasUnique(UniqueType.CanMoveOnWater)

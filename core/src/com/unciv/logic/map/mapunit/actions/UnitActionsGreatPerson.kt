@@ -8,6 +8,7 @@ import com.unciv.models.UnitAction
 import com.unciv.models.UnitActionType
 import com.unciv.models.ruleset.Building
 import com.unciv.models.ruleset.unique.UniqueType
+import com.unciv.models.ruleset.unit.BaseUnit
 import com.unciv.models.translations.tr
 import com.unciv.ui.components.extensions.toPercent
 import kotlin.math.min
@@ -77,7 +78,11 @@ object UnitActionsGreatPerson {
 
             val cityConstructions = tile.getCity()!!.cityConstructions
             val currentName = cityConstructions.currentConstructionName() // Once: the queue can change between two reads
-            val canHurryConstruction = cityConstructions.getConstruction(currentName) is Building
+            val currentConstruction = cityConstructions.getConstruction(currentName)
+            // CvUnit.cpp:7417-7437: units in production can only be hurried if they are spaceship parts and a policy allows it
+            val canHurryConstruction = (currentConstruction is Building
+                    || currentConstruction is BaseUnit && currentConstruction.hasUnique(UniqueType.SpaceshipPart)
+                        && unit.civ.hasUnique(UniqueType.CanSpeedupSpaceshipPartConstruction))
                 && cityConstructions.canBeHurried()
 
             //http://civilization.wikia.com/wiki/Great_engineer_(Civ5)

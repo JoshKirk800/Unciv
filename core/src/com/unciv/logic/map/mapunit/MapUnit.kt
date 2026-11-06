@@ -1064,6 +1064,8 @@ class MapUnit : IsPartOfGameInfoSerialization {
         }
 
         updateVisibleTiles(true, currentTile.position)
+
+        BarbarianConversion.convertAdjacentBarbarians(this)
     }
 
     fun putInTile(tile: Tile) {
@@ -1105,7 +1107,8 @@ class MapUnit : IsPartOfGameInfoSerialization {
             movement.clearPathfindingCache()
     }
 
-    private fun clearEncampment(tile: Tile) {
+    /** @param withReward `false` if the unit did not conquer the camp but only took over the Barbarians in it: nothing is earned then (CvBeliefHelpers::ConvertBarbarianUnit) */
+    internal fun clearEncampment(tile: Tile, withReward: Boolean = true) {
         // Notify City-States that this unit cleared a Barbarian Encampment, required for quests
         // Do this before removing the improvement, otherwise removeImprovement would obsolete the quest
         civ.gameInfo.getAliveCityStates()
@@ -1113,6 +1116,7 @@ class MapUnit : IsPartOfGameInfoSerialization {
 
         tile.addArchaeologyRecord(ArtifactClasses.BarbarianCamp, civ)
         tile.removeImprovement()
+        if (!withReward) return
 
         var goldGained = civ.getDifficulty().clearBarbarianCampReward.toFloat()
 

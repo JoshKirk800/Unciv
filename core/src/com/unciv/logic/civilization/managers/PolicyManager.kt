@@ -329,6 +329,8 @@ class PolicyManager : IsPartOfGameInfoSerialization {
             UniqueTriggerActivation.triggerUnique(unique, civInfo, triggerNotificationText = triggerNotificationText)
         }
 
+        civInfo.religionManager.checkReformationBelief() // a policy with "bonus Reformation belief"
+
         civInfo.cache.updateCivResources()
 
         // This ALSO has the side-effect of updating the CivInfo statForNextTurn so we don't need to call it explicitly
