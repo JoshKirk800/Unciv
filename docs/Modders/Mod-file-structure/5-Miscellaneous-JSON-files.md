@@ -195,6 +195,7 @@ The file can have the following attributes, not including the values Unciv sets 
 | cityStateTypesToRemove | List    | empty   | List of Citystate Types or "All" to remove (isBaseRuleset=false only).                                                                                                              |
 | difficultiesToRemove   | List    | empty   | List of Difficulties or "All" to remove (isBaseRuleset=false only).                                                                                                                 |
 | eventsToRemove         | List    | empty   | List of List of Events or "All" to remove (isBaseRuleset=false only).                                                                                                               |
+| greatWorksToRemove     | List    | empty   | List of [Great Works](2-Civilization-related-JSON-files.md#greatworksjson) or "All" to remove (isBaseRuleset=false only).                                                           |
 | improvementsToRemove   | List    | empty   | List of List of Tile Improvements or [improvementFilter](../Unique-parameters.md#improvementFilter) to remove (isBaseRuleset=false only).                                           |
 | nationsToRemove        | List    | empty   | List of [Nations](2-Civilization-related-JSON-files.md#nationsjson) or [nationFilter](../Unique-parameters.md#nationfilter) to remove (isBaseRuleset=false only)                    |
 | personalitiesToRemove  | List    | empty   | List of Leader Personalities or "All" to remove (isBaseRuleset=false only).                                                                                                         |
@@ -290,6 +291,17 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | maxImprovementTechErasForward            | Int    | None                          | [^S]  |
 | goldGiftMultiplier                       | Float  | 1                             | [^T]  |
 | goldGiftTradeMultiplier                  | Float  | 0.8                           | [^U]  |
+| scoreFromGreatWorks                      | Int    | 0                             | Score for each Great Work. Brave New World uses 4 |
+| greatWorkBaseCulture                     | Int    | 2                             | Culture each Great Work gives its city, before bonuses (see the unique `[stats] from each Great Work`) |
+| tradeRouteBaseGold                       | Float  | 1                             | Gold a trade route is worth before additions, for both ends. See the unique `Can establish trade routes` |
+| tradeRouteCityGoldDivisor                | Int    | 20                            | Each end of an international route adds the gold of the city at the other end divided by this |
+| tradeRouteGoldPerDifferentResource       | Float  | 0.5                           | Gold per resource of the other civilization that the route brings that the origin does not have |
+| tradeRouteSeaBonusPercent                | Int    | 100                           | Percent more gold on routes by water |
+| tradeRouteRiverBonusPercent              | Int    | 25                            | Percent more gold on routes over land between cities on a river |
+| tradeRouteTargetTurns                    | Int    | 30                            | A route lasts the whole number of round trips that comes closest to this many turns, but at least two |
+| tradeRoutePlunderGold                    | Int    | 100                           | Gold for plundering a route, more for one by water |
+| tradeRouteDomesticBaseYield              | Float  | 3                             | Food or production of a route to a city of the same civilization |
+| tradeRouteDomesticYieldPerEra            | Float  | 0.5                           | Added to the yield of a domestic route for every era of the destination civilization |
 | goldGiftDegradationMultiplier            | Float  | 1.0                           | [^V]  |
 
 Legend:

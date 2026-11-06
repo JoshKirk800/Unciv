@@ -5,6 +5,7 @@ import com.unciv.Constants
 import com.unciv.UncivGame
 import com.unciv.logic.automation.civilization.NextTurnAutomation
 import com.unciv.logic.city.City
+import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.civilization.*
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
 import com.unciv.logic.civilization.diplomacy.DiplomaticModifiers
@@ -534,6 +535,25 @@ object UniqueTriggerActivation {
                     if (civInfo.isAI() || UncivGame.Current.worldScreen?.autoPlay?.isAutoPlayingAndFullAutoPlayAI() == true) {
                         NextTurnAutomation.chooseGreatPerson(GameView(civInfo.gameInfo, civInfo).civView)
                     }
+                    true
+                }
+            }
+
+            UniqueType.OneTimeCreateGreatWork -> {
+                if (unit == null || !GreatWorkFunctions.canCreateWork(unit)) return null
+                return { GreatWorkFunctions.createWorkWithUnit(unit) != null }
+            }
+
+            UniqueType.OneTimeGainGreatWork -> {
+                val definition = ruleset.greatWorks[unique.params[0]] ?: return null
+                val type = definition.getSlotType()
+                val slot = relevantCity?.greatWorks?.getFreeSlot(type)
+                    ?: tile?.let { GreatWorkFunctions.getClosestFreeSlot(civInfo, type, it) }
+                    ?: return null
+                return {
+                    GreatWorkFunctions.createWork(civInfo, definition, slot)
+                    if (notification != null)
+                        civInfo.addNotification(notification, slot.city.location, NotificationCategory.General, "StatIcons/Culture")
                     true
                 }
             }
@@ -1172,6 +1192,7 @@ object UniqueTriggerActivation {
                     for (applicableCity in applicableCities) {
                         val buildingsToSell = applicableCity.cityConstructions.getBuiltBuildings().filter {
                             it.matchesFilter(unique.params[0], applicableCity.state) && it.isSellable()
+                                && !applicableCity.greatWorks.holdsWorks(it)
                         }
 
                         for (building in buildingsToSell) applicableCity.sellBuilding(building)

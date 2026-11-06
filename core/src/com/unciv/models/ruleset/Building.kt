@@ -33,6 +33,20 @@ class Building : RulesetStatsObject(), INonPerpetualConstruction {
 
     var greatPersonPoints = Counter<String>()
 
+    /** The ways the Great Works in this building can fit together for a bonus, the first that holds is used (see [GreatWorkSlots][UniqueType.GreatWorkSlots]) */
+    var themingBonuses = ArrayList<ThemingBonus>()
+
+    /** The type of each Great Work slot of this building, in order, from its [GreatWorkSlots][UniqueType.GreatWorkSlots] uniques */
+    @delegate:Transient
+    val greatWorkSlotTypes: List<GreatWorkSlotType> by lazy(::greatWorkSlotTypesProvider)
+
+    @Readonly
+    private fun greatWorkSlotTypesProvider(): List<GreatWorkSlotType> = getMatchingUniques(UniqueType.GreatWorkSlots, GameContext.IgnoreConditionals)
+        .flatMap { unique ->
+            val type = GreatWorkSlotType.fromLabel(unique.params[1]) ?: return@flatMap emptyList()
+            (1..unique.params[0].toInt()).map { type }
+        }.toList()
+
     /** Extra cost percentage when purchasing */
     override var hurryCostModifier = 0
     var isWonder = false

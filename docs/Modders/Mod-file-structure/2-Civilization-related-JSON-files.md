@@ -46,7 +46,44 @@ Each building has the following structure:
 | percentStatBonus                                      | Object          | none     | Percentual bonus for stats provided by the building. Same format as [specialized stats](3-Map-related-JSON-files.md#specialized-stats) (numbers are in percent. i.e. `[30]` represents 30% __bonus__ to a stat)              |
 | greatPersonPoints                                     | Object          | none     | Great person points by this building generated per turn. Valid keys are the names of units (Great Scientist, Warrior, etc.), valid values are Integers                                                                       |
 | specialistSlots                                       | Object          | none     | Specialist slots provided by this building. Valid keys are the names of specialists (as defined in [Specialists.json](#specialistsjson)), valid values are Integers, the amount of slots provided for this specialist        |
+| themingBonuses                                        | List of Objects | empty    | The ways the Great Works in this building can fit together for a bonus, see [Theming bonuses](#theming-bonuses). Slots for Great Works are given with the unique `Has [amount] [Great Work slot type] Great Work slots` |
 | civilopediaText                                       | List            | empty    | See [civilopediaText chapter](5-Miscellaneous-JSON-files.md#civilopedia-text)                                                                                                                                                |
+
+## GreatWorks.json
+
+This file contains the Great Works: the works of art, writing and music that Great People create, the artifacts that archaeologists dig up, and a few that come with buildings.
+A work that exists in a game is placed in one of the Great Work slots of a building, which a building gets from the unique `Has [amount] [Art/Artifact|Literature|Music] Great Work slots`.
+Each Great Work gives its city culture (see `greatWorkBaseCulture` in [ModConstants](5-Miscellaneous-JSON-files.md#modoptionsjson)).
+
+| Attribute      | Type    | Default  | Notes                                                                                                                                                                                            |
+|----------------|---------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| name           | String  | Required | Must be unique                                                                                                                                                                                   |
+| type           | Enum    | `Art`    | One of `Art`, `Artifact`, `Literature`, `Music`. `Art` and `Artifact` are kept in the same kind of slot (`Art/Artifact`), `Literature` and `Music` each have their own                           |
+| creator        | String  | none     | The name of the Great Person that creates this work. It is a name from a [unit name group](4-Unit-related-JSON-files.md#unitnamegroupsjson), and a unit with that name and the `Create a Great Work` unique can create it |
+| era            | String  | none     | For artifacts: the era this artifact is specific to. Artifacts without an era are used for the eras that have none of their own                                                                   |
+| artifactClass  | String  | none     | For artifacts: what kind of find it is. One of `Ranged Battle`, `Melee Battle`, `Barbarian Camp`, `Ancient Ruin`, `Razed City`                                                                   |
+| archaeologyOnly| Boolean | false    | A work that only archaeologists can find, which no Great Person creates                                                                                                                          |
+| quote          | String  | none     | A quote to show with the work                                                                                                                                                                    |
+
+### Theming bonuses
+
+A building can give a bonus when all its Great Work slots are filled with works that fit together, in the `themingBonuses` list of [Buildings.json](#buildingsjson).
+The bonuses of a building are tried in the order they are listed, the first one whose requirements are all met applies.
+The bonus is added to the culture of the city, and is changed by the uniques `[relativeAmount]% Theming bonuses [cityFilter]`.
+
+| Attribute              | Type    | Default  | Notes                                                                                |
+|------------------------|---------|----------|--------------------------------------------------------------------------------------|
+| name                   | String  | Required | The name of the bonus. `[era]` and `[civ]` stand for the era and the civilization the works have in common |
+| bonus                  | Integer | 0        | Culture the bonus gives                                                              |
+| sameEra                | Boolean | false    | All works are from the same era                                                      |
+| uniqueEras             | Boolean | false    | No two works are from the same era                                                   |
+| mustBeArt              | Boolean | false    | None of the works is an artifact                                                     |
+| mustBeArtifact         | Boolean | false    | None of the works is art                                                             |
+| mustBeEqualArtArtifact | Boolean | false    | There are as many works of art as artifacts                                          |
+| requiresOwner          | Boolean | false    | All works are attributed to the civilization the city belongs to                     |
+| requiresAnyButOwner    | Boolean | false    | No work is attributed to the civilization the city belongs to                        |
+| requiresSamePlayer     | Boolean | false    | All works are attributed to the same civilization                                    |
+| requiresUniquePlayers  | Boolean | false    | No two works are attributed to the same civilization                                 |
 
 ## Nations.json
 

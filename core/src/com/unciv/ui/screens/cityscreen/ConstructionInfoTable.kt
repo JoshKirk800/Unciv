@@ -180,6 +180,7 @@ class ConstructionInfoTable(val cityScreen: CityScreen) : Table() {
 
                 val isFree = cityScreen.hasFreeBuilding(construction)
                 val enableSell = !isFree &&
+                    !cityView.holdsGreatWorks(construction) &&
                     !cityView.isPuppet() &&
                     cityScreen.canChangeState &&
                     (!cityView.hasSoldBuildingThisTurn() || cityView.isGodModeEnabled())

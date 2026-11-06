@@ -125,6 +125,14 @@
       },
       "description": "List of Tile Resources or resourceFilter to remove (isBaseRuleset=false only)."
     },
+    "greatWorksToRemove": {
+      "title": "Great Works To Remove",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of Great Works or \"All\" to remove (isBaseRuleset=false only)."
+    },
     "ruinRewardsToRemove": {
       "title": "Ruin Rewards To Remove",
       "type": "array",

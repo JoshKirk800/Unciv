@@ -130,6 +130,7 @@ class ModConstants {
     // Score value of things
     var scoreFromPopulation = 3 // 4 in BNW
     var scoreFromWonders = 40 // 25 in BNW
+    var scoreFromGreatWorks = 0 // 4 in BNW
 
     // Trade routes (CvTradeClasses.cpp and GlobalDefines.xml; the values are those of Brave New World)
     // Gold of a route for its origin: base + (the gold of the origin city divided by this + the same of the destination city) + bonuses,
@@ -146,6 +147,9 @@ class ModConstants {
     // Routes within the own civilization: food or production in the destination city, base + this per era of the destination civilization
     var tradeRouteDomesticBaseYield = 3f
     var tradeRouteDomesticYieldPerEra = 0.5f
+
+    // Great Works: culture that each one gives its city, before the bonuses of policies
+    var greatWorkBaseCulture = 2
 
     // UI: If set >= 0, ImprovementPicker will silently skip improvements whose tech requirement is more advanced than your current Era + this
     var maxImprovementTechErasForward = -1

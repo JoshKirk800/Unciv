@@ -100,6 +100,29 @@
         },
         "description": "Which Great Person Points this building generates per turn. Key must be name of Great Person unit."
       },
+      "themingBonuses": {
+        "type": "array",
+        "title": "Theming Bonuses",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string", "description": "The name of the bonus. [era] and [civ] stand for the era and the civilization the works have in common." },
+            "bonus": { "type": "integer", "description": "Culture the bonus gives." },
+            "sameEra": { "type": "boolean", "description": "All works are from the same era." },
+            "uniqueEras": { "type": "boolean", "description": "No two works are from the same era." },
+            "mustBeArt": { "type": "boolean", "description": "None of the works is an artifact." },
+            "mustBeArtifact": { "type": "boolean", "description": "None of the works is art." },
+            "mustBeEqualArtArtifact": { "type": "boolean", "description": "There are as many works of art as artifacts." },
+            "requiresOwner": { "type": "boolean", "description": "All works are attributed to the civilization the city belongs to." },
+            "requiresAnyButOwner": { "type": "boolean", "description": "No work is attributed to the civilization the city belongs to." },
+            "requiresSamePlayer": { "type": "boolean", "description": "All works are attributed to the same civilization." },
+            "requiresUniquePlayers": { "type": "boolean", "description": "No two works are attributed to the same civilization." }
+          },
+          "required": ["name"],
+          "additionalProperties": false
+        },
+        "description": "The ways the Great Works in this building can fit together for a bonus. The first one whose requirements are all met applies."
+      },
       "hurryCostModifier": {
         "type": "number",
         "title": "Hurry Cost Modifier",

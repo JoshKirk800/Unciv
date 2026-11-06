@@ -14,6 +14,7 @@ import com.unciv.models.ruleset.Belief
 import com.unciv.models.ruleset.Building
 import com.unciv.models.ruleset.Event
 import com.unciv.models.ruleset.GlobalUniques
+import com.unciv.models.ruleset.GreatWork
 import com.unciv.models.ruleset.PolicyBranch
 import com.unciv.models.ruleset.Quest
 import com.unciv.models.ruleset.RuinReward
@@ -737,6 +738,7 @@ object TranslationFileWriter {
                 "link", "icon", "extraImage", "color",  // FormattedLine
                 "RuinReward.uniques", "TerrainType.name",
                 "CityStateType.friendBonusUniques", "CityStateType.allyBonusUniques",
+                "GreatWork.creator", "GreatWork.era", "GreatWork.artifactClass",
                 "Era.citySound",
                 "keyShortcut",
                 "originRuleset"
@@ -820,6 +822,7 @@ object TranslationFileWriter {
                     "Eras" -> emptyArray<Era>().javaClass
                     "Events" -> emptyArray<Event>().javaClass
                     "GlobalUniques" -> GlobalUniques().javaClass
+                    "GreatWorks" -> emptyArray<GreatWork>().javaClass
                     "UnitNameGroups" -> emptyArray<UnitNameGroup>().javaClass
                     "Nations" -> emptyArray<Nation>().javaClass
                     "Personalities" -> emptyArray<Personality>().javaClass

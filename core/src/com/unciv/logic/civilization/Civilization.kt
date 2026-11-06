@@ -967,6 +967,8 @@ class Civilization : IsPartOfGameInfoSerialization {
             .sumOf { city ->
                 city.cityConstructions.getBuiltBuildings().count { it.isWonder }
             }.toDouble()
+        if (modConstants.scoreFromGreatWorks != 0)
+            scoreBreakdown["Great Works"] = modConstants.scoreFromGreatWorks * cities.sumOf { it.greatWorks.getNumWorks() }.toDouble()
         scoreBreakdown["Technologies"] = tech.techsResearched.size * 4.0
         scoreBreakdown["Future Tech"] = tech.repeatingTechsResearched * 10.0
 

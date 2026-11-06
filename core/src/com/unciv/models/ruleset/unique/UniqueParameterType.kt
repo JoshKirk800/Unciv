@@ -591,6 +591,16 @@ enum class UniqueParameterType(
         override fun getKnownValuesForAutocomplete(ruleset: Ruleset) = ruleset.specialists.keys
     },
 
+    /** The kinds of Great Work slots of [GreatWorkSlotType] */
+    GreatWorkSlotType("greatWorkSlotType", "Art/Artifact", "One of `Art/Artifact`, `Literature` or `Music`") {
+        override fun getKnownValuesForAutocomplete(ruleset: Ruleset) = com.unciv.models.ruleset.GreatWorkSlotType.entries.map { it.label }.toSet()
+    },
+
+    /** The name of a work in GreatWorks.json */
+    GreatWorkName("greatWork", "Mona Lisa", "The name of any Great Work") {
+        override fun getKnownValuesForAutocomplete(ruleset: Ruleset) = ruleset.greatWorks.keys
+    },
+
     /** [UniqueType.ConditionalAfterPolicyOrBelief] and others, no central implementation */
     Policy("policy", "Oligarchy", "The name of any policy") {
         override fun getKnownValuesForAutocomplete(ruleset: Ruleset) = ruleset.policies.keys

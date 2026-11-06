@@ -108,6 +108,9 @@ object CivilianUnitAutomation {
         if (unit.hasUnique(UniqueType.PreventSpreadingReligion) || unit.hasUnique(UniqueType.CanRemoveHeresy))
             return ReligiousUnitAutomation.automateInquisitor(unit)
 
+        if (mapUnit.hasUnique(UniqueType.OneTimeCreateGreatWork) && GreatWorkAutomation.automate(mapUnit))
+            return
+
         val isLateGame = isLateGame(unit.civ())
         // Great scientist -> Hurry research if late game
         // Great writer -> Hurry policy  if late game
