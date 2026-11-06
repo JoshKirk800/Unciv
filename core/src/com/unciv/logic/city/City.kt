@@ -21,6 +21,7 @@ import com.unciv.logic.map.mapunit.UnitPromotions
 import com.unciv.logic.map.tile.RoadStatus
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.Counter
+import com.unciv.models.ruleset.ArtifactClasses
 import com.unciv.models.ruleset.Building
 import com.unciv.models.ruleset.tile.TileResource
 import com.unciv.models.ruleset.unique.GameContext
@@ -472,6 +473,9 @@ class City : IsPartOfGameInfoSerialization, INamed {
 
         // Destroy planes stationed in city
         for (airUnit in getCenterTile().airUnits.toList()) airUnit.destroy()
+
+        // What was a city is what archaeologists will find, as the work of its founder and whoever razed it
+        getCenterTile().addArchaeologyRecord(ArtifactClasses.RazedCity, foundingCivObject ?: civ, civ)
 
         // Evacuate spies BEFORE relinquishing tile ownership, because spy lookup uses tile.owningCity
         // to find which city a spy is stationed in (after save/load when the transient city field is null).

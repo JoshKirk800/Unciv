@@ -66,6 +66,8 @@ enum class UniqueType(
     TourismTowardsPercent("[relativeAmount]% Tourism towards civilizations with [tourismRelation]", UniqueTarget.Global,
         docDescription = "Added to the modifier of the tourism of this civilization towards another, which the original reads from the capital. " +
             "For `Common Enemies` the amount is given for every other civilization that both are at war with"),
+    StatsPerEraSinceDig("[stats] for every era since the site of this improvement was formed", UniqueTarget.Improvement,
+        docDescription = "Counts the eras the civilization has gone through since the era of what happened on this tile, see archaeology. Nothing if it is the same era or the tile has no history"),
     StatsFromGreatWorks("[stats] from each Great Work", UniqueTarget.Global,
         docDescription = "Added to the culture a city gets from each of its Great Works (see `greatWorkBaseCulture` in ModConstants), in every city of the civilization"),
     ThemingBonusPercent("[relativeAmount]% Theming bonuses [cityFilter]", UniqueTarget.Global,
@@ -959,11 +961,18 @@ enum class UniqueType(
     OneTimeEnterGoldenAge("Empire enters golden age", UniqueTarget.Triggerable),  // used in Policies, Buildings
     OneTimeEnterGoldenAgeTurns("Empire enters a [positiveAmount]-turn Golden Age", UniqueTarget.Triggerable),
     OneTimeFreeGreatPerson("Free Great Person", UniqueTarget.Triggerable),  // used in Policies, Buildings
+    OneTimeSpawnArchaeologySites("Archaeological sites appear around the world", UniqueTarget.Triggerable,
+        docDescription = "Only once in a game: the first time this is triggered. 5 to 8 sites for each major civilization (see `archaeologySitesPerCivMin` and following in ModConstants) become resources of the ruleset's archaeological site resources, on tiles with a history of battle, ruins, razed cities or camps. " +
+            "Put it on the technology that reveals them"),
+    OneTimeExcavation("Excavate what was found here", UniqueTarget.Triggerable,
+        docDescription = "For the improvement that an archaeologist builds on a site: when it is complete, its civilization chooses between an artifact or writing for a Great Work slot, culture, or a Landmark, and the archaeologist is used up"),
     OneTimeGainTourism("[positiveAmount] Tourism towards all civilizations we have met", UniqueTarget.Triggerable,
         docDescription = "Added to the influence of this civilization on each of them, not changed by modifiers"),
     OneTimeConcertTour("Perform a concert tour: [positiveAmount] times our Tourism towards the civilization whose territory we are in, [positiveAmount]% of that towards each other civilization we have met", UniqueTarget.UnitTriggerable,
         docDescription = "The unit has to be in the territory of another living major civilization. The first amount is made at least 100, " +
             "and is multiplied twice by the game speed, as in the original"),
+    CanExcavate("Can excavate archaeological sites", UniqueTarget.Unit,
+        docDescription = "The unit can dig up sites if it can also build the improvement, and the AI sends it to them. Needed for what its finds are put to"),
     OneTimeCreateGreatWork("Create a Great Work", UniqueTarget.UnitTriggerable,
         docDescription = "The unit creates the Great Work that goes with its name (see `creator` in GreatWorks.json), in a free slot of a city of the civilization. " +
             "The unit must be in or next to one of the civilization's cities. Can only be used by units that have a name from a unit name group"),

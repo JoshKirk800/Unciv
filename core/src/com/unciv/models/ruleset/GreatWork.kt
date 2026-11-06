@@ -58,6 +58,21 @@ object ArtifactClasses {
     const val AncientRuin = "Ancient Ruin"
     const val RazedCity = "Razed City"
     val all = listOf(RangedBattle, MeleeBattle, BarbarianCamp, AncientRuin, RazedCity)
+
+    /** What an archaeological site that holds a writing is called. No artifact belongs to it, the work is chosen when the site is made */
+    const val Writing = "Writing"
+
+    /** Which find a tile remembers when there are several: the higher one wins (a razed city beats a ruin, a ruin a camp, a camp a battle) */
+    @Readonly
+    fun rank(kind: String) = when (kind) {
+        RangedBattle -> 1
+        MeleeBattle -> 2
+        BarbarianCamp -> 3
+        AncientRuin -> 4
+        RazedCity -> 5
+        Writing -> 6
+        else -> 0
+    }
 }
 
 /**

@@ -13,6 +13,7 @@ import com.unciv.logic.civilization.NotificationCategory
 import com.unciv.logic.civilization.NotificationIcon
 import com.unciv.logic.map.BFS
 import com.unciv.logic.map.mapunit.MapUnit
+import com.unciv.logic.map.tile.ArchaeologyFunctions
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.ruleset.Building
 import com.unciv.models.ruleset.IConstruction
@@ -72,7 +73,7 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
 
     private val civUnits = civInfo.units.getCivUnits()
     private val militaryUnits = civUnits.count { it.baseUnit.isMilitary }
-    private val workers = civUnits.count { it.cache.hasUniqueToBuildImprovements}.toFloat()
+    private val workers = civUnits.count { it.cache.hasUniqueToBuildImprovements && !it.hasUnique(UniqueType.CanExcavate) }.toFloat()
     private val cities = civInfo.cities.size
     private val allTechsAreResearched = civInfo.tech.allTechsAreResearched()
 
@@ -121,6 +122,7 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
             addWorkerChoice()
             addWorkBoatChoice()
             addTradeUnitChoice()
+            addArchaeologistChoice()
             addMilitaryUnitChoice()
         }
 
@@ -245,10 +247,21 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
         addChoice(relativeCostEffectiveness, tradeUnits.minBy { it.cost }, modifier.coerceAtLeast(1f))
     }
 
+    /** One archaeologist for every site we can see, which the rejection reasons of the unit (a University in the city) let through */
+    private fun addArchaeologistChoice() {
+        val archaeologists = units
+            .filter { it.hasUnique(UniqueType.CanExcavate) && Automation.allowAutomatedConstruction(GameView(civInfo.gameInfo, civInfo).civView, city, it) }
+            .filterBuildable()
+        if (archaeologists.none()) return
+        val sites = ArchaeologyFunctions.getVisibleSites(civInfo).size
+        val have = civUnits.count { it.hasUnique(UniqueType.CanExcavate) }
+        if (sites > have) addChoice(relativeCostEffectiveness, archaeologists.minBy { it.cost }, (sites - have).coerceAtMost(3).toFloat())
+    }
+
     private fun addWorkerChoice() {
         val workerEquivalents = units
             .filter {
-                it.hasUnique(UniqueType.BuildImprovements)
+                it.hasUnique(UniqueType.BuildImprovements) && !it.hasUnique(UniqueType.CanExcavate)
                         && Automation.allowAutomatedConstruction(GameView(civInfo.gameInfo, civInfo).civView, city, it)
             }.filterBuildable()
         if (workerEquivalents.none()) return // for mods with no worker units

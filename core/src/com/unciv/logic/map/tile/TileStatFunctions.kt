@@ -307,6 +307,12 @@ class TileStatFunctions(val tile: Tile) {
             stats.add(unique.stats)
         }
 
+        improvement.forEachMatchingUnique(UniqueType.StatsPerEraSinceDig, conditionalState) { unique ->
+            val siteEra = tile.archaeologyRecord?.era?.let { tile.ruleset.eras[it] } ?: return@forEachMatchingUnique
+            val erasSince = observingCiv.getEraNumber() - siteEra.eraNumber
+            if (erasSince > 0) stats.add(unique.stats.times(erasSince.toFloat()))
+        }
+
         improvement.forEachMatchingUnique(UniqueType.ImprovementStatsForAdjacencies, conditionalState) { unique ->
             val adjacent = unique.params[1]
             val numberOfBonuses = tile.neighbors.count {

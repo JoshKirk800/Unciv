@@ -157,11 +157,11 @@ class TechManager : IsPartOfGameInfoSerialization {
     @Readonly fun isResearched(techName: String): Boolean { return techsResearched.contains(techName) }
     @Readonly fun isResearched(construction: INonPerpetualConstruction): Boolean = construction.requiredTechs().all{ requiredTech -> isResearched(requiredTech) }
 
-    /** resources which need no research count as researched */
+    /** resources which need no research count as researched. Those that are revealed by a policy are seen once it is adopted */
     @Readonly
     fun isRevealed(resource: TileResource): Boolean {
         val revealedBy = resource.revealedBy ?: return true
-        return isResearched(revealedBy)
+        return isResearched(revealedBy) || civInfo.policies.isAdopted(revealedBy)
     }
 
     @Readonly fun isObsolete(unit: BaseUnit): Boolean = unit.techsThatObsoleteThis().any { obsoleteTech -> isResearched(obsoleteTech) }

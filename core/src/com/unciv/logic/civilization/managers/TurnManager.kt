@@ -10,6 +10,7 @@ import com.unciv.logic.civilization.*
 import com.unciv.logic.civilization.diplomacy.DiplomacyTurnManager.nextTurn
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.mapunit.UnitTurnManager
+import com.unciv.logic.map.tile.ArchaeologyFunctions
 import com.unciv.logic.map.tile.Tile
 import com.unciv.logic.trade.TradeEvaluation
 import com.unciv.models.ruleset.unique.UniqueTriggerActivation
@@ -63,6 +64,7 @@ class TurnManager(val civInfo: Civilization) {
         civInfo.cache.updateViewableTiles() // adds explored tiles so that the units will be able to perform automated actions better
         civInfo.cache.updateCitiesConnectedToCapital()
         civInfo.tradeRoutes.startTurn()
+        if (civInfo.isMajorCiv) ArchaeologyFunctions.resolvePendingDigs(civInfo)
         startTurnFlags()
         updateRevolts()
 

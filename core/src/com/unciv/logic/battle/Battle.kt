@@ -10,6 +10,7 @@ import com.unciv.logic.civilization.*
 import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.UnitActionType
+import com.unciv.models.ruleset.ArtifactClasses
 import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unique.Unique
 import com.unciv.models.ruleset.unique.UniqueTriggerActivation
@@ -102,9 +103,19 @@ object Battle {
         }
     }
 
+    /** Fights between units leave something for archaeologists to find on the tile of the defender, those against cities and in the air do not */
+    private fun recordForArchaeology(attacker: ICombatant, defender: ICombatant, tile: Tile) {
+        if (defender !is MapUnitCombatant) return
+        val isAirAttack = attacker is MapUnitCombatant && attacker.unit.baseUnit.isAirUnit()
+        if (isAirAttack || attacker.getCivInfo().isBarbarian && defender.getCivInfo().isBarbarian) return
+        val kind = if (attacker.isRanged()) ArtifactClasses.RangedBattle else ArtifactClasses.MeleeBattle
+        tile.addArchaeologyRecord(kind, attacker.getCivInfo(), defender.getCivInfo())
+    }
+
     fun attack(attacker: ICombatant, defender: ICombatant): DamageDealt {
         debug("%s %s attacked %s %s", attacker.getCivInfo().civID, attacker.getName(), defender.getCivInfo().civID, defender.getName())
         val attackedTile = defender.getTile()
+        recordForArchaeology(attacker, defender, attackedTile)
         if (attacker is MapUnitCombatant) {
             attacker.unit.attacksSinceTurnStart.add(attackedTile.position)
         } else {

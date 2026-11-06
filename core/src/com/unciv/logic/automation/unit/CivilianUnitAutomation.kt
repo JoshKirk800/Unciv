@@ -58,6 +58,9 @@ object CivilianUnitAutomation {
         if (mapUnit.hasUnique(UniqueType.EstablishTradeRoutes))
             return TradeRouteAutomation.automateTradeUnit(mapUnit)
 
+        if (mapUnit.hasUnique(UniqueType.CanExcavate) && ArchaeologistAutomation.automate(mapUnit))
+            return
+
         if (unit.isAutomatingRoadConnection())
             return mapUnit.civ.getWorkerAutomation().roadToAutomation.automateConnectRoad(unit, dangerousTiles)
 

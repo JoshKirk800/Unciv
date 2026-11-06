@@ -40,9 +40,9 @@ object GreatWorkFunctions {
         return definition.getSlotType() == slot.getType()
     }
 
-    /** Makes a new work of [definition], attributed to [civ] and the era it is in now, and puts it in [slot] */
-    fun createWork(civ: Civilization, definition: GreatWork, slot: GreatWorkSlot): GreatWorkInstance {
-        val instance = GreatWorkInstance(definition.name, civ.civName, civ.getEra().name, civ.gameInfo.turns)
+    /** Makes a new work of [definition], attributed to [creatorCiv] and the [era], by default of [civ] and the era it is in now, and puts it in [slot] */
+    fun createWork(civ: Civilization, definition: GreatWork, slot: GreatWorkSlot, creatorCiv: String = civ.civName, era: String = civ.getEra().name): GreatWorkInstance {
+        val instance = GreatWorkInstance(definition.name, creatorCiv, era, civ.gameInfo.turns)
         slot.city.greatWorks.place(instance, slot)
         slot.city.cityStats.update()
         return instance

@@ -100,7 +100,7 @@ Each resource has the following structure:
 | terrainsCanBeFoundOn | List of Strings | empty    | Terrains that this resource can be found on. Must be in [Terrains.json](#terrainsjson)                                                      |
 | [`<stats>`](#stats)  | Integer         | 0        | Per-turn bonus yield for the tile                                                                                                           |
 | improvementStats     | Object          | none     | The additional yield when improved, see [specialized stats](3-Map-related-JSON-files.md#specialized-stats)                                  |
-| revealedBy           | String          | none     | The technology name required to see, work and improve this resource                                                                         |
+| revealedBy           | String          | none     | The technology (or policy) name required to see, work and improve this resource                                                              
 | improvedBy           | List of strings | empty    | The improvements required for obtaining this resource. Must be in [TileImprovements.json](#tileimprovementsjson)                            |
 | improvement          | String          | none     | The improvement required to obtain this resource. Must be in [TileImprovements.json](#tileimprovementsjson) (redundant due to `improvedBy`) |
 | unique               | List of Strings | empty    | List of [unique abilities](../uniques.md) this resource has                                                                                 |

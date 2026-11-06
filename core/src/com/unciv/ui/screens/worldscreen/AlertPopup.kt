@@ -18,6 +18,8 @@ import com.unciv.logic.civilization.PopupAlert
 import com.unciv.logic.civilization.diplomacy.*
 import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.mapunit.MapUnit
+import com.unciv.logic.map.tile.ArchaeologyChoice
+import com.unciv.logic.map.tile.ArchaeologyFunctions
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.models.translations.fillPlaceholders
 import com.unciv.models.translations.tr
@@ -126,6 +128,7 @@ class AlertPopup(
             AlertType.WonderBuilt -> addWonderBuilt()
             AlertType.TechResearched -> addTechResearched()
             AlertType.GoldenAge -> addGoldenAge()
+            AlertType.ArchaeologyChoice -> shouldOpen = addArchaeologyChoice()
             AlertType.StartIntro -> addStartIntro()
             AlertType.RecapturedCivilian -> shouldOpen = addRecapturedCivilian()
             AlertType.GameHasBeenWon -> addGameHasBeenWon()
@@ -136,6 +139,30 @@ class AlertPopup(
     }
 
     //region AlertType handlers
+
+    private fun addArchaeologyChoice(): Boolean {
+        val position = popupAlert.value.split(',').map { it.toInt() }
+        val tile = gameInfo.tileMap[position[0], position[1]]
+        val record = tile.archaeologyRecord
+        if (record == null || !ArchaeologyFunctions.hasCompletedDig(tile)) return false
+        val unit = tile.getUnits().firstOrNull { it.civ == viewingCiv && it.hasUnique(UniqueType.CanExcavate) }
+
+        addGoodSizedLabel("The excavation has found: [${record.kind}], from the [${record.era.removeSuffix(" era")}] era").row()
+        for (choice in ArchaeologyFunctions.getChoices(viewingCiv, tile)) {
+            val text = when (choice) {
+                ArchaeologyChoice.Landmark -> "Build a Landmark"
+                ArchaeologyChoice.ArtifactOfFirst -> "Take the artifact, attributed to [${record.civ1}]"
+                ArchaeologyChoice.ArtifactOfSecond -> "Take the artifact, attributed to [${record.civ2}]"
+                ArchaeologyChoice.Writing -> "Take the writing [${record.work}]"
+                ArchaeologyChoice.CultureBoost -> "Gain [${viewingCiv.policies.getCultureFromGreatWriter()}] Culture"
+            }
+            addCloseButton(text) {
+                ArchaeologyFunctions.execute(viewingCiv, tile, choice, unit)
+                worldScreen.shouldUpdate = true
+            }.row()
+        }
+        return true
+    }
 
     private fun addBorderConflict(): Boolean {
         val civInfo = getCiv(popupAlert.value)
