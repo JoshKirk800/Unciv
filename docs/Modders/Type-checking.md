@@ -79,6 +79,10 @@ If you'd rather not use the VSCode extension, it is possible enable the schemas 
         "url": "https://raw.githubusercontent.com/yairm210/Unciv/master/docs/Modders/schemas/Quests.schema.json"
     },
     {
+        "fileMatch": ["jsons/GreatWorks.json"],
+        "url": "https://raw.githubusercontent.com/yairm210/Unciv/master/docs/Modders/schemas/GreatWorks.schema.json"
+    },
+    {
         "fileMatch": ["jsons/Religions.json"],
         "url": "https://raw.githubusercontent.com/yairm210/Unciv/master/docs/Modders/schemas/Religions.schema.json"
     },

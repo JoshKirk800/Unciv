@@ -730,6 +730,7 @@ class CityConstructions : IsPartOfGameInfoSerialization {
     fun removeBuilding(building: Building) {
         builtBuildingObjects = builtBuildingObjects.withoutItem(building)
         builtBuildings.remove(building.name)
+        city.greatWorks.onBuildingRemoved(building)
         
         if (building.hasCreateOneImprovementUnique()){
             val improvement = building.getImprovementToCreate(city.getRuleset(), city.civ)!!

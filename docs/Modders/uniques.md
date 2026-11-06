@@ -64,6 +64,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 ??? example  "Free Great Person"
 	Applicable to: Triggerable
 
+??? example  "Gain the [greatWork] Great Work"
+	The work is placed in a free slot of the city that triggers it, or else of the nearest city that has one. Nothing happens if there is none
+
+	Example: "Gain the [Mona Lisa] Great Work"
+
+	Applicable to: Triggerable
+
 ??? example  "[amount] population [cityFilter]"
 	Example: "[3] population [in all cities]"
 
@@ -303,6 +310,11 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
     Uniques that have immediate, one-time effects on a unit.They can be added to units (on unit, unit type, or promotion) to grant them the ability to trigger this effect as an action, which can be modified with UnitActionModifier and UnitTriggerCondition conditionals.
 
+??? example  "Create a Great Work"
+	The unit creates the Great Work that goes with its name (see `creator` in GreatWorks.json), in a free slot of a city of the civilization. The unit must be in or next to one of the civilization's cities. Can only be used by units that have a name from a unit name group
+
+	Applicable to: UnitTriggerable
+
 ??? example  "[unitTriggerTarget] heals [positiveAmount] HP"
 	Example: "[This Unit] heals [3] HP"
 
@@ -436,6 +448,20 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 	Example: "[+1 Gold, +2 Production] from each Trade Route"
 
 	Applicable to: Global, FollowerBelief
+
+??? example  "[stats] from each Great Work"
+	Added to the culture a city gets from each of its Great Works (see `greatWorkBaseCulture` in ModConstants), in every city of the civilization
+
+	Example: "[+1 Gold, +2 Production] from each Great Work"
+
+	Applicable to: Global
+
+??? example  "[relativeAmount]% Theming bonuses [cityFilter]"
+	Every such unique multiplies the theming bonuses of the matching cities by 100% plus its amount, one after the other
+
+	Example: "[+20]% Theming bonuses [in all cities]"
+
+	Applicable to: Global
 
 ??? example  "[relativeAmount]% [stat]"
 	Multiple bonuses stack additively: +50% + +50% = +100%
@@ -1959,6 +1985,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 	Applicable to: Building
 
 ??? example  "Connects trade routes over water"
+	Applicable to: Building
+
+??? example  "Has [positiveAmount] [greatWorkSlotType] Great Work slots"
+	Great Works of that type can be placed in the building, one in each slot. Several of these uniques add their slots together, in the order they are written
+
+	Example: "Has [3] [Art/Artifact] Great Work slots"
+
 	Applicable to: Building
 
 ??? example  "Allows [stat] trade routes between your cities"
@@ -4536,6 +4569,8 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 *[event]: The name of any event.
 *[foundingOrEnhancing]: `founding` or `enhancing`.
 *[fraction]: Indicates a fractional number, which can be negative.
+*[greatWork]: The name of any Great Work.
+*[greatWorkSlotType]: One of `Art/Artifact`, `Literature` or `Music`.
 *[improvementName]: The name of any improvement excluding 'Cancel improvement order'
 *[leaderTitle]: Provides a leader title that includes the leader's name in parameters.
 *[modFilter]: A Mod name, case-sensitive _or_ a simple wildcard filter beginning and ending in an Asterisk, case-insensitive.

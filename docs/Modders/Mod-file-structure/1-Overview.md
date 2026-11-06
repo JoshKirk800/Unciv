@@ -11,6 +11,7 @@ The JSON files that make up mods can have many different fields, and as not all 
     -   [Beliefs.json](2-Civilization-related-JSON-files.md#beliefsjson)
     -   [Buildings.json](2-Civilization-related-JSON-files.md#buildingsjson)
     -   [CityStateTypes.json](2-Civilization-related-JSON-files.md#citystatetypesjson)
+    -   [GreatWorks.json](2-Civilization-related-JSON-files.md#greatworksjson)
     -   [Nations.json](2-Civilization-related-JSON-files.md#nationsjson)
     -   [Policies.json](2-Civilization-related-JSON-files.md#policiesjson)
     -   [Quests.json](2-Civilization-related-JSON-files.md#questsjson)

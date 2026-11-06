@@ -53,6 +53,10 @@ enum class UniqueType(
     // This is a doozy
     StatsFromObject("[stats] from every [tileFilter/specialist/buildingFilter]", UniqueTarget.Global, UniqueTarget.FollowerBelief),
     StatsFromTradeRoute("[stats] from each Trade Route", UniqueTarget.Global, UniqueTarget.FollowerBelief),
+    StatsFromGreatWorks("[stats] from each Great Work", UniqueTarget.Global,
+        docDescription = "Added to the culture a city gets from each of its Great Works (see `greatWorkBaseCulture` in ModConstants), in every city of the civilization"),
+    ThemingBonusPercent("[relativeAmount]% Theming bonuses [cityFilter]", UniqueTarget.Global,
+        docDescription = "Every such unique multiplies the theming bonuses of the matching cities by 100% plus its amount, one after the other"),
     StatsFromGlobalCitiesFollowingReligion("[stats] for each global city following this religion", UniqueTarget.FounderBelief),
     StatsFromGlobalFollowers("[stats] from every [positiveAmount] global followers [cityFilter]", UniqueTarget.FounderBelief),
 
@@ -415,6 +419,8 @@ enum class UniqueType(
 
     RemovesAnnexUnhappiness("Removes extra unhappiness from annexed cities", UniqueTarget.Building),
     ConnectTradeRoutes("Connects trade routes over water", UniqueTarget.Building),
+    GreatWorkSlots("Has [positiveAmount] [greatWorkSlotType] Great Work slots", UniqueTarget.Building,
+        docDescription = "Great Works of that type can be placed in the building, one in each slot. Several of these uniques add their slots together, in the order they are written"),
     AllowsDomesticTradeRoutes("Allows [stat] trade routes between your cities", UniqueTarget.Building,
         docDescription = "In this city, food or production routes to other cities of the same civilization can start. Only Food and Production are meaningful for [stat]."),
     GainBuildingWhereBuildable("Automatically built in all cities where it is buildable", UniqueTarget.Building),
@@ -940,6 +946,11 @@ enum class UniqueType(
     OneTimeEnterGoldenAge("Empire enters golden age", UniqueTarget.Triggerable),  // used in Policies, Buildings
     OneTimeEnterGoldenAgeTurns("Empire enters a [positiveAmount]-turn Golden Age", UniqueTarget.Triggerable),
     OneTimeFreeGreatPerson("Free Great Person", UniqueTarget.Triggerable),  // used in Policies, Buildings
+    OneTimeCreateGreatWork("Create a Great Work", UniqueTarget.UnitTriggerable,
+        docDescription = "The unit creates the Great Work that goes with its name (see `creator` in GreatWorks.json), in a free slot of a city of the civilization. " +
+            "The unit must be in or next to one of the civilization's cities. Can only be used by units that have a name from a unit name group"),
+    OneTimeGainGreatWork("Gain the [greatWork] Great Work", UniqueTarget.Triggerable,
+        docDescription = "The work is placed in a free slot of the city that triggers it, or else of the nearest city that has one. Nothing happens if there is none"),
     OneTimeGainPopulation("[amount] population [cityFilter]", UniqueTarget.Triggerable),  // used in CN tower
     OneTimeGainPopulationRandomCity("[amount] population in a random city", UniqueTarget.Triggerable),
     OneTimeDiscoverTech("Discover [tech]", UniqueTarget.Triggerable),

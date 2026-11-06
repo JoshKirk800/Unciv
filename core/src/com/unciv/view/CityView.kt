@@ -111,6 +111,7 @@ class CityView(city: City,
     @Readonly fun getConversionRate(statConversion: PerpetualConstruction.StatConversion): Int = statConversion.getConversionRate(city)
     @Readonly fun getGoldForSellingBuilding(buildingName: String): Int = city.getGoldForSellingBuilding(buildingName)
     @Readonly fun hasSoldBuildingThisTurn(): Boolean = city.hasSoldBuildingThisTurn
+    @Readonly fun holdsGreatWorks(building: Building): Boolean = city.greatWorks.holdsWorks(building)
     @Readonly fun isGodModeEnabled(): Boolean = city.civ.gameInfo.gameParameters.godMode
     @Readonly fun getUnitShouldUseSavedPromotion(baseUnit: String): Boolean? = city.unitShouldUseSavedPromotion[baseUnit]
     @Readonly fun getGarrison(): MapUnitView? = city.getGarrison()?.let { gameView.getMapUnitView(it) }

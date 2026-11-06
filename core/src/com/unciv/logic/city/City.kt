@@ -82,6 +82,7 @@ class City : IsPartOfGameInfoSerialization, INamed {
     var cityConstructions = CityConstructions()
     var expansion = CityExpansionManager()
     var religion = CityReligionManager()
+    var greatWorks = CityGreatWorks()
 
     @Transient // Class carries no persisted fields
     var espionage = CityEspionageManager()
@@ -192,6 +193,7 @@ class City : IsPartOfGameInfoSerialization, INamed {
         toReturn.cityConstructions = cityConstructions.clone()
         toReturn.expansion = expansion.clone()
         toReturn.religion = religion.clone()
+        toReturn.greatWorks = greatWorks.clone()
         toReturn.disabledConstructions.addAll(disabledConstructions)
         toReturn.tiles = tiles
         toReturn.workedTiles = workedTiles
@@ -406,6 +408,7 @@ class City : IsPartOfGameInfoSerialization, INamed {
         expansion.setTransients()
         cityConstructions.city = this
         religion.setTransients(this)
+        greatWorks.setTransients(this)
         cityConstructions.setTransients()
         espionage.setTransients(this)
     }

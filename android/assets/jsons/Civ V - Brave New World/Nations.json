@@ -172,6 +172,7 @@
     },
 	{
 		"name": "France",
+		"uniques": ["[+100]% Theming bonuses [in capital]"],
 		"leaderName": "Napoleon",
 		"adjective": ["French"],
 		"preferredVictoryType": "Cultural",

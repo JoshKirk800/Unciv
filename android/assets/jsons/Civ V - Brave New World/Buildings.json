@@ -11,7 +11,7 @@
 		"culture": 1,
 		"cityStrength": 2.5,
 		"cost": 0,
-		"uniques": ["Indicates the capital city"]
+		"uniques": ["Indicates the capital city", "Has [1] [Art/Artifact] Great Work slots"]
 	},
 	{
 		"name": "Monument",
@@ -117,17 +117,20 @@
 		"uniqueTo": "Assyria",
 		"maintenance": 1,
 		"hurryCostModifier": 25,
-		"uniques": ["[+1 Science] per [2] population [in this city]", "Destroyed when the city is captured"],
+		"uniques": ["[+1 Science] per [2] population [in this city]", "Destroyed when the city is captured", "Has [1] [Literature] Great Work slots"],
 		"requiredTech": "Writing"
 	},
 	{
 		"name": "The Great Library",
+		"themingBonuses": [
+			{"name": "Library of Ancient Knowledge", "bonus": 2, "uniqueEras": true, "requiresUniquePlayers": true},
+		],
 		"science": 3,
 		"culture": 1,
 		"greatPersonPoints": {"Great Scientist": 1},
 		"isWonder": true,
 		"requiredTech": "Writing",
-		"uniques": ["Free Technology", "Gain a free [Library] [in this city]"],
+		"uniques": ["Free Technology", "Gain a free [Library] [in this city]", "Has [2] [Literature] Great Work slots"],
 		"quote": "'Libraries are as the shrine where all the relics of the ancient saints, full of true virtue, and all that without delusion or imposture are preserved and reposed.' - Sir Francis Bacon"
 	},
 	{
@@ -380,11 +383,12 @@
 		"requiredBuilding": "Monument",
 		"maintenance": 1,
 		"hurryCostModifier": 25,
-		"uniques": ["Destroyed when the city is captured"],
+		"uniques": ["Destroyed when the city is captured", "Has [1] [Literature] Great Work slots"],
 		"requiredTech": "Drama and Poetry"
 	},
 	{
 		"name": "Parthenon",
+		"uniques": ["Has [1] [Art/Artifact] Great Work slots", "Gain the [Phidias Showing the Frieze of the Parthenon to his Friends (Lawrence Alma-Tadema)] Great Work"],
 		"culture": 4,
 		"isWonder": true,
 		"requiredTech": "Drama and Poetry",
@@ -395,7 +399,7 @@
 		"cost": 125,
 		"culture": 1,
 		"isNationalWonder": true,
-		"uniques": ["Only available <if [Monument] is constructed in all [non-[Puppeted]] cities>", "[+25]% Great Person generation [in this city]", "Cost increases by [30] per owned city"],
+		"uniques": ["Only available <if [Monument] is constructed in all [non-[Puppeted]] cities>", "[+25]% Great Person generation [in this city]", "Cost increases by [30] per owned city", "Has [1] [Literature] Great Work slots"],
 		"requiredTech": "Drama and Poetry"
 	},
 	{
@@ -469,7 +473,7 @@
 		"culture": 1,
 		"isNationalWonder": true,
 		"uniques": ["Only available <if [Barracks] is constructed in all [non-[Puppeted]] cities>", "All newly-trained [non-[Air]] units [in this city] receive the [Morale] promotion",
-			"Cost increases by [30] per owned city"],
+			"Cost increases by [30] per owned city", "Has [1] [Literature] Great Work slots"],
 		"requiredTech": "Iron Working"
 	},
 	{
@@ -644,11 +648,14 @@
 	},
 	{
 		"name": "Oxford University",
+		"themingBonuses": [
+			{"name": "Library of World Literature", "bonus": 2, "uniqueEras": true, "requiresAnyButOwner": true},
+		],
 		"cost": 125,
 		"science": 3,
 		"culture": 1,
 		"isNationalWonder": true,
-		"uniques": ["Only available <if [University] is constructed in all [non-[Puppeted]] cities>", "Free Technology", "Cost increases by [30] per owned city"],
+		"uniques": ["Only available <if [University] is constructed in all [non-[Puppeted]] cities>", "Free Technology", "Cost increases by [30] per owned city", "Has [2] [Literature] Great Work slots"],
 		"requiredTech": "Education"
 	},
 	{
@@ -736,7 +743,7 @@
 		"requiredBuilding": "Amphitheater",
 		"maintenance": 1,
 		"requiredTech": "Acoustics",
-		"uniques": ["Destroyed when the city is captured"]
+		"uniques": ["Destroyed when the city is captured", "Has [1] [Music] Great Work slots"]
 	},
 	{
 		"name": "Ceilidh Hall",
@@ -753,9 +760,12 @@
 	},
 	{
 		"name": "Sistine Chapel",
+		"themingBonuses": [
+			{"name": "Chapel of [era] [civ] Art", "bonus": 2, "sameEra": true, "mustBeArt": true, "requiresSamePlayer": true},
+		],
 		"culture": 1,
 		"isWonder": true,
-		"uniques": ["[+25]% [Culture] [in all cities]"],
+		"uniques": ["[+25]% [Culture] [in all cities]", "Has [2] [Art/Artifact] Great Work slots"],
 		"requiredTech": "Acoustics",
 		"quote": "'I live and love in God's peculiar light.' - Michelangelo Buonarroti"
 	},
@@ -763,6 +773,7 @@
 		"name": "Musicians' Guild",
 		"maintenance": 1,
 		"specialistSlots": {Musician: 2},
+		"greatPersonPoints": {"Great Musician": 3},
 		"uniques": ["Cannot be purchased", "Destroyed when the city is captured"],
 		"requiredTech": "Acoustics"
 	},
@@ -836,9 +847,12 @@
 	},
 	{
 		"name": "Globe Theatre",
+		"themingBonuses": [
+			{"name": "Theater of [era] [civ] Literature", "bonus": 2, "sameEra": true, "requiresSamePlayer": true},
+		],
 		"culture": 2,
 		"isWonder": true,
-		"uniques": ["Free [Great Writer] appears"],
+		"uniques": ["Free [Great Writer] appears", "Has [2] [Literature] Great Work slots"],
 		"requiredTech": "Printing Press",
 		"quote": "'Totus mundus agit histrionem' - Inscription above main entrance to the Globe Theatre"
 	},
@@ -864,11 +878,14 @@
 	},
 	{
 		"name": "Hermitage",
+		"themingBonuses": [
+			{"name": "Museum of World Art", "bonus": 3, "uniqueEras": true, "mustBeArt": true, "requiresUniquePlayers": true},
+		],
 		"cost": 125,
 		"percentStatBonus": {"culture": 50},
 		"culture": 2,
 		"isNationalWonder": true,
-		"uniques": ["Only available <if [Opera House] is constructed in all [non-[Puppeted]] cities>", "Cost increases by [30] per owned city"],
+		"uniques": ["Only available <if [Opera House] is constructed in all [non-[Puppeted]] cities>", "Cost increases by [30] per owned city", "Has [3] [Art/Artifact] Great Work slots"],
 		"requiredTech": "Architecture"
 	},
 	{
@@ -891,9 +908,12 @@
 	},
 	{
 		"name": "Uffizi",
+		"themingBonuses": [
+			{"name": "Museum of [era] [civ] Art", "bonus": 3, "sameEra": true, "mustBeArt": true, "requiresSamePlayer": true},
+		],
 		"culture": 2,
 		"isWonder": true,
-		"uniques": ["Free [Great Artist] appears", "Only available <after adopting [Aesthetics]>"],
+		"uniques": ["Free [Great Artist] appears", "Only available <after adopting [Aesthetics]>", "Has [3] [Art/Artifact] Great Work slots"],
 		"requiredTech": "Architecture",
 		"quote": "'The painter is not simply someone who looks and who sees. Above all, the artist is someone who exposes a personal vision by rendering it visible.' - Marcel Paquet"
 	},
@@ -953,18 +973,35 @@
 	// Column 9
 	{
 		"name": "Museum",
+		"themingBonuses": [
+			{"name": "Museum of [era] [civ] Art", "bonus": 2, "sameEra": true, "mustBeArt": true, "requiresOwner": true},
+			{"name": "Museum of [era] [civ] Art", "bonus": 2, "sameEra": true, "mustBeArt": true, "requiresAnyButOwner": true},
+			{"name": "Museum of [era] [civ] Warfare", "bonus": 2, "sameEra": true, "mustBeArtifact": true, "requiresOwner": true},
+			{"name": "Museum of [era] [civ] Warfare", "bonus": 2, "sameEra": true, "mustBeArtifact": true, "requiresAnyButOwner": true},
+			{"name": "Museum of [era] Art", "bonus": 1, "sameEra": true, "mustBeArt": true},
+			{"name": "Museum of [era] Warfare", "bonus": 1, "sameEra": true, "mustBeArtifact": true},
+			{"name": "[civ] Museum of the [era] Era", "bonus": 1, "sameEra": true, "requiresOwner": true},
+			{"name": "World Museum of the [era] Era", "bonus": 1, "sameEra": true, "requiresAnyButOwner": true},
+			{"name": "Collection of [civ] Art", "bonus": 1, "mustBeArt": true, "requiresOwner": true},
+			{"name": "Collection of [civ] Art", "bonus": 1, "mustBeArt": true, "requiresAnyButOwner": true},
+			{"name": "Collection of [civ] Warfare", "bonus": 1, "mustBeArtifact": true, "requiresOwner": true},
+			{"name": "Collection of [civ] Warfare", "bonus": 1, "mustBeArtifact": true, "requiresAnyButOwner": true},
+		],
 		"culture": 1,
 		"requiredBuilding": "Opera House",
 		"maintenance": 1,
 		"hurryCostModifier": 0,
 		"requiredTech": "Archaeology",
-		"uniques": ["Destroyed when the city is captured"]
+		"uniques": ["Destroyed when the city is captured", "Has [2] [Art/Artifact] Great Work slots"]
 	},
 	{
 		"name": "The Louvre",
+		"themingBonuses": [
+			{"name": "World's Most Visited Museum", "bonus": 4, "uniqueEras": true, "mustBeEqualArtArtifact": true, "requiresUniquePlayers": true},
+		],
 		"culture": 2,
 		"isWonder": true,
-		"uniques": ["[2] free [Great Artist] units appear", "Only available <after adopting [Exploration]>"],
+		"uniques": ["[2] free [Great Artist] units appear", "Only available <after adopting [Exploration]>", "Has [4] [Art/Artifact] Great Work slots"],
 		"requiredTech": "Archaeology",
 		"quote": "'Every genuine work of art has as much reason for being as the earth and the sun' - Ralph Waldo Emerson"
 	},
@@ -1070,7 +1107,7 @@
 		"requiredBuilding": "Museum",
 		"maintenance": 3,
 		"requiredTech": "Radio",
-		"uniques": ["Destroyed when the city is captured"]
+		"uniques": ["Destroyed when the city is captured", "Has [1] [Music] Great Work slots"]
 	},
 	{
 		"name": "Eiffel Tower",
@@ -1084,6 +1121,10 @@
 	},
 	{
 		"name": "Broadway",
+		"themingBonuses": [
+			{"name": "Showplace for [era] [civ] Music", "bonus": 3, "sameEra": true, "requiresSamePlayer": true},
+		],
+		"uniques": ["Has [3] [Music] Great Work slots"],
 		"culture": 2,
 		"isWonder": true,
 		"requiredTech": "Radio",
@@ -1209,9 +1250,12 @@
 	},
 	{
 		"name": "Sydney Opera House",
+		"themingBonuses": [
+			{"name": "Center for the [civ] Musical Arts", "bonus": 2, "uniqueEras": true, "requiresSamePlayer": true},
+		],
 		"isWonder": true,
 		"percentStatBonus": {"culture": 50},
-		"uniques": ["Free Social Policy","Must be next to [Coast]"],
+		"uniques": ["Free Social Policy","Must be next to [Coast]", "Has [2] [Music] Great Work slots"],
 		"requiredTech": "Ecology",
 		"quote": "'Those who lose dreaming are lost.' - Australian Aboriginal saying"
 	},
@@ -1314,7 +1358,7 @@
 		"faith": 1,
 		"culture": 1,
 		"happiness": 1,
-		"uniques": ["Unbuildable", "Only available <when religion is enabled>"]
+		"uniques": ["Unbuildable", "Only available <when religion is enabled>", "Has [1] [Art/Artifact] Great Work slots"]
 	},
 	{
 		"name": "Monastery",

@@ -367,6 +367,9 @@ class CityConquestFunctions(val city: City) {
 
         if (newCiv.hasUnique(UniqueType.MayNotAnnexCities)) makePuppet()
 
+        // The works of buildings that did not survive go to the new owner
+        city.greatWorks.rehome()
+
         city.tryUpdateRoadStatus()
         city.cityStats.update()
 

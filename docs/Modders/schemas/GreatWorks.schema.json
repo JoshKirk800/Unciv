@@ -1,0 +1,54 @@
+{
+  "$id": "https://raw.githubusercontent.com/yairm210/Unciv/refs/heads/master/docs/Modders/schemas/GreatWorks.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GreatWorks",
+  "description": "A list of Great Works: art, artifacts, literature and music that Great People create, archaeologists dig up or buildings come with.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "title": "Name",
+        "description": "The name of the Great Work.",
+        "examples": ["Mona Lisa"]
+      },
+      "type": {
+        "type": "string",
+        "title": "Type",
+        "description": "Art and Artifact share one kind of slot, Literature and Music each have their own.",
+        "enum": ["Art", "Artifact", "Literature", "Music"],
+        "default": "Art"
+      },
+      "creator": {
+        "type": "string",
+        "title": "Creator",
+        "description": "The name of the Great Person that creates this work, a name from a unit name group."
+      },
+      "era": {
+        "type": "string",
+        "title": "Era",
+        "description": "For artifacts: the era this artifact is specific to."
+      },
+      "artifactClass": {
+        "type": "string",
+        "title": "Artifact Class",
+        "description": "For artifacts: what kind of find it is.",
+        "enum": ["Ranged Battle", "Melee Battle", "Barbarian Camp", "Ancient Ruin", "Razed City"]
+      },
+      "archaeologyOnly": {
+        "type": "boolean",
+        "title": "Archaeology Only",
+        "description": "A work that only archaeologists can find, which no Great Person creates.",
+        "default": false
+      },
+      "quote": {
+        "type": "string",
+        "title": "Quote",
+        "description": "A quote to show with the work."
+      }
+    },
+    "required": ["name"],
+    "additionalProperties": false
+  }
+}

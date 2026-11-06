@@ -15,6 +15,7 @@ class ModOptions : IHasUniques {
     var cityStateTypesToRemove = HashSet<String>()
     var difficultiesToRemove = HashSet<String>()
     var eventsToRemove = HashSet<String>()
+    var greatWorksToRemove = HashSet<String>()
     var improvementsToRemove = HashSet<String>()
     var nationsToRemove = HashSet<String>()
     var personalitiesToRemove = HashSet<String>()

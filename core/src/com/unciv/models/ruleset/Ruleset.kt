@@ -75,6 +75,7 @@ enum class RulesetFile(
     TileImprovements("TileImprovements.json", { tileImprovements.values.asSequence() }),
     TileResources("TileResources.json", { tileResources.values.asSequence() }),
     Specialists("Specialists.json", getINamed = { specialists.values.asSequence() }),
+    GreatWorks("GreatWorks.json", getINamed = { greatWorks.values.asSequence() }),
     Units("Units.json", { units.values.asSequence() }),
     UnitPromotions("UnitPromotions.json", { unitPromotions.values.asSequence() }),
     UnitNameGroup("UnitNameGroups.json", { unitNameGroups.values.asSequence() }, getNames = {
@@ -140,6 +141,7 @@ class Ruleset {
     val ruinRewards = LinkedHashMap<String, RuinReward>()
     val quests = LinkedHashMap<String, Quest>()
     val specialists = LinkedHashMap<String, Specialist>()
+    val greatWorks = LinkedHashMap<String, GreatWork>()
     val technologies = LinkedHashMap<String, Technology>()
     val techColumns = ArrayList<TechColumn>()
     val terrains = LinkedHashMap<String, Terrain>()
@@ -257,6 +259,8 @@ class Ruleset {
         ruinRewards.putAll(ruleset.ruinRewards)
         specialists.selectiveRemove(ruleset.modOptions.specialistsToRemove)
         specialists.putAll(ruleset.specialists)
+        greatWorks.selectiveRemove(ruleset.modOptions.greatWorksToRemove)
+        greatWorks.putAll(ruleset.greatWorks)
         mergeTechnologies(ruleset)
         terrains.selectiveRemove(ruleset.modOptions.terrainsToRemove) { matchesFilter(it) }
         terrains.putAll(ruleset.terrains)
@@ -501,6 +505,7 @@ class Ruleset {
         religions.clear()
         ruinRewards.clear()
         specialists.clear()
+        greatWorks.clear()
         technologies.clear()
         techColumns.clear()
         terrains.clear()
@@ -603,6 +608,9 @@ class Ruleset {
 
         val specialistsFile = RulesetFile.Specialists.file()
         if (specialistsFile.exists()) specialists += createHashmap(json().fromJsonFile(Array<Specialist>::class.java, specialistsFile))
+
+        val greatWorksFile = RulesetFile.GreatWorks.file()
+        if (greatWorksFile.exists()) greatWorks += createHashmap(json().fromJsonFile(Array<GreatWork>::class.java, greatWorksFile))
 
         val policiesFile = RulesetFile.Policies.file()
         if (policiesFile.exists()) {

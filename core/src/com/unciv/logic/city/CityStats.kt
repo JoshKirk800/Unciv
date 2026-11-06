@@ -455,6 +455,7 @@ class CityStats(val city: City) {
         newBaseStatList["Tile yields"] = statsFromTiles
         newBaseStatList["Specialists"] = statsFromSpecialists
         newBaseStatList["Trade routes"] = getStatsFromTradeRoute()
+        newBaseStatList["Great Works"] = city.greatWorks.getStats()
         newBaseStatTree.children["Buildings"] = statsFromBuildings
 
         for ((source, stats) in newBaseStatList)

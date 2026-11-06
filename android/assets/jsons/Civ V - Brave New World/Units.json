@@ -1792,13 +1792,19 @@
             "Can instantly construct a [Landmark] improvement <by consuming this unit>",
             "Is part of Great Person group [Great Person]",
             "[This Unit] gets a name from the [Artist] group",
-            "Great Person - [Culture]", "Unbuildable", "Uncapturable"],
+            "Great Person - [Culture]", "Unbuildable", "Uncapturable", "Create a Great Work <by consuming this unit>"],
 		"movement": 2
 	},
 	{
 		"name": "Great Writer",
 		"unitType": "Civilian",
-		"uniques": ["Can generate a large amount of culture", "Is part of Great Person group [Great Person]", "Great Person - [Culture]", "Unbuildable", "Uncapturable"],
+		"uniques": ["Can generate a large amount of culture", "Is part of Great Person group [Great Person]", "Great Person - [Culture]", "Unbuildable", "Uncapturable", "Create a Great Work <by consuming this unit>", "[This Unit] gets a name from the [Writer] group"],
+		"movement": 2
+	},
+	{
+		"name": "Great Musician",
+		"unitType": "Civilian",
+		"uniques": ["Create a Great Work <by consuming this unit>", "[This Unit] gets a name from the [Musician] group", "Is part of Great Person group [Great Person]", "Great Person - [Culture]", "Unbuildable", "Uncapturable"],
 		"movement": 2
 	},
 	{

@@ -411,6 +411,7 @@ object NextTurnAutomation {
                     city.cityConstructions.isBuilt(it.name)
                         && it.requiredResources(city.state).contains(resource)
                         && it.isSellable()
+                        && !city.greatWorks.holdsWorks(it)
                         && !civInfo.civConstructions.hasFreeBuilding(city, it)
                 }
                 .randomOrNull(rng) ?: continue

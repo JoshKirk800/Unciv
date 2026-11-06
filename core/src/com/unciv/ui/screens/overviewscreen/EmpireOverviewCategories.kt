@@ -65,6 +65,15 @@ enum class EmpireOverviewCategories(
                 && civ.gameInfo.civilizations.none { other -> other.tradeRoutes.routes.any { it.getDestinationCiv() == civ } }
         }
     },
+    Culture("StatIcons/Culture", 'L', Align.top) {
+        override fun createTab(viewingPlayer: CivView, overviewScreen: EmpireOverviewScreen, persistedData: EmpireOverviewTabPersistableData?) =
+                CultureOverviewTab(viewingPlayer, overviewScreen)
+        override fun testState(viewingPlayer: CivView) = when {
+            viewingPlayer.getCiv().gameInfo.ruleset.greatWorks.isEmpty() -> EmpireOverviewTabState.Hidden
+            viewingPlayer.getCiv().cities.none { it.greatWorks.getSlots().isNotEmpty() } -> EmpireOverviewTabState.Disabled
+            else -> EmpireOverviewTabState.Normal
+        }
+    },
     Religion("StatIcons/Faith", 'F', Align.top) {
         override fun createTab(viewingPlayer: CivView, overviewScreen: EmpireOverviewScreen, persistedData: EmpireOverviewTabPersistableData?) =
                 ReligionOverviewTab(viewingPlayer, overviewScreen, persistedData)

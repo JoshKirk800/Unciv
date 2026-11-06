@@ -243,6 +243,13 @@ object BuildingDescriptions {
                 add("+$amount " + "[$specialistName] slots".tr())
         }
 
+        if (themingBonuses.isNotEmpty()) {
+            space()
+            add("Theming bonuses if all slots are filled, the first that fits applies:")
+            for (bonus in themingBonuses)
+                add("+${bonus.bonus} {Culture}: " + bonus.getRequirementTexts().joinToString(", ") { it.tr() }.ifEmpty { "Any works".tr() }, indent = 1)
+        }
+
         if (requiredNearbyImprovedResources != null) {
             space()
             add("Requires at least one of the following resources improved near the city:")
