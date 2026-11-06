@@ -400,6 +400,12 @@ Allowed values:
     - Example: `Only available <when number of [Cities] is more than [0]>`
 -   `Units` - The number of units the relevant Civilization owns
     - Example: `Only available <when number of [Units] is more than [0]>`
+-   `Trade Routes` - The number of trade routes the relevant Civilization has started
+    - Example: `Only available <when number of [Trade Routes] is more than [0]>`
+-   `[tradeRouteFilter] Trade Routes` - The number of trade routes the relevant Civilization has started that match the filter
+    - Example: `Only available <when number of [[Land] Trade Routes] is more than [0]>`
+-   `Trade Route Partners` - The number of different other civilizations, city-states included, the relevant Civilization has trade routes with, in either direction
+    - Example: `Only available <when number of [Trade Route Partners] is more than [0]>`
 -   Stat name (`Production`, `Food`, `Gold`, `Science`, `Culture`, `Happiness` or `Faith`)
     - Example: `Only available <when number of [Science] is more than [0]>`
     - Gets the stat *reserve*, not the amount per turn (can be city stats or civilization stats, depending on where the unique is used)
