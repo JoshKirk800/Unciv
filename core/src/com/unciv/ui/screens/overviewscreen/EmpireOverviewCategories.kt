@@ -56,6 +56,15 @@ enum class EmpireOverviewCategories(
         override fun showDisabled(viewingPlayer: CivView) = viewingPlayer.getCiv().detailedCivResources.none { it.resource.resourceType != ResourceType.Bonus }
         override fun getPersistDataClass() = ResourcesOverviewTab.ResourcesTabPersistableData::class.java
     },
+    Routes("StatIcons/Gold", 'O', Align.top) {
+        override fun createTab(viewingPlayer: CivView, overviewScreen: EmpireOverviewScreen, persistedData: EmpireOverviewTabPersistableData?) =
+                TradeRoutesOverviewTab(viewingPlayer, overviewScreen)
+        override fun showDisabled(viewingPlayer: CivView): Boolean {
+            val civ = viewingPlayer.getCiv()
+            return civ.tradeRoutes.getNumSlots() == 0 && civ.tradeRoutes.routes.isEmpty()
+                && civ.gameInfo.civilizations.none { other -> other.tradeRoutes.routes.any { it.getDestinationCiv() == civ } }
+        }
+    },
     Religion("StatIcons/Faith", 'F', Align.top) {
         override fun createTab(viewingPlayer: CivView, overviewScreen: EmpireOverviewScreen, persistedData: EmpireOverviewTabPersistableData?) =
                 ReligionOverviewTab(viewingPlayer, overviewScreen, persistedData)

@@ -61,6 +61,22 @@ enum class Countables(
         override fun eval(parameterText: String, gameContext: GameContext) =
             gameContext.civInfo?.units?.getCivUnitsSize()
     },
+    TradeRoutes("Trade Routes", shortDocumentation = "The number of trade routes the relevant Civilization has started") {
+        override fun eval(parameterText: String, gameContext: GameContext) =
+            gameContext.civInfo?.tradeRoutes?.routes?.size
+    },
+    FilteredTradeRoutes("[tradeRouteFilter] Trade Routes", shortDocumentation = "The number of trade routes the relevant Civilization has started that match the filter") {
+        override fun eval(parameterText: String, gameContext: GameContext): Int? {
+            val filter = parameterText.getPlaceholderParameters()[0]
+            return gameContext.civInfo?.tradeRoutes?.routes?.count { it.matchesFilter(filter) }
+        }
+        override fun getErrorSeverity(parameterText: String, ruleset: Ruleset): UniqueType.UniqueParameterErrorSeverity? =
+            UniqueParameterType.TradeRouteFilter.getTranslatedErrorSeverity(parameterText, ruleset)
+    },
+    TradeRoutePartners("Trade Route Partners", shortDocumentation = "The number of different other civilizations, city-states included, the relevant Civilization has trade routes with, in either direction") {
+        override fun eval(parameterText: String, gameContext: GameContext) =
+            gameContext.civInfo?.tradeRoutes?.getNumDifferentPartners()
+    },
 
     Stats {
         override val documentationHeader = "Stat name (${niceJoinList(Stat.names())})"

@@ -131,6 +131,22 @@ class ModConstants {
     var scoreFromPopulation = 3 // 4 in BNW
     var scoreFromWonders = 40 // 25 in BNW
 
+    // Trade routes (CvTradeClasses.cpp and GlobalDefines.xml; the values are those of Brave New World)
+    // Gold of a route for its origin: base + (the gold of the origin city divided by this + the same of the destination city) + bonuses,
+    // multiplied by the percentages below. The destination gets the base and its own bonuses, multiplied the same way
+    var tradeRouteBaseGold = 1f
+    var tradeRouteCityGoldDivisor = 20
+    var tradeRouteGoldPerDifferentResource = 0.5f
+    var tradeRouteSeaBonusPercent = 100
+    var tradeRouteRiverBonusPercent = 25
+    // A route lasts the whole number of round trips that comes closest to this many turns (but at least two round trips)
+    var tradeRouteTargetTurns = 30
+    // Gold for plundering a route. A route by sea is multiplied by the sea bonus
+    var tradeRoutePlunderGold = 100
+    // Routes within the own civilization: food or production in the destination city, base + this per era of the destination civilization
+    var tradeRouteDomesticBaseYield = 3f
+    var tradeRouteDomesticYieldPerEra = 0.5f
+
     // UI: If set >= 0, ImprovementPicker will silently skip improvements whose tech requirement is more advanced than your current Era + this
     var maxImprovementTechErasForward = -1
 

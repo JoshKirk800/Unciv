@@ -283,6 +283,9 @@ class BaseUnit : RulesetObject(), INonPerpetualConstruction {
             })
             yield(RejectionReasonType.MaxNumberBuildable.toInstance())
 
+        if (city != null && civ.tradeRoutes.isTradeUnit(this@BaseUnit) && !civ.tradeRoutes.canBuildTradeUnit(this@BaseUnit, city, ownQueue))
+            yield(RejectionReasonType.NoTradeRouteSlot.toInstance())
+
         if (!civ.isBarbarian) { // Barbarians don't need resources
             val civResources = Counter(civ.getCivResourcesByName()) + additionalResources
             for ((resource, requiredAmount) in getResourceRequirementsPerTurn(stateForConditionals)) {

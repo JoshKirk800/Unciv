@@ -344,6 +344,15 @@
                 "column": 2
             },
             {
+                "name": "Merchant Confederacy",
+                "uniques": [
+                    "[+2] Gold on [City-State] trade routes"
+                ],
+                "requires": ["Scholasticism", "Consulates"],
+                "row": 3,
+                "column": 4
+            },
+            {
                 "name": "Patronage Complete",
                 "uniques": [
                     "Allied City-States will occasionally gift Great People",
@@ -433,7 +442,8 @@
             {
                 "name": "Wagon Trains",
                 "uniques": [
-                    "[-50]% maintenance on road & railroads"
+                    "[-50]% maintenance on road & railroads",
+                    "[+2] Gold on [Land] trade routes"
                 ],
                 "row": 1,
                 "column": 2
@@ -543,6 +553,15 @@
                 "requires": ["Naval Tradition"],
                 "row": 2,
                 "column": 4
+            },
+            {
+                "name": "Treasure Fleets",
+                "uniques": [
+                    "[+2] Gold on [Water] trade routes"
+                ],
+                "requires": ["Merchant Navy"],
+                "row": 3,
+                "column": 2
             },
             {
                 "name": "Exploration Complete",
@@ -1068,6 +1087,16 @@
                 ],
                 "row": 2,
                 "column": 6
+            },
+            {
+                "name": "Iron Curtain",
+                "uniques": [
+                    "Tenet Level 3",
+                    "[+50]% yields from trade routes within your civilization",
+                    "Only available <when number of [[Adopted [Tenet Level 2] Policies] - [Adopted [Tenet Level 3] Policies]] is more than [1]>"
+                ],
+                "row": 3,
+                "column": 3
             },
             {
                 "name": "Spaceflight Pioneers",

@@ -55,6 +55,9 @@ object CivilianUnitAutomation {
                 unit.tryMoveToTile(tilesCanMoveTo.minByOrNull { it.value }!!.key)
         }
 
+        if (mapUnit.hasUnique(UniqueType.EstablishTradeRoutes))
+            return TradeRouteAutomation.automateTradeUnit(mapUnit)
+
         if (unit.isAutomatingRoadConnection())
             return mapUnit.civ.getWorkerAutomation().roadToAutomation.automateConnectRoad(unit, dangerousTiles)
 

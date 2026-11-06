@@ -311,6 +311,9 @@ class CityConquestFunctions(val city: City) {
     fun moveToCiv(newCiv: Civilization) {
         val oldCiv = city.civ
 
+        // Routes from and to a city that changes hands end
+        oldCiv.tradeRoutes.clearRoutesOfCity(city)
+
         // Remove/relocate palace for old Civ - need to do this BEFORE we move the cities between
         //  civs so the capitalCityIndicator recognizes the unique buildings of the conquered civ
         if (city.isCapital()) oldCiv.moveCapitalToNextLargest(city)

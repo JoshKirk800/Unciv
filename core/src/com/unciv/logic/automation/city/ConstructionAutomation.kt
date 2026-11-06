@@ -120,6 +120,7 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
             addSpaceshipPartChoice()
             addWorkerChoice()
             addWorkBoatChoice()
+            addTradeUnitChoice()
             addMilitaryUnitChoice()
         }
 
@@ -231,6 +232,17 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
         if (!findTileWorthImproving()) return
 
         addChoice(relativeCostEffectiveness, buildableWorkboatUnits.minBy { it.cost }, 6f) // Improving coastal luxuries etc. is quite important
+    }
+
+    /** The rejection reasons of a trade unit only let it through while there is a free slot and somewhere to send it */
+    private fun addTradeUnitChoice() {
+        val tradeUnits = units
+            .filter { civInfo.tradeRoutes.isTradeUnit(it) && Automation.allowAutomatedConstruction(GameView(civInfo.gameInfo, civInfo).civView, city, it) }
+            .filterBuildable()
+        if (tradeUnits.none()) return
+        // Routes bring gold, so the fewer we have the more we want them
+        val modifier = 3f / (1 + civInfo.tradeRoutes.routes.size)
+        addChoice(relativeCostEffectiveness, tradeUnits.minBy { it.cost }, modifier.coerceAtLeast(1f))
     }
 
     private fun addWorkerChoice() {

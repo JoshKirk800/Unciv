@@ -796,6 +796,65 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Global
 
+??? example  "[relativeAmount] Trade Route slots"
+	Example: "[+20] Trade Route slots"
+
+	Applicable to: Global
+
+??? example  "[relativeAmount]% Trade Route slots"
+	The sum of all [TradeRouteSlots] is multiplied by 100% plus all of these, and rounded down
+
+	Example: "[+20]% Trade Route slots"
+
+	Applicable to: Global
+
+??? example  "[relativeAmount] range for [tradeRouteFilter] trade routes"
+	Added to the base range of the trade unit, before [TradeRouteRangePercent]. Only the filters `Land` and `Water` are meaningful
+
+	Example: "[+20] range for [Land] trade routes"
+
+	Applicable to: Global
+
+??? example  "[relativeAmount]% range for [tradeRouteFilter] trade routes"
+	Counts for routes starting in the city this takes effect in (use `<in this city>` for buildings). Only the filters `Land` and `Water` are meaningful
+
+	Example: "[+20]% range for [Land] trade routes"
+
+	Applicable to: Global
+
+??? example  "[relativeAmount] Gold on [tradeRouteFilter] trade routes"
+	Added to the gold an international route brings its origin city, before the bonus for sea or rivers is applied. As a building effect use `<in this city>`, which makes it count for routes starting in that city only
+
+	Example: "[+20] Gold on [Land] trade routes"
+
+	Applicable to: Global
+
+??? example  "[relativeAmount] Gold on incoming [tradeRouteFilter] trade routes for their origin"
+	Added to the gold the origin of an international route gets when it ends in the city this takes effect in (use `<in this city>` for buildings). Buildings count only for routes between major civilizations
+
+	Example: "[+20] Gold on incoming [Land] trade routes for their origin"
+
+	Applicable to: Global
+
+??? example  "[relativeAmount] Gold from incoming [tradeRouteFilter] trade routes"
+	Added to the gold the destination of an international route gets, when it ends in the city this takes effect in (use `<in this city>` for buildings). Buildings count only for routes between major civilizations
+
+	Example: "[+20] Gold from incoming [Land] trade routes"
+
+	Applicable to: Global
+
+??? example  "[relativeAmount]% Gold from resource diversity on trade routes"
+	A route gets gold for each luxury or strategic resource that only one of its two cities has. Applies to the city the route starts in
+
+	Example: "[+20]% Gold from resource diversity on trade routes"
+
+	Applicable to: Global
+
+??? example  "[relativeAmount]% yields from trade routes within your civilization"
+	Example: "[+20]% yields from trade routes within your civilization"
+
+	Applicable to: Global
+
 ??? example  "[relativeAmount]% Great Person generation [cityFilter]"
 	Example: "[+20]% Great Person generation [in all cities]"
 
@@ -1902,6 +1961,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 ??? example  "Connects trade routes over water"
 	Applicable to: Building
 
+??? example  "Allows [stat] trade routes between your cities"
+	In this city, food or production routes to other cities of the same civilization can start. Only Food and Production are meaningful for [stat].
+
+	Example: "Allows [Culture] trade routes between your cities"
+
+	Applicable to: Building
+
 ??? example  "Automatically built in all cities where it is buildable"
 	Applicable to: Building
 
@@ -2147,6 +2213,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 ??? example  "Can generate a large amount of culture"
 	Applicable to: Unit
 
+??? example  "Can establish trade routes with a base range of [positiveAmount] tiles, travelling [positiveAmount] tiles per turn"
+	Such a unit is used up when it establishes a route, and a new one appears in the city of origin when the route ends. Trade routes over land or water follow the domain of the unit. The number of routes is limited by [TradeRouteSlots].
+
+	Example: "Can establish trade routes with a base range of [3] tiles, travelling [3] tiles per turn"
+
+	Applicable to: Unit
+
 ??? example  "Can undertake a trade mission with City-State, giving a large sum of gold and [amount] Influence"
 	Example: "Can undertake a trade mission with City-State, giving a large sum of gold and [3] Influence"
 
@@ -2200,8 +2273,6 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 ??? example  "Heavy Charge"
 	When attacking a unit in melee: +50% Strength if it cannot fall back (all three tiles behind it, away from the attacker, are blocked), and if the attack does more damage than it takes the defender, if it survives, falls back and the attacker advances.
-
-	Example: "Heavy Charge"
 
 	Applicable to: Unit
 
@@ -4489,6 +4560,7 @@ There is a conversion affecting dashes and leading/trailing blanks. Please make 
 *[tech]: The name of any tech.
 *[terrainFeature]: The name of any terrain that is a terrain feature according to the json file.
 *[tileFilter]: Anything that can be used either in an improvementFilter or in a terrainFilter can be used here, plus 'unimproved'
+*[tradeRouteFilter]: A trade route matches if its unit is of that domain (`Land` or `Water`), if it is of that kind (`International`, `Domestic`, `Food` or `Production`), or if the civilization on the other end matches a civ filter. `All` matches every route.
 *[unitNameGroup]: The name of a unit name group found in UnitNameGroups.json, or one of their unique tags.
 *[unitTriggerTarget]: `This Unit` or `Target Unit`.
 *[unitType]: Can be 'Land', 'Water', 'Air', any unit type, a filtering Unique on a unit type.

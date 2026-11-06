@@ -229,6 +229,22 @@ enum class UniqueParameterType(
             staticKnownValues + NationFilter.getKnownValuesForAutocomplete(ruleset)
     },
 
+    /** Implemented by [TradeRoute.matchesFilter][com.unciv.models.TradeRoute.matchesFilter] */
+    TradeRouteFilter("tradeRouteFilter", "Land", "A trade route matches if its unit is of that domain (`Land` or `Water`), if it is of that kind (`International`, `Domestic`, `Food` or `Production`), " +
+        "or if the civilization on the other end matches a civ filter. `All` matches every route.") {
+        override val staticKnownValues = setOf("Land", "Water", "International", "Domestic", "Food", "Production") + Constants.all
+
+        override fun getErrorSeverity(parameterText: String, ruleset: Ruleset) = getErrorSeverityForFilter(parameterText, ruleset)
+
+        override fun isKnownValue(parameterText: String, ruleset: Ruleset) = when {
+            parameterText in staticKnownValues -> true
+            else -> CivFilter.isKnownValue(parameterText, ruleset)
+        }
+
+        override fun getKnownValuesForAutocomplete(ruleset: Ruleset): Set<String> =
+            staticKnownValues + CivFilter.getKnownValuesForAutocomplete(ruleset)
+    },
+
     /** Implemented by [Nation.matchesFilter][com.unciv.models.ruleset.nation.Nation.matchesFilter] */
     NationFilter("nationFilter", Constants.cityStates) {
         override val staticKnownValues = setOf(Constants.cityStates, "City-State", "Major") + Constants.all

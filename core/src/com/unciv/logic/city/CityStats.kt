@@ -1,6 +1,7 @@
 package com.unciv.logic.city
 
 import com.unciv.logic.automation.Timers.Companion.timeThis
+import com.unciv.logic.civilization.managers.TradeRouteManager
 import com.unciv.logic.map.tile.RoadStatus
 import com.unciv.models.Counter
 import com.unciv.models.ruleset.Building
@@ -529,8 +530,11 @@ class CityStats(val city: City) {
         for (entry in newFinalStatList.values)
             entry.production *= statPercentBonusesSum.production.toPercent()
 
+        // Trade routes are added to the yield after the modifiers (CvCity::getYieldRateTimes100), so they are not part of the loops here
+        val statsFromTradeRoutes = city.civ.tradeRoutes.getStatsForCity(city)
+
         // We only add the 'extra stats from production' AFTER we calculate the production INCLUDING BONUSES
-        val statsFromProduction = getStatsFromProduction(newFinalStatList.values.map { it.production }.sum())
+        val statsFromProduction = getStatsFromProduction(newFinalStatList.values.map { it.production }.sum() + statsFromTradeRoutes.production)
         if (statsFromProduction != null && !statsFromProduction.isEmpty()) {
             baseStatTree = StatTreeNode().apply {
                 children.putAll(baseStatTree.children)
@@ -556,6 +560,7 @@ class CityStats(val city: City) {
         for (entry in newFinalStatList.values) {
             entry.science *= statPercentBonusesSum.science.toPercent()
         }
+        if (!statsFromTradeRoutes.isEmpty()) newFinalStatList[TradeRouteManager.STAT_SOURCE] = statsFromTradeRoutes
 
         for ((unique, statToBeRemoved) in city.getMatchingUniques(UniqueType.NullifiesStat)
             .map { it to Stat.valueOf(it.params[0]) }
