@@ -434,19 +434,22 @@
 		"uniques": ["Can only be created by Mercantile City-States"]
 	},
 	{
-		"name": "Cloves",
-		"resourceType": "Luxury",
-		"gold": 2
-	},
-	{
 		"name": "Nutmeg",
 		"resourceType": "Luxury",
-		"gold": 2
+		"gold": 2,
+		"uniques": ["Unique Luxury for [Indonesia]"]
+	},
+	{
+		"name": "Cloves",
+		"resourceType": "Luxury",
+		"gold": 2,
+		"uniques": ["Unique Luxury for [Indonesia]"]
 	},
 	{
 		"name": "Pepper",
 		"resourceType": "Luxury",
-		"gold": 2
+		"gold": 2,
+		"uniques": ["Unique Luxury for [Indonesia]"]
 	},
 	{
 		"name": "Citrus",

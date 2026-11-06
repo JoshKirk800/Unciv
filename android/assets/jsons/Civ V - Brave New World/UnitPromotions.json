@@ -773,6 +773,46 @@
 		"uniques": ["May capture killed [Water] units"]
 	},
 	{
+		"name": "Native Tongue",
+		"uniques": ["May choose the reward when entering Ancient Ruins"]
+	},
+	{
+		"name": "Mystic Blade",
+		"uniques": ["Replaced by a random promotion from [Invulnerability, Sneak Attack, Heroism, Ambition, Restlessness, Recruitment, Enemy Blade, Evil Spirits] after combat"]
+	},
+	{
+		"name": "Invulnerability",
+		"uniques": ["[+30]% Strength <when defending>", "[+20] HP when healing"]
+	},
+	{
+		"name": "Sneak Attack",
+		"uniques": ["[+50]% to Flank Attack bonuses"]
+	},
+	{
+		"name": "Heroism",
+		"uniques": ["[+15]% Strength bonus for [Military] units within [2] tiles"]
+	},
+	{
+		"name": "Ambition",
+		"uniques": ["[+50]% Strength <when attacking>", "[-20]% Strength <when defending>"]
+	},
+	{
+		"name": "Restlessness",
+		"uniques": ["[+1] Movement", "[1] additional attacks per turn", "Can move after attacking"]
+	},
+	{
+		"name": "Recruitment",
+		"uniques": ["Heals [50] damage if it kills a non-Barbarian unit"]
+	},
+	{
+		"name": "Enemy Blade",
+		"uniques": ["Takes [20] damage at turn end in enemy territory"]
+	},
+	{
+		"name": "Evil Spirits",
+		"uniques": ["[-10]% Strength <when attacking>", "[-30]% Strength <when defending>"]
+	},
+	{
 		"name": "Altitude Training",
 		"uniques": ["Double movement in [Hill]", "[+10]% Strength <when fighting in [Hill] tiles>"]
 	},

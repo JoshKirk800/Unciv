@@ -316,6 +316,17 @@
 		"uniques": ["Gives a defensive bonus of [50]%", "Pillaging this improvement yields approximately [+10 Gold]"],
 		"techRequired": "Chivalry"
 	},
+	{
+		"name": "Feitoria",
+		"uniqueTo": "Portugal",
+		"terrainsCanBeBuiltOn": ["Grassland", "Plains", "Desert", "Tundra", "Snow", "Hill"],
+		"turnsToBuild": 8,
+		"techRequired": "Navigation",
+		"uniques": ["Can only be built in City-State territory", "Can only be built on [Coastal] tiles",
+			"Gives a defensive bonus of [50]%", "Removes removable features when built",
+			"Provides [1] untradable copies of each Luxury resource connected by this City-State to the builder",
+			"Pillaging this improvement yields approximately [+20 Gold]"]
+	},
 
 	// Unbuildable improvements
 	{
