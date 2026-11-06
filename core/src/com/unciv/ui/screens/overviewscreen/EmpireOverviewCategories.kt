@@ -92,6 +92,13 @@ enum class EmpireOverviewCategories(
         override fun createTab(viewingPlayer: CivView, overviewScreen: EmpireOverviewScreen, persistedData: EmpireOverviewTabPersistableData?) =
                 NotificationsOverviewTable(viewingPlayer, overviewScreen, persistedData)
         override fun showDisabled(viewingPlayer: CivView) = viewingPlayer.getCiv().notifications.isEmpty() && viewingPlayer.getCiv().notificationsLog.isEmpty()
+    },
+    WorldCongress("NotificationIcons/WorldCongressVote", 'G', Align.top) {
+        override fun createTab(viewingPlayer: CivView, overviewScreen: EmpireOverviewScreen, persistedData: EmpireOverviewTabPersistableData?) =
+                WorldCongressOverviewTab(viewingPlayer, overviewScreen)
+        override fun testState(viewingPlayer: CivView) =
+            if (viewingPlayer.getCiv().gameInfo.league == null) EmpireOverviewTabState.Hidden
+            else EmpireOverviewTabState.Normal
     }
 
     ;

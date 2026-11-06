@@ -34,6 +34,7 @@ enum class UniqueTarget(
     Nation(inheritsFrom = Global),
     Personality,
     Era(inheritsFrom = Global),
+    Resolution("Uniques of a resolution of the World Congress, which apply to every civilization while it is in effect", inheritsFrom = Global),
     Tech(inheritsFrom = Global),
     Policy(inheritsFrom = Global),
     FounderBelief("Uniques for Founder and Enhancer type Beliefs, that will apply to the founder of this religion", inheritsFrom = Global),

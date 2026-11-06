@@ -1,0 +1,112 @@
+{
+  "$id": "https://raw.githubusercontent.com/yairm210/Unciv/refs/heads/master/docs/Modders/schemas/Resolutions.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Resolutions",
+  "description": "A list of the resolutions that the World Congress can enact.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "title": "Name",
+        "description": "The name of the resolution.",
+        "examples": ["Standing Army Tax"]
+      },
+      "uniques": { "$ref": "refs/Uniques.schema.json" },
+      "voterDecision": {
+        "type": "string",
+        "title": "Voter Decision",
+        "description": "What the voters decide: yes or no, or a major civilization (host election, World Leader).",
+        "enum": ["YesNo", "MajorCiv"],
+        "default": "YesNo"
+      },
+      "proposerDecision": {
+        "type": "string",
+        "title": "Proposer Decision",
+        "description": "What the proposer chooses when proposing the resolution.",
+        "enum": ["None", "OtherMajorCiv", "Luxury", "Religion", "Ideology"],
+        "default": "None"
+      },
+      "requiredTechAnyMember": {
+        "type": "string",
+        "title": "Required Tech Any Member",
+        "description": "The resolution can be proposed only when a living civilization knows this tech."
+      },
+      "playerProposable": {
+        "type": "boolean",
+        "title": "Player Proposable",
+        "description": "False for resolutions that only the World Congress proposes.",
+        "default": true
+      },
+      "exclusive": {
+        "type": "boolean",
+        "title": "Exclusive",
+        "description": "Only one instance can be proposed or in effect, whatever the choice.",
+        "default": false
+      },
+      "leadersVoteBonusOnFail": {
+        "type": "integer",
+        "title": "Leaders Vote Bonus On Fail",
+        "description": "Delegates that the civilizations leading the vote get more when the vote fails.",
+        "default": 0
+      },
+      "votesForFollowingReligion": {
+        "type": "integer",
+        "title": "Votes For Following Religion",
+        "description": "Delegates more for a civilization that follows the chosen religion in most of its cities.",
+        "default": 0
+      },
+      "votesForFollowingIdeology": {
+        "type": "integer",
+        "title": "Votes For Following Ideology",
+        "description": "Delegates more for a civilization that follows the chosen ideology.",
+        "default": 0
+      },
+      "holyCityTourismPercent": {
+        "type": "integer",
+        "title": "Holy City Tourism Percent",
+        "description": "Percent more tourism from the holy city of the chosen religion.",
+        "default": 0
+      },
+      "religionSpreadStrengthPercent": {
+        "type": "integer",
+        "title": "Religion Spread Strength Percent",
+        "description": "Percent more spread strength of the chosen religion.",
+        "default": 0
+      },
+      "ideologyPressure": {
+        "type": "integer",
+        "title": "Ideology Pressure",
+        "description": "Ideological pressure of the chosen ideology on every civilization.",
+        "default": 0
+      },
+      "projectCostPerPlayer": {
+        "type": "integer",
+        "title": "Project Cost Per Player",
+        "description": "More than 0 makes the resolution a League project: enacting it starts the project, to which the cities contribute production. The cost for each civilization at Standard speed.",
+        "default": 0
+      },
+      "embargoesCityStates": {
+        "type": "boolean",
+        "title": "Embargoes City-States",
+        "description": "Trade routes with city-states are forbidden.",
+        "default": false
+      },
+      "embargoesPlayer": {
+        "type": "boolean",
+        "title": "Embargoes Player",
+        "description": "Trade routes with the civilization chosen by the proposer are forbidden.",
+        "default": false
+      },
+      "bansLuxuryHappiness": {
+        "type": "boolean",
+        "title": "Bans Luxury Happiness",
+        "description": "The luxury chosen by the proposer gives no happiness and cannot be traded.",
+        "default": false
+      }
+    },
+    "required": ["name"],
+    "additionalProperties": false
+  }
+}

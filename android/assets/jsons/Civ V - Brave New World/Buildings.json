@@ -825,7 +825,7 @@
 		"name": "Forbidden Palace",
 		"culture": 1,
 		"isWonder": true,
-		"uniques": ["[-10]% Unhappiness from [Population] [in all non-occupied cities]", "Only available <after adopting [Patronage]>"],
+		"uniques": ["[-10]% Unhappiness from [Population] [in all non-occupied cities]", "Only available <after adopting [Patronage]>", "[2] World Congress Delegates"],
 		"requiredTech": "Banking",
 		"quote": "'Most of us can, as we choose, make of this world either a palace or a prison' - John Lubbock"
 	},
@@ -1346,16 +1346,6 @@
 		"uniques": ["[+50]% Production when constructing [Spaceship part] units [in this city]"],
 		"requiredTech": "Robotics"
 	},
-	// Column 16
-	{
-		"name": "United Nations",
-		"isWonder": true,
-		"culture": 1,
-		"greatPersonPoints": {"Great Merchant": 2},
-		"requiredTech": "Globalization",
-		"uniques": ["Triggers voting for the Diplomatic Victory", "Only available <when [Diplomatic] Victory is enabled>", "Triggers a global alert upon completion"],
-		"quote": "'More than ever before in human history, we share a common destiny. We can master it only if we face it together. And that is why we have the United Nations.' - Kofi Annan"
-	},
 
 	// All Eras
 
@@ -1394,5 +1384,15 @@
 		"faith": 2,
 		"happiness": 2,
 		"uniques": ["Unbuildable", "Only available <when religion is enabled>"]
+	},
+	{
+		// The reward of the top contributor of the International Space Station project (BUILDING_INTERNATIONAL_SPACE_STATION, Cost -1 = never built by a city).
+		// Not named like the project, as the construction of that name is what the cities contribute with. Great Scientists giving 33% more Science (GreatScientistBeakerModifier) has no equivalent
+		"name": "International Space Station Complex",
+		"cost": 0,
+		"uniques": ["Unbuildable", "[+1 Production] from every [Scientist]", "[+1 Science] from every [Engineer]"],
+		"civilopediaText": [
+			{ "text": "May only be built collaboratively through the World Congress: it is the reward of the civilization that contributes most to the International Space Station project." }
+		]
 	}
 ]

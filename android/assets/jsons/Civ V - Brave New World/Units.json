@@ -1628,7 +1628,7 @@
 		"requiredResource": "Uranium",
 		"promotions" : ["Evasion"],
 		"uniques": ["Nuclear weapon of Strength [1]", "Only available <if [Manhattan Project] is constructed>", "Self-destructs when attacking",
-			"Blast radius [2]"],
+			"Blast radius [2]", "Unbuildable <when the [Nuclear Non-Proliferation] resolution is in effect>"],
 		"attackSound": "nuke"
 		// Plane rather than a missile - can be based in city or Carrier only.
 		// Can be intercepted, but must die for it not to take effect.
@@ -1683,7 +1683,7 @@
 		"cost": 1000,
 		"requiredTech": "Advanced Ballistics",
 		"uniques": ["Nuclear weapon of Strength [2]", "Only available <if [Manhattan Project] is constructed>",
-			"Blast radius [2]", "Consumes [2] [Uranium]"],
+			"Blast radius [2]", "Consumes [2] [Uranium]", "Unbuildable <when the [Nuclear Non-Proliferation] resolution is in effect>"],
 		"attackSound": "nuke"
 	},
 	{

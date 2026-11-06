@@ -202,6 +202,7 @@ The file can have the following attributes, not including the values Unciv sets 
 | policyBranchesToRemove | List    | empty   | List of [Policy Branches](2-Civilization-related-JSON-files.md#policiesjson) to remove (isBaseRuleset=false only)                                                                   |
 | policiesToRemove       | List    | empty   | List of [Policies](2-Civilization-related-JSON-files.md#policiesjson) to remove (isBaseRuleset=false only)                                                                          |
 | questsToRemove         | List    | empty   | List of Citystate Quest names or "All" to remove (isBaseRuleset=false only).                                                                                                        |
+| resolutionsToRemove    | List    | empty   | List of [Resolutions](2-Civilization-related-JSON-files.md#resolutionsjson) or "All" to remove (isBaseRuleset=false only).                                                          |
 | religionsToRemove      | List    | empty   | List of [Religions](2-Civilization-related-JSON-files.md#religionsjson) or "All" to remove (isBaseRuleset=false only)                                                               |
 | resourcesToRemove      | List    | empty   | List of Tile Resources or [resourceFilter](../Unique-parameters.md#resourceFilter) to remove (isBaseRuleset=false only).                                                            |
 | ruinRewardsToRemove    | List    | empty   | List of Ruin Rewards or "All" to remove (isBaseRuleset=false only).                                                                                                                 |
@@ -325,6 +326,20 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | tradeRoutePlunderGold                    | Int    | 100                           | Gold for plundering a route, more for one by water |
 | tradeRouteDomesticBaseYield              | Float  | 3                             | Food or production of a route to a city of the same civilization |
 | tradeRouteDomesticYieldPerEra            | Float  | 0.5                           | Added to the yield of a domestic route for every era of the destination civilization |
+| leagueProposersPerSession                | Int    | 2                             | Civilizations that propose resolutions in a session of the World Congress |
+| leagueProposalsPerProposer               | Int    | 1                             | Resolutions each proposer proposes |
+| leagueSessionSoonWarningTurns            | Int    | 5                             | Turns ahead of a session that the player is warned |
+| leagueFallbackSessionInterval            | Int    | 12                            | Turns between sessions at Standard speed while no era has the unique `World Congress sessions: ...` |
+| leagueFallbackDelegates                  | Int    | 1                             | Delegates of each civilization while no era has that unique |
+| leagueLeadersVoteBonusCount              | Int    | 2                             | Civilizations leading the vote that get the delegates of `leadersVoteBonusOnFail` when the World Leader vote fails |
+| leagueWorldLeaderCivCoefficient          | Float  | 1.443                         | Votes needed for the World Leader: the sum of `max(0, a * ln(civs) + b)` for civilizations (a, b = this and the next) and `max(0, c * ln(city-states) + d)` for city-states |
+| leagueWorldLeaderCivConstant             | Float  | 7                             | See above (b) |
+| leagueWorldLeaderCityStateCoefficient    | Float  | 16.023                        | See above (c) |
+| leagueWorldLeaderCityStateConstant       | Float  | -13.758                       | See above (d) |
+| leagueRegularHostProposals               | Int    | 1                             | Proposals the host makes in a regular session |
+| leagueProjectTier1Threshold              | Float  | 0.5                           | Contribution tier 1 of a World Congress project begins at this multiple of a civilization's share of the project cost |
+| leagueProjectTier2Threshold              | Float  | 1                             | The same for tier 2. Tier 3 goes to the highest contributor, who must have at least this much |
+| leagueProjectProgressWarningPercent      | Int    | 33                            | Percent of its cost at which the civilizations are told how far a project is |
 | goldGiftDegradationMultiplier            | Float  | 1.0                           | [^V]  |
 
 Legend:

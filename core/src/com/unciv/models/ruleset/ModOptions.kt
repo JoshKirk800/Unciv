@@ -22,6 +22,7 @@ class ModOptions : IHasUniques {
     var policyBranchesToRemove = HashSet<String>()
     var policiesToRemove = HashSet<String>()
     var questsToRemove = HashSet<String>()
+    var resolutionsToRemove = HashSet<String>()
     var religionsToRemove = HashSet<String>()
     var resourcesToRemove = HashSet<String>()
     var ruinRewardsToRemove = HashSet<String>()

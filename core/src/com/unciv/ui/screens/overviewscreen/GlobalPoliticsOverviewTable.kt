@@ -364,6 +364,13 @@ class GlobalPoliticsOverviewTable(
                 else viewingPlayer.getCiv().calculateTotalScore().toInt().tr()
             add(scoreText.toLabel()).left().row()
         }
+        val league = viewingPlayer.getCiv().gameInfo.league
+        if (league != null) {
+            // Brave New World: the World Congress replaces the diplomatic vote of Gods & Kings
+            for (line in WorldCongressOverview.getSessionStatusLines(league))
+                add(line.toLabel()).colspan(columns).row()
+            return
+        }
         val turnsTillNextDiplomaticVote = viewingPlayer.getCiv().getTurnsTillNextDiplomaticVote() ?: return
         add("Turns until the next\ndiplomacy victory vote: [$turnsTillNextDiplomaticVote]".toLabel()).colspan(columns).row()
     }

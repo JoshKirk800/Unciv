@@ -89,7 +89,7 @@ class TradeEvaluation {
                 }
             }
             TradeOfferType.Agreement -> true
-            TradeOfferType.Luxury_Resource -> hasResource(tradeOffer)
+            TradeOfferType.Luxury_Resource -> hasResource(tradeOffer) && offerer.gameInfo.league?.isLuxuryBanned(tradeOffer.name) != true // World Congress Ban Luxury (LR 4.3.3)
             TradeOfferType.Strategic_Resource -> hasResource(tradeOffer)
             TradeOfferType.Stockpiled_Resource -> hasResource(tradeOffer)
             TradeOfferType.Technology -> true

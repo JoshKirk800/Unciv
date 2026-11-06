@@ -1,33 +1,23 @@
 package com.unciv.ui.screens
 
-import com.badlogic.gdx.Gdx
-import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.scenes.scene2d.Actor
-import com.badlogic.gdx.scenes.scene2d.Group
 import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.SelectBox
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton
 import com.badlogic.gdx.scenes.scene2d.ui.TextField
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener
-import com.unciv.UncivGame
-import com.unciv.dev.FontDesktop
 import com.unciv.models.ruleset.unique.UniqueTarget
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.testing.GdxTestRunner
 import com.unciv.testing.TestGame
-import com.unciv.ui.components.fonts.Fonts
+import com.unciv.testing.UiTestSupport
 import com.unciv.ui.components.input.ActivationListener
-import com.unciv.ui.images.ImageGetter
-import com.unciv.ui.screens.basescreen.BaseScreen
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.Mockito
-import org.mockito.stubbing.Answer
-import java.nio.IntBuffer
 
 /**
  * Drives the real unique builder widgets. Aggregate diagnostics are the labels under "Whole unique:".
@@ -39,14 +29,7 @@ class UniqueBuilderScreenTests {
     @Before
     fun setUp() {
         val game = TestGame()
-        Fonts.fontImplementation = FontDesktop()
-        UncivGame.Current.settings.alternativeRendering = true
-        if (!uiReady) {
-            installShaderCapableGl()
-            ImageGetter.setNewRuleset(game.ruleset)
-            uiReady = true
-        }
-        BaseScreen.recreateBatch()
+        UiTestSupport.prepare(game)
         screen = UniqueBuilderScreen(game.ruleset)
     }
 
@@ -217,45 +200,5 @@ class UniqueBuilderScreenTests {
         return fields
     }
 
-    private fun actors(): List<Actor> {
-        val result = ArrayList<Actor>()
-        val pending = ArrayDeque<Actor>()
-        for (actor in screen.stage.actors) pending.add(actor)
-        while (pending.isNotEmpty()) {
-            val actor = pending.removeFirst()
-            result.add(actor)
-            if (actor is Group)
-                for (child in actor.children) pending.add(child)
-        }
-        return result
-    }
-
-    companion object {
-        private var uiReady = false
-
-        /** SpriteBatch compiles a shader while the screen's stage is created. The runner's GL mock reports failure. */
-        private fun installShaderCapableGl() {
-            val gl = Mockito.mock(GL20::class.java)
-            Mockito.`when`(gl.glCreateShader(Mockito.anyInt())).thenReturn(1)
-            Mockito.`when`(gl.glCreateProgram()).thenReturn(1)
-            Mockito.`when`(gl.glGenBuffer()).thenReturn(1)
-            Mockito.`when`(gl.glGenTexture()).thenReturn(1)
-            Mockito.`when`(gl.glGetShaderInfoLog(Mockito.anyInt())).thenReturn("")
-            Mockito.`when`(gl.glGetProgramInfoLog(Mockito.anyInt())).thenReturn("")
-            val reportStatus = Answer<Any> { invocation ->
-                val pname = invocation.getArgument<Int>(1)
-                val params = invocation.getArgument<IntBuffer>(2)
-                val value = when (pname) {
-                    GL20.GL_COMPILE_STATUS, GL20.GL_LINK_STATUS -> GL20.GL_TRUE
-                    else -> 0
-                }
-                params.put(0, value)
-                null
-            }
-            Mockito.doAnswer(reportStatus).`when`(gl).glGetShaderiv(Mockito.anyInt(), Mockito.anyInt(), Mockito.any())
-            Mockito.doAnswer(reportStatus).`when`(gl).glGetProgramiv(Mockito.anyInt(), Mockito.anyInt(), Mockito.any())
-            Gdx.gl = gl
-            Gdx.gl20 = gl
-        }
-    }
+    private fun actors(): List<Actor> = UiTestSupport.actors(screen.stage)
 }

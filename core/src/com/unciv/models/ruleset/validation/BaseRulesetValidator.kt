@@ -413,6 +413,16 @@ internal class BaseRulesetValidator(
         }
     }
 
+    override fun addResolutionErrors(lines: RulesetErrorList) {
+        super.addResolutionErrors(lines)
+
+        for (resolution in ruleset.resolutions.values) {
+            val tech = resolution.requiredTechAnyMember ?: continue
+            if (tech !in ruleset.technologies)
+                lines.add("Resolution ${resolution.name} requires $tech to be known, which is not a tech in the ruleset!", sourceObject = resolution)
+        }
+    }
+
     override fun addTechErrors(lines: RulesetErrorList) {
         super.addTechErrors(lines)
 

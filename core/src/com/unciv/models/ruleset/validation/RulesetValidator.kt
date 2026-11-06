@@ -13,6 +13,8 @@ import com.unciv.models.ruleset.BeliefType
 import com.unciv.models.ruleset.Building
 import com.unciv.models.ruleset.EventChoice
 import com.unciv.models.ruleset.IRulesetObject
+import com.unciv.models.ruleset.PerpetualConstruction
+import com.unciv.models.ruleset.ResolutionDecision
 import com.unciv.models.ruleset.Ruleset
 import com.unciv.models.ruleset.RulesetCache
 import com.unciv.models.ruleset.RulesetFile
@@ -122,6 +124,7 @@ open class RulesetValidator protected constructor(
         addDifficultyErrors(lines)
         addEventErrors(lines)
         addCityStateTypeErrors(lines)
+        addResolutionErrors(lines)
 
         checkFreeBuildingPossibleRecursions(lines)
         addTranslationNameCollisionWarnings(lines)
@@ -416,6 +419,38 @@ open class RulesetValidator protected constructor(
     }
 
     protected open fun addSpecialistErrors(lines: RulesetErrorList) {}
+
+    protected open fun addResolutionErrors(lines: RulesetErrorList) {
+        for (resolution in ruleset.resolutions.values) {
+            if (resolution.voterDecision != ResolutionDecision.YesNo && resolution.voterDecision != ResolutionDecision.MajorCiv)
+                lines.add("Resolution ${resolution.name} has voterDecision ${resolution.voterDecision}, but voters can only decide YesNo or MajorCiv!", sourceObject = resolution)
+            if (resolution.embargoesPlayer && resolution.proposerDecision != ResolutionDecision.OtherMajorCiv)
+                lines.add("Resolution ${resolution.name} embargoes a player, so its proposerDecision must be OtherMajorCiv!", sourceObject = resolution)
+            if (resolution.bansLuxuryHappiness && resolution.proposerDecision != ResolutionDecision.Luxury)
+                lines.add("Resolution ${resolution.name} bans a luxury, so its proposerDecision must be Luxury!", sourceObject = resolution)
+            if (resolution.votesForFollowingReligion != 0 || resolution.holyCityTourismPercent != 0 || resolution.religionSpreadStrengthPercent != 0)
+                if (resolution.proposerDecision != ResolutionDecision.Religion)
+                    lines.add("Resolution ${resolution.name} has religion effects, so its proposerDecision must be Religion!", sourceObject = resolution)
+            if (resolution.votesForFollowingIdeology != 0 || resolution.ideologyPressure != 0)
+                if (resolution.proposerDecision != ResolutionDecision.Ideology)
+                    lines.add("Resolution ${resolution.name} has ideology effects, so its proposerDecision must be Ideology!", sourceObject = resolution)
+            if (resolution.projectCostPerPlayer < 0)
+                lines.add("Resolution ${resolution.name} has a negative projectCostPerPlayer!", sourceObject = resolution)
+            if (resolution.isProject && PerpetualConstruction.perpetualConstructionsMap[resolution.name] !is PerpetualConstruction.Project)
+                lines.add("Resolution ${resolution.name} is a project, but the cities can only contribute to the projects World's Fair, International Games and International Space Station!", sourceObject = resolution)
+            if (resolution.isProject && (resolution.voterDecision != ResolutionDecision.YesNo || resolution.proposerDecision != ResolutionDecision.None
+                    || resolution.exclusive || resolution.isHostElection || resolution.isWorldLeader || !resolution.playerProposable))
+                lines.add("Resolution ${resolution.name} is a project, so it must be a plain proposable resolution with voterDecision YesNo, proposerDecision None and not exclusive!", sourceObject = resolution)
+            for (unique in resolution.uniqueObjects) {
+                val tierConditional = unique.getModifiers(UniqueType.TriggerUponProjectTier).firstOrNull() ?: continue
+                if (!resolution.isProject)
+                    lines.add("Resolution ${resolution.name} has the reward \"${unique.text}\" but is no project (projectCostPerPlayer)!", sourceObject = resolution)
+                else if (tierConditional.params[0].toIntOrNull() !in 1..3)
+                    lines.add("Resolution ${resolution.name} has the reward \"${unique.text}\" for a tier that is not 1, 2 or 3!", sourceObject = resolution)
+            }
+            uniqueValidator.checkUniques(resolution, lines, reportRulesetSpecificErrors)
+        }
+    }
 
     protected open fun addSpeedErrors(lines: RulesetErrorList) {
         for (speed in ruleset.speeds.values) {

@@ -107,6 +107,7 @@ object NextTurnAutomation {
         if (tradeAndChangeState) trainSettler(civView)
         // I'm not sure what will happen if we *don't* vote when we can, so automate vote even when forced automation
         tryVoteForDiplomaticVictory(civView)
+        LeagueAutomation.automateLeague(civInfo) // the World Congress of Brave New World, also for skipped turns
     }
 
     fun automateGoldToSciencePercentage(civView: CivView) {

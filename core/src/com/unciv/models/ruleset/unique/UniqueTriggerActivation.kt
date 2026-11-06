@@ -585,6 +585,51 @@ object UniqueTriggerActivation {
                 }
             }
 
+            UniqueType.OneTimeGainGoldenAgePoints -> {
+                val points = unique.params[0].toInt()
+                return {
+                    civInfo.goldenAges.addHappiness(points)
+                    val notificationText = getNotificationText(notification, triggerNotificationText, "Gained [$points] Golden Age points")
+                    if (notificationText != null)
+                        civInfo.addNotification(notificationText, NotificationCategory.General, NotificationIcon.Happiness)
+                    true
+                }
+            }
+
+            UniqueType.OneTimeGainPermanentStats -> {
+                if (!Stats.isStats(unique.params[0])) return null
+                return {
+                    // A negative number of turns is never counted down (see TemporaryUnique.endTurn)
+                    civInfo.temporaryUniques.add(TemporaryUnique("[${unique.params[0]}]", unique, -1))
+                    civInfo.updateStatsForNextTurn()
+                    val notificationText = getNotificationText(notification, triggerNotificationText, "Permanently gained [${unique.params[0]}]")
+                    if (notificationText != null)
+                        civInfo.addNotification(notificationText, NotificationCategory.General, NotificationIcon.Happiness)
+                    true
+                }
+            }
+
+            UniqueType.OneTimeGainScienceTurns -> {
+                return {
+                    val science = (civInfo.stats.statsForNextTurn.science * unique.params[0].toInt()).roundToInt()
+                    civInfo.tech.addScience(science)
+                    val notificationText = getNotificationText(notification, triggerNotificationText, "Gained [$science] Science")
+                    if (notificationText != null)
+                        civInfo.addNotification(notificationText, NotificationCategory.General, NotificationIcon.Science)
+                    true
+                }
+            }
+
+            UniqueType.OneTimeGainCityStateInfluence -> {
+                val influence = unique.params[0].toFloat()
+                return {
+                    for (cityState in civInfo.getKnownCivs().filter { it.isCityState && it.isAlive() }.toList())
+                        cityState.getDiplomacyManager(civInfo)?.addInfluence(influence)
+                    if (notification != null) civInfo.addNotification(notification, NotificationCategory.Diplomacy, NotificationIcon.Diplomacy)
+                    true
+                }
+            }
+
             UniqueType.OneTimeConcertTour -> {
                 val target = tile?.getOwner() ?: return null
                 if (unit == null || target == civInfo || !civInfo.culture.canInfluence(target)) return null

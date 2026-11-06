@@ -7,6 +7,7 @@ import com.unciv.logic.city.GreatWorkSlot
 import com.unciv.logic.civilization.managers.CultureManager
 import com.unciv.logic.civilization.managers.InfluenceLevel
 import com.unciv.logic.civilization.managers.InfluenceTrend
+import com.unciv.logic.civilization.managers.PublicOpinion
 import com.unciv.logic.civilization.managers.PublicOpinionType
 import com.unciv.models.ruleset.Building
 import com.unciv.models.ruleset.MilestoneType
@@ -121,7 +122,7 @@ class CultureOverviewTab(
         }
         add(opinion.type.label.toLabel(color)).colspan(COLUMNS).row()
         for ((name, total) in opinion.pressure.entries.sortedByDescending { it.value }) {
-            val civs = opinion.pressureByCiv[name]!!.keys.mapNotNull { id -> civ.gameInfo.civilizations.firstOrNull { it.civID == id }?.civName }
+            val civs = opinion.pressureByCiv[name]!!.keys.mapNotNull { id -> if (id == PublicOpinion.WORLD_CONGRESS_PRESSURE_KEY) id else civ.gameInfo.civilizations.firstOrNull { it.civID == id }?.civName }
             add("Pressure for [$name]: [$total] ([${civs.joinToString()}])".tr().toLabel()).colspan(COLUMNS).row()
         }
         if (opinion.pressure.isEmpty())

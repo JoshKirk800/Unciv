@@ -1,0 +1,118 @@
+[
+    // The resolutions of the World Congress (CIV5Resolutions.xml). The League projects (World's Fair, International Games and International Space Station)
+    // have projectCostPerPlayer (CIV5LeagueProjects.xml): enacting them starts the project, and the rewards (CIV5LeagueProjectRewards.xml) are the uniques of their tiers
+    {
+        "name": "World Leader",
+        "voterDecision": "MajorCiv",
+        "playerProposable": false,
+        "leadersVoteBonusOnFail": 2,
+        "uniques": ["Elects the World Leader", "Only available <when [Diplomatic] Victory is enabled>"]
+    },
+    {
+        "name": "Choose Host",
+        "voterDecision": "MajorCiv",
+        "playerProposable": false,
+        "uniques": ["Elects the host of the World Congress"]
+    },
+    {
+        "name": "Embargo City-States",
+        "embargoesCityStates": true
+    },
+    {
+        "name": "Embargo",
+        "proposerDecision": "OtherMajorCiv",
+        "embargoesPlayer": true
+    },
+    {
+        "name": "Ban Luxury",
+        "proposerDecision": "Luxury",
+        "bansLuxuryHappiness": true
+    },
+    {
+        "name": "Standing Army Tax",
+        "uniques": ["[+25]% unit gold maintenance"]
+    },
+    {
+        "name": "Scholars In Residence",
+        "uniques": ["[+20]% research of technologies known by any civilization"]
+    },
+    {
+        "name": "Cultural Heritage Sites",
+        "uniques": ["[+3 Culture] from every [World Wonder]"]
+    },
+    {
+        "name": "Natural Heritage Sites",
+        "uniques": ["[+5 Culture] from every [Natural Wonder]"]
+    },
+    {
+        "name": "Nuclear Non-Proliferation",
+        "requiredTechAnyMember": "Advanced Ballistics"
+    },
+    {
+        "name": "World Religion",
+        "proposerDecision": "Religion",
+        "exclusive": true,
+        "votesForFollowingReligion": 2,
+        "holyCityTourismPercent": 50,
+        "religionSpreadStrengthPercent": 25,
+        "uniques": ["Only available <when religion is enabled>"]
+    },
+    {
+        "name": "World Ideology",
+        "proposerDecision": "Ideology",
+        "requiredTechAnyMember": "Radio",
+        "exclusive": true,
+        "votesForFollowingIdeology": 2,
+        "ideologyPressure": 2
+    },
+    {
+        "name": "Arts Funding",
+        "uniques": [
+            "[Great Artist] is earned [+33]% faster", "[Great Writer] is earned [+33]% faster", "[Great Musician] is earned [+33]% faster",
+            "[Great Scientist] is earned [-33]% faster", "[Great Engineer] is earned [-33]% faster", "[Great Merchant] is earned [-33]% faster"
+        ]
+    },
+    {
+        "name": "Sciences Funding",
+        "uniques": [
+            "[Great Artist] is earned [-33]% faster", "[Great Writer] is earned [-33]% faster", "[Great Musician] is earned [-33]% faster",
+            "[Great Scientist] is earned [+33]% faster", "[Great Engineer] is earned [+33]% faster", "[Great Merchant] is earned [+33]% faster"
+        ]
+    },
+    {
+        "name": "Historical Landmarks",
+        "requiredTechAnyMember": "Archaeology",
+        "uniques": ["[+2 Culture] from every [Great Improvement]", "[+4 Culture] from every [Landmark]"]
+    },
+    {
+        "name": "World's Fair",
+        "projectCostPerPlayer": 350,
+        "uniques": [
+            "Gain [500] Golden Age points <upon reaching contribution tier [1] of a World Congress project>",
+            "[1] Free Social Policies <upon reaching contribution tier [2] of a World Congress project>",
+            "[+100]% [Culture] <for [20] turns> <upon reaching contribution tier [3] of a World Congress project>"
+        ]
+    },
+    {
+        "name": "International Games",
+        "requiredTechAnyMember": "Radio",
+        "projectCostPerPlayer": 720,
+        "uniques": [
+            "Permanently gain [+3 Happiness] <upon reaching contribution tier [1] of a World Congress project>",
+            "Permanently gain [+3 Happiness] <upon reaching contribution tier [2] of a World Congress project>",
+            "Gain [30] Influence with all City-States we have met <upon reaching contribution tier [2] of a World Congress project>",
+            "[1] Free Social Policies <upon reaching contribution tier [3] of a World Congress project>",
+            "[+100]% Tourism [in all cities] <for [20] turns> <upon reaching contribution tier [3] of a World Congress project>"
+        ]
+    },
+    {
+        "name": "International Space Station",
+        "requiredTechAnyMember": "Satellites",
+        "projectCostPerPlayer": 850,
+        "uniques": [
+            "Gain [4] turns of Science <upon reaching contribution tier [1] of a World Congress project>",
+            "Free [Great Scientist] appears <upon reaching contribution tier [2] of a World Congress project>",
+            "Gain a free [International Space Station Complex] [in capital] <upon reaching contribution tier [3] of a World Congress project>"
+        ]
+    }
+]

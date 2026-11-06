@@ -13,6 +13,7 @@ import com.unciv.logic.civilization.MapUnitAction
 import com.unciv.logic.civilization.NotificationCategory
 import com.unciv.logic.civilization.NotificationIcon
 import com.unciv.logic.civilization.PopupAlert
+import com.unciv.logic.league.addContribution
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.Tile
 import com.unciv.logic.multiplayer.isUsersTurn
@@ -393,9 +394,14 @@ class CityConstructions : IsPartOfGameInfoSerialization {
         validateInProgressConstructions()
 
         val currentName = currentConstructionName() // Once, this is one step
-        if (getConstruction(currentName) !is PerpetualConstruction) {
+        val currentConstruction = getConstruction(currentName)
+        if (currentConstruction is PerpetualConstruction.Project) {
+            // A League project: the production, with what was stored, is the contribution of the civilization (CvCity::doProcess, CvCity.cpp:13081-13099)
+            city.civ.gameInfo.league?.addContribution(city.civ, currentName, cityStats.production.roundToInt() + productionOverflow)
+            productionOverflow = 0
+        } else if (currentConstruction !is PerpetualConstruction) {
             if (getWorkDone(currentName) == 0) {
-                constructionBegun(getConstruction(currentName))
+                constructionBegun(currentConstruction)
             }
             addProductionPoints(cityStats.production.roundToInt() + productionOverflow)
             productionOverflow = 0

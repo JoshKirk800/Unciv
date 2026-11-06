@@ -59,6 +59,7 @@ class TradeLogic(val ourCivilization: Civilization, val otherCivilization: Civil
 
         for (entry in civInfo.getPerTurnResourcesWithOriginsForTrade()
             .filterNot { it.resource.resourceType == ResourceType.Bonus }
+            .filterNot { it.resource.resourceType == ResourceType.Luxury && civInfo.gameInfo.league?.isLuxuryBanned(it.resource.name) == true } // World Congress Ban Luxury (LR 4.3.3)
             .filter { it.origin == Constants.tradable }
         ) {
             val resourceTradeOfferType = if (entry.resource.resourceType == ResourceType.Luxury) TradeOfferType.Luxury_Resource

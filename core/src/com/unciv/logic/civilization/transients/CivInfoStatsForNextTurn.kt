@@ -84,6 +84,10 @@ class CivInfoStatsForNextTurn(val civInfo: Civilization) {
         var cost = baseUnitCost * numberOfUnitsToPayFor * (1 + gameProgress)
         cost = cost.pow(1 + gameProgress / 3) // Why 3? To spread 1 to 1.33
 
+        // CvTreasury.cpp:576-581: Standing Army Tax and the like are added up and applied to the total, after the exponent and before the handicap
+        val unitMaintenancePercent = civInfo.getMatchingUniques(UniqueType.UnitGoldMaintenancePercent, civInfo.state).sumOf { it.params[0].toInt() }
+        if (unitMaintenancePercent != 0) cost = cost * (100 + unitMaintenancePercent) / 100
+
         // CvTreasury::CalculateUnitCost: a human pays the unit cost percentage of the handicap, the others the AI one of the chosen difficulty
         cost *= if (civInfo.isHuman()) civInfo.getDifficulty().unitCostModifier
             else civInfo.gameInfo.getDifficulty().aiUnitMaintenanceModifier
@@ -248,14 +252,13 @@ class CivInfoStatsForNextTurn(val civInfo: Civilization) {
             happinessPerUniqueLuxury += unique.params[0].toInt()
         }
 
+        // World Congress Ban Luxury (LR 4.3.3): a banned luxury gives no happiness, however it is obtained
+        val league = civInfo.gameInfo.league
         val ownedLuxuries = civInfo.getCivResourceSupply().map { it.resource }
-            .filter { it.resourceType == ResourceType.Luxury }
+            .filter { it.resourceType == ResourceType.Luxury && league?.isLuxuryBanned(it.name) != true }
 
-        val relevantLuxuries = civInfo.getCivResourceSupply().asSequence()
-            .map { it.resource }
-            .count { it.resourceType == ResourceType.Luxury
-                    && it.getMatchingUniques(UniqueType.ObsoleteWith)
-                .none { unique -> civInfo.tech.isResearched(unique.params[0]) } }
+        val relevantLuxuries = ownedLuxuries.count { resource ->
+            resource.getMatchingUniques(UniqueType.ObsoleteWith).none { unique -> civInfo.tech.isResearched(unique.params[0]) } }
         statMap["Luxury resources"] = relevantLuxuries * happinessPerUniqueLuxury
 
         val happinessBonusForCityStateProvidedLuxuries =
@@ -276,7 +279,7 @@ class CivInfoStatsForNextTurn(val civInfo: Civilization) {
                         && (it.origin == "Trade" || it.origin == "Trade request")
             }
             .map { it.resource }
-            .filter { !ownedLuxuries.contains(it) }
+            .filter { !ownedLuxuries.contains(it) && league?.isLuxuryBanned(it.name) != true }
 
         statMap["Traded Luxuries"] =
             luxuriesAllOfWhichAreTradedAway.size * happinessPerUniqueLuxury *

@@ -653,6 +653,7 @@ class Civilization : IsPartOfGameInfoSerialization {
 
         yieldAll(civResourcesUniqueMap.getMatchingUniques(uniqueType, gameContext))
         yieldAll(gameInfo.getGlobalUniques().getMatchingUniques(uniqueType, gameContext))
+        gameInfo.league?.let { yieldAll(it.getActiveUniqueMap().getMatchingUniques(uniqueType, gameContext)) }
     }
 
     @Readonly
@@ -668,6 +669,7 @@ class Civilization : IsPartOfGameInfoSerialization {
         religionManager.religion?.founderBeliefUniqueMap?.forEachMatchingUnique(uniqueType, gameContext, op)
         civResourcesUniqueMap.forEachMatchingUnique(uniqueType, gameContext, op)
         gameInfo.getGlobalUniques().forEachMatchingUnique(uniqueType, gameContext, op)
+        gameInfo.league?.getActiveUniqueMap()?.forEachMatchingUnique(uniqueType, gameContext, op)
     }
 
     @Readonly

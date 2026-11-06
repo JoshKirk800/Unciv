@@ -17,6 +17,7 @@ import com.unciv.models.ruleset.GlobalUniques
 import com.unciv.models.ruleset.GreatWork
 import com.unciv.models.ruleset.PolicyBranch
 import com.unciv.models.ruleset.Quest
+import com.unciv.models.ruleset.Resolution
 import com.unciv.models.ruleset.RuinReward
 import com.unciv.models.ruleset.Ruleset
 import com.unciv.models.ruleset.RulesetCache
@@ -828,6 +829,7 @@ object TranslationFileWriter {
                     "Personalities" -> emptyArray<Personality>().javaClass
                     "Policies" -> emptyArray<PolicyBranch>().javaClass
                     "Quests" -> emptyArray<Quest>().javaClass
+                    "Resolutions" -> emptyArray<Resolution>().javaClass
                     "Religions" -> emptyArray<String>().javaClass
                     "Ruins" -> emptyArray<RuinReward>().javaClass
                     "Specialists" -> emptyArray<Specialist>().javaClass

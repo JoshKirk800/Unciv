@@ -35,6 +35,7 @@ import com.unciv.ui.components.input.onActivation
 import com.unciv.ui.images.ImageGetter
 import com.unciv.ui.popups.Popup
 import com.unciv.ui.screens.diplomacyscreen.LeaderIntroTable
+import com.unciv.ui.screens.leaguescreens.ResolutionDescriptions
 import com.unciv.ui.screens.victoryscreen.VictoryScreen
 import yairm210.purity.annotations.Readonly
 import java.util.EnumSet
@@ -133,6 +134,7 @@ class AlertPopup(
             AlertType.RecapturedCivilian -> shouldOpen = addRecapturedCivilian()
             AlertType.GameHasBeenWon -> addGameHasBeenWon()
             AlertType.Event -> shouldOpen = addEvent()
+            AlertType.LeagueSessionResult -> shouldOpen = addLeagueSessionResult()
         }
         if (shouldOpen) open()
         else viewingCiv.popupAlerts.remove(popupAlert)
@@ -441,6 +443,25 @@ class AlertPopup(
         addGoodSizedLabel("Your citizens have been happy with your rule for so long that the empire enters a Golden Age!").row()
         addCloseButton()
         music.chooseTrack(viewingCiv.civName, MusicMood.Golden, MusicTrackChooserFlags.setSpecific)
+    }
+
+    /** The outcomes of the session of the World Congress that has just finished, see [com.unciv.logic.league.League.lastResults] */
+    private fun addLeagueSessionResult(): Boolean {
+        val league = gameInfo.league ?: return false
+        if (league.lastResults.isEmpty()) return false
+        addGoodSizedLabel(
+            if (league.unitedNations) "Results of the United Nations session" else "Results of the World Congress session",
+            Constants.headingFontSize
+        )
+        addSeparator().padBottom(SEPARATOR_LINE_TO_TEXT_PADDING)
+        for (entry in league.lastResults) {
+            addGoodSizedLabel(ResolutionDescriptions.getResultHeadline(entry, gameInfo),
+                color = if (entry.passed) LIGHTER_GREEN_COLOR else LIGHTER_RED_COLOR).row()
+            val tally = ResolutionDescriptions.getTallyText(entry, gameInfo)
+            if (tally.isNotEmpty()) addGoodSizedLabel(tally, color = Color.LIGHT_GRAY).padBottom(10f).row()
+        }
+        addCloseButton()
+        return true
     }
 
     /** @return false to skip opening this Popup, as we're running in the initialization phase before the Popup is open */

@@ -351,6 +351,9 @@ class CityReligionManager : IsPartOfGameInfoSerialization {
                 if (pressuredCity.matchesFilter(unique.params[1]))
                     pressure *= unique.params[0].toPercent()
             }
+            // World Religion (LR 4.3.10): the pressure of the chosen religion is stronger
+            val spreadPercent = city.civ.gameInfo.league?.getReligionSpreadPercent(majorityReligion.name) ?: 0
+            if (spreadPercent != 0) pressure *= (100 + spreadPercent) / 100f
         }
 
         return pressure.toInt()

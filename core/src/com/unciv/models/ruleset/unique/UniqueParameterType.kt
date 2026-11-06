@@ -633,6 +633,11 @@ enum class UniqueParameterType(
         override fun getErrorSeverity(parameterText: String, ruleset: Ruleset) = getErrorSeverityForFilter(parameterText, ruleset)
     },
 
+    /** The name of a resolution in Resolutions.json, used by [UniqueType.ConditionalResolutionInEffect] */
+    ResolutionName("resolution", "Standing Army Tax", "The name of any resolution of the World Congress") {
+        override fun getKnownValuesForAutocomplete(ruleset: Ruleset) = ruleset.resolutions.keys
+    },
+
     /** Used by [UniqueType.ConditionalVictoryEnabled], implementation in Civilopedia, OverviewScreen and to exclude e.g. from Quests */
     VictoryT("victoryType",
         "Domination", "The name of any victory type: 'Cultural', 'Diplomatic', 'Domination', 'Scientific', 'Time' or one of your mod's VictoryTypes.json names"

@@ -147,6 +147,7 @@ class TradeRouteManager : IsPartOfGameInfoSerialization {
         if (!destination.getCenterTile().isExplored(civ)) return false
         val destinationCiv = destination.civ
         if (destinationCiv.isBarbarian || !destinationCiv.isAlive()) return false
+        if (civ.gameInfo.league?.isTradeEmbargoed(civ, destinationCiv) == true) return false
         when (kind) {
             TradeRouteKind.International -> {
                 if (destinationCiv == civ) return false
@@ -363,6 +364,19 @@ class TradeRouteManager : IsPartOfGameInfoSerialization {
                 owner.addNotification("Our trade route from [${route.getOriginCity()?.name}] to [${route.getDestinationCity()?.name}] was cancelled by the war with [${other.civName}]",
                     route.origin, NotificationCategory.Trade, NotificationIcon.War)
             }
+        }
+    }
+
+    /** The World Congress embargo took effect: every route of ours that [shouldEnd] is removed and the trade unit goes back to its origin city.
+     *  CvGameTrade::ClearAllCivTradeRoutes / ClearAllCityStateTradeRoutes (CvTradeClasses.cpp:907-973) */
+    fun cancelRoutesByEmbargo(shouldEnd: (TradeRoute) -> Boolean) {
+        for (route in routes.toList()) {
+            if (!shouldEnd(route)) continue
+            removeRoute(route)
+            val origin = route.getOriginCity() ?: continue
+            giveUnitBack(route, origin)
+            civ.addNotification("Our trade route from [${origin.name}] to [${route.getDestinationCity()?.name}] was ended by a World Congress embargo, and our [${route.unitName}] returned.",
+                origin.location, NotificationCategory.Trade, route.unitName)
         }
     }
 
