@@ -288,7 +288,7 @@
 		"innerColor": [146, 221, 10],
 		"favoredReligion": "Islam",
 		"uniqueName": "Ships of the Desert",
-		"uniques": ["[+100]% [Oil] resource production", "[+5] range for [Land] trade routes"],
+		"uniques": ["[+100]% [Oil] resource production", "[+5] range for [Land] trade routes", "[+100]% religious pressure along trade routes that start in our cities"],
 		"cities": ["Mecca","Medina","Damascus","Baghdad","Najran","Kufah","Basra","Khurasan","Anjar","Fustat",
 			"Aden","Yamama","Muscat","Mansura","Bukhara","Shiraz","Merw","Balkh","Mosul","Aydab",
 			"Bayt","Suhar","Taif","Hama","Tabuk","Sana'a","Shihr","Tripoli","Tunis","Kairouan",
