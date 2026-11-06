@@ -289,8 +289,10 @@ class TurnManager(val civInfo: Civilization) {
                 civInfo.stats.statsForNextTurn
             }
 
+        val makesTourism = civInfo.isMajorCiv && !civInfo.isSpectator
+        if (makesTourism) civInfo.culture.rememberLastTurn() // before the culture of this turn is added
         civInfo.policies.endTurn(nextTurnStats.culture.toInt())
-        civInfo.totalCultureForContests += nextTurnStats.culture.toInt()
+        if (makesTourism) civInfo.culture.endTurn()
 
         if (civInfo.isCityState) {
             civInfo.questManager.endTurn()

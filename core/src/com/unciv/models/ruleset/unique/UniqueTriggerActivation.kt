@@ -539,6 +539,30 @@ object UniqueTriggerActivation {
                 }
             }
 
+            UniqueType.OneTimeGainTourism -> {
+                if (civInfo.culture.getOtherMajorCivs().none { civInfo.culture.canInfluence(it) }) return null
+                return {
+                    civInfo.culture.addInfluenceOnAllKnownCivs(unique.params[0].toInt())
+                    if (notification != null) civInfo.addNotification(notification, NotificationCategory.Diplomacy, "StatIcons/Culture")
+                    true
+                }
+            }
+
+            UniqueType.OneTimeConcertTour -> {
+                val target = tile?.getOwner() ?: return null
+                if (unit == null || target == civInfo || !civInfo.culture.canInfluence(target)) return null
+                return {
+                    val speed = civInfo.gameInfo.speed
+                    val modifier = speed.statCostModifiers[Stat.Culture] ?: speed.modifier
+                    val constants = civInfo.gameInfo.ruleset.modOptions.constants
+                    val strength = maxOf((unique.params[0].toInt() * civInfo.culture.getTourism() * modifier).toInt(), constants.concertTourMinimumTourism)
+                    val blast = (strength * modifier).toInt()
+                    civInfo.culture.addInfluenceFromConcertTour(target, blast, unique.params[1].toInt())
+                    civInfo.addNotification("Our concert tour in [${target.civName}] brought [$blast] Tourism", tile.position, NotificationCategory.Diplomacy, "StatIcons/Culture")
+                    true
+                }
+            }
+
             UniqueType.OneTimeCreateGreatWork -> {
                 if (unit == null || !GreatWorkFunctions.canCreateWork(unit)) return null
                 return { GreatWorkFunctions.createWorkWithUnit(unit) != null }

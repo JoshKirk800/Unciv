@@ -454,7 +454,7 @@ class TradeRouteManager : IsPartOfGameInfoSerialization {
 
                 // Science from what the other civilization knows that we do not, and the other way around
                 if (bothMajor) {
-                    route.originYields.science = getScienceFromTechDifference(civ, destinationCiv)
+                    route.originYields.science = getScienceFromTechDifference(civ, destinationCiv) + civ.culture.getTradeRouteScienceBonus(destinationCiv)
                     route.destinationYields.science = getScienceFromTechDifference(destinationCiv, civ)
                 }
             } else {

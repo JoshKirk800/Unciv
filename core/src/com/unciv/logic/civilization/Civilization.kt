@@ -187,6 +187,7 @@ class Civilization : IsPartOfGameInfoSerialization {
     var greatPeople = GreatPersonManager()
     var espionageManager = EspionageManager()
     var tradeRoutes = TradeRouteManager()
+    var culture = CultureManager()
     var victoryManager = VictoryManager()
     var ruinsManager = RuinsManager()
     var diplomacy = HashMap<String, DiplomacyManager>()
@@ -251,6 +252,7 @@ class Civilization : IsPartOfGameInfoSerialization {
     // For Aggressor, Warmonger status
     internal var numMinorCivsAttacked = 0
 
+    /** All the culture the civilization has made in the whole game, which is what its influence on others is measured against. Counted in [PolicyManager.addCulture] */
     var totalCultureForContests = 0
     var totalFaithForContests = 0
 
@@ -340,6 +342,7 @@ class Civilization : IsPartOfGameInfoSerialization {
         toReturn.ruinsManager = ruinsManager.clone()
         toReturn.espionageManager = espionageManager.clone()
         toReturn.tradeRoutes = tradeRoutes.clone()
+        toReturn.culture = culture.clone()
         toReturn.victoryManager = victoryManager.clone()
         toReturn.allyCivName = allyCivName
         for (diplomacyManager in diplomacy.values.map { it.clone() })
@@ -910,6 +913,7 @@ class Civilization : IsPartOfGameInfoSerialization {
             
                 // Non vanilla ranking types
                 RankingType.TilesExplored -> gameInfo.tileMap.values.count { it.isExplored(this) }
+                RankingType.Tourism -> culture.getTourism()
         }
     }
 
@@ -1015,6 +1019,7 @@ class Civilization : IsPartOfGameInfoSerialization {
         ruinsManager.setTransients(this)
         espionageManager.setTransients(this)
         tradeRoutes.setTransients(this)
+        culture.setTransients(this)
         victoryManager.civInfo = this
 
         for (diplomacyManager in diplomacy.values) {
@@ -1097,8 +1102,7 @@ class Civilization : IsPartOfGameInfoSerialization {
 
     fun addStat(stat: Stat, amount: Int) {
         when (stat) {
-            Stat.Culture -> { policies.addCulture(amount)
-                              if(amount > 0) totalCultureForContests += amount }
+            Stat.Culture -> policies.addCulture(amount)
             Stat.Science -> tech.addScience(amount)
             Stat.Gold -> addGold(amount)
             Stat.Faith -> { religionManager.storedFaith += amount
@@ -1112,8 +1116,7 @@ class Civilization : IsPartOfGameInfoSerialization {
     fun addGameResource(stat: GameResource, amount: Int) {
         if (stat is TileResource && stat.isStockpiled) gainStockpiledResource(stat, amount)
         when (stat) {
-            Stat.Culture -> { policies.addCulture(amount)
-                if (amount > 0) totalCultureForContests += amount }
+            Stat.Culture -> policies.addCulture(amount)
             Stat.Science -> tech.addScience(amount)
             Stat.Gold -> addGold(amount)
             Stat.Faith -> { religionManager.storedFaith += amount

@@ -293,6 +293,16 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | goldGiftTradeMultiplier                  | Float  | 0.8                           | [^U]  |
 | scoreFromGreatWorks                      | Int    | 0                             | Score for each Great Work. Brave New World uses 4 |
 | greatWorkBaseCulture                     | Int    | 2                             | Culture each Great Work gives its city, before bonuses (see the unique `[stats] from each Great Work`) |
+| greatWorkBaseTourism                     | Int    | 2                             | Tourism each Great Work gives its city, before bonuses |
+| tourismModifierSharedReligion            | Int    | 25                            | Percent more tourism towards civilizations that follow the same religion. See the unique `[relativeAmount]% Tourism towards civilizations with [tourismRelation]` |
+| tourismModifierOpenBorders               | Int    | 25                            | Percent more tourism towards civilizations that have opened their borders to us |
+| tourismModifierTradeRoute                | Int    | 25                            | Percent more tourism towards civilizations that we have a trade route with |
+| concertTourMinimumTourism                | Int    | 100                           | The least a concert tour is worth, before the game speed |
+| influencePercentExotic                   | Int    | 10                            | Tourism towards a civilization, added up over the game, makes us Exotic to it at this percent of the culture it has made in the whole game |
+| influencePercentFamiliar                 | Int    | 30                            | As above, for Familiar |
+| influencePercentPopular                  | Int    | 60                            | As above, for Popular |
+| influencePercentInfluential              | Int    | 100                           | As above, for Influential |
+| influencePercentDominant                 | Int    | 200                           | As above, for Dominant |
 | tradeRouteBaseGold                       | Float  | 1                             | Gold a trade route is worth before additions, for both ends. See the unique `Can establish trade routes` |
 | tradeRouteCityGoldDivisor                | Int    | 20                            | Each end of an international route adds the gold of the city at the other end divided by this |
 | tradeRouteGoldPerDifferentResource       | Float  | 0.5                           | Gold per resource of the other civilization that the route brings that the origin does not have |
@@ -472,6 +482,7 @@ Currently the following milestones are supported:
 | Complete [amount] Policy branches  | Fully complete at least [amount] policy branches                                                             |
 | Win diplomatic vote                | At any point in the game win a diplomatic vote (UN). You may lose afterwards and still retain this milestone |
 | Become the world religion          | Have your religion be the majority religion in a majority of cities of all major civs                        |
+| Be [Influential] over all other civilizations| Tourism has made this civilization at least that influential (Exotic, Familiar, Popular, Influential or Dominant) over every other living major civilization, those it has not met included. See the `influencePercent...` constants|
 | Have highest score after max turns | Basically time victory. Enables the 'max turn' slider and calculates score when that amount is reached       |
 | Have at least [amount] [countable] | Have at least [amount] of the given `countable`. Unlike the milestone below, this does not depend on the other players, so a ruleset can require several concrete things - a building, a policy, worked tiles - to be achieved in any order. |
 | Have more [countable] than each player's [countable] | Have your given `countable` be more than every other Civilization's `countable` to achieve this victory. This is useful to simulate a victory similar to the Cultural Victory in Brave New World. |

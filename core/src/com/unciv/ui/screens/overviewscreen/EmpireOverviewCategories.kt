@@ -70,7 +70,7 @@ enum class EmpireOverviewCategories(
                 CultureOverviewTab(viewingPlayer, overviewScreen)
         override fun testState(viewingPlayer: CivView) = when {
             viewingPlayer.getCiv().gameInfo.ruleset.greatWorks.isEmpty() -> EmpireOverviewTabState.Hidden
-            viewingPlayer.getCiv().cities.none { it.greatWorks.getSlots().isNotEmpty() } -> EmpireOverviewTabState.Disabled
+            viewingPlayer.getCiv().cities.isEmpty() -> EmpireOverviewTabState.Disabled
             else -> EmpireOverviewTabState.Normal
         }
     },

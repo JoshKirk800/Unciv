@@ -26,6 +26,7 @@ enum class RankingType(
     Culture('A'),
     // Non vanilla ranking types
     TilesExplored("Tiles Explored", { ImageGetter.getImage("UnitPromotionIcons/Scouting") }, 'E', false),
+    Tourism("Tourism", { ImageGetter.getStatIcon("Culture") }, 'U', false),
     ;
     val label = label ?: name
     constructor(getImage: () -> Image?, idForSerialization: Char) : this(null, getImage, idForSerialization)

@@ -136,6 +136,7 @@ class PolicyManager : IsPartOfGameInfoSerialization {
     fun addCulture(culture: Int) {
         val couldAdoptPolicyBefore = canAdoptPolicy()
         storedCulture += culture
+        if (culture > 0) civInfo.totalCultureForContests += culture
         if (!couldAdoptPolicyBefore && canAdoptPolicy()) {
             shouldOpenPolicyPicker = true
         }
