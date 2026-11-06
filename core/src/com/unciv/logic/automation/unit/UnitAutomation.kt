@@ -30,6 +30,7 @@ import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.models.ruleset.unit.BaseUnit
 import com.unciv.logic.map.mapunit.actions.UnitActionsPillage
+import com.unciv.logic.map.mapunit.actions.UnitActionsExoticGoods
 import com.unciv.logic.map.mapunit.actions.UnitActionsUpgrade
 import kotlin.math.ceil
 import com.unciv.view.GameView
@@ -129,6 +130,9 @@ object UnitAutomation {
         if (unitView.unitHealth < 100 && tryHealUnit(unitView, cache)) return
 
         if (tryPrepare(unitView)) return
+
+        if (unit.civ.isAI() && unit.hasUnique(UniqueType.SellExoticGoods))
+            UnitActionsExoticGoods.tryAutoSell(unit)
 
         // else, try to go to unreached tiles
         if (tryExplore(unitView, cache)) return

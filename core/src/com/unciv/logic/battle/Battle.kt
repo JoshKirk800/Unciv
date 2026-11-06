@@ -204,14 +204,14 @@ object Battle {
     ) {
         if (defender.isDefeated() && defender is MapUnitCombatant && !defender.unit.isCivilian()) {
             tryEarnFromKilling(attacker, defender)
-            tryHealAfterKilling(attacker)
+            tryHealAfterKilling(attacker, defender)
 
             if (attacker is MapUnitCombatant) triggerVictoryUniques(attacker, defender, attackedTile)
             triggerDefeatUniques(defender, attacker, attackedTile)
 
         } else if (attacker.isDefeated() && attacker is MapUnitCombatant && !attacker.unit.isCivilian()) {
             tryEarnFromKilling(defender, attacker)
-            tryHealAfterKilling(defender)
+            tryHealAfterKilling(defender, attacker)
 
             if (defender is MapUnitCombatant) triggerVictoryUniques(defender, attacker, attackedTile)
             triggerDefeatUniques(attacker, defender, attackedTile)
@@ -589,12 +589,18 @@ object Battle {
         defender.getCivInfo().addNotification(notificationString, locations, NotificationCategory.War, attackerIcon, battleActionIcon, defenderIcon)
     }
 
-    private fun tryHealAfterKilling(attacker: ICombatant) {
+    private fun tryHealAfterKilling(attacker: ICombatant, defeated: ICombatant) {
         if (attacker !is MapUnitCombatant) return
         
         attacker.unit.forEachMatchingUnique(UniqueType.HealsAfterKilling, checkCivInfoUniques = true) { unique ->
             val amountToHeal = unique.params[0].toInt()
             attacker.unit.healBy(amountToHeal)
+        }
+
+        if (!defeated.getCivInfo().isBarbarian) {
+            attacker.unit.forEachMatchingUnique(UniqueType.HealsAfterKillingNonBarbarian, checkCivInfoUniques = true) { unique ->
+                attacker.unit.healBy(unique.params[0].toInt())
+            }
         }
     }
 
@@ -632,9 +638,29 @@ object Battle {
             addXp(5, 4)
     }
     
+    /** CvUnit::changeExperience applies the replacement even when the opponent is a barbarian at the XP cap. */
+    private fun replacePostCombatPromotion(combatant: MapUnitCombatant) {
+        if (combatant.isDefeated() || !combatant.unit.hasUnique(UniqueType.PostCombatRandomPromotion)) return
+        val unit = combatant.unit
+        val promotions = unit.promotions
+        val rulesetPromotions = unit.civ.gameInfo.ruleset.unitPromotions
+        for (promotion in promotions.getPromotions().toList()) {
+            val unique = promotion.getMatchingUniques(UniqueType.PostCombatRandomPromotion, GameContext(unit)).firstOrNull()
+                ?: continue
+            val choices = unique.params[0].split(',').map { it.trim() }.filter { it in rulesetPromotions }
+            if (choices.isEmpty()) continue
+            val choice = choices.random(GameContext(unit).stateBasedRandom("Battle.replacePostCombatPromotion"))
+            promotions.removePromotion(promotion.name)
+            promotions.addPromotion(choice, isFree = true)
+            unit.civ.addNotification("[${unit.name}] gained [${choice}] after combat",
+                MapUnitAction(unit), NotificationCategory.Units, unit.name)
+        }
+    }
+
     // XP!
     internal fun addXp(thisCombatant: ICombatant, amount: Int, otherCombatant: ICombatant) {
         if (thisCombatant !is MapUnitCombatant) return
+        replacePostCombatPromotion(thisCombatant)
         val civ = thisCombatant.getCivInfo()
         val otherIsBarbarian = otherCombatant.getCivInfo().isBarbarian
         val promotions = thisCombatant.unit.promotions

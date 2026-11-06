@@ -55,6 +55,7 @@ class UnitTurnManager(val unit: MapUnit) {
 
         doCitadelDamage()
         doTerrainDamage()
+        doEnemyTerritoryDamage()
 
         unit.addMovementMemory()
 
@@ -140,6 +141,23 @@ class UnitTurnManager(val unit: MapUnit) {
             NotificationCategory.Units,
             unit.name
         )
+    }
+
+    private fun doEnemyTerritoryDamage() {
+        if (unit.isDestroyed || !unit.hasUnique(UniqueType.EnemyTerritoryDamage)) return
+        val owner = unit.getTile().getOwner() ?: return
+        if (!unit.civ.isAtWarWith(owner)) return
+        val damage = unit.getMatchingUniques(UniqueType.EnemyTerritoryDamage)
+            .sumOf { it.params[0].toInt() }
+        if (damage == 0) return
+        unit.takeDamage(damage)
+        if (unit.isDestroyed) {
+            unit.civ.addNotification("Our [${unit.name}] was destroyed by its blade in enemy territory",
+                unit.currentTile.position, NotificationCategory.Units, unit.name, NotificationIcon.Death)
+        } else {
+            unit.civ.addNotification("Our [${unit.name}] took [$damage] damage from its blade in enemy territory",
+                MapUnitAction(unit), NotificationCategory.Units, unit.name)
+        }
     }
 
 

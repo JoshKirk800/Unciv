@@ -206,7 +206,10 @@ object CityResources {
         val resource = tile.tileResource ?: return 0
         if (!tile.providesResources(city.civ)) return 0
 
-        var amountToAdd = if (resource.resourceType == ResourceType.Strategic) tile.resourceAmount
+        // Most luxuries yield one copy; founded-city unique luxuries store their granted
+        // quantity on the city-center tile, as strategic deposits already do.
+        var amountToAdd = if (resource.resourceType == ResourceType.Strategic ||
+            (resource.resourceType == ResourceType.Luxury && tile.resourceAmount > 0)) tile.resourceAmount
         else 1
         if (resource.resourceType == ResourceType.Luxury
             && city.containsBuildingUnique(UniqueType.ProvidesExtraLuxuryFromCityResources))

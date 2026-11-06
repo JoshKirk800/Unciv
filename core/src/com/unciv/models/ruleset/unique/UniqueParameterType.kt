@@ -433,6 +433,10 @@ enum class UniqueParameterType(
     Promotion("promotion", "Shock I", "The name of any promotion") {
         override fun getKnownValuesForAutocomplete(ruleset: Ruleset) = ruleset.unitPromotions.keys
     },
+    PromotionList("promotionList", "Shock I, Drill I", "Comma-separated names of promotions") {
+        override fun isKnownValue(parameterText: String, ruleset: Ruleset) =
+            parameterText.split(',').all { it.trim() in ruleset.unitPromotions }
+    },
 
     /** [UniqueType.ConditionalDuringEra] and similar */
     Era("era", "Ancient era", "The name of any era") {

@@ -1187,7 +1187,12 @@ class MapUnit : IsPartOfGameInfoSerialization {
     private fun getAncientRuinBonus(tile: Tile) {
         tile.addArchaeologyRecord(ArtifactClasses.AncientRuin, civ)
         tile.removeImprovement()
-        civ.ruinsManager.selectNextRuinsReward(this)
+        // CvPlayer::doGoody presents valid rewards to a human picker, while ordinary explorers
+        // continue to draw a weighted random reward. AI pickers use that ordinary draw too.
+        if (hasUnique(UniqueType.ChooseAncientRuinsReward) && civ.isHuman() && !civ.isAIOrAutoPlaying())
+            civ.ruinsManager.offerChoice(this)
+        else
+            civ.ruinsManager.selectNextRuinsReward(this)
     }
 
     /** Assigns ownership to [civInfo], updating its [unit manager][Civilization.units] and our [cache].

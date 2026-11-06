@@ -64,6 +64,8 @@ class TechManager : IsPartOfGameInfoSerialization {
     var scienceFromResearchAgreements = 0
     /** This is the list of strings, which is serialized */
     var techsResearched = HashSet<String>()
+    /** Technologies obtained by conquest cannot be offered in technology trades. */
+    var noTradeTechnologies = HashSet<String>()
 
     /** When moving towards a certain tech, the user doesn't have to manually pick every one. */
     var techsToResearch = ArrayList<String>()
@@ -77,6 +79,7 @@ class TechManager : IsPartOfGameInfoSerialization {
     fun clone(): TechManager {
         val toReturn = TechManager()
         toReturn.techsResearched.addAll(techsResearched)
+        toReturn.noTradeTechnologies.addAll(noTradeTechnologies)
         toReturn.freeTechs = freeTechs
         toReturn.repeatingTechsResearched = repeatingTechsResearched
         toReturn.techsInProgress.putAll(techsInProgress)

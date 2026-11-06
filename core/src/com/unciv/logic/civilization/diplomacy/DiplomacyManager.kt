@@ -77,6 +77,9 @@ enum class DiplomacyFlags {
     DiscoveredSpiesInOurCities,
     AgreedToNotSendSpies,
     IgnoreThemSendingSpies,
+    DugInOurLands,
+    AgreedToNotDigInOurLands,
+    IgnoreThemDiggingInOurLands,
     
     AgreedToNotAttackUs,
     MilitaryPresenceNearBorderOrAttackedUsDespitePromise,
@@ -119,6 +122,7 @@ enum class DiplomaticModifiers(val text: String) {
     BetrayedPromiseToNotSettleCitiesNearUs("You betrayed your promise to not settle cities near us"),
     BetrayedPromiseToNotSpreadReligionToUs("You betrayed your promise to not spread your religion to us"),
     BetrayedPromiseToNotSendingSpiesToUs("You betrayed your promise to stop spying on us"),
+    BetrayedPromiseToNotDigInOurLands("You broke your promise to stop digging in our lands"),
     BetrayedPromiseToNotAttackUs("You betrayed your promise to not attack us!"),
     BetrayedPromiseToNotAttackOtherCiv("You were observed betraying your promise to not declare war!"),
     
@@ -133,6 +137,7 @@ enum class DiplomaticModifiers(val text: String) {
     SpiedOnUs("You spied on us!"),
     StoleOurAlly("You took the alliance we had with a City-State"),
 
+    IgnoredRequestToStopDigging("You refused to stop digging in our lands"),
     // Positive
     EstablishedEmbassy("We have an embassy in your capital"),
     ReceivedEmbassy("You have an embassy in our capital"),
@@ -152,6 +157,7 @@ enum class DiplomaticModifiers(val text: String) {
     FulfilledPromiseToNotAttackUs("You fulfilled your promise to not attack us!"),
     GaveUsUnits("You gave us units!"),
     GaveUsGifts("We appreciate your gifts"),
+    BuiltLandmarksForUs("You built Landmarks in our lands"),
     ReturnedCapturedUnits("You returned captured units to us"),
     BelieveSameReligion("We believe in the same religion");
 
@@ -218,6 +224,9 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
      * Baseline is 1 point for each turn of peace - so declaring a war upends 40 years of peace, and e.g. capturing a city can be another 30 or 40.
      * As for why it's String and not DiplomaticModifier see FlagsCountdown comment */
     var diplomaticModifiers = HashMap<String, Float>()
+    /** CvDiplomacyAI archaeology counters, from the landowner's perspective. */
+    var negativeArchaeologyPoints = 0
+    var landmarksBuiltForUs = 0
 
     /** For city-states. Influence is saved in the CITY STATE -> major civ Diplomacy, NOT in the major civ -> city state diplomacy.
      * Access via getInfluence() and setInfluence() unless you know what you're doing.
@@ -271,6 +280,8 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
         toReturn.influence = influence
         toReturn.flagsCountdown.putAll(flagsCountdown)
         toReturn.diplomaticModifiers.putAll(diplomaticModifiers)
+        toReturn.negativeArchaeologyPoints = negativeArchaeologyPoints
+        toReturn.landmarksBuiltForUs = landmarksBuiltForUs
         toReturn.totalOfScienceDuringRA = totalOfScienceDuringRA
         toReturn.smoothedOpinionOfOtherCiv = smoothedOpinionOfOtherCiv
         toReturn.cachedSmoothedOpinionOfOtherCiv = cachedSmoothedOpinionOfOtherCiv
@@ -633,6 +644,8 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
     fun makePeace() {
         makePeaceOneSide()
         otherCivDiplomacy().makePeaceOneSide()
+        if (otherCiv.isCityState) civInfo.cache.updateCivResources()
+        if (civInfo.isCityState) otherCiv.cache.updateCivResources()
 
         for (civ in getCommonKnownCivsWithSpectators()) {
             civ.addNotification(
@@ -906,22 +919,26 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
     }
 
     fun agreeToDemand(demand: Demand){
-        otherCivDiplomacy().setFlag(demand.agreedToDemand, 100, true)
-        addModifier(DiplomaticModifiers.UnacceptableDemands, -10f)
+        otherCivDiplomacy().setFlag(demand.agreedToDemand, if (demand == Demand.DoNotDigInOurLands) 1 else 100, demand != Demand.DoNotDigInOurLands)
+        if (demand == Demand.DoNotDigInOurLands) otherCivDiplomacy().negativeArchaeologyPoints =
+            (otherCivDiplomacy().negativeArchaeologyPoints - 10).coerceAtLeast(0)
+        else addModifier(DiplomaticModifiers.UnacceptableDemands, -10f)
         val text = demand.agreedToDemandText.fillPlaceholders(civInfo.civName)
         otherCiv.addNotification(text, NotificationCategory.Diplomacy, NotificationIcon.Diplomacy, civInfo.civName)
         queueOtherCivPopupIfUnique(PopupAlert(AlertType.AcceptingDemand, civInfo.civID))
     }
     
     fun refuseDemand(demand: Demand) {
-        addModifier(DiplomaticModifiers.UnacceptableDemands, -20f)
-        otherCivDiplomacy().setFlag(demand.willIgnoreViolation, 100, true)
+        if (demand != Demand.DoNotDigInOurLands) addModifier(DiplomaticModifiers.UnacceptableDemands, -20f)
+        otherCivDiplomacy().setFlag(demand.willIgnoreViolation, if (demand == Demand.DoNotDigInOurLands) 1 else 100, demand != Demand.DoNotDigInOurLands)
         val text = demand.refusedDemandText.fillPlaceholders(civInfo.civName)
         otherCiv.addNotification(text, NotificationCategory.Diplomacy, NotificationIcon.Diplomacy, civInfo.civName)
         queueOtherCivPopupIfUnique(PopupAlert(AlertType.RejectingDemand, civInfo.civID))
         if (demand == Demand.DoNotAttackUs)
             // no modifier penalty for refusal, they respect our honesty
             declareWar()
+        else if (demand == Demand.DoNotDigInOurLands)
+            otherCivDiplomacy().setModifier(demand.refusedDiplomaticModifier, -20f)
         else
             otherCivDiplomacy().addModifier(demand.refusedDiplomaticModifier, -15f)
     }

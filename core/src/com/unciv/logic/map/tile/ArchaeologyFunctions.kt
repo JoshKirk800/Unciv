@@ -3,6 +3,8 @@ package com.unciv.logic.map.tile
 import com.unciv.logic.GameInfo
 import com.unciv.logic.civilization.AlertType
 import com.unciv.logic.civilization.PopupAlert
+import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
+import com.unciv.logic.civilization.diplomacy.DiplomaticModifiers
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.civilization.Civilization
@@ -230,8 +232,16 @@ object ArchaeologyFunctions {
             isWriting && ArchaeologyChoice.Writing in choices -> ArchaeologyChoice.Writing
             noSlot -> if (isWriting) ArchaeologyChoice.CultureBoost else ArchaeologyChoice.Landmark
             tile.getOwner() != civ -> {
-                // Outside our territory an artifact, unless we are courting a city-state
-                ArchaeologyChoice.ArtifactOfFirst
+                // CvPlayerCulture::GetArchaeologyChoice: diplomatic strategy favors a city-state
+                // Landmark unless our available diplomacy state says we are targeting it for conquest.
+                val owner = tile.getOwner()
+                if (owner?.isCityState == true && "Diplomatic" in civ.getPreferredVictoryTypes()
+                    && !civ.isAtWarWith(owner)) {
+                    val diplomacy = civ.getDiplomacyManager(owner)
+                    if (diplomacy?.hasFlag(DiplomacyFlags.WaryOf) == true && diplomacy.getFlag(DiplomacyFlags.WaryOf) < 0)
+                        ArchaeologyChoice.ArtifactOfFirst
+                    else ArchaeologyChoice.Landmark
+                } else ArchaeologyChoice.ArtifactOfFirst
             }
             tile.getWorkingCity() == null -> ArchaeologyChoice.ArtifactOfFirst
             record.era == civ.gameInfo.ruleset.eras.values.minByOrNull { it.eraNumber }?.name -> ArchaeologyChoice.Landmark
@@ -256,18 +266,28 @@ object ArchaeologyFunctions {
         if (choice !in getChoices(civ, tile)) return false
         val constants = civ.gameInfo.ruleset.modOptions.constants
         val record = tile.archaeologyRecord
+        val owner = tile.getOwner()
         when (choice) {
             ArchaeologyChoice.Landmark -> {
                 tile.setImprovement(constants.landmarkImprovement, civ, unit)
-                val owner = tile.getOwner()
-                if (owner != null && owner.isCityState)
+                if (owner?.isCityState == true)
                     owner.getDiplomacyManager(civ)?.addInfluence(constants.landmarkInfluenceWithCityStates.toFloat())
+                else if (owner != null && owner != civ && owner.isMajorCiv && owner.isAI()) {
+                    val diplomacy = owner.getDiplomacyManager(civ)
+                    if (diplomacy != null) {
+                        diplomacy.landmarksBuiltForUs++
+                        // CvDiplomacyAI::GetLandmarksBuiltForMeScore: first +20, subsequent +6 each.
+                        diplomacy.setModifier(DiplomaticModifiers.BuiltLandmarksForUs,
+                            (20 + (diplomacy.landmarksBuiltForUs - 1) * (20 / 3)).toFloat())
+                    }
+                }
             }
             ArchaeologyChoice.ArtifactOfFirst, ArchaeologyChoice.ArtifactOfSecond, ArchaeologyChoice.Writing -> {
                 val work = getArtifact(tile) ?: return false
                 val slot = GreatWorkFunctions.getClosestFreeSlot(civ, work.getSlotType(), tile) ?: return false
                 val attributedTo = if (choice == ArchaeologyChoice.ArtifactOfSecond) record!!.civ2!! else record!!.civ1
                 GreatWorkFunctions.createWork(civ, work, slot, attributedTo, record.era)
+                recordForeignExtraction(civ, owner)
                 civ.addNotification("We have found the Great Work [${work.name}] and put it in [${slot.city.name}]", slot.city.location,
                     NotificationCategory.General, "StatIcons/Culture")
                 tile.removeImprovement()
@@ -275,10 +295,22 @@ object ArchaeologyFunctions {
             ArchaeologyChoice.CultureBoost -> {
                 civ.policies.addCulture(civ.policies.getCultureFromGreatWriter())
                 tile.removeImprovement()
+                recordForeignExtraction(civ, owner)
             }
         }
         unit?.destroy()
         return true
     }
+    /** CvPlayerCulture::DoArchaeologyChoice: artifacts, writings and culture boosts all cost 10
+     *  negative archaeology points on another major civilization's land; a Landmark does not. */
+    private fun recordForeignExtraction(civ: Civilization, owner: Civilization?) {
+        if (owner == null || owner == civ || !owner.isMajorCiv) return
+        val diplomacy = owner.getDiplomacyManager(civ) ?: return
+        diplomacy.negativeArchaeologyPoints += 10
+        if (owner.isAI() && diplomacy.negativeArchaeologyPoints >= 10 &&
+            !diplomacy.hasFlag(DiplomacyFlags.IgnoreThemDiggingInOurLands))
+            diplomacy.setFlag(DiplomacyFlags.DugInOurLands, 1)
+    }
+
     //endregion
 }

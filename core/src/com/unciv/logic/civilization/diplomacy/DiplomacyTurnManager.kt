@@ -171,6 +171,9 @@ object DiplomacyTurnManager {
 
     private fun DiplomacyManager.nextTurnFlags() {
         loop@ for (flag in flagsCountdown.keys.toList()) {
+            // Civ V remembers made/ignored no-dig promises indefinitely, unlike timed generic demands.
+            if (flag == DiplomacyFlags.AgreedToNotDigInOurLands.name ||
+                flag == DiplomacyFlags.IgnoreThemDiggingInOurLands.name) continue
             // We want negative flags to keep on going negative to keep track of time
             flagsCountdown[flag] = flagsCountdown[flag]!! - 1
 
@@ -240,7 +243,7 @@ object DiplomacyTurnManager {
                     }
                     else -> {
                         for (demand in Demand.entries){
-                            if (demand.agreedToDemand.name == flag) addModifier(demand.fulfilledPromiseDiplomacyModifier, 10f)
+                            if (demand.agreedToDemand.name == flag) demand.fulfilledPromiseDiplomacyModifier?.let { addModifier(it, 10f) }
                         }
                     }
                 }

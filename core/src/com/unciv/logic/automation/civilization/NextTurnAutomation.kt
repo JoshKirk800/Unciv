@@ -749,8 +749,10 @@ object NextTurnAutomation {
             // violation after promise (broke promise)
             diplomacyManager.hasFlag(demand.agreedToDemand) -> {
                 offendingCiv.popupAlerts.add(PopupAlert(demand.violationDiscoveredAlert, civView.civID))
-                diplomacyManager.setFlag(demand.willIgnoreViolation, 100, true)
-                diplomacyManager.addDiminishingModifier(demand.betrayedPromiseDiplomacyModifier, -20f)
+                diplomacyManager.setFlag(demand.willIgnoreViolation, if (demand == Demand.DoNotDigInOurLands) 1 else 100, demand != Demand.DoNotDigInOurLands)
+                if (demand == Demand.DoNotDigInOurLands)
+                    diplomacyManager.setModifier(demand.betrayedPromiseDiplomacyModifier, -30f)
+                else diplomacyManager.addDiminishingModifier(demand.betrayedPromiseDiplomacyModifier, -20f)
                 if (demand == Demand.DoNotAttackUs) {
                     // relationship penalty with all common known civs, similar to DoF backstabbing
                     // TODO: apply WarmongerHatred personality trait here?
@@ -763,9 +765,8 @@ object NextTurnAutomation {
             }
             // violation before promise
             else -> {
-                val threatLevel = Automation.threatAssessment(civView, GameView(civInfo.gameInfo, civInfo).getForeignCivView(offendingCiv))
-                if (threatLevel < ThreatLevel.High // don't piss them off for no reason please.
-                    || demand == Demand.DoNotAttackUs) 
+                if (demand == Demand.DoNotDigInOurLands || demand == Demand.DoNotAttackUs ||
+                    Automation.threatAssessment(civView, GameView(civInfo.gameInfo, civInfo).getForeignCivView(offendingCiv)) < ThreatLevel.High)
                     offendingCiv.popupAlerts.add(PopupAlert(demand.demandAlert, civView.civID))
             }
         }

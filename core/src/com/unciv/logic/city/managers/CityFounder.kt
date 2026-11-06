@@ -8,6 +8,7 @@ import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
 import com.unciv.logic.civilization.managers.ReligionState
 import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.mapunit.MapUnit
+import com.unciv.logic.map.TileMap
 import com.unciv.models.ruleset.nation.Nation
 import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unique.UniqueTriggerActivation
@@ -20,6 +21,7 @@ class CityFounder {
         val city = City()
 
         city.foundingCivObject = civInfo
+        city.everOwnedBy.add(civInfo.civID)
         city.turnAcquired = civInfo.gameInfo.turns
         city.location = cityLocation
         city.setTransients(civInfo)
@@ -42,6 +44,13 @@ class CityFounder {
         val startingEra = civInfo.gameInfo.gameParameters.startingEra
 
         city.expansion.reset()
+        val extraTiles = civInfo.getMatchingUniques(UniqueType.ExtraTerritoryOnFounding, civInfo.state)
+            .sumOf { it.params[0].toInt() }
+        for (i in 0 until extraTiles.coerceAtLeast(0)) {
+            val nextTile = city.expansion.chooseNewTileToOwn() ?: break
+            city.expansion.takeOwnership(nextTile)
+        }
+
 
         city.tryUpdateRoadStatus()
 
@@ -70,6 +79,7 @@ class CityFounder {
         }
 
         city.population.autoAssignPopulation()
+        addUniqueLuxury(civInfo, city)
 
         // Update proximity rankings for all civs
         for (otherCiv in civInfo.gameInfo.getAliveMajorCivs()) {
@@ -101,6 +111,36 @@ class CityFounder {
                 UniqueTriggerActivation.triggerUnique(unique, civInfo, city, unit, triggerNotificationText = "due to founding a city")
 
         return city
+    }
+
+    /** CvPlayerTraits::AddUniqueLuxuries: only the first cities founded on distinct
+     *  landmasses away from the original capital receive their civilization's luxuries. */
+    private fun addUniqueLuxury(civInfo: Civilization, city: City) {
+        val unique = civInfo.getMatchingUniques(UniqueType.UniqueLuxuriesInNewAreas, civInfo.state)
+            .firstOrNull() ?: return
+        val map = civInfo.gameInfo.tileMap
+        map.assignContinents(TileMap.AssignContinentsMode.Ensure)
+        val area = city.getCenterTile().getContinent()
+        if (area == -1) return
+        if (city.isOriginalCapital) {
+            civInfo.originalLuxuryArea = area
+            return
+        }
+        if (civInfo.originalLuxuryArea == -1)
+            civInfo.originalLuxuryArea = civInfo.cities.firstOrNull { it.isOriginalCapital }
+                ?.getCenterTile()?.getContinent() ?: -1
+        if (area == civInfo.originalLuxuryArea || area in civInfo.uniqueLuxuryAreas) return
+        val resources = civInfo.gameInfo.ruleset.tileResources.values.filter { resource ->
+            resource.getMatchingUniques(UniqueType.UniqueLuxuryForCivilization, GameContext.IgnoreConditionals)
+                .any { it.params[0] == civInfo.civName }
+        }
+        val index = civInfo.uniqueLuxuryAreas.size
+        if (index >= unique.params[1].toInt() || index >= resources.size) return
+        civInfo.uniqueLuxuryAreas.add(area)
+        val center = city.getCenterTile()
+        center.tileResource = resources[index]
+        center.resourceAmount = unique.params[0].toInt()
+        civInfo.cache.updateCivResources()
     }
 
     private object NamingConstants {

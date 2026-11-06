@@ -75,6 +75,8 @@ class City : IsPartOfGameInfoSerialization, INamed {
     private var foundingCiv = ""
     // This is so that cities in resistance that are recaptured aren't in resistance anymore
     var previousOwner = ""
+    /** Historical owners, including the founder, for first-conquest effects. Persisted across trades and recaptures. */
+    var everOwnedBy = HashSet<String>()
     var turnAcquired = 0
     var health = 200
 
@@ -205,6 +207,7 @@ class City : IsPartOfGameInfoSerialization, INamed {
         toReturn.hasSoldBuildingThisTurn = hasSoldBuildingThisTurn
         toReturn.foundingCiv = foundingCiv
         toReturn.previousOwner = previousOwner
+        toReturn.everOwnedBy.addAll(everOwnedBy)
         toReturn.turnAcquired = turnAcquired
         toReturn.isPuppet = isPuppet
         toReturn.isOriginalCapital = isOriginalCapital
@@ -366,6 +369,9 @@ class City : IsPartOfGameInfoSerialization, INamed {
 
         if (isOriginalCapital && !allowRazeCapital) return false
         if (isHolyCity() && !allowRazeHolyCity) return false
+        // A unique luxury beneath the city survives capture and prevents razing for any owner.
+        if (getCenterTile().tileResource?.hasUnique(
+                UniqueType.UniqueLuxuryForCivilization, GameContext.IgnoreConditionals) == true) return false
         if (isCapital() && !justCaptured && !allowRazeCapital) return false
 
         return true

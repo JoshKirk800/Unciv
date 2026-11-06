@@ -21,6 +21,8 @@ enum class AlertType : IsPartOfGameInfoSerialization {
     
     DemandToStopSpyingOnUs,
     SpyingOnUsDespiteOurPromise,
+    DemandToStopDiggingInOurLands,
+    DugInOurLandsDespitePromise,
     
     DemandToNotAttackUs,
     AttackedUsDespitePromise,
@@ -31,6 +33,8 @@ enum class AlertType : IsPartOfGameInfoSerialization {
     GoldenAge,
     /** A dig is complete and its civilization chooses what to do with the finds, [PopupAlert.value] is the position "x,y" of the tile */
     ArchaeologyChoice,
+    /** A Native Tongue explorer chooses its ruin reward; [PopupAlert.value] is the explorer's unit id. */
+    RuinsReward,
     DeclarationOfFriendship,
     StartIntro,
     DiplomaticMarriage,

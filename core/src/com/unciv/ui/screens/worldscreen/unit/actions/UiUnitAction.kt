@@ -190,6 +190,7 @@ enum class UiUnitActionType private constructor(
     HurryWonder(UnitActionType.HurryWonder, portrait("HurryConstruction"), uncivSound = UncivSound.Chimes, useFrequency = 75f),
     HurryBuilding(UnitActionType.HurryBuilding, portrait("HurryConstruction"), uncivSound = UncivSound.Chimes, useFrequency = 75f),
     ConductTradeMission(UnitActionType.ConductTradeMission, portrait("ConductTradeMission"), uncivSound = UncivSound.Chimes, useFrequency = 70f),
+    SellExoticGoods(UnitActionType.SellExoticGoods, portrait("ConductTradeMission"), uncivSound = UncivSound.Coin, useFrequency = 70f),
     FoundReligion(UnitActionType.FoundReligion, portrait("FoundReligion"), uncivSound = UncivSound.Choir, useFrequency = 80f),
     TriggerUnique(UnitActionType.TriggerUnique, null, false, UncivSound.Chimes, useFrequency = 80f),
     SpreadReligion(UnitActionType.SpreadReligion, null, uncivSound = UncivSound.Choir, useFrequency = 68f),

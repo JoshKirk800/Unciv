@@ -357,6 +357,26 @@ class CivInfoTransientCache(val civInfo: Civilization) {
             }
             // Then we combine these into one
             newDetailedCivResources.addByResource(cityStateProvidedResources, Constants.cityStates)
+
+            // A Feitoria gives its builder copies of types actually supplied by the City-State,
+            // not imports, allied copies, or extra copies of the same type. City-State origin also
+            // keeps these copies out of the tradable resource pool.
+            for (cityState in civInfo.gameInfo.civilizations) {
+                if (!cityState.isCityState || cityState.isDefeated() || civInfo.isAtWarWith(cityState)) continue
+                var copies = 0
+                for (city in cityState.cities)
+                    for (tile in city.getTiles()) {
+                        val improvement = tile.tileImprovement ?: continue
+                        if (tile.getOwner() != cityState || tile.improvementBuilder != civInfo.civID || tile.improvementIsPillaged) continue
+                        for (unique in improvement.getMatchingUniques(UniqueType.SiphonsLuxuriesFromCityState, civInfo.state))
+                            copies += unique.params[0].toInt()
+                    }
+                if (copies == 0) continue
+                for (resource in cityState.detailedCivResources.asSequence()
+                    .filter { it.amount > 0 && it.origin != "Trade" && it.origin != Constants.cityStates }
+                    .map { it.resource }.filter { it.resourceType == ResourceType.Luxury }.distinct())
+                    newDetailedCivResources.add(resource, Constants.cityStates, copies)
+            }
         }
 
         civInfo.forEachMatchingUnique(UniqueType.ProvidesResources) { unique ->
@@ -394,6 +414,15 @@ class CivInfoTransientCache(val civInfo: Civilization) {
         civInfo.civResourcesUniqueMap = newResourceUniqueMap
 
         civInfo.updateStatsForNextTurn() // More or less resources = more or less happiness, with potential domino effects
+        if (civInfo.isCityState) {
+            // A newly connected, pillaged or removed City-State luxury changes each builder's
+            // copies even when the Feitoria itself has not changed.
+            for (builderId in civInfo.cities.asSequence().flatMap { it.getTiles() }
+                .filter { it.tileImprovement?.hasUnique(UniqueType.SiphonsLuxuriesFromCityState) == true }
+                .map { it.improvementBuilder }.filter { it.isNotEmpty() }.distinct()) {
+                civInfo.gameInfo.civilizations.firstOrNull { it.civID == builderId }?.cache?.updateCivResources()
+            }
+        }
     }
 
 

@@ -131,6 +131,12 @@ object UnitActionsPillage {
         if (unit.isTransported) return false
         if (!tile.canPillageTile()) return false
         if (unit.hasUnique(UniqueType.CannotPillage, checkCivInfoUniques = true)) return false
+        if (tile.getOwner()?.isCityState == true
+            && tile.tileImprovement?.hasUnique(UniqueType.SiphonsLuxuriesFromCityState) == true) {
+            val builder = unit.civ.gameInfo.civilizations.firstOrNull { it.civID == tile.improvementBuilder }
+            if (builder != null && !builder.isDefeated() && !unit.civ.isAtWarWith(builder))
+                return false
+        }
         val tileOwner = tile.getOwner()
         // Can't pillage friendly tiles, just like you can't attack them - it's an 'act of war' thing
         return tileOwner == null || unit.civ.isAtWarWith(tileOwner)
