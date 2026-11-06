@@ -656,6 +656,7 @@
 		"techs": [
 			{
 				"name": "The Internet",
+				"uniques": ["[+100]% Tourism [in all cities] unless the target has a [Great Firewall]"],
 				"row": 1,
 				"prerequisites": ["Telecommunications"],
 				"quote": "'The Internet is the first thing that humanity has built that humanity doesn't understand, the largest experiment in anarchy that we have ever had.' - Eric Schmidt"

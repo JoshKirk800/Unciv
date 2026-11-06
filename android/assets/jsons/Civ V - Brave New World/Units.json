@@ -1804,7 +1804,7 @@
 	{
 		"name": "Great Musician",
 		"unitType": "Civilian",
-		"uniques": ["Create a Great Work <by consuming this unit>", "[This Unit] gets a name from the [Musician] group", "Is part of Great Person group [Great Person]", "Great Person - [Culture]", "Unbuildable", "Uncapturable"],
+		"uniques": ["Create a Great Work <by consuming this unit>", "[This Unit] gets a name from the [Musician] group", "Is part of Great Person group [Great Person]", "Great Person - [Culture]", "Unbuildable", "Uncapturable", "Perform a concert tour: [10] times our Tourism towards the civilization whose territory we are in, [20]% of that towards each other civilization we have met <by consuming this unit>"],
 		"movement": 2
 	},
 	{
