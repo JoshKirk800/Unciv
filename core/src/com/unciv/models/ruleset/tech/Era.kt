@@ -17,6 +17,18 @@ import com.unciv.ui.screens.civilopediascreen.FormattedLine
 import yairm210.purity.annotations.Readonly
 import yairm210.purity.annotations.ReturnsNewInstance
 
+/** The parameters of the sessions of the World Congress during an era, see [UniqueType.WorldCongressSession] */
+data class WorldCongressSessionInfo(
+    /** Turns between sessions at Standard speed */
+    val turnsBetween: Int,
+    /** Delegates of each civilization */
+    val civDelegates: Int,
+    /** Delegates more for the host */
+    val hostDelegates: Int,
+    /** Delegates for each allied City-State */
+    val cityStateDelegates: Int
+)
+
 class Era : RulesetObject() {
     var eraNumber: Int = -1
     var researchAgreementCost = 300
@@ -64,6 +76,16 @@ class Era : RulesetObject() {
     }
 
     override fun getUniqueTarget() = UniqueTarget.Era
+
+    /** The World Congress becomes the United Nations in this era ([UniqueType.WorldCongressUnitedNations]) */
+    val isUnitedNations get() = hasUnique(UniqueType.WorldCongressUnitedNations)
+
+    /** The sessions of the World Congress in this era ([UniqueType.WorldCongressSession]), `null` if the era has none */
+    @Readonly
+    fun getWorldCongressSession(): WorldCongressSessionInfo? =
+        getMatchingUniques(UniqueType.WorldCongressSession, GameContext.IgnoreConditionals).firstOrNull()?.let {
+            WorldCongressSessionInfo(it.params[0].toInt(), it.params[1].toInt(), it.params[2].toInt(), it.params[3].toInt())
+        }
 
     override fun makeLink() = "Era/$name"
     override fun getCivilopediaTextHeader() = FormattedLine(name, header = 2, color = getHexColor())

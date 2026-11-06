@@ -111,6 +111,11 @@ class TechManager : IsPartOfGameInfoSerialization {
         techCost *= civInfo.getDifficulty().researchCostModifier
         techCost *= civInfo.gameInfo.speed.scienceCostModifier
         techCost /= getScienceModifier(techName)
+        // Scholars In Residence (LR 4.3.5): cheaper if any other living civilization, city-states included, knows it
+        val knownByAnyPercent = civInfo.getMatchingUniques(UniqueType.TechKnownByAnyCivResearchSpeed, civInfo.state).sumOf { it.params[0].toInt() }
+        if (knownByAnyPercent != 0 && civInfo.gameInfo.civilizations.any {
+                it != civInfo && it.isAlive() && !it.isBarbarian && !it.isSpectator && it.tech.isResearched(techName) })
+            techCost /= (100 + knownByAnyPercent) / 100f
         val mapSizePredef = civInfo.gameInfo.tileMap.mapParameters.mapSize.getPredefinedOrNextSmaller()
         techCost *= mapSizePredef.techCostMultiplier
         techCost *= civInfo.gameInfo.getStartingEra().researchPercent / 100f

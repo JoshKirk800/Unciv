@@ -109,6 +109,14 @@
       },
       "description": "List of Citystate Quest names to remove or \"All\" (isBaseRuleset=false only)."
     },
+    "resolutionsToRemove": {
+      "title": "Resolutions To Remove",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of World Congress Resolutions or \"All\" to remove (isBaseRuleset=false only)."
+    },
     "religionsToRemove": {
       "title": "Religions To Remove",
       "type": "array",

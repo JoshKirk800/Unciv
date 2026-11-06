@@ -65,6 +65,7 @@ class TurnManager(val civInfo: Civilization) {
         civInfo.cache.updateCitiesConnectedToCapital()
         civInfo.tradeRoutes.startTurn()
         if (civInfo.isMajorCiv) ArchaeologyFunctions.resolvePendingDigs(civInfo)
+        if (civInfo.isMajorCiv && civInfo.isHuman()) civInfo.gameInfo.league?.notifyStartTurn(civInfo)
         startTurnFlags()
         updateRevolts()
 

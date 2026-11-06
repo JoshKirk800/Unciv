@@ -364,6 +364,35 @@ quest with weight 1.
 This is just a list of Strings specifying all predefined religion names. Corresponding icons must
 exist, that's all to it. After all, they're just containers for [beliefs](#beliefsjson).
 
+## Resolutions.json
+
+This file contains the resolutions that the World Congress can enact (Brave New World). A ruleset without this file has no World Congress.
+The sessions of the Congress are set by the unique `World Congress sessions: every [positiveAmount] turns, [amount] delegates per civilization, [amount] for the host and [amount] per allied City-State` on the [eras](5-Miscellaneous-JSON-files.md#erasjson),
+and the Congress is founded once someone has a tech or wonder with the unique `Allows the World Congress to be founded`.
+The `uniques` of a resolution apply to every civilization while it is in effect (unique target `Resolution`); the other effects are the attributes below.
+The unique `Elects the host of the World Congress` or `Elects the World Leader` marks the resolutions that the Congress proposes by itself.
+`Only available` and `Unavailable` with conditionals about the game settings work on resolutions.
+The conditional `<when the [resolution] resolution is in effect>` can be used anywhere, for example to forbid building something.
+
+| Attribute                     | Type    | Default  | Notes                                                                                                                       |
+|-------------------------------|---------|----------|-----------------------------------------------------------------------------------------------------------------------------|
+| name                          | String  | Required | Must be unique                                                                                                              |
+| uniques                       | List    | empty    | Effects while the resolution is in effect, and `Only available`/`Unavailable` restrictions                                  |
+| voterDecision                 | Enum    | `YesNo`  | What the voters decide: `YesNo`, or `MajorCiv` for the host election and the World Leader                                   |
+| proposerDecision              | Enum    | `None`   | What the proposer chooses: `None`, `OtherMajorCiv` (a civilization other than the proposer), `Luxury`, `Religion` or `Ideology` |
+| requiredTechAnyMember         | String  | none     | The resolution can be proposed only when a living civilization knows this tech                                              |
+| playerProposable              | Boolean | true     | False for resolutions that only the Congress proposes                                                                       |
+| exclusive                     | Boolean | false    | Only one instance can be proposed or in effect, whatever the choice                                                         |
+| leadersVoteBonusOnFail        | Integer | 0        | Delegates that the civilizations leading the vote get more when the vote fails (World Leader)                               |
+| votesForFollowingReligion     | Integer | 0        | Delegates more for a civilization that follows the chosen religion in most of its cities                                    |
+| votesForFollowingIdeology     | Integer | 0        | Delegates more for a civilization that follows the chosen ideology                                                          |
+| holyCityTourismPercent        | Integer | 0        | Percent more tourism from the holy city of the chosen religion                                                              |
+| religionSpreadStrengthPercent | Integer | 0        | Percent more spread strength of the chosen religion                                                                         |
+| ideologyPressure              | Integer | 0        | Ideological pressure of the chosen ideology on every civilization                                                           |
+| embargoesCityStates           | Boolean | false    | Trade routes with city-states are forbidden                                                                                 |
+| embargoesPlayer               | Boolean | false    | Trade routes with the civilization chosen by the proposer are forbidden. `proposerDecision` must be `OtherMajorCiv`         |
+| bansLuxuryHappiness           | Boolean | false    | The luxury chosen by the proposer gives no happiness and cannot be traded. `proposerDecision` must be `Luxury`              |
+
 ## Specialists.json
 
 [Link to original](https://github.com/yairm210/Unciv/blob/master/android/assets/jsons/Civ%20V%20-%20Gods%20%26%20Kings/Specialists.json)

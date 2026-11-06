@@ -38,7 +38,20 @@ object BackwardCompatibility {
 
         removeTechAndPolicies()
         updateMissingStartingEra()
+        removeMissingLeagueReferences()
         migrateCivID()
+    }
+
+    /** A mod that no longer has a resolution: the World Congress forgets it being proposed or in effect (and is gone if no resolution is left) */
+    private fun GameInfo.removeMissingLeagueReferences() {
+        val league = league ?: return
+        if (ruleset.resolutions.isEmpty()) {
+            this.league = null
+            return
+        }
+        league.activeResolutions.removeAll { it.resolution !in ruleset.resolutions }
+        league.proposals.removeAll { it.resolution !in ruleset.resolutions }
+        league.lastResults.removeAll { it.resolution !in ruleset.resolutions }
     }
 
     fun GameInfo.migrateCivID() {

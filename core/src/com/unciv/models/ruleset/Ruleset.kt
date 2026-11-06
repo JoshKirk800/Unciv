@@ -76,6 +76,7 @@ enum class RulesetFile(
     TileResources("TileResources.json", { tileResources.values.asSequence() }),
     Specialists("Specialists.json", getINamed = { specialists.values.asSequence() }),
     GreatWorks("GreatWorks.json", getINamed = { greatWorks.values.asSequence() }),
+    Resolutions("Resolutions.json", { resolutions.values.asSequence() }),
     Units("Units.json", { units.values.asSequence() }),
     UnitPromotions("UnitPromotions.json", { unitPromotions.values.asSequence() }),
     UnitNameGroup("UnitNameGroups.json", { unitNameGroups.values.asSequence() }, getNames = {
@@ -142,6 +143,7 @@ class Ruleset {
     val quests = LinkedHashMap<String, Quest>()
     val specialists = LinkedHashMap<String, Specialist>()
     val greatWorks = LinkedHashMap<String, GreatWork>()
+    val resolutions = LinkedHashMap<String, Resolution>()
     val technologies = LinkedHashMap<String, Technology>()
     val techColumns = ArrayList<TechColumn>()
     val terrains = LinkedHashMap<String, Terrain>()
@@ -261,6 +263,8 @@ class Ruleset {
         specialists.putAll(ruleset.specialists)
         greatWorks.selectiveRemove(ruleset.modOptions.greatWorksToRemove)
         greatWorks.putAll(ruleset.greatWorks)
+        resolutions.selectiveRemove(ruleset.modOptions.resolutionsToRemove)
+        resolutions.putAll(ruleset.resolutions)
         mergeTechnologies(ruleset)
         terrains.selectiveRemove(ruleset.modOptions.terrainsToRemove) { matchesFilter(it) }
         terrains.putAll(ruleset.terrains)
@@ -506,6 +510,7 @@ class Ruleset {
         ruinRewards.clear()
         specialists.clear()
         greatWorks.clear()
+        resolutions.clear()
         technologies.clear()
         techColumns.clear()
         terrains.clear()
@@ -611,6 +616,9 @@ class Ruleset {
 
         val greatWorksFile = RulesetFile.GreatWorks.file()
         if (greatWorksFile.exists()) greatWorks += createHashmap(json().fromJsonFile(Array<GreatWork>::class.java, greatWorksFile))
+
+        val resolutionsFile = RulesetFile.Resolutions.file()
+        if (resolutionsFile.exists()) resolutions += createHashmap(json().fromJsonFile(Array<Resolution>::class.java, resolutionsFile))
 
         val policiesFile = RulesetFile.Policies.file()
         if (policiesFile.exists()) {

@@ -148,6 +148,27 @@ class ModConstants {
     var tradeRouteDomesticBaseYield = 3f
     var tradeRouteDomesticYieldPerEra = 0.5f
 
+    // World Congress (CvVotingClasses.cpp, GlobalDefines.xml; the values are those of Brave New World)
+    /** Civilizations that propose resolutions in a session (LEAGUE_PROPOSERS_PER_SESSION) */
+    var leagueProposersPerSession = 2
+    /** Resolutions each of them proposes */
+    var leagueProposalsPerProposer = 1
+    /** The turns ahead of a session that the player is warned */
+    var leagueSessionSoonWarningTurns = 5
+    /** Turns between sessions when no era has sessions, at Standard speed */
+    var leagueFallbackSessionInterval = 12
+    /** Delegates of each civilization when no era has sessions */
+    var leagueFallbackDelegates = 1
+    /** Delegates that the civilizations leading the vote get more when the World Leader vote fails */
+    var leagueLeadersVoteBonusCount = 2
+    /** The votes needed to elect the World Leader are the sum of a civilization part and a city-state part, each `max(0, coefficient * ln(count) + constant)` (CvGame::DoUpdateDiploVictory) */
+    var leagueWorldLeaderCivCoefficient = 1.443f
+    var leagueWorldLeaderCivConstant = 7f
+    var leagueWorldLeaderCityStateCoefficient = 16.023f
+    var leagueWorldLeaderCityStateConstant = -13.758f
+    /** Proposals the host of the World Congress makes in a regular session */
+    var leagueRegularHostProposals = 1
+
     // Great Works: culture that each one gives its city, before the bonuses of policies
     var greatWorkBaseCulture = 2
 

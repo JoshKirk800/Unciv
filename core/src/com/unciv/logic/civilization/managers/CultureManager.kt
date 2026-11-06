@@ -154,6 +154,7 @@ class CultureManager : IsPartOfGameInfoSerialization {
             if (skipBlockable != null && skipBlockable.cities.any { it.cityConstructions.containsBuildingOrEquivalent(unique.params[2]) }) continue
             percent += unique.params[0].toInt()
         }
+        percent += civ.gameInfo.league?.getHolyCityTourismPercent(city) ?: 0 // World Religion (LR 4.3.10)
         return if (percent > 0) before * (100 + percent) / 100 else before
     }
 

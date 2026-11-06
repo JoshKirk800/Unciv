@@ -13,6 +13,7 @@ import com.unciv.models.ruleset.BeliefType
 import com.unciv.models.ruleset.Building
 import com.unciv.models.ruleset.EventChoice
 import com.unciv.models.ruleset.IRulesetObject
+import com.unciv.models.ruleset.ResolutionDecision
 import com.unciv.models.ruleset.Ruleset
 import com.unciv.models.ruleset.RulesetCache
 import com.unciv.models.ruleset.RulesetFile
@@ -122,6 +123,7 @@ open class RulesetValidator protected constructor(
         addDifficultyErrors(lines)
         addEventErrors(lines)
         addCityStateTypeErrors(lines)
+        addResolutionErrors(lines)
 
         checkFreeBuildingPossibleRecursions(lines)
         addTranslationNameCollisionWarnings(lines)
@@ -416,6 +418,24 @@ open class RulesetValidator protected constructor(
     }
 
     protected open fun addSpecialistErrors(lines: RulesetErrorList) {}
+
+    protected open fun addResolutionErrors(lines: RulesetErrorList) {
+        for (resolution in ruleset.resolutions.values) {
+            if (resolution.voterDecision != ResolutionDecision.YesNo && resolution.voterDecision != ResolutionDecision.MajorCiv)
+                lines.add("Resolution ${resolution.name} has voterDecision ${resolution.voterDecision}, but voters can only decide YesNo or MajorCiv!", sourceObject = resolution)
+            if (resolution.embargoesPlayer && resolution.proposerDecision != ResolutionDecision.OtherMajorCiv)
+                lines.add("Resolution ${resolution.name} embargoes a player, so its proposerDecision must be OtherMajorCiv!", sourceObject = resolution)
+            if (resolution.bansLuxuryHappiness && resolution.proposerDecision != ResolutionDecision.Luxury)
+                lines.add("Resolution ${resolution.name} bans a luxury, so its proposerDecision must be Luxury!", sourceObject = resolution)
+            if (resolution.votesForFollowingReligion != 0 || resolution.holyCityTourismPercent != 0 || resolution.religionSpreadStrengthPercent != 0)
+                if (resolution.proposerDecision != ResolutionDecision.Religion)
+                    lines.add("Resolution ${resolution.name} has religion effects, so its proposerDecision must be Religion!", sourceObject = resolution)
+            if (resolution.votesForFollowingIdeology != 0 || resolution.ideologyPressure != 0)
+                if (resolution.proposerDecision != ResolutionDecision.Ideology)
+                    lines.add("Resolution ${resolution.name} has ideology effects, so its proposerDecision must be Ideology!", sourceObject = resolution)
+            uniqueValidator.checkUniques(resolution, lines, reportRulesetSpecificErrors)
+        }
+    }
 
     protected open fun addSpeedErrors(lines: RulesetErrorList) {
         for (speed in ruleset.speeds.values) {

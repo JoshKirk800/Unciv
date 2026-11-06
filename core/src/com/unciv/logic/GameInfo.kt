@@ -18,6 +18,7 @@ import com.unciv.logic.civilization.*
 import com.unciv.logic.civilization.managers.TechManager
 import com.unciv.logic.civilization.managers.TurnManager
 import com.unciv.logic.civilization.managers.VictoryManager
+import com.unciv.logic.league.League
 import com.unciv.logic.github.Github.repoNameToFolderName
 import com.unciv.logic.map.MapShape
 import com.unciv.logic.map.TileMap
@@ -150,6 +151,9 @@ class GameInfo : IsPartOfGameInfoSerialization, HasGameInfoSerializationVersion 
     /** Whether the archaeological sites have appeared. They appear once, when the first civilization learns what makes them (see [com.unciv.models.ruleset.unique.UniqueType.OneTimeSpawnArchaeologySites]) */
     var archaeologyTriggered = false
 
+    /** The World Congress, `null` until it is founded and in rulesets without resolutions, see [League.tryFound] */
+    var league: League? = null
+
     //endregion
     //region Fields - Transient
 
@@ -223,6 +227,7 @@ class GameInfo : IsPartOfGameInfoSerialization, HasGameInfoSerializationVersion 
         toReturn.lastUnitId = lastUnitId
         toReturn.unitNamesTaken.addAll(unitNamesTaken)
         toReturn.archaeologyTriggered = archaeologyTriggered
+        toReturn.league = league?.clone()
 
         return toReturn
     }
@@ -406,6 +411,7 @@ class GameInfo : IsPartOfGameInfoSerialization, HasGameInfoSerializationVersion 
             if (playerIndex == 0) {
                 recordRankingStats()
                 turns++
+                doLeagueTurn()
                 if (DebugUtils.SIMULATE_UNTIL_TURN != 0)
                     debug("Starting simulation of turn %s", turns)
             }
@@ -544,6 +550,12 @@ class GameInfo : IsPartOfGameInfoSerialization, HasGameInfoSerializationVersion 
                     enemyUnitsCloseToTerritory.any { tile -> tile.aerialDistanceTo(city.getCenterTile()) <= city.getBombardRange() }
             }
         )
+    }
+
+    /** The World Congress takes its turn once per game turn, before the civilizations start theirs (CvGame::doTurn -> CvGameLeagues::DoTurn),
+     *  see [League.doGameTurn] */
+    private fun doLeagueTurn() {
+        league = League.doGameTurn(this)
     }
 
     fun processDiplomaticVictory() {
@@ -776,6 +788,7 @@ class GameInfo : IsPartOfGameInfoSerialization, HasGameInfoSerializationVersion 
 
         // combinedGlobalUniques needs to be set before tileMap.setTransients!
         setGlobalTransients()
+        league?.setTransients(this)
 
         tileMap.setTransients(ruleset)
 

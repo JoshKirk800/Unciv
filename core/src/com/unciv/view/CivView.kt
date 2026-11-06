@@ -100,6 +100,10 @@ class CivView(civ: Civilization,
     /** [getAvailableVictories] minus the ones the ruleset hides from the victory screen */
     @Readonly fun getVictoriesShownInVictoryScreen(): List<Victory> = civ.victoryManager.getVictoriesShownInVictoryScreen()
     @Readonly fun mayVoteForDiplomaticVictory(): Boolean = civ.mayVoteForDiplomaticVictory()
+    /** The World Congress waits for a proposal of this civilization (CvLeague::CanPropose) */
+    @Readonly fun canProposeToLeague(): Boolean = civ.gameInfo.league?.canPropose(civ) == true
+    /** The World Congress waits for the delegates of this civilization to be spent (CvLeague::CanVote) */
+    @Readonly fun canVoteInLeague(): Boolean = civ.gameInfo.league?.canVote(civ) == true
 
     // Units
     @Readonly fun hasMovedAutomatedUnitsThisTurn(): Boolean = civ.hasMovedAutomatedUnits

@@ -110,6 +110,15 @@ class PublicOpinion : IsPartOfGameInfoSerialization {
             total.add(ideology.name, dominance)
             byCiv.getOrPut(ideology.name) { Counter() }.add(other.civID, dominance)
         }
+        // World Ideology (LR 4.3.11): the World Congress presses for its ideology on everybody
+        val league = civ.gameInfo.league
+        if (league != null) for (branch in civ.gameInfo.ruleset.policyBranches.values) {
+            if (!branch.isIdeology) continue
+            val worldPressure = league.getIdeologyPressure(branch.name)
+            if (worldPressure <= 0) continue
+            total.add(branch.name, worldPressure)
+            byCiv.getOrPut(branch.name) { Counter() }.add(WORLD_CONGRESS_PRESSURE_KEY, worldPressure)
+        }
         return total to byCiv
     }
 
@@ -156,4 +165,9 @@ class PublicOpinion : IsPartOfGameInfoSerialization {
 
     @Readonly
     fun isContent() = type == PublicOpinionType.Content
+
+    companion object {
+        /** The key of the World Congress in [pressureByCiv], where the civ id of an influencing civilization usually is */
+        const val WORLD_CONGRESS_PRESSURE_KEY = "World Congress"
+    }
 }
