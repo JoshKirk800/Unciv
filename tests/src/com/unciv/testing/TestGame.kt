@@ -279,6 +279,14 @@ class TestGame(vararg addGlobalUniques: String, forUITesting: Boolean = false, b
     fun createBuilding(vararg uniques: String) =
         createRulesetObject(ruleset.buildings, *uniques) { Building() }
             .apply { ruleset = gameInfo.ruleset }
+    fun createGreatWork(type: GreatWorkType = GreatWorkType.Art, creator: String? = null): GreatWork {
+        val work = GreatWork()
+        work.name = "GreatWork-${objectsCreated++}"
+        work.type = type
+        work.creator = creator
+        ruleset.greatWorks[work.name] = work
+        return work
+    }
     fun createResource(vararg uniques: String) =
         createRulesetObject(ruleset.tileResources, *uniques) { TileResource() }
 
