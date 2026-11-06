@@ -449,6 +449,12 @@ enum class UniqueType(
         docDescription = MULTIPLICATIVE_BONUS_EXPLANATION),
     StrengthForAdjacentEnemies("[relativeAmount]% Strength for enemy [mapUnitFilter] units in adjacent [tileFilter] tiles", UniqueTarget.Unit),
     StrengthBonusInRadius("[relativeAmount]% Strength bonus for [mapUnitFilter] units within [amount] tiles", UniqueTarget.Unit),
+    SappingBonusInRadius("[relativeAmount]% Strength bonus for [mapUnitFilter] units within [amount] tiles attacking a city this unit is adjacent to", UniqueTarget.Unit,
+        docDescription = "Applies to attacks of your units that are of the same domain as this unit and not on this unit's tile, "
+            + "against a city next to this unit. The best bonus counts, bonuses of several units do not add up."),
+    HeavyCharge("Heavy Charge", UniqueTarget.Unit,
+        docDescription = "When attacking a unit in melee: +50% Strength if it cannot fall back (all three tiles behind it, away from the attacker, are blocked), " +
+            "and if the attack does more damage than it takes the defender, if it survives, falls back and the attacker advances."),
 
     // Stat bonuses
     AdditionalAttacks("[amount] additional attacks per turn", UniqueTarget.Unit, UniqueTarget.Global),

@@ -132,6 +132,29 @@ object BattleDamage {
         return modifiers
     }
 
+    /** CvUnit::IsNearSapper: a friendly unit of the same domain with the Sapper ability, adjacent to the attacked city and within its radius of the attacker
+     *  (but not on the attacker's tile), gives the attacker a bonus against that city. The best one counts. */
+    @Readonly
+    private fun getSapperBonus(attacker: MapUnitCombatant, city: CityCombatant): Int {
+        val unit = attacker.unit
+        val attackerTile = unit.getTile()
+        val cityTile = city.getTile()
+        var best = 0
+        for (sapper in unit.civ.units.getCivUnits()) {
+            if (!sapper.cache.hasSappingBonusUnique) continue
+            val sapperTile = sapper.getTile()
+            if (sapperTile == attackerTile || cityTile !in sapperTile.neighbors) continue
+            if (sapper.baseUnit.isLandUnit != unit.baseUnit.isLandUnit || sapper.baseUnit.isWaterUnit != unit.baseUnit.isWaterUnit) continue
+            val distance = sapperTile.aerialDistanceTo(attackerTile)
+            for (unique in sapper.getMatchingUniques(UniqueType.SappingBonusInRadius,
+                    GameContext(unit.civ, ourCombatant = attacker, theirCombatant = city, combatAction = CombatAction.Attack))) {
+                if (distance <= unique.params[2].toInt() && unit.matchesFilter(unique.params[1], state = sapper.cache.state))
+                    best = max(best, unique.params[0].toInt())
+            }
+        }
+        return best
+    }
+
     @Readonly
     fun getAttackModifiers(
         attacker: ICombatant,
@@ -147,6 +170,11 @@ object BattleDamage {
             // Air unit attacking with Air Sweep
             if (attacker.unit.isPreparingAirSweep())
                 modifiers.add(getAirSweepAttackModifiers(attacker))
+
+            if (defender is CityCombatant) {
+                val sapperBonus = getSapperBonus(attacker, defender)
+                if (sapperBonus != 0) modifiers["Sapper"] = sapperBonus
+            }
 
             if (attacker.isMelee()) {
                 val numberOfOtherAttackersSurroundingDefender = defender.getTile().neighbors.count {
@@ -282,7 +310,9 @@ object BattleDamage {
         tileToAttackFrom: Tile
     ): Float {
         val attackModifier = modifiersToFinalBonus(getAttackModifiers(attacker, defender, tileToAttackFrom))
-        return max(1f, attacker.getAttackingStrength(defender) * attackModifier)
+        val strength = max(1f, attacker.getAttackingStrength(defender) * attackModifier)
+        // CvUnitCombat::GenerateMeleeCombatInfo: Heavy Charge, 150% after all the modifiers, against a unit that cannot fall back
+        return if (attacker is MapUnitCombatant && attacker.unit.cache.hasHeavyChargeUnique && MeleeFallBack.isHeavyChargeBoosted(attacker, defender)) strength * 1.5f else strength
     }
 
 

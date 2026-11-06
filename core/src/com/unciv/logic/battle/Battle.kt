@@ -167,8 +167,10 @@ object Battle {
         }
 
         // Should be called after tryCaptureUnit(), as that might spawn a unit on the tile we go to
-        if (!captureMilitaryUnitSuccess)
-            postBattleMoveToAttackedTile(attacker, defender, attackedTile)
+        if (!captureMilitaryUnitSuccess) {
+            val defenderFellBack = MeleeFallBack.tryHeavyChargeFallBack(attacker, defender, damageDealt)
+            postBattleMoveToAttackedTile(attacker, defender, attackedTile, defenderFellBack)
+        }
 
         reduceAttackerMovementPointsAndAttacks(attacker, defender, attackedTile)
 
@@ -586,9 +588,10 @@ object Battle {
     }
 
 
-    private fun postBattleMoveToAttackedTile(attacker: ICombatant, defender: ICombatant, attackedTile: Tile) {
+    private fun postBattleMoveToAttackedTile(attacker: ICombatant, defender: ICombatant, attackedTile: Tile, defenderFellBack: Boolean) {
         if (!attacker.isMelee()) return
-        if (!defender.isDefeated() && defender.getCivInfo() != attacker.getCivInfo()) return
+        // A defender that fell back from a Heavy Charge no longer holds the tile
+        if (!defender.isDefeated() && !defenderFellBack && defender.getCivInfo() != attacker.getCivInfo()) return
         if (attacker !is MapUnitCombatant) return
         if (attacker.unit.cache.cannotMove) return
         // Example: If the unit we attacked made us lose movement points
@@ -821,11 +824,7 @@ object Battle {
         val rng = attackContext.stateBasedRandom("Battle.doWithdrawFromMeleeAbility")
 
         @Readonly
-        fun canNotWithdrawTo(tile: Tile): Boolean { // if the tile is what the defender can't withdraw to, this fun will return true
-           return !defender.unit.movement.canMoveTo(tile)
-                   || defender.isLandUnit() && !tile.isLand // forbid retreat from land to sea - embarked already excluded
-                   || tile.isCityCenter() && tile.getOwner() != defender.getCivInfo() // forbid retreat into the city which doesn't belong to the defender
-        }
+        fun canNotWithdrawTo(tile: Tile) = MeleeFallBack.cannotRetreatTo(defender, tile)
 
         val firstCandidateTiles = fromTile.neighbors.filterNot { it == attackerTile || it in attackerTile.neighbors }
                 .filterNot { canNotWithdrawTo(it) }

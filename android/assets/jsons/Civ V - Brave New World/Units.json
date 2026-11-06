@@ -473,7 +473,7 @@
 		"upgradesTo": "Trebuchet",
 		"obsoleteTech": "Physics",
 		"promotions": ["Cover I"],
-		"uniques": ["[+200]% Strength <vs cities> <when attacking>", "No defensive terrain bonus", "Can only attack [City] units", "[+1] Sight"],
+		"uniques": ["[+200]% Strength <vs cities> <when attacking>", "No defensive terrain bonus", "Can only attack [City] units", "[+1] Sight", "[+50]% Strength bonus for [Military] units within [2] tiles attacking a city this unit is adjacent to"],
 		"hurryCostModifier": 20,
 		"attackSound": "throw"
 	},
@@ -1049,7 +1049,7 @@
 		"upgradesTo": "Anti-Tank Gun",
 		"obsoleteTech": "Combined Arms",
 		"promotions": ["Shock I", "Formation I"],
-		"uniques": ["Can move after attacking", "No defensive terrain bonus", "[-33]% Strength <vs cities> <when attacking>"],
+		"uniques": ["Can move after attacking", "No defensive terrain bonus", "[-33]% Strength <vs cities> <when attacking>", "Heavy Charge"],
 		"attackSound": "horse"
 	},
 	{

@@ -2191,6 +2191,20 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Unit
 
+??? example  "[relativeAmount]% Strength bonus for [mapUnitFilter] units within [amount] tiles attacking a city this unit is adjacent to"
+	Applies to attacks of your units that are of the same domain as this unit and not on this unit's tile, against a city next to this unit. The best bonus counts, bonuses of several units do not add up.
+
+	Example: "[+20]% Strength bonus for [Wounded] units within [3] tiles attacking a city this unit is adjacent to"
+
+	Applicable to: Unit
+
+??? example  "Heavy Charge"
+	When attacking a unit in melee: +50% Strength if it cannot fall back (all three tiles behind it, away from the attacker, are blocked), and if the attack does more damage than it takes the defender, if it survives, falls back and the attacker advances.
+
+	Example: "Heavy Charge"
+
+	Applicable to: Unit
+
 ??? example  "[amount] additional attacks per turn"
 	Example: "[3] additional attacks per turn"
 
