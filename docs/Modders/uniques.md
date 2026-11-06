@@ -64,6 +64,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 ??? example  "Free Great Person"
 	Applicable to: Triggerable
 
+??? example  "[positiveAmount] Tourism towards all civilizations we have met"
+	Added to the influence of this civilization on each of them, not changed by modifiers
+
+	Example: "[3] Tourism towards all civilizations we have met"
+
+	Applicable to: Triggerable
+
 ??? example  "Gain the [greatWork] Great Work"
 	The work is placed in a free slot of the city that triggers it, or else of the nearest city that has one. Nothing happens if there is none
 
@@ -310,6 +317,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
     Uniques that have immediate, one-time effects on a unit.They can be added to units (on unit, unit type, or promotion) to grant them the ability to trigger this effect as an action, which can be modified with UnitActionModifier and UnitTriggerCondition conditionals.
 
+??? example  "Perform a concert tour: [positiveAmount] times our Tourism towards the civilization whose territory we are in, [positiveAmount]% of that towards each other civilization we have met"
+	The unit has to be in the territory of another living major civilization. The first amount is made at least 100, and is multiplied twice by the game speed, as in the original
+
+	Example: "Perform a concert tour: [3] times our Tourism towards the civilization whose territory we are in, [3]% of that towards each other civilization we have met"
+
+	Applicable to: UnitTriggerable
+
 ??? example  "Create a Great Work"
 	The unit creates the Great Work that goes with its name (see `creator` in GreatWorks.json), in a free slot of a city of the civilization. The unit must be in or next to one of the civilization's cities. Can only be used by units that have a name from a unit name group
 
@@ -448,6 +462,48 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 	Example: "[+1 Gold, +2 Production] from each Trade Route"
 
 	Applicable to: Global, FollowerBelief
+
+??? example  "[relativeAmount] Tourism [cityFilter]"
+	Added to the tourism of the city before the percentages, see ModConstants and the unique `[relativeAmount]% Tourism [cityFilter]`
+
+	Example: "[+20] Tourism [in all cities]"
+
+	Applicable to: Global, FollowerBelief
+
+??? example  "[relativeAmount]% Tourism [cityFilter]"
+	All such bonuses of a city are added up and applied to its tourism, if the sum is positive
+
+	Example: "[+20]% Tourism [in all cities]"
+
+	Applicable to: Global, FollowerBelief
+
+??? example  "[relativeAmount]% Tourism [cityFilter] unless the target has a [buildingName]"
+	As `[relativeAmount]% Tourism [cityFilter]`, but a civilization with the building does not get this part of the tourism
+
+	Example: "[+20]% Tourism [in all cities] unless the target has a [Library]"
+
+	Applicable to: Global
+
+??? example  "[relativeAmount]% Tourism from Great Works [cityFilter]"
+	The tourism that the Great Works of the city make, which is `greatWorkBaseTourism` in ModConstants for each, is increased by the sum of these. Theming bonuses are not included
+
+	Example: "[+20]% Tourism from Great Works [in all cities]"
+
+	Applicable to: Global
+
+??? example  "[positiveAmount]% of the Culture from wonders, natural wonders and improved tiles becomes Tourism [cityFilter]"
+	Counts the culture of the world wonders of the city, and of its worked natural wonder and improved tiles
+
+	Example: "[3]% of the Culture from wonders, natural wonders and improved tiles becomes Tourism [in all cities]"
+
+	Applicable to: Global
+
+??? example  "[relativeAmount]% Tourism towards civilizations with [tourismRelation]"
+	Added to the modifier of the tourism of this civilization towards another, which the original reads from the capital. For `Common Enemies` the amount is given for every other civilization that both are at war with
+
+	Example: "[+20]% Tourism towards civilizations with [Shared Religion]"
+
+	Applicable to: Global
 
 ??? example  "[stats] from each Great Work"
 	Added to the culture a city gets from each of its Great Works (see `greatWorkBaseCulture` in ModConstants), in every city of the civilization
@@ -1584,6 +1640,20 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 ??? example  "[stats] from each Trade Route"
 	Example: "[+1 Gold, +2 Production] from each Trade Route"
+
+	Applicable to: Global, FollowerBelief
+
+??? example  "[relativeAmount] Tourism [cityFilter]"
+	Added to the tourism of the city before the percentages, see ModConstants and the unique `[relativeAmount]% Tourism [cityFilter]`
+
+	Example: "[+20] Tourism [in all cities]"
+
+	Applicable to: Global, FollowerBelief
+
+??? example  "[relativeAmount]% Tourism [cityFilter]"
+	All such bonuses of a city are added up and applied to its tourism, if the sum is positive
+
+	Example: "[+20]% Tourism [in all cities]"
 
 	Applicable to: Global, FollowerBelief
 
@@ -4595,6 +4665,7 @@ There is a conversion affecting dashes and leading/trailing blanks. Please make 
 *[tech]: The name of any tech.
 *[terrainFeature]: The name of any terrain that is a terrain feature according to the json file.
 *[tileFilter]: Anything that can be used either in an improvementFilter or in a terrainFilter can be used here, plus 'unimproved'
+*[tourismRelation]: One of `Shared Religion`, `Open Borders`, `Trade Route`, `Lower Happiness` or `Common Enemies`.
 *[tradeRouteFilter]: A trade route matches if its unit is of that domain (`Land` or `Water`), if it is of that kind (`International`, `Domestic`, `Food` or `Production`), or if the civilization on the other end matches a civ filter. `All` matches every route.
 *[unitNameGroup]: The name of a unit name group found in UnitNameGroups.json, or one of their unique tags.
 *[unitTriggerTarget]: `This Unit` or `Target Unit`.
