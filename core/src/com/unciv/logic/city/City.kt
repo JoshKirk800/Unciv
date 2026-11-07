@@ -357,6 +357,11 @@ class City : IsPartOfGameInfoSerialization, INamed {
 
     override fun toString() = name // for debug
 
+    /** Not the identity hash: the game iterates hash sets and maps of these, and the order must not depend on the run
+     *  (see `tools/determinism_check.py`). Equality stays identity. */
+    @Readonly override fun hashCode(): Int = id.hashCode()
+    @Readonly override fun equals(other: Any?): Boolean = this === other
+
     @Readonly fun isHolyCity(): Boolean = religion.religionThisIsTheHolyCityOf != null && !religion.isBlockedHolyCity
     @Readonly fun isHolyCityOf(religionName: String?) = isHolyCity() && religion.religionThisIsTheHolyCityOf == religionName
 

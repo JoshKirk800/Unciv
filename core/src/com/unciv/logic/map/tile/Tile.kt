@@ -1341,6 +1341,11 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
     //endregion
     //region Overrides
 
+    /** Not the identity hash: the game iterates hash sets and maps of tiles, and the order must not depend on the run
+     *  (see `tools/determinism_check.py`). Equality stays identity. */
+    @Readonly override fun hashCode(): Int = position.hashCode()
+    @Readonly override fun equals(other: Any?): Boolean = this === other
+
     /** Shows important properties of this tile for debugging _only_, it helps to see what you're doing */
     override fun toString(): String {
         val lineList = arrayListOf("Tile @$position")

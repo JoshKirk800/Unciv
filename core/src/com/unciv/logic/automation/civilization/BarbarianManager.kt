@@ -76,7 +76,7 @@ class BarbarianManager : IsPartOfGameInfoSerialization {
     }
 
     fun placeBarbarianEncampment(forTesting: Boolean = false) {
-        val rng = gameInfo.getBarbarianCivilization().state.stateBasedRandom("BarbarianManager.placeBarbarianEncampent", encampments.hashCode())
+        val rng = gameInfo.getBarbarianCivilization().state.stateBasedRandom("BarbarianManager.placeBarbarianEncampent", encampments.map { it.position }.hashCode())
         // Before we do the expensive stuff, do a roll to see if we will place a camp at all
         if (!forTesting && gameInfo.turns > 1 && rng.nextBoolean())
             return

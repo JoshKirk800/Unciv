@@ -67,8 +67,9 @@ object TradeAutomation {
         tradeLogic.currentTrade.set(tradeRequest.trade)
 
         // What do they have that we would want?
-        val potentialAsks = HashMap<TradeOffer, Int>()
-        val counterofferAsks = HashMap<TradeOffer, Int>()
+        // Linked: a TradeOffer's hash code includes its type, an enum, which is not the same in every run - and the order is used below
+        val potentialAsks = LinkedHashMap<TradeOffer, Int>()
+        val counterofferAsks = LinkedHashMap<TradeOffer, Int>()
         val counterofferGifts = ArrayList<TradeOffer>()
 
         for (offer in tradeLogic.theirAvailableOffers) {
