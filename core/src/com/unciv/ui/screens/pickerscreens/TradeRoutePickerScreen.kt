@@ -57,6 +57,12 @@ class TradeRoutePickerScreen(private val unit: MapUnit) : PickerScreen() {
             (if (route.isSea) "by water" else "over land").tr() + ", " + "lasts [${route.turnRouteComplete - civ.gameInfo.turns}] turns".tr()
         if (!route.originYields.isEmpty()) lines += "Yields for us:".tr() + " " + route.originYields.toString()
         if (!route.destinationYields.isEmpty()) lines += "Yields for [${destination.city.civ.civName}]:".tr() + " " + route.destinationYields.toString()
+        if (destination.kind == TradeRouteKind.International) {
+            val other = destination.city.civ
+            val current = civ.culture.getInfluencePerTurn(other)
+            val gain = civ.culture.getTourismIncreaseFromTradeConnection(other)
+            lines += "Tourism towards [${other.civName}]: [$current] -> [${current + gain}] per turn".tr()
+        }
         return lines.joinToString("\n")
     }
 

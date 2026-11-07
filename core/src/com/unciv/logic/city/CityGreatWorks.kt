@@ -151,7 +151,12 @@ class CityGreatWorks : IsPartOfGameInfoSerialization {
         if (building.themingBonuses.isEmpty()) return null
         val slots = getSlots(building)
         if (slots.isEmpty()) return null
-        val works = slots.map { it.getWork() ?: return null }
+        return getThemingBonusEntry(building, slots.map { it.getWork() ?: return null })
+    }
+
+    @Readonly
+    private fun getThemingBonusEntry(building: Building, works: List<GreatWorkInstance>): ThemingBonus? {
+        if (building.themingBonuses.isEmpty() || works.size != getSlots(building).size || works.isEmpty()) return null
         val ruleset = city.civ.gameInfo.ruleset
         val types = works.map { ruleset.greatWorks[it.work]?.type ?: return null }
         return building.themingBonuses.firstOrNull { it.isSatisfiedBy(works, types, city.civ.civName) }
@@ -160,7 +165,15 @@ class CityGreatWorks : IsPartOfGameInfoSerialization {
     /** What the theming of [building] gives, with the multipliers of policies and so on (CvCityCulture::GetThemingBonus) */
     @Readonly
     fun getThemingBonus(building: Building): Int {
-        val entry = getThemingBonusEntry(building) ?: return 0
+        if (building.themingBonuses.isEmpty()) return 0
+        val slots = getSlots(building)
+        if (slots.isEmpty()) return 0
+        return getThemingBonus(building, slots.map { it.getWork() ?: return 0 })
+    }
+
+    @Readonly
+    fun getThemingBonus(building: Building, works: List<GreatWorkInstance>): Int {
+        val entry = getThemingBonusEntry(building, works) ?: return 0
         var bonus = entry.bonus
         for (unique in city.getMatchingUniques(UniqueType.ThemingBonusPercent)) {
             if (!city.matchesFilter(unique.params[1])) continue

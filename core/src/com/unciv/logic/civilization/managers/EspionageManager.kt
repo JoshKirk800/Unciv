@@ -41,8 +41,14 @@ class EspionageManager : IsPartOfGameInfoSerialization {
     }
 
     fun endTurn() {
-        for (spy in spyList.toList())
+        for (spy in spyList.toList()) {
+            val city = spy.getCityOrNull()
+            // Razing removes the city even for ordinary spies. War, capture or a new capital ends a diplomat's post.
+            if ((city == null && !spy.isIdle() && spy.isAlive()) ||
+                (spy.isDiplomat && (city == null || !spy.canMoveTo(city, asDiplomat = true))))
+                spy.moveTo(null)
             spy.endTurn()
+        }
     }
 
     @Readonly
@@ -92,6 +98,14 @@ class EspionageManager : IsPartOfGameInfoSerialization {
     @Readonly fun getCitiesWithOurSpies(): List<City> = spyList.filter { it.isSetUp() }.mapNotNull { it.getCityOrNull() }
 
     @Readonly fun getSpyAssignedToCity(city: City): Spy? = spyList.firstOrNull { it.getCityOrNull() == city }
+
+    /** Only a schmoozing diplomat in the target's *current* capital is active (CvPlayerEspionage::IsMyDiplomatVisitingThem). */
+    @Readonly
+    fun getActiveDiplomatFor(other: Civilization): Spy? {
+        if (!other.isMajorCiv || other == civInfo || other.isDefeated() || civInfo.isAtWarWith(other)) return null
+        val capital = other.getCapital() ?: return null
+        return getSpyAssignedToCity(capital)?.takeIf { it.isDiplomat && it.action == com.unciv.models.SpyAction.Schmoozing }
+    }
 
     /**
      * Determines whether the NextTurnAction MoveSpies should be shown or not

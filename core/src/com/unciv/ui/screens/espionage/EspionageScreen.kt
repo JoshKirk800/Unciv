@@ -242,8 +242,11 @@ class EspionageScreen(val civInfo: Civilization, val worldScreen: WorldScreen) :
             val coupButton = CoupButton(location, spy.action == SpyAction.Coup)
             locationSelectionTable.add(coupButton)
         } else {
-            val moveSpyHereButton = MoveToLocationButton(location)
-            locationSelectionTable.add(moveSpyHereButton)
+            val actions = Table()
+            actions.add(MoveToLocationButton(location))
+            if (location != null && location.civ != civInfo && location.civ.isMajorCiv && location.isCapital())
+                actions.add(MoveToLocationButton(location, asDiplomat = true)).padLeft(6f)
+            locationSelectionTable.add(actions)
         }
         locationSelectionTable.row()
     }
@@ -329,14 +332,15 @@ class EspionageScreen(val civInfo: Civilization, val worldScreen: WorldScreen) :
         selectedSpy = spy
         selectedSpyButton!!.label.setText(Constants.cancel.tr())
         for ((button, location) in spyActionButtons) {
-            if (location == spy.getCityOrNull()) {
-                button.isVisible = true
-                button.setDirection(Align.right)
-            } else {
-                button.isVisible = location == null // hideout
-                    || !location.espionage.hasSpyOf(civInfo)
-                button.setDirection(Align.left)
+            val isCurrent = location == spy.getCityOrNull()
+            button.isVisible = when {
+                location == null -> true
+                isCurrent -> true
+                location.espionage.hasSpyOf(civInfo) -> false
+                button is MoveToLocationButton -> spy.canMoveTo(location, button.asDiplomat)
+                else -> true
             }
+            button.setDirection(if (isCurrent) Align.right else Align.left)
         }
     }
 
@@ -366,24 +370,25 @@ class EspionageScreen(val civInfo: Civilization, val worldScreen: WorldScreen) :
         open fun setDirection(align: Int) {}
     }
 
-    private inner class MoveToLocationButton(location: Location) : SpyLocationActionButton(location) {
+    private inner class MoveToLocationButton(location: Location, val asDiplomat: Boolean = false) : SpyLocationActionButton(location) {
         val arrow = ImageGetter.getArrowImage(Align.left)
 
         init {
             arrow.setSize(24f)
             add(arrow).size(24f)
+            if (asDiplomat) add("Diplomat".toLabel()).padLeft(3f)
             arrow.setOrigin(Align.center)
             arrow.color = Color.WHITE
         }
 
         private fun move() {
-            selectedSpy!!.moveTo(location)
+            selectedSpy!!.moveTo(location, asDiplomat)
             resetSelection()
             update()
         }
 
         override fun clickHandler() {
-            if (location != null
+            if (!asDiplomat && location != null
                 && location.civ.civName != civInfo.civName
                 && location.civ.isMajorCiv
                 && location.civ.knows(civInfo) // ensures the !! below won't crash
@@ -402,7 +407,7 @@ class EspionageScreen(val civInfo: Civilization, val worldScreen: WorldScreen) :
 
         override fun setDirection(align: Int) {
             arrow.rotation = if (align == Align.right) 0f else 180f
-            isDisabled = align == Align.right
+            isDisabled = align == Align.right && location != null && selectedSpy?.isDiplomat == asDiplomat
         }
     }
 

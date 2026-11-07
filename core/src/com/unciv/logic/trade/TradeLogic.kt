@@ -1,6 +1,7 @@
 package com.unciv.logic.trade
 
 import com.unciv.Constants
+import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.city.managers.SpyFleeReason
 import com.unciv.logic.civilization.AlertType
 import com.unciv.logic.civilization.Civilization
@@ -78,6 +79,12 @@ class TradeLogic(val ourCivilization: Civilization, val otherCivilization: Civil
             for (city in civInfo.cities.filterNot { it.isCapital() || it.isInResistance() })
                 offers.add(TradeOffer(city.id, TradeOfferType.City, speed = civInfo.gameInfo.speed))
 
+        if (!civInfo.isAtWarWith(otherCiv))
+            for (city in civInfo.cities)
+                for (slot in city.greatWorks.getSlots())
+                    if (slot.getWork() != null)
+                        offers.add(TradeOffer(GreatWorkFunctions.tradeId(slot), TradeOfferType.GreatWork, speed = civInfo.gameInfo.speed))
+
         val otherCivsWeKnow = civInfo.getKnownCivs()
             .filter { it != otherCiv && it.isMajorCiv && !it.isDefeated() }
 
@@ -115,6 +122,11 @@ class TradeLogic(val ourCivilization: Civilization, val otherCivilization: Civil
 
     fun acceptTrade(applyGifts: Boolean = true) {
         val ourDiploManager = ourCivilization.getDiplomacyManager(otherCivilization)!!
+        // A stale or one-sided request must never execute a partial trade.
+        val ourWorks = currentTrade.ourOffers.filter { it.type == TradeOfferType.GreatWork }
+        val theirWorks = currentTrade.theirOffers.filter { it.type == TradeOfferType.GreatWork }
+        if ((ourWorks.isNotEmpty() || theirWorks.isNotEmpty())
+            && !TradeEvaluation().isTradeValid(currentTrade, ourCivilization, otherCivilization)) return
         val theirDiploManager = otherCivilization.getDiplomacyManager(ourCivilization)!!
 
         ourDiploManager.apply {
@@ -251,6 +263,12 @@ class TradeLogic(val ourCivilization: Civilization, val otherCivilization: Civil
                 theirDiploManager.giftGold(theirGoldValueOfTrade - ourGoldValueOfTrade.coerceAtLeast(0), isPureGift)
             }
         }
+        for ((ours, theirs) in ourWorks.zip(theirWorks)) {
+            val ourSlot = GreatWorkFunctions.findTradeSlot(ourCivilization, ours.name) ?: return
+            val theirSlot = GreatWorkFunctions.findTradeSlot(otherCivilization, theirs.name) ?: return
+            GreatWorkFunctions.exchange(ourSlot, theirSlot)
+        }
+
 
         // Transfer of cities needs to happen before peace treaty, to avoid our units teleporting out of areas that soon will be ours
         for (offer in currentTrade.theirOffers.filterNot { it.type == TradeOfferType.Treaty })

@@ -2,6 +2,8 @@ package com.unciv.view
 
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.trade.Trade
+import com.unciv.logic.trade.TradeEvaluation
+import com.unciv.logic.trade.TradeOfferType
 import com.unciv.logic.trade.TradeLogic
 import com.unciv.logic.trade.TradeOffersList
 import com.unciv.logic.trade.TradeRequest
@@ -36,8 +38,17 @@ class TradeView(private val civ: Civilization, private val otherCiv: Civilizatio
     }
 
     // Actions - proposing
+    @Readonly
+    fun canProposeStagedTrade(): Boolean {
+        val trade = tradeLogic.currentTrade
+        if (trade.ourOffers.isEmpty() && trade.theirOffers.isEmpty()) return false
+        if (trade.ourOffers.none { it.type == TradeOfferType.GreatWork }
+            && trade.theirOffers.none { it.type == TradeOfferType.GreatWork }) return true
+        return TradeEvaluation().isTradeValid(trade, civ, otherCiv)
+    }
+
     fun tryProposeStagedTrade(): Boolean {
-        if (tradeLogic.currentTrade.ourOffers.isEmpty() && tradeLogic.currentTrade.theirOffers.isEmpty()) return false
+        if (!canProposeStagedTrade()) return false
         otherCiv.tradeRequests.add(TradeRequest(civ.civID, tradeLogic.currentTrade.reverse()))
         civ.cache.updateCivResources()
         return true

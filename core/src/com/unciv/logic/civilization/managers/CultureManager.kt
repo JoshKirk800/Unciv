@@ -213,6 +213,14 @@ class CultureManager : IsPartOfGameInfoSerialization {
         }
     }
 
+    /** CvPlayerCulture::GetInfluenceSurveillanceTime: a familiar major (or an allied city-state's major ally) needs one turn, otherwise three. */
+    @Readonly
+    fun getSurveillanceTurns(other: Civilization): Int {
+        val target = if (other.isCityState) other.allyCiv else other
+        return if (target != null && target.isMajorCiv &&
+            (getInfluenceLevel(target) ?: InfluenceLevel.Unknown) >= InfluenceLevel.Familiar) 1 else 3
+    }
+
     @Readonly
     private fun getNumCommonEnemies(other: Civilization): Int =
         civ.gameInfo.civilizations.count {
@@ -233,6 +241,9 @@ class CultureManager : IsPartOfGameInfoSerialization {
             TourismRelation.DifferentIdeologies -> constants.tourismModifierDifferentIdeologies
             else -> 0
         }
+        // CvPlayerCulture::GetTourismModifierWith: propaganda only counters a *different* ideology.
+        if (TourismRelation.DifferentIdeologies in relations && civ.espionageManager.getActiveDiplomatFor(other) != null)
+            modifier += 25 // BNW GlobalDefines.xml TOURISM_MODIFIER_DIPLOMAT
         for (unique in civ.getMatchingUniques(UniqueType.TourismTowardsPercent)) {
             val relation = TourismRelation.fromLabel(unique.params[1]) ?: continue
             if (relation !in relations) continue
@@ -253,6 +264,20 @@ class CultureManager : IsPartOfGameInfoSerialization {
         if (!canInfluence(other)) return 0
         val total = civ.cities.sumOf { getCityTourism(it, skipBlockable = other) }
         return total * (100 + getTourismModifierToward(other)) / 100
+    }
+
+    /** The actual integer influence gained by a first trade connection; a second route adds no new modifier. */
+    @Readonly
+    fun getTourismIncreaseFromTradeConnection(other: Civilization): Int {
+        if (!canInfluence(other) || areConnectedByTrade(other)) return 0
+        val total = civ.cities.sumOf { getCityTourism(it, skipBlockable = other) }
+        val baseModifier = getTourismModifierToward(other)
+        val tradeBonus = civ.gameInfo.ruleset.modOptions.constants.tourismModifierTradeRoute +
+            civ.getMatchingUniques(UniqueType.TourismTowardsPercent)
+                .filter { it.params[1] == TourismRelation.TradeRoute.label }
+                .sumOf { it.params[0].toInt() }
+        return total * (100 + baseModifier + tradeBonus) / 100 -
+            total * (100 + baseModifier) / 100
     }
 
     @Readonly
