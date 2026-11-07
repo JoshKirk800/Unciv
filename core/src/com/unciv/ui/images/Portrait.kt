@@ -181,6 +181,9 @@ class PortraitTech(name: String, size: Float) : Portrait(Type.Tech, name, size) 
 }
 
 class PortraitUnit(name: String, size: Float) : Portrait(Type.Unit, name, size) {
+    override fun getDefaultImage(): Image =
+        ImageGetter.ruleset.units[imageName]?.let { ImageGetter.getImage(ImageGetter.getUnitIconPath(it)) }
+            ?: super.getDefaultImage()
     override fun getDefaultImageTint(): Color = Color.BLACK
     override fun getCircleImage() = ImageGetter.getImage("OtherIcons/ConstructionCircle")
     override fun draw(batch: Batch?, parentAlpha: Float) = super.draw(batch, parentAlpha)
