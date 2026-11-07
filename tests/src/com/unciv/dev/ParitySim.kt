@@ -23,6 +23,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.util.Locale
+import java.util.UUID
 
 /**
  * A fixed AI-only game, played headless, to compare two versions of the sources: run it on each tree and diff the files
@@ -79,7 +80,7 @@ class ParitySim {
             mapSize = MapSize.Small
             this.seed = seed
         }
-        return GameStarter.startNewGame(GameSetupInfo(parameters, mapParameters), gameId = "parity-sim-$seed")
+        return GameStarter.startNewGame(GameSetupInfo(parameters, mapParameters), gameId = UUID.nameUUIDFromBytes("parity-sim-$seed".toByteArray()).toString())
     }
 
     private fun summary(game: GameInfo, turn: Int, out: StringBuilder) {
