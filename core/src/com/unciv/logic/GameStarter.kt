@@ -23,6 +23,7 @@ import com.unciv.models.stats.Stats
 import com.unciv.models.translations.equalsPlaceholderText
 import com.unciv.models.translations.getPlaceholderParameters
 import com.unciv.utils.debug
+import com.unciv.utils.toUUIDOrNull
 import yairm210.purity.annotations.LocalState
 import yairm210.purity.annotations.Readonly
 
@@ -42,9 +43,12 @@ class GameStarter private constructor(
         private const val consoleTimings = false
 
         /** @param gameId normally random. Everything in the new game that is random follows from it and the map seed
-         *  (see [GameContext.stateBasedRandom]), so a fixed id with a fixed seed makes the same world every time - for tests and bug reports */
-        fun startNewGame(gameSetupInfo: GameSetupInfo, gameId: String? = null): GameInfo =
-            GameStarter(gameSetupInfo, gameId).gameInfo
+         *  (see [GameContext.stateBasedRandom]), so a fixed id with a fixed seed makes the same world every time - for tests and bug reports.
+         *  Must be a UUID string like [GameInfo.randomGameId]: the world screen's chat and multiplayer parse it as one. */
+        fun startNewGame(gameSetupInfo: GameSetupInfo, gameId: String? = null): GameInfo {
+            require(gameId == null || gameId.toUUIDOrNull() != null) { "Game id '$gameId' is not a UUID" }
+            return GameStarter(gameSetupInfo, gameId).gameInfo
+        }
     }
 
     private val gameInfo = GameInfo().apply { if (fixedGameId != null) gameId = fixedGameId }
