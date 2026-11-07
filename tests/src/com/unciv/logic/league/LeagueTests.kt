@@ -1,9 +1,12 @@
 package com.unciv.logic.league
 
+import com.unciv.json.json
 import com.unciv.logic.civilization.Civilization
 import com.unciv.models.metadata.BaseRuleset
+import com.unciv.models.metadata.GameParameters
 import com.unciv.models.ruleset.BeliefType
 import com.unciv.models.ruleset.ResolutionDecision
+import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.testing.GdxTestRunner
 import com.unciv.testing.TestGame
 import org.junit.Assert.assertEquals
@@ -206,6 +209,44 @@ class LeagueTests {
         assertNotNull(founded)
         gameInfo.league = founded
         assertTrue("the next call ticks the same league", League.doGameTurn(gameInfo) === founded)
+    }
+
+    @Test
+    fun `no World Congress prevents founding and stops an existing league and its effects`() {
+        found()
+        league.activeResolutions.add(ActiveResolution(8, "Standing Army Tax", a.civID, null, 0))
+        league.setTransients(gameInfo)
+        assertTrue(league.getActiveUniques().any())
+        assertTrue(a.hasUnique(UniqueType.UnitGoldMaintenancePercent))
+        gameInfo.gameParameters.noLeagues = true
+        assertNull(League.tryFound(gameInfo))
+        assertNull(League.doGameTurn(gameInfo))
+
+        gameInfo.league = League.doGameTurn(gameInfo)
+        assertNull(gameInfo.league)
+        assertFalse(a.hasUnique(UniqueType.UnitGoldMaintenancePercent))
+    }
+
+    @Test
+    fun `World Congress option defaults remain neutral through clone and save`() {
+        val options = gameInfo.gameParameters
+        assertFalse(options.noLeagues)
+        assertFalse(options.excludeCongressHappinessResolutions)
+        assertFalse(options.excludeCongressScienceResolutions)
+        assertFalse(options.excludeCongressPolicyResolutions)
+        printingPress(a)
+        assertNotNull(League.tryFound(gameInfo))
+
+        options.noLeagues = true
+        options.excludeCongressHappinessResolutions = true
+        options.excludeCongressScienceResolutions = true
+        options.excludeCongressPolicyResolutions = true
+        for (copy in listOf(options.clone(), json().fromJson(GameParameters::class.java, json().toJson(options)))) {
+            assertTrue(copy.noLeagues)
+            assertTrue(copy.excludeCongressHappinessResolutions)
+            assertTrue(copy.excludeCongressScienceResolutions)
+            assertTrue(copy.excludeCongressPolicyResolutions)
+        }
     }
     //endregion
 
@@ -581,6 +622,70 @@ class LeagueTests {
         assertTrue(league.isTradeEmbargoed(b, cs))
         assertTrue(league.isTradeEmbargoed(cs, c))
     }
+
+    @Test
+    fun `excluding Congress luxury happiness bans removes proposals and active effects but not unrelated resolutions`() {
+        game.tileMap.tileList[3].tileResource = game.ruleset.tileResources["Silk"]!!
+        found()
+        val luxury = resolution("Ban Luxury")
+        assertTrue(league.canProposeEnact(luxury, "Silk", a))
+        assertTrue(league.canProposeEnact(luxury, "Silk", b))
+        propose(a, "Ban Luxury", "Silk")
+        league.activeResolutions.add(ActiveResolution(10, "Ban Luxury", b.civID, "Silk", 0))
+        league.setTransients(gameInfo)
+        assertTrue(league.isLuxuryBanned("Silk"))
+
+        gameInfo.gameParameters.excludeCongressHappinessResolutions = true
+        assertFalse(luxury.isAvailableInGame(gameInfo))
+        assertFalse(league.canProposeEnact(luxury, "Silk", b))
+        assertTrue(league.canProposeEnact(resolution("Standing Army Tax"), null, b))
+        league.doTurn()
+        assertFalse(league.isLuxuryBanned("Silk"))
+        assertFalse(league.proposals.any { it.resolution == "Ban Luxury" })
+        assertFalse(league.activeResolutions.any { it.resolution == "Ban Luxury" })
+    }
+
+    @Test
+    fun `excluding Congress shared technology bonus leaves other science resolutions available`() {
+        found()
+        val scholars = resolution("Scholars In Residence")
+        assertTrue(league.canProposeEnact(scholars, null, a))
+        assertTrue(league.canProposeEnact(scholars, null, b))
+        propose(a, scholars.name)
+        league.activeResolutions.add(ActiveResolution(11, scholars.name, b.civID, null, 0))
+        league.setTransients(gameInfo)
+        assertTrue(league.getActiveUniques().any())
+
+        gameInfo.gameParameters.excludeCongressScienceResolutions = true
+        assertFalse(scholars.isAvailableInGame(gameInfo))
+        assertFalse(league.canProposeEnact(scholars, null, b))
+        assertTrue(league.canProposeEnact(resolution("Sciences Funding"), null, b))
+        league.doTurn()
+        assertFalse(league.getActiveUniques().any())
+        assertFalse(league.proposals.any { it.resolution == scholars.name })
+    }
+
+    @Test
+    fun `excluding Congress world ideology leaves other policy rewards available`() {
+        found()
+        a.tech.addTechnology("Radio")
+        val ideology = resolution("World Ideology")
+        assertTrue(league.canProposeEnact(ideology, "Freedom", a))
+        assertTrue(league.canProposeEnact(ideology, "Order", b))
+        propose(a, ideology.name, "Freedom")
+        league.activeResolutions.add(ActiveResolution(12, ideology.name, b.civID, "Freedom", 0))
+        league.setTransients(gameInfo)
+        assertEquals(2, league.getIdeologyPressure("Freedom"))
+
+        gameInfo.gameParameters.excludeCongressPolicyResolutions = true
+        assertFalse(ideology.isAvailableInGame(gameInfo))
+        assertFalse(league.canProposeEnact(ideology, "Order", b))
+        assertTrue(league.canProposeEnact(resolution("World's Fair"), null, b))
+        league.doTurn()
+        assertEquals(0, league.getIdeologyPressure("Freedom"))
+        assertFalse(league.proposals.any { it.resolution == ideology.name })
+    }
+
     //endregion
 
     //region Voting and passing

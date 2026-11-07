@@ -2,6 +2,7 @@ package com.unciv.logic.league
 
 import com.unciv.logic.GameInfo
 import com.unciv.logic.IsPartOfGameInfoSerialization
+import com.unciv.logic.automation.civilization.LeagueAutomation
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.AlertType
@@ -251,11 +252,11 @@ class League : IsPartOfGameInfoSerialization {
 
         /**
          * What `GameInfo.nextTurn` does once per game turn: founds the World Congress if there is none yet, else lets it take its turn.
-         * Rulesets without resolutions have none, nothing happens there. The turn that founds it is no turn of the League (CvVotingClasses.cpp:6651-6700).
+         * Rulesets without resolutions and games with World Congress disabled have none. The turn that founds it is no turn of the League (CvVotingClasses.cpp:6651-6700).
          * @return the World Congress to keep in [GameInfo.league]
          */
         fun doGameTurn(gameInfo: GameInfo): League? {
-            if (gameInfo.ruleset.resolutions.isEmpty()) return gameInfo.league
+            if (gameInfo.gameParameters.noLeagues || gameInfo.ruleset.resolutions.isEmpty()) return null
             val existing = gameInfo.league ?: return tryFound(gameInfo)
             existing.doTurn()
             return existing
@@ -267,6 +268,7 @@ class League : IsPartOfGameInfoSerialization {
          * founds it and is the host. Returns `null` if the conditions are not met (CvGameLeagues::DoTurn, CvVotingClasses.cpp:6651-6700).
          */
         fun tryFound(gameInfo: GameInfo): League? {
+            if (gameInfo.gameParameters.noLeagues || gameInfo.ruleset.resolutions.isEmpty()) return null
             val majors = gameInfo.getAliveMajorCivs()
             if (majors.size <= 1) return null
             val founder = majors.firstOrNull { civ ->
@@ -601,7 +603,9 @@ class League : IsPartOfGameInfoSerialization {
     /** Puts [resolution] with [choice] on the table, costing [proposer] his proposal (CvLeague::DoProposeEnact, CvVotingClasses.cpp:2263-2304) */
     fun proposeEnact(resolution: Resolution, choice: String?, proposer: Civilization?) {
         require(canProposeEnact(resolution, choice, proposer)) { "[${resolution.name}] cannot be proposed with choice [$choice]" }
-        proposals.add(LeagueProposal(nextProposalId++, resolution.name, false, proposer?.civID, choice))
+        val proposal = LeagueProposal(nextProposalId++, resolution.name, false, proposer?.civID, choice)
+        proposals.add(proposal)
+        if (proposer != null) LeagueAutomation.recordProposal(this, proposal)
         if (proposer != null) members.getValue(proposer.civID).proposalsLeft--
     }
 
@@ -609,7 +613,9 @@ class League : IsPartOfGameInfoSerialization {
     fun proposeRepeal(activeResolutionId: Int, proposer: Civilization) {
         require(canProposeRepeal(activeResolutionId, proposer)) { "Resolution [$activeResolutionId] cannot be repealed" }
         val active = activeResolutions.first { it.id == activeResolutionId }
-        proposals.add(LeagueProposal(nextProposalId++, active.resolution, true, proposer.civID, active.choice, activeResolutionId))
+        val proposal = LeagueProposal(nextProposalId++, active.resolution, true, proposer.civID, active.choice, activeResolutionId)
+        proposals.add(proposal)
+        LeagueAutomation.recordProposal(this, proposal)
         members.getValue(proposer.civID).proposalsLeft--
     }
 
@@ -729,6 +735,7 @@ class League : IsPartOfGameInfoSerialization {
             if (resolution.isWorldLeader) worldLeaderOnTable = true
             val passed = isPassed(proposal, resolution, totalSessionVotes)
             val decision = getDecision(proposal)
+            LeagueAutomation.recordSessionOutcome(this, proposal, decision, passed)
             val tally = getTally(proposal)
             val about = if (!proposal.repeal && resolution.voterDecision == ResolutionDecision.MajorCiv) decision else proposal.proposerChoice
             results.add(LeagueResultEntry(resolution.name, about, passed, proposal.repeal, tally))

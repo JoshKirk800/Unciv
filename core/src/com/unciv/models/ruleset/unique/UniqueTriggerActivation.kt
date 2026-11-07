@@ -611,7 +611,7 @@ object UniqueTriggerActivation {
 
             UniqueType.OneTimeGainScienceTurns -> {
                 return {
-                    val science = (civInfo.stats.statsForNextTurn.science * unique.params[0].toInt()).roundToInt()
+                    val science = civInfo.tech.getScienceFromPreviousTurns(unique.params[0].toInt())
                     civInfo.tech.addScience(science)
                     val notificationText = getNotificationText(notification, triggerNotificationText, "Gained [$science] Science")
                     if (notificationText != null)

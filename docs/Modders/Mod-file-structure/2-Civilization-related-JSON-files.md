@@ -376,6 +376,7 @@ The `uniques` of a resolution apply to every civilization while it is in effect 
 The unique `Elects the host of the World Congress` or `Elects the World Leader` marks the resolutions that the Congress proposes by itself.
 `Only available` and `Unavailable` with conditionals about the game settings work on resolutions.
 The conditional `<when the [resolution] resolution is in effect>` can be used anywhere, for example to forbid building something.
+In the game setup, **No World Congress** prevents founding it and disables the Diplomatic Victory. The three optional Congress-only filters exclude resolutions that ban luxury happiness, grant the shared-technology research bonus, or grant World Ideology effects, respectively. They do **not** disable happiness, science, or policies elsewhere in the game.
 
 | Attribute                     | Type    | Default  | Notes                                                                                                                       |
 |-------------------------------|---------|----------|-----------------------------------------------------------------------------------------------------------------------------|
@@ -417,7 +418,7 @@ The rewards are the `uniques` of the resolution that are triggerable and have th
 }
 ```
 
-Other uniques made for the rewards are `Permanently gain [stats]`, `Gain [positiveAmount] turns of Science`, `Gain [amount] Influence with all City-States we have met` and `Gain a free [buildingName] [cityFilter]`. A building given that way can have the unique `Unbuildable`, as the International Space Station Complex of Brave New World.
+Other uniques made for the rewards are `Permanently gain [stats]`, `Gain [positiveAmount] turns of Science` (the sum of recorded science from that many completed turns, without research agreement or Great Scientist grants), `Gain [amount] Influence with all City-States we have met` and `Gain a free [buildingName] [cityFilter]`. A building given that way can have the unique `Unbuildable`, as the International Space Station Complex of Brave New World.
 
 ## Specialists.json
 

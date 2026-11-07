@@ -7,6 +7,7 @@ import com.unciv.logic.civilization.diplomacy.DiplomaticModifiers
 import com.unciv.logic.civilization.diplomacy.RelationshipLevel
 import com.unciv.logic.league.ActiveResolution
 import com.unciv.logic.league.League
+import com.unciv.logic.league.LeagueAlignmentMemory
 import com.unciv.logic.league.LeagueProposal
 import com.unciv.models.ruleset.Resolution
 import com.unciv.models.ruleset.ResolutionDecision
@@ -17,17 +18,52 @@ import kotlin.math.min
 import kotlin.random.Random
 
 /**
- * The AI of the World Congress (CvLeagueAI, CvVotingClasses.cpp:7365-9860): proposes what it likes, spends its delegates.
- *
- * Unciv has no grand strategy AI, no "approach" to other civilizations, no teams, no memory of liked or disliked proposals and no resurrection,
- * so the inputs of the original are mapped, see [LeagueEvaluator] for the mapping layer and its gaps.
- * No vote trading, delegate deals or diplomat intrigue is done.
+ * World Congress proposals and votes (CvLeagueAI, CvVotingClasses.cpp:7365-9860).
+ * No vote trading, delegate deals, diplomats, team alliances or resurrection.
  */
 object LeagueAutomation {
     /** CvLeagueAI::DoProposals and DoVotes stop after this many loops (CvVotingClasses.cpp:7449-7486) */
     const val MAX_LOOPS = 100
     /** LeagueHelpers::AI_CHOOSE_PROPOSAL_FROM_TOP (CvVotingClasses.h:77) */
     const val CHOOSE_PROPOSAL_FROM_TOP = 6
+    /** CvLeague::DoProposeEnact/Repeal: an AI remembers proposals it strongly likes/dislikes when they enter the table. */
+    fun recordProposal(league: League, proposal: LeagueProposal) {
+        val proposer = proposal.proposer ?: return
+        val resolution = league.gameInfo.ruleset.resolutions[proposal.resolution] ?: return
+        val active = if (proposal.repeal) league.activeResolutions.firstOrNull { it.id == proposal.targetId } ?: return else null
+        for (observer in league.gameInfo.getAliveMajorCivs()) {
+            if (observer.civID == proposer || observer.isHuman() || observer.civID !in league.members) continue
+            val evaluator = LeagueEvaluator(observer, league)
+            val score = if (active != null) evaluator.scoreRepeal(active) else evaluator.scoreProposal(resolution, proposal.proposerChoice)
+            if (score <= -46 || score >= 46) {
+                val memory = league.members.getValue(observer.civID).alignmentMemory.getOrPut(proposer) { LeagueAlignmentMemory() }
+                if (score >= 46) memory.likedProposalTurn = league.gameInfo.turns
+                else memory.dislikedProposalTurn = league.gameInfo.turns
+            }
+        }
+    }
+
+    /**
+     * CvLeague::FinishSession: supporters of the actual winning choice help a passed proposal or foil a failed one.
+     * For a passed host election its winner also remembers the voters who elected them. A tied/no-vote
+     * decision has no supporters; abstentions and votes for other choices create no memory.
+     * Call before the session clears its proposals/votes, with the actual [decision] and [passed].
+     */
+    fun recordSessionOutcome(league: League, proposal: LeagueProposal, decision: String?, passed: Boolean) {
+        if (decision == null) return
+        val turn = league.gameInfo.turns
+        val supporters = proposal.votes.asSequence().filter { it.delegates > 0 && it.choice == decision }.map { it.voter }.distinct()
+        val proposerMemory = proposal.proposer?.let { league.members[it]?.alignmentMemory }
+        for (voter in supporters) {
+            if (voter !in league.members) continue
+            if (proposerMemory != null) {
+                val memory = proposerMemory.getOrPut(voter) { LeagueAlignmentMemory() }
+                if (passed) memory.supportedProposalTurn = turn else memory.foiledProposalTurn = turn
+            }
+            if (passed && !proposal.repeal && league.gameInfo.ruleset.resolutions[proposal.resolution]?.isHostElection == true)
+                league.members[decision]?.alignmentMemory?.getOrPut(voter) { LeagueAlignmentMemory() }?.supportedHostingTurn = turn
+        }
+    }
 
     /**
      * What a civilization does for the World Congress in its turn (CvGameLeagues::DoPlayerTurn, CvVotingClasses.cpp:6770-6825):
@@ -165,10 +201,11 @@ enum class LeagueAlignment { WAR, ENEMY, HATRED, RIVAL, NEUTRAL, FRIEND, CONFIDA
  * - Sciencey unique unit (Merchant of Venice): the civilization's equivalent of [GREAT_MERCHANT] is another unit.
  * - Resolutions are found by effect (uniques and typed fields), except Nuclear Non-Proliferation and the projects, which have no effect field: by name.
  *
- * ## Gaps (the term contributes 0, never anything made up)
- * Teams (so no LEADER and no teammate ALLY), resurrection (LIBERATOR), the memory of liked/disliked proposals and of supported hosting or proposals
- * (so the alignment terms of CvVotingClasses.cpp:7960-7976 are 0, which makes CONFIDANT and ALLY unreachable: the highest alignment is FRIEND),
- * diplomat knowledge and vote commitments (`9408`), the approach of the diplomacy AI, resources of civilizations met only through trade.
+ * ## Gaps
+ * Teams (no LEADER or teammate ALLY), resurrection (LIBERATOR), diplomat knowledge and vote commitments (`9408`),
+ * the approach of the diplomacy AI, resources of civilizations met only through trade.
+ * Congress proposal/host memories are saved with members and expire after 45 game turns; Unciv's general
+ * diplomacy opinion does not currently include the DLL's additional Congress opinion weights.
  *
  * Deviations: the choice for a tie between equal best choices is No for yes/no (the status quo) and the civilization itself for civilization votes,
  * the original leaves it to an unstable sort. A division by zero when the gross gold is 0 (CvVotingClasses.cpp:9147) counts as ratio 0.
@@ -213,6 +250,15 @@ class LeagueEvaluator(private val civ: Civilization, private val league: League)
         var sum = 0
         val ours = civ.getIdeology()
         val theirs = other.getIdeology()
+        val memory = league.members[civ.civID]?.alignmentMemory?.get(other.civID)
+        if (memory != null) {
+            val turn = gameInfo.turns
+            if (memory.supportedHostingTurn.isRecentAt(turn)) sum += 2
+            if ((memory.likedProposalTurn.isRecentAt(turn) && memory.likedProposalTurn > memory.dislikedProposalTurn) ||
+                (memory.supportedProposalTurn.isRecentAt(turn) && memory.supportedProposalTurn > memory.foiledProposalTurn)) sum += 2
+            if ((memory.dislikedProposalTurn.isRecentAt(turn) && memory.dislikedProposalTurn > memory.likedProposalTurn) ||
+                (memory.foiledProposalTurn.isRecentAt(turn) && memory.foiledProposalTurn > memory.supportedProposalTurn)) sum -= 2
+        }
         if (ours != null && theirs != null) sum += if (ours.name == theirs.name) 2 else -2
         val diplomacy = civ.getDiplomacyManager(other)
         if (diplomacy != null) {
@@ -232,6 +278,8 @@ class LeagueEvaluator(private val civ: Civilization, private val league: League)
             else -> LeagueAlignment.ALLY
         }
     }
+
+    private fun Int.isRecentAt(turn: Int) = this >= 0 && turn >= this && turn - this < 45
 
     //endregion
     //region Entry points

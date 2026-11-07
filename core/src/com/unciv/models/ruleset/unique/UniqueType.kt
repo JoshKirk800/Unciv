@@ -42,6 +42,8 @@ enum class UniqueType(
     StatsPerCity("[stats] [cityFilter]", UniqueTarget.Global, UniqueTarget.FollowerBelief),
 
     StatsFromSpecialist("[stats] from every specialist [cityFilter]", UniqueTarget.Global, UniqueTarget.FollowerBelief),
+    StatsFromNamedSpecialist("[stats] from every [specialist] [cityFilter]", UniqueTarget.Global, UniqueTarget.FollowerBelief,
+        docDescription = "Adds the stats only for the named specialist in matching cities"),
     StatsPerPopulation("[stats] per [positiveAmount] population [cityFilter]", UniqueTarget.Global, UniqueTarget.FollowerBelief),
     StatsPerReligionWithFollowers("[stats] for each major religion with followers in the city [cityFilter]", UniqueTarget.Global, UniqueTarget.FollowerBelief,
         docDescription = "Counts the religions of which at least one citizen of the city is a follower, pantheons not included. Whole numbers of the stats only, as in the original (CvCity::GetYieldPerReligionTimes100)"),
@@ -54,6 +56,8 @@ enum class UniqueType(
     StatsFromTilesWithout("[stats] from [tileFilter] tiles without [tileFilter] [cityFilter]", UniqueTarget.Global, UniqueTarget.FollowerBelief),
     // This is a doozy
     StatsFromObject("[stats] from every [tileFilter/specialist/buildingFilter]", UniqueTarget.Global, UniqueTarget.FollowerBelief),
+    GreatScientistDiscoveryScience("[relativeAmount]% Science from Great Scientist discoveries", UniqueTarget.Global,
+        docDescription = "Applies to the Great Scientist's one-time Science from discovering technology, not to its birth rate"),
     StatsFromTradeRoute("[stats] from each Trade Route", UniqueTarget.Global, UniqueTarget.FollowerBelief),
     FlatTourism("[relativeAmount] Tourism [cityFilter]", UniqueTarget.Global, UniqueTarget.FollowerBelief,
         docDescription = "Added to the tourism of the city before the percentages, see ModConstants and the unique `[relativeAmount]% Tourism [cityFilter]`"),
@@ -1093,7 +1097,7 @@ enum class UniqueType(
     OneTimeGainPermanentStats("Permanently gain [stats]", UniqueTarget.Triggerable,
         docDescription = "The civilization-wide stats (for example `+3 Happiness`) are added for the rest of the game, as a unique of the civilization that is never removed"),
     OneTimeGainScienceTurns("Gain [positiveAmount] turns of Science", UniqueTarget.Triggerable,
-        docDescription = "The Science per turn the civilization makes now, times the number of turns, goes to its current research or, if it has none, to its overflow. The original uses the Science of the previous turns, which Unciv does not record"),
+        docDescription = "The recorded Science from the previous turns goes to current research or overflow, without Great Scientist or research agreement boosts"),
     OneTimeGainCityStateInfluence("Gain [amount] Influence with all City-States we have met", UniqueTarget.Triggerable),
     OneTimeGainPantheon("Gain enough Faith for a Pantheon", UniqueTarget.Triggerable),
     OneTimeGainProphet("Gain enough Faith for [positiveAmount]% of a Great Prophet", UniqueTarget.Triggerable),

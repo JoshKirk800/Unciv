@@ -99,6 +99,69 @@ class LeagueAutomationTests {
         val cityState = gameInfo.civilizations.first { it.isCityState }
         assertEquals(LeagueAlignment.NEUTRAL, evaluator(a).evaluateAlignment(cityState))
     }
+
+    @Test
+    fun `a liked proposal followed by a disliked one changes alignment until the memory expires`() {
+        game.addCity(a, cityTile())
+        game.addCity(a, cityTile())
+        league.members.getValue(b.civID).proposalsLeft = 2
+        league.proposeEnact(resolution("World's Fair"), null, b)
+        assertEquals(LeagueAlignment.FRIEND, evaluator(a).evaluateAlignment(b))
+        val saved = league.clone()
+        assertEquals(gameInfo.turns, saved.members.getValue(a.civID).alignmentMemory.getValue(b.civID).likedProposalTurn)
+        gameInfo.turns++
+        league.proposeEnact(resolution("Embargo"), a.civID, b)
+        assertEquals(LeagueAlignment.RIVAL, evaluator(a).evaluateAlignment(b))
+        assertEquals(-1, saved.members.getValue(a.civID).alignmentMemory.getValue(b.civID).dislikedProposalTurn)
+        gameInfo.turns += 45
+        assertEquals(LeagueAlignment.NEUTRAL, evaluator(a).evaluateAlignment(b))
+    }
+
+    @Test
+    fun `the elected host remembers actual supporters for forty five turns`() {
+        league.proposals.add(LeagueProposal(league.nextProposalId++, "Choose Host", false, null, null))
+        league.inSession = true
+        for (member in league.members.values) member.delegatesLeft = 2
+        val election = league.proposals.single()
+        league.vote(election.id, a, 2, b.civID)
+        league.vote(election.id, b, 2, b.civID)
+        league.vote(election.id, c, 2, c.civID)
+        league.doTurn()
+        assertEquals(b.civID, league.host)
+        assertEquals(LeagueAlignment.FRIEND, evaluator(b).evaluateAlignment(a))
+        assertEquals(LeagueAlignment.NEUTRAL, evaluator(b).evaluateAlignment(c))
+        gameInfo.turns += 45
+        assertEquals(LeagueAlignment.NEUTRAL, evaluator(b).evaluateAlignment(a))
+    }
+
+    @Test
+    fun `a passed and a failed proposal change the proposer's opinion of voters`() {
+        for (member in league.members.values) member.proposalsLeft = 0
+        league.members.getValue(b.civID).proposalsLeft = 1
+        league.proposeEnact(resolution("World's Fair"), null, b)
+        startSession()
+        val fair = onTable().single()
+        for (civ in majors) league.vote(fair.id, civ, league.getDelegatesLeft(civ), League.YES)
+        league.doTurn()
+        assertEquals(LeagueAlignment.FRIEND, evaluator(b).evaluateAlignment(a))
+        assertEquals(LeagueAlignment.FRIEND, evaluator(b).evaluateAlignment(c))
+
+        league.proposals.clear()
+        for (member in league.members.values) member.proposalsLeft = 0
+        league.members.getValue(b.civID).proposalsLeft = 1
+        gameInfo.turns++
+        league.proposeEnact(resolution("Embargo"), c.civID, b)
+        startSession()
+        val embargo = onTable().single()
+        league.vote(embargo.id, a, league.getDelegatesLeft(a), League.NO)
+        league.vote(embargo.id, b, league.getDelegatesLeft(b), League.YES)
+        league.vote(embargo.id, c, league.getDelegatesLeft(c), League.NO)
+        league.doTurn()
+        assertEquals(LeagueAlignment.RIVAL, evaluator(b).evaluateAlignment(a))
+        assertEquals(LeagueAlignment.RIVAL, evaluator(b).evaluateAlignment(c))
+        gameInfo.turns += 45
+        assertEquals(LeagueAlignment.NEUTRAL, evaluator(b).evaluateAlignment(a))
+    }
     //endregion
 
     //region Scoring
@@ -193,6 +256,27 @@ class LeagueAutomationTests {
         assertTrue(resolution.playerProposable)
         if (resolution.proposerDecision != ResolutionDecision.None)
             assertTrue(proposal.proposerChoice in league.getChoices(resolution, b))
+    }
+
+    @Test
+    fun `an AI proposes the available World's Fair over a disliked alternative on a later turn`() {
+        // Put other proposals on the table, not in effect: a repeal could otherwise outrank the Fair.
+        game.addCity(b, cityTile())
+        game.addCity(b, cityTile())
+        league.members.getValue(b.civID).proposalsLeft = 1
+        for (resolution in game.ruleset.resolutions.values) {
+            if (resolution.name == "World's Fair" || resolution.name == "Cultural Heritage Sites") continue
+            val choices = if (resolution.proposerDecision == ResolutionDecision.None) listOf(null) else league.getChoices(resolution, b)
+            for (choice in choices) if (league.canProposeEnact(resolution, choice, b))
+                league.proposals.add(LeagueProposal(league.nextProposalId++, resolution.name, false, b.civID, choice))
+        }
+        assertTrue(league.canProposeEnact(resolution("World's Fair"), null, b))
+        assertTrue(league.canProposeEnact(resolution("Cultural Heritage Sites"), null, b))
+        assertTrue(evaluator(b).scoreProposal(resolution("World's Fair"), null) >= 50)
+        assertTrue(evaluator(b).scoreProposal(resolution("Cultural Heritage Sites"), null) < 0)
+        gameInfo.turns++
+        LeagueAutomation.automateLeague(b)
+        assertEquals("World's Fair", league.proposals.last().resolution)
     }
 
     @Test
