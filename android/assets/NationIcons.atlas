@@ -109,84 +109,91 @@ NationIcons/Ethiopia
   orig: 100, 100
   offset: 0, 0
   index: -1
-NationIcons/France
+NationIcons/Fallback
   rotate: false
   xy: 544, 278
   size: 100, 100
   orig: 100, 100
   offset: 0, 0
   index: -1
-NationIcons/Germany
+NationIcons/Random
+  rotate: false
+  xy: 544, 278
+  size: 100, 100
+  orig: 100, 100
+  offset: 0, 0
+  index: -1
+NationIcons/France
   rotate: false
   xy: 652, 386
   size: 100, 100
   orig: 100, 100
   offset: 0, 0
   index: -1
-NationIcons/Greece
+NationIcons/Germany
   rotate: false
   xy: 436, 62
   size: 100, 100
   orig: 100, 100
   offset: 0, 0
   index: -1
-NationIcons/Inca
+NationIcons/Greece
   rotate: false
-  xy: 652, 278
+  xy: 544, 170
   size: 100, 100
   orig: 100, 100
   offset: 0, 0
   index: -1
-NationIcons/India
+NationIcons/Inca
   rotate: false
   xy: 760, 386
   size: 100, 100
   orig: 100, 100
   offset: 0, 0
   index: -1
-NationIcons/Iroquois
+NationIcons/India
   rotate: false
   xy: 544, 62
   size: 100, 100
   orig: 100, 100
   offset: 0, 0
   index: -1
-NationIcons/Japan
+NationIcons/Iroquois
   rotate: false
   xy: 652, 170
   size: 100, 100
   orig: 100, 100
   offset: 0, 0
   index: -1
-NationIcons/Korea
+NationIcons/Japan
   rotate: false
   xy: 760, 278
   size: 100, 100
   orig: 100, 100
   offset: 0, 0
   index: -1
-NationIcons/Mongolia
+NationIcons/Korea
   rotate: false
   xy: 868, 386
   size: 100, 100
   orig: 100, 100
   offset: 0, 0
   index: -1
-NationIcons/Persia
+NationIcons/Mongolia
   rotate: false
-  xy: 760, 170
+  xy: 652, 62
   size: 100, 100
   orig: 100, 100
   offset: 0, 0
   index: -1
-NationIcons/Polynesia
+NationIcons/Persia
   rotate: false
   xy: 868, 278
   size: 100, 100
   orig: 100, 100
   offset: 0, 0
   index: -1
-NationIcons/Random
+NationIcons/Polynesia
   rotate: false
   xy: 976, 386
   size: 100, 100
@@ -300,14 +307,14 @@ VictoryScreenIcons/Global
   index: -1
 VictoryScreenIcons/Illustration
   rotate: false
-  xy: 544, 170
+  xy: 652, 278
   size: 100, 100
   orig: 100, 100
   offset: 0, 0
   index: -1
 VictoryScreenIcons/OurStatus
   rotate: false
-  xy: 652, 62
+  xy: 760, 170
   size: 100, 100
   orig: 100, 100
   offset: 0, 0
