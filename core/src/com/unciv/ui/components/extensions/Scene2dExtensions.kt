@@ -338,11 +338,13 @@ fun String.toLabel() = Label(this.tr(), BaseScreen.skin)
 /** Make a [Label] widget containing this [Int] as text */
 fun Int.toLabel() = this.tr().toLabel()
 
-/** Translate a [String] and make a [Label] widget from it with a specified font color and size */
+/** Translate a [String] and make a [Label] widget from it with a specified font color and size
+ *  @param hideIcons hides the icons of ruleset objects, [hideStats] those of stat names (see [tr]) */
 fun String.toLabel(fontColor: Color = Color.WHITE,
                     fontSize: Int = Constants.defaultFontSize,
                     alignment: Int = Align.left,
-                    hideIcons: Boolean = false): Label {
+                    hideIcons: Boolean = false,
+                    hideStats: Boolean = false): Label {
     // We don't want to use setFontSize and setFontColor because they set the font,
     //  which means we need to rebuild the font cache which means more memory allocation.
     var labelStyle = BaseScreen.skin.get(Label.LabelStyle::class.java)
@@ -351,7 +353,7 @@ fun String.toLabel(fontColor: Color = Color.WHITE,
         labelStyle.fontColor = fontColor
         if (fontSize != Constants.defaultFontSize) labelStyle.font = Fonts.font
     }
-    val translatedText = this.tr(hideIcons) 
+    val translatedText = this.tr(hideIcons, hideStats)
     return Label(translatedText, labelStyle).apply {
         setFontScale(fontSize / Fonts.ORIGINAL_FONT_SIZE)
         setAlignment(alignment)

@@ -34,7 +34,10 @@ object WorldCongressOverview {
     fun getSessionStatusLines(league: League): List<String> {
         val lines = ArrayList<String>()
         lines +=
-            if (!league.inSession) "Turns until the next World Congress session: [${league.turnsUntilSession}]"
+            if (!league.inSession) {
+                if (league.unitedNations) "Turns until the next United Nations session: [${league.turnsUntilSession}]"
+                else "Turns until the next World Congress session: [${league.turnsUntilSession}]"
+            }
             else if (league.currentSpecialSession != null) "A special session is in progress"
             else "A session is in progress"
         if (league.unitedNations) {
@@ -47,13 +50,16 @@ object WorldCongressOverview {
         return lines
     }
 
+    /** "United Nations" once the UN is founded, "World Congress" before */
+    private fun getName(league: League) = if (league.unitedNations) "United Nations" else "World Congress"
+
     /** `League.getTurnsUntilWorldLeaderSession` says 999 for none */
     private const val NO_WORLD_LEADER_SESSION = 999
 
     fun build(table: Table, civ: Civilization) {
         val league = civ.gameInfo.league ?: return
         table.clear()
-        table.add((if (league.unitedNations) "United Nations" else "World Congress").toLabel(fontSize = Constants.headingFontSize))
+        table.add(getName(league).toLabel(fontSize = Constants.headingFontSize))
             .colspan(COLUMNS).padBottom(10f).row()
         for (line in getSessionStatusLines(league))
             table.add(line.toLabel()).colspan(COLUMNS).row()
@@ -130,7 +136,7 @@ object WorldCongressOverview {
         for (proposal in league.proposals) {
             table.add(proposal.resolution.toLabel()).left()
             table.add((proposal.proposerChoice?.let { ResolutionDescriptions.getChoiceName(it, civ.gameInfo) } ?: "").toLabel())
-            table.add((proposal.proposer?.let { civ.gameInfo.getCivilizationOrNull(it)?.civName } ?: "World Congress").toLabel())
+            table.add((proposal.proposer?.let { civ.gameInfo.getCivilizationOrNull(it)?.civName } ?: getName(league)).toLabel())
             val status = when {
                 proposal.onHold -> "On hold"
                 proposal.repeal -> "Repeal"

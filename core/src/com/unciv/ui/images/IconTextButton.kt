@@ -25,8 +25,9 @@ open class IconTextButton(
     fontSize: Int = Constants.defaultFontSize,
     val fontColor: Color = Color.WHITE
 ) : Button(BaseScreen.skin) {
-    /** [Label] instance produced by, and with content and formatting as specified in [String.toLabel]. */
-    val label = text.toLabel(fontColor, fontSize, hideIcons = true) // Since by definition we already have an icon
+    /** [Label] instance produced by, and with content and formatting as specified in [String.toLabel].
+     *  With an [icon], a stat name like "Culture" does not get its stat icon in front either - it would show the icon twice. */
+    val label = text.toLabel(fontColor, fontSize, hideIcons = true, hideStats = icon != null) // Since by definition we already have an icon
 
     /** Table cell containing the [icon] if any, or `null` (that is, when no [icon] was supplied, the Cell will exist but have no Actor). */
     val iconCell: Cell<Actor> =
