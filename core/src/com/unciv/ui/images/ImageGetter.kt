@@ -267,10 +267,15 @@ object ImageGetter {
 
     fun getRandomNationPortrait(size: Float): Portrait = PortraitNation(Constants.random, size)
 
+    /** The icon of the unit itself, else that of the unit it replaces, else that of its type or movement domain, else the generic fallback */
+    @Readonly @Suppress("purity") // listOfNotNull is not annotated
+    fun getUnitIconPath(unit: BaseUnit): String =
+        listOfNotNull("UnitIcons/${unit.name}", unit.replaces?.let { "UnitIcons/$it" },
+            "UnitTypeIcons/${unit.type}", unit.type.getMovementType()?.let { "UnitTypeIcons/Domain$it" })
+            .firstOrNull { imageExists(it) } ?: "UnitIcons/Fallback"
+
     fun getUnitIcon(unit: BaseUnit, color: Color = CHARCOAL): Image =
-        if (imageExists("UnitIcons/${unit.name}"))
-            getImage("UnitIcons/${unit.name}").apply { this.color = color }
-        else getImage("UnitTypeIcons/${unit.type}").apply { this.color = color }
+        getImage(getUnitIconPath(unit)).apply { this.color = color }
 
     @Readonly @Suppress("purity") // only mutates the freshly-created Group it returns
     fun getConstructionPortrait(construction: String, size: Float): Group {
