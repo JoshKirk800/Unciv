@@ -268,11 +268,27 @@ object ImageGetter {
     fun getRandomNationPortrait(size: Float): Portrait = PortraitNation(Constants.random, size)
 
     /** The icon of the unit itself, else that of the unit it replaces, else that of its type or movement domain, else the generic fallback */
-    @Readonly @Suppress("purity") // listOfNotNull is not annotated
-    fun getUnitIconPath(unit: BaseUnit): String =
-        listOfNotNull("UnitIcons/${unit.name}", unit.replaces?.let { "UnitIcons/$it" },
-            "UnitTypeIcons/${unit.type}", unit.type.getMovementType()?.let { "UnitTypeIcons/Domain$it" })
-            .firstOrNull { imageExists(it) } ?: "UnitIcons/Fallback"
+    @Readonly @Suppress("purity") // imageExists reads the loaded atlas map
+    fun getUnitIconPath(unit: BaseUnit): String {
+        val unitIcon = "UnitIcons/${unit.name}"
+        if (imageExists(unitIcon)) return unitIcon
+
+        val replacement = unit.replaces
+        if (replacement != null) {
+            val replacementIcon = "UnitIcons/$replacement"
+            if (imageExists(replacementIcon)) return replacementIcon
+        }
+
+        val typeIcon = "UnitTypeIcons/${unit.unitType}"
+        if (imageExists(typeIcon)) return typeIcon
+
+        val domain = ruleset.unitTypes[unit.unitType]?.getMovementType()
+        if (domain != null) {
+            val domainIcon = "UnitTypeIcons/Domain$domain"
+            if (imageExists(domainIcon)) return domainIcon
+        }
+        return "UnitIcons/Fallback"
+    }
 
     fun getUnitIcon(unit: BaseUnit, color: Color = CHARCOAL): Image =
         getImage(getUnitIconPath(unit)).apply { this.color = color }
