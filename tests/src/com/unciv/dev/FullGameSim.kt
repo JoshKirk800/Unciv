@@ -1,0 +1,271 @@
+package com.unciv.dev
+
+import com.badlogic.gdx.Gdx
+import com.unciv.UncivGame
+import com.unciv.logic.GameInfo
+import com.unciv.logic.GameStarter
+import com.unciv.logic.civilization.Civilization
+import com.unciv.logic.civilization.PlayerType
+import com.unciv.logic.files.UncivFiles
+import com.unciv.logic.map.MapParameters
+import com.unciv.logic.map.MapSize
+import com.unciv.logic.map.MapType
+import com.unciv.models.metadata.BaseRuleset
+import com.unciv.models.metadata.GameParameters
+import com.unciv.models.metadata.GameSettings
+import com.unciv.models.metadata.GameSetupInfo
+import com.unciv.models.metadata.Player
+import com.unciv.models.ruleset.RulesetCache
+import com.unciv.testing.GdxTestRunner
+import com.unciv.ui.audio.MusicController
+import org.junit.Assert
+import org.junit.Assume
+import org.junit.BeforeClass
+import org.junit.Test
+import org.junit.runner.RunWith
+import java.io.File
+import java.util.Locale
+
+/**
+ * An AI-only game played from the first turn to its end: a victory, one civilization left, or the turn limit.
+ * Where [ParitySim] compares two source versions over a fixed number of turns, this one checks a single version over a whole
+ * game, and reports what happened to the late-game systems (eras, ideologies, public opinion, tourism and influence, the
+ * World Congress, religion). Skipped unless the environment variable FULL_SIM_OUT is set; `tools/full_sim.py` runs it.
+ *
+ * Environment: FULL_SIM_OUT = report file, FULL_SIM_START = the starting game (generated and saved there when missing),
+ * FULL_SIM_MAX_TURNS (default 700), FULL_SIM_WALL_MINUTES (default 150), FULL_SIM_PLAY_ON (any value: keep playing after a victory),
+ * FULL_SIM_CIVS (8), FULL_SIM_CITYSTATES (8), FULL_SIM_SEED (7), FULL_SIM_RULESET (default Civ V - Brave New World),
+ * FULL_SIM_MAPSIZE (Tiny, Small, Medium, Large or Huge; default Medium), FULL_SIM_MAPTYPE (default Small Continents).
+ *
+ * Reproducibility: FULL_SIM_DIGESTS = a file that gets one line per turn, `turn <n> <hash of the whole game state>` (the wall-clock
+ * turn start time and the random ids of great works are left out of the hash). Two runs from the same start file must write the
+ * same lines, `tools/determinism_check.py` compares them and names the first turn that differs. FULL_SIM_DUMP_TURNS (comma-separated)
+ * (or `all`) with FULL_SIM_DUMP_DIR writes the full state JSON, gzipped, after those turns, so that two runs can be diffed.
+ *
+ * The report is rewritten every 25 turns so that a hang or a crash still leaves the story up to that point. The state of the
+ * last 25-turn mark is saved to `<report>.checkpoint.save` (and, on a crash, the exception is in the report), so that the turn
+ * that failed can be replayed with FULL_SIM_START pointing at the checkpoint.
+ *
+ * What it checks every turn (a violation is listed, it does not stop the game; an exception does): no negative free tenets,
+ * at most one ideology adopted, tenets only with their own ideology, no unfinished numbers in the stats, cities that belong
+ * to the civilization that lists them, and a population of at least 1.
+ */
+@RunWith(GdxTestRunner::class)
+class FullGameSim {
+    companion object {
+        @BeforeClass @JvmStatic
+        fun setup() {
+            Assume.assumeTrue("Set FULL_SIM_OUT to run", System.getenv("FULL_SIM_OUT") != null)
+            UncivGame.Current = UncivGame()
+            UncivGame.Current.settings = GameSettings().apply { musicVolume = 0f; soundEffectsVolume = 0f; citySoundsVolume = 0f; voicesVolume = 0f }
+            UncivGame.Current.files = UncivFiles(Gdx.files)
+            UncivGame.Current.musicController = MusicController()
+            RulesetCache.loadRulesets(noMods = true)
+        }
+    }
+
+    private fun env(name: String, default: String) = System.getenv(name) ?: default
+
+    private fun startGame(): GameInfo {
+        val ruleset = RulesetCache[env("FULL_SIM_RULESET", BaseRuleset.Civ_V_BNW.fullName)]!!
+        val players = ArrayList<Player>()
+        for (nation in ruleset.nations.values) {
+            if (players.size >= env("FULL_SIM_CIVS", "8").toInt()) break
+            if (nation.isMajorCiv) players.add(Player(nation.name, PlayerType.AI))
+        }
+        players.add(Player("Spectator", PlayerType.Human))
+        val parameters = GameParameters().apply {
+            baseRuleset = ruleset.name
+            difficulty = "Prince"
+            speed = "Standard"
+            numberOfCityStates = env("FULL_SIM_CITYSTATES", "8").toInt()
+            shufflePlayerOrder = false
+            this.players = players
+        }
+        val mapParameters = MapParameters().apply {
+            type = env("FULL_SIM_MAPTYPE", MapType.smallContinents)
+            mapSize = when (env("FULL_SIM_MAPSIZE", "Medium")) {
+                "Tiny" -> MapSize.Tiny
+                "Small" -> MapSize.Small
+                "Large" -> MapSize.Large
+                "Huge" -> MapSize.Huge
+                else -> MapSize.Medium
+            }
+            seed = env("FULL_SIM_SEED", "7").toLong()
+        }
+        return GameStarter.startNewGame(GameSetupInfo(parameters, mapParameters), gameId = "full-sim-${mapParameters.seed}")
+    }
+
+    private fun players(game: GameInfo) =
+        game.civilizations.filter { !it.isSpectator && !it.isBarbarian && it.isMajorCiv }.sortedBy { it.civName }
+
+    private fun ideologyOf(civ: Civilization) = civ.policies.getIdeology()?.name
+
+    private val violations = LinkedHashMap<String, Int>()
+    private val violationSamples = ArrayList<String>()
+
+    private fun violation(turn: Int, text: String) {
+        val key = text.substringBefore(':')
+        violations[key] = (violations[key] ?: 0) + 1
+        if (violationSamples.size < 40 && violations[key]!! <= 3) violationSamples.add("turn $turn: $text")
+    }
+
+    // Json leaves out a field that equals its default, so a clock value is sometimes there and sometimes not: remove the key
+    private val clockFields = Regex("\"(currentTurnStartTime|totalTurnTimeSeconds)\":\\d+,?")
+    private val randomIds = Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+
+    /** The state of the whole game as JSON, without what differs between runs by design (wall-clock time, random ids) */
+    private fun stateJson(game: GameInfo) =
+        randomIds.replace(clockFields.replace(UncivFiles.gameInfoToString(game, forceZip = false), ""), "~")
+
+    private fun digest(text: String): String =
+        java.security.MessageDigest.getInstance("SHA-256").digest(text.toByteArray()).take(8).joinToString("") { "%02x".format(it) }
+
+    private fun checkInvariants(game: GameInfo, turn: Int) {
+        for (civ in game.civilizations.filter { !it.isSpectator && !it.isBarbarian }) {
+            if (civ.isDefeated()) continue
+            val ruleset = game.ruleset
+            if (civ.isMajorCiv) {
+                if (civ.policies.freeTenets < 0) violation(turn, "negative free tenets: ${civ.civName} ${civ.policies.freeTenets}")
+                val ideologies = ruleset.policyBranches.values.filter { it.isIdeology && civ.policies.isAdopted(it.name) }
+                if (ideologies.size > 1) violation(turn, "several ideologies: ${civ.civName} ${ideologies.map { it.name }}")
+                val own = ideologies.firstOrNull()
+                for (name in civ.policies.getAdoptedPolicies()) {
+                    val policy = ruleset.policies[name] ?: continue
+                    if (policy.isTenet && policy.branch != own)
+                        violation(turn, "tenet without its ideology: ${civ.civName} has $name, ideology ${own?.name}")
+                }
+            }
+            if (civ.gold !in -10_000_000..10_000_000) violation(turn, "gold out of range: ${civ.civName} ${civ.gold}")
+            for (city in civ.cities) {
+                if (city.civ != civ) violation(turn, "city of another civ: ${city.name} listed by ${civ.civName}")
+                if (city.population.population < 1) violation(turn, "empty city: ${city.name} of ${civ.civName}")
+            }
+        }
+    }
+
+    private fun summary(game: GameInfo, turn: Int, wallSeconds: Long, out: StringBuilder) {
+        out.appendLine("== turn $turn  (${wallSeconds}s wall)")
+        for (civ in players(game)) {
+            val line = String.format(Locale.ROOT,
+                "%-16s alive=%-5s era=%-18s cities=%2d pop=%3d techs=%3d policies=%2d gold=%5d happiness=%3d units=%3d culture=%d tourism=%d influential=%d works=%d ideology=%s opinion=%s religion=%s",
+                civ.civName, !civ.isDefeated(), civ.getEra().name, civ.cities.size, civ.cities.sumOf { it.population.population },
+                civ.tech.researchedTechnologies.size, civ.policies.getAdoptedPolicies().size, civ.gold,
+                civ.stats.happiness, civ.units.getCivUnitsSize(), civ.policies.storedCulture,
+                civ.culture.getTourism(), civ.culture.getNumCivsInfluentialOn(), civ.cities.sumOf { it.greatWorks.getNumWorks() },
+                ideologyOf(civ) ?: "-", civ.culture.publicOpinion.type.label, civ.religionManager.religion?.getReligionDisplayName() ?: "-")
+            out.appendLine(line)
+        }
+        val league = game.league
+        out.appendLine(if (league == null) "league: none"
+            else "league: members=${league.members.size} unitedNations=${league.unitedNations} active=${league.activeResolutions.map { it.resolution }} turnsUntilSession=${league.turnsUntilSession}")
+    }
+
+    private fun report(out: StringBuilder, events: List<String>, game: GameInfo, ended: String) {
+        val text = StringBuilder()
+        text.appendLine("# Full game simulation, ${game.gameParameters.baseRuleset}, ${game.civilizations.count { it.isMajorCiv && !it.isSpectator }} majors, ${game.civilizations.count { it.isCityState }} city-states")
+        text.appendLine("ended: $ended")
+        text.appendLine()
+        text.appendLine("## Events")
+        events.forEach { text.appendLine(it) }
+        text.appendLine()
+        text.appendLine("## Invariant violations")
+        if (violations.isEmpty()) text.appendLine("none")
+        else {
+            violations.forEach { (key, count) -> text.appendLine("$count x $key") }
+            violationSamples.forEach { text.appendLine("  e.g. $it") }
+        }
+        text.appendLine()
+        text.appendLine("## Snapshots")
+        text.append(out)
+        File(System.getenv("FULL_SIM_OUT")!!).writeText(text.toString())
+    }
+
+    @Test
+    fun play() {
+        val maxTurns = env("FULL_SIM_MAX_TURNS", "700").toInt()
+        val wallLimitMillis = env("FULL_SIM_WALL_MINUTES", "150").toLong() * 60_000
+        val playOn = System.getenv("FULL_SIM_PLAY_ON") != null
+        val startFile = File(System.getenv("FULL_SIM_START") ?: error("Set FULL_SIM_START to the starting game file"))
+        if (!startFile.isFile) startFile.writeText(UncivFiles.gameInfoToString(startGame(), forceZip = true))
+        val game = UncivFiles.gameInfoFromString(startFile.readText())
+        UncivGame.Current.gameInfo = game
+
+        val out = StringBuilder()
+        val events = ArrayList<String>()
+        val checkpoint = File(System.getenv("FULL_SIM_OUT")!! + ".checkpoint.save")
+        val startedAt = System.currentTimeMillis()
+        val digestFile = System.getenv("FULL_SIM_DIGESTS")?.let { File(it).apply { writeText("") } }
+        val dumpAll = env("FULL_SIM_DUMP_TURNS", "") == "all"
+        val dumpTurns = env("FULL_SIM_DUMP_TURNS", "").split(',').mapNotNull { it.trim().toIntOrNull() }.toSet()
+        val dumpDir = System.getenv("FULL_SIM_DUMP_DIR")?.let { File(it).apply { mkdirs() } }
+        if (digestFile != null || dumpDir != null) { // the start itself: two generated worlds from one seed must be the same
+            val state = stateJson(game)
+            digestFile?.appendText("turn ${game.turns} ${digest(state)}\n")
+            if (dumpDir != null) java.util.zip.GZIPOutputStream(File(dumpDir, "state-${game.turns}.json.gz").outputStream()).use { it.write(state.toByteArray()) }
+        }
+        val lastEra = HashMap<String, String>()
+        val lastIdeology = HashMap<String, String?>()
+        val lastOpinion = HashMap<String, String>()
+        val wasDefeated = HashSet<String>()
+        var lastSession = game.league?.lastResultsTurn ?: -1
+        var leagueFounded = game.league != null
+        var ended = "turn limit $maxTurns"
+
+        fun event(turn: Int, text: String) = events.add("turn $turn: $text")
+
+        for (turn in 1..maxTurns) {
+            try {
+                game.nextTurn()
+            } catch (ex: Throwable) {
+                event(turn, "EXCEPTION in nextTurn: $ex")
+                ex.stackTrace.take(25).forEach { events.add("    at $it") }
+                ended = "exception on turn $turn"
+                break
+            }
+            checkInvariants(game, turn)
+            val dump = dumpDir != null && (dumpAll || turn in dumpTurns)
+            if (digestFile != null || dump) {
+                val state = stateJson(game)
+                digestFile?.appendText("turn ${game.turns} ${digest(state)}\n")
+                if (dump) java.util.zip.GZIPOutputStream(File(dumpDir, "state-$turn.json.gz").outputStream()).use { it.write(state.toByteArray()) }
+            }
+
+            for (civ in players(game)) {
+                val era = civ.getEra().name
+                if (lastEra.put(civ.civName, era) != era && turn > 1) event(turn, "${civ.civName} enters the $era")
+                val ideology = ideologyOf(civ)
+                if (lastIdeology.containsKey(civ.civName) && lastIdeology[civ.civName] != ideology)
+                    event(turn, "${civ.civName} ideology ${lastIdeology[civ.civName] ?: "none"} -> ${ideology ?: "none"} (tenets ${civ.policies.getAdoptedPolicies().count { game.ruleset.policies[it]?.isTenet == true }})")
+                lastIdeology[civ.civName] = ideology
+                val opinion = civ.culture.publicOpinion.type.label
+                if (lastOpinion.put(civ.civName, opinion) != opinion && (opinion != "Content" || turn > 1))
+                    event(turn, "${civ.civName} public opinion $opinion (unhappiness ${civ.culture.publicOpinion.unhappiness})")
+                if (civ.isDefeated() && wasDefeated.add(civ.civName)) event(turn, "${civ.civName} is defeated")
+            }
+            val league = game.league
+            if (league != null && !leagueFounded) { leagueFounded = true; event(turn, "World Congress founded") }
+            if (league != null && league.lastResultsTurn != lastSession) {
+                lastSession = league.lastResultsTurn
+                event(turn, "World Congress session held, results ${league.lastResults.map { "${it.resolution}${if (it.passed) "+" else "-"}" }}")
+            }
+
+            if (turn % 25 == 0) {
+                summary(game, turn, (System.currentTimeMillis() - startedAt) / 1000, out)
+                checkpoint.writeText(UncivFiles.gameInfoToString(game, forceZip = true))
+                report(out, events, game, "running, turn $turn")
+            }
+            val victory = game.victoryData
+            if (victory != null) {
+                event(turn, "VICTORY: ${victory.winningCiv} by ${victory.victoryType} (turn ${victory.victoryTurn})")
+                if (!playOn) { ended = "${victory.winningCiv} won by ${victory.victoryType} on turn $turn"; break }
+            }
+            if (players(game).count { !it.isDefeated() } <= 1) { ended = "one civilization left on turn $turn"; break }
+            if (System.currentTimeMillis() - startedAt > wallLimitMillis) { ended = "wall-clock limit on turn $turn"; break }
+        }
+        val turn = game.turns
+        summary(game, turn, (System.currentTimeMillis() - startedAt) / 1000, out)
+        report(out, events, game, ended)
+        Assert.assertFalse("The game threw: see the report", ended.startsWith("exception"))
+    }
+}

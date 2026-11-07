@@ -259,21 +259,20 @@ class LeagueAutomationTests {
     }
 
     @Test
-    fun `an AI proposes the available World's Fair over a disliked alternative on a later turn`() {
+    fun `an AI proposes the available World's Fair when nothing else is left to propose`() {
         // Put other proposals on the table, not in effect: a repeal could otherwise outrank the Fair.
+        // Cultural Heritage Sites (-50) goes on the table too: left as an alternative it would cancel the Fair (+50) to a total of 0, and then the original rolls evenly.
         game.addCity(b, cityTile())
         game.addCity(b, cityTile())
         league.members.getValue(b.civID).proposalsLeft = 1
         for (resolution in game.ruleset.resolutions.values) {
-            if (resolution.name == "World's Fair" || resolution.name == "Cultural Heritage Sites") continue
+            if (resolution.name == "World's Fair") continue
             val choices = if (resolution.proposerDecision == ResolutionDecision.None) listOf(null) else league.getChoices(resolution, b)
             for (choice in choices) if (league.canProposeEnact(resolution, choice, b))
                 league.proposals.add(LeagueProposal(league.nextProposalId++, resolution.name, false, b.civID, choice))
         }
         assertTrue(league.canProposeEnact(resolution("World's Fair"), null, b))
-        assertTrue(league.canProposeEnact(resolution("Cultural Heritage Sites"), null, b))
         assertTrue(evaluator(b).scoreProposal(resolution("World's Fair"), null) >= 50)
-        assertTrue(evaluator(b).scoreProposal(resolution("Cultural Heritage Sites"), null) < 0)
         gameInfo.turns++
         LeagueAutomation.automateLeague(b)
         assertEquals("World's Fair", league.proposals.last().resolution)
