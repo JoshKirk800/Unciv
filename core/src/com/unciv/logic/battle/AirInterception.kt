@@ -48,7 +48,7 @@ object AirInterception {
 
         // Pick highest chance interceptor
         for (interceptor in potentialInterceptors
-            .shuffled()  // randomize Civ
+            .shuffled(kotlin.random.Random(attacker.getCivInfo().gameInfo.turns * 31L + attackedTile.position.hashCode()))  // randomize Civ, the same way on every run
             .sortedByDescending { it.interceptChance() }) {
             // No chance of Interceptor to miss (unlike regular Interception). Always want to deal damage
             // pairs of LocationAction for Notification
