@@ -3,6 +3,7 @@ package com.unciv.logic.automation.civilization
 import com.unciv.view.GameView
 import com.unciv.UncivGame
 import com.unciv.logic.civilization.Civilization
+import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.models.metadata.GameSettings.PathfindingAlgorithm
 import com.unciv.models.metadata.GameSettings.PathfindingAlgorithm.AStarPathfinding
@@ -92,6 +93,26 @@ class NextTurnAutomationTest(private val algorithm: PathfindingAlgorithm) {
         assertEquals("high hp warrior have taken the place of low hp escort of settler", settler1, highHpWarrior.getOtherEscortUnit())
         assertEquals("high hp warrior have taken the place of low hp escort of settler", lowHpWarrior, settler2.getOtherEscortUnit())
         assertEquals("high hp warrior have taken the place of low hp escort of settler", settler2, lowHpWarrior.getOtherEscortUnit())
+    }
+
+    @Test
+    fun `automateSettlerEscorting does not draft a ship to escort a settler in a coastal city`() {
+        // Whole-game simulation, turn 364: a Ship of the Line was sent to swap places with the land unit escorting a settler in a
+        // port. The land unit could embark onto the ship's tile, so the swap looked possible, but it then failed halfway.
+        civInfo.tech.addTechnology("Optics") // lets land units embark
+        testGame.setTileTerrain(HexCoord(0, 2), "Coast")
+        testGame.addCity(civInfo, testGame.tileMap[0,3])
+        val settler = testGame.addUnit("Settler", civInfo, testGame.tileMap[0,3])
+        val warrior = testGame.addUnit("Warrior", civInfo, testGame.tileMap[0,3])
+        val ship = testGame.addUnit("Caravel", civInfo, testGame.tileMap[0,2])
+        warrior.startEscorting()
+        assertTrue(settler.isEscorting())
+
+        NextTurnAutomation.automateSettlerEscorting(GameView(civInfo.gameInfo, civInfo).civView)
+
+        assertEquals(testGame.tileMap[0,3], warrior.currentTile)
+        assertEquals(testGame.tileMap[0,2], ship.currentTile)
+        assertEquals(warrior, settler.getOtherEscortUnit())
     }
 
     @Test

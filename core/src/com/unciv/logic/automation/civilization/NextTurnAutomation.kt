@@ -579,6 +579,7 @@ object NextTurnAutomation {
         @Readonly fun bestUnitInRange(tile: Tile, range: Int) = tile.getTilesInDistance(range)
             .mapNotNull { it.militaryUnit }.filter {
                 it.civ == civInfo
+                    && it.type.isLandUnit() // a ship can reach a port, but the escort it swaps with cannot follow it to sea
                     && it.health >= 100
                     // only draft a unit from the core of the empire, or it'll interfere with other anti-barb activities
                     && (it.currentTile.aerialDistanceTo(capitalTile) < tile.aerialDistanceTo(capitalTile))
