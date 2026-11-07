@@ -316,6 +316,9 @@ class TradeRouteManager : IsPartOfGameInfoSerialization {
         val constants = civ.gameInfo.ruleset.modOptions.constants
         val gold = constants.tradeRoutePlunderGold * (100 + (if (route.isSea) constants.tradeRouteSeaBonusPercent else 0)) / 100
         plunderingCiv.addGold(gold)
+        // CvPlayerTrade::PlunderTradeRoute: a barbarian on the route receives an extra unit with no moves left.
+        if (plunderingCiv.isBarbarian && tile.getUnits().any { it.civ == plunderingCiv })
+            civ.gameInfo.barbarians.spawnBarbarian(tile, ignoreNearbyLimit = true)?.currentMovement = 0f
         val origin = route.getOriginCity()?.name
         val destination = route.getDestinationCity()?.name
         removeRoute(route)

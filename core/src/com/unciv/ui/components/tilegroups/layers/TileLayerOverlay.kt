@@ -5,6 +5,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Image
 import com.unciv.view.CivView
 import com.unciv.ui.components.tilegroups.TileGroup
 import com.unciv.ui.images.ImageGetter
+import com.unciv.models.ruleset.unit.BaseUnit
 
 class TileLayerOverlay(tileGroup: TileGroup, size: Float) : TileLayer(tileGroup, size) {
 
@@ -13,6 +14,9 @@ class TileLayerOverlay(tileGroup: TileGroup, size: Float) : TileLayer(tileGroup,
     private var goodCityLocationIndicator: Image? = null
     private var fog: Image? = null
     private var unexplored: Image? = null
+    private var tradeRouteMarker: Image? = null
+    private var tradeRouteMarkerUnit: BaseUnit? = null
+    private var tradeRouteMarkerColor: Color? = null
 
     private fun getHighlight() = ImageGetter.getImage(strings.highlight).setHexagonSize()
     private fun getCrosshair() = ImageGetter.getImage(strings.crosshair).setHexagonSize()
@@ -54,6 +58,26 @@ class TileLayerOverlay(tileGroup: TileGroup, size: Float) : TileLayer(tileGroup,
         determineVisibility()
     }
 
+    /** Traders are routes rather than map units; show their current position with their unit-type icon. */
+    fun showTradeRouteMarker(unit: BaseUnit, color: Color) {
+        if (tradeRouteMarker != null && tradeRouteMarkerUnit === unit && tradeRouteMarkerColor == color) return
+        hideTradeRouteMarker()
+        tradeRouteMarker = ImageGetter.getUnitIcon(unit, color).setHexagonSize(0.28f)
+        tradeRouteMarkerUnit = unit
+        tradeRouteMarkerColor = color
+        addOwnedActor(tradeRouteMarker!!)
+        determineVisibility()
+    }
+
+    fun hideTradeRouteMarker() {
+        val marker = tradeRouteMarker ?: return
+        removeOwnedActor(marker)
+        tradeRouteMarker = null
+        tradeRouteMarkerUnit = null
+        tradeRouteMarkerColor = null
+        determineVisibility()
+    }
+
     fun showGoodCityLocationIndicator() {
         if (goodCityLocationIndicator != null) return
         goodCityLocationIndicator = getGoodCityLocationIndicator()
@@ -72,6 +96,7 @@ class TileLayerOverlay(tileGroup: TileGroup, size: Float) : TileLayer(tileGroup,
         hideHighlight()
         hideCrosshair()
         hideGoodCityLocationIndicator()
+        hideTradeRouteMarker()
         determineVisibility()
     }
 
@@ -120,7 +145,8 @@ class TileLayerOverlay(tileGroup: TileGroup, size: Float) : TileLayer(tileGroup,
     }
 
     override fun determineVisibility() {
-        isVisible = fog != null || unexplored != null || highlight != null || crosshair != null || goodCityLocationIndicator != null
+        isVisible = fog != null || unexplored != null || highlight != null || crosshair != null ||
+            goodCityLocationIndicator != null || tradeRouteMarker != null
     }
 
 }

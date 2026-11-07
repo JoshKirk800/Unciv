@@ -177,12 +177,15 @@
       "weightForCityStateType": {
           "Religious": 3
       }
-  }
+  },
   /* BNW */
-  /*
   {
     "name": "Trade Route",
-    "description": ""
+    "description": "Establish a trade route between our cities and yours.",
+    "influence": 40,
+    "weightForCityStateType": {
+        "Maritime": 2,
+        "Mercantile": 2
+    }
   }
-  */
 ]

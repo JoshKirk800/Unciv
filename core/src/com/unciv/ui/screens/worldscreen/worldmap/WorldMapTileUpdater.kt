@@ -30,6 +30,24 @@ object WorldMapTileUpdater {
             // Dimming is applied below for the current selection only - undo what a previous selection left behind
             tileGroup.layerImprovement.dimImprovement(false)
         }
+        // The trade unit is consumed when a route starts, so it needs a map marker of its own.
+        // Foreign traders are visible only on tiles the viewer can currently see.
+        nextTradeRouteMarkerTiles.clear()
+        for (owner in worldScreen.gameInfo.civilizations) {
+            for (route in owner.tradeRoutes.routes) {
+                val tileView = tileMapView.getTile(route.getCurrentTile())
+                val group = tileGroups[tileView] ?: continue
+                if (owner != civView.getCiv() && !group.isViewable(civView)) continue
+                val unit = worldScreen.gameInfo.ruleset.units[route.unitName] ?: continue
+                if (!nextTradeRouteMarkerTiles.add(tileView)) continue
+                group.layerOverlay.showTradeRouteMarker(unit, owner.nation.getInnerColor())
+            }
+        }
+        for (tile in tradeRouteMarkerTiles)
+            if (tile !in nextTradeRouteMarkerTiles) tileGroups[tile]?.layerOverlay?.hideTradeRouteMarker()
+        tradeRouteMarkerTiles.clear()
+        tradeRouteMarkerTiles.addAll(nextTradeRouteMarkerTiles)
+
 
         // Update tiles according to selected unit/city
         val unitTable = worldScreen.bottomUnitTable

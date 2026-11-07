@@ -66,6 +66,29 @@ sealed class QuestImplementation : IQuestImplementation {
             assignedQuest.assigneeCiv.isCapitalConnectedToCity(civ.getCapital()!!)
     }
 
+    /** CvMinorCivAI::IsValidQuestForPlayer and CvMinorCivQuest::IsComplete (BNW). */
+    class TradeRoute : QuestImplementation() {
+        override fun isValid(civ: Civilization, challenger: Civilization): Boolean {
+            if (civ.cities.isEmpty() || challenger.cities.isEmpty()) return false
+            if (civ.getDiplomacyManager(challenger)?.hasFlag(DiplomacyFlags.Bullied) == true) return false
+            if (hasConnection(civ, challenger)) return false
+            return challenger.cities.any { origin ->
+                challenger.gameInfo.ruleset.units.values.any { unit ->
+                    challenger.tradeRoutes.isTradeUnit(unit) &&
+                        challenger.tradeRoutes.getDestinations(origin, unit).any { it.city.civ == civ }
+                }
+            }
+        }
+
+        override fun isComplete(civ: Civilization, assignedQuest: AssignedQuest) =
+            hasConnection(civ, assignedQuest.assigneeCiv)
+
+        @Readonly
+        private fun hasConnection(civ: Civilization, challenger: Civilization) =
+            civ.tradeRoutes.routes.any { it.getDestinationCiv() == challenger } ||
+                challenger.tradeRoutes.routes.any { it.getDestinationCiv() == civ }
+    }
+
     class ClearBarbarianCamp : QuestImplementation() {
         override fun isValid(civ: Civilization, challenger: Civilization) =
             civ.getBarbarianEncampmentForQuest(challenger) != null

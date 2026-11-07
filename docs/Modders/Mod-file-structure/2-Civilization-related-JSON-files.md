@@ -292,7 +292,7 @@ The code below is an example of a valid "priorities" definition.
 
 ## Quests.json
 
-[Link to original](https://github.com/yairm210/Unciv/blob/master/android/assets/jsons/Civ%20V%20-%20Gods%20%26%20Kings/Quests.json)
+[Link to original](https://github.com/yairm210/Unciv/blob/master/android/assets/jsons/Civ%20V%20-%20Brave%20New%20World/Quests.json)
 
 This file contains the quests that may be given to major civilizations by city states.
 
@@ -334,6 +334,7 @@ are as follows:
 | Bully City State      | Demand tribute from the target city state                                           | target `city state`                                                                              |
 | Denounce Civilization | Denounce the major civilization which "bullied" the city state                      | `civName` "bully" for city state                                                                 |
 | Spread Religion       | Spread major civilization's religion to the city state                              | major civilization's `religionName`                                                              |
+| Trade Route           | Establish an international trade route between the city state and the major civilization, in either direction | |
 
 ### Quest weight
 

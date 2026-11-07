@@ -89,7 +89,7 @@ class AssignedQuest(
                 GUI.resetToWorldScreen()
                 GUI.getMap().setCenterPosition(HexCoord(data1.toInt(), data2.toInt()), selectUnit = false)
             }
-            QuestName.Route -> {
+            QuestName.Route, QuestName.TradeRoute -> {
                 GUI.resetToWorldScreen()
                 GUI.getMap().setCenterPosition(assignerCiv.getCapital()!!.location.toHexCoord(), selectUnit = false)
             }
