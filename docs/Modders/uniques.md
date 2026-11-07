@@ -202,7 +202,7 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 	Applicable to: Triggerable
 
 ??? example  "Gain [positiveAmount] turns of Science"
-	The Science per turn the civilization makes now, times the number of turns, goes to its current research or, if it has none, to its overflow. The original uses the Science of the previous turns, which Unciv does not record
+	The recorded Science from the previous turns goes to current research or overflow, without Great Scientist or research agreement boosts
 
 	Example: "Gain [3] turns of Science"
 
@@ -459,6 +459,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Global, FollowerBelief
 
+??? example  "[stats] from every [specialist] [cityFilter]"
+	Adds the stats only for the named specialist in matching cities
+
+	Example: "[+1 Gold, +2 Production] from every [Merchant] [in all cities]"
+
+	Applicable to: Global, FollowerBelief
+
 ??? example  "[stats] per [positiveAmount] population [cityFilter]"
 	Example: "[+1 Gold, +2 Production] per [3] population [in all cities]"
 
@@ -507,6 +514,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 	Example: "[+1 Gold, +2 Production] from every [Farm]"
 
 	Applicable to: Global, FollowerBelief
+
+??? example  "[relativeAmount]% Science from Great Scientist discoveries"
+	Applies to the Great Scientist's one-time Science from discovering technology, not to its birth rate
+
+	Example: "[+20]% Science from Great Scientist discoveries"
+
+	Applicable to: Global
 
 ??? example  "[stats] from each Trade Route"
 	Example: "[+1 Gold, +2 Production] from each Trade Route"
@@ -1839,6 +1853,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 ??? example  "[stats] from every specialist [cityFilter]"
 	Example: "[+1 Gold, +2 Production] from every specialist [in all cities]"
+
+	Applicable to: Global, FollowerBelief
+
+??? example  "[stats] from every [specialist] [cityFilter]"
+	Adds the stats only for the named specialist in matching cities
+
+	Example: "[+1 Gold, +2 Production] from every [Merchant] [in all cities]"
 
 	Applicable to: Global, FollowerBelief
 
