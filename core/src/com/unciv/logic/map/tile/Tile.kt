@@ -65,6 +65,8 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
 
     var improvement: String? = null
     var improvementIsPillaged = false
+    /** Civilization that last built this improvement, even when the tile belongs to another civilization. */
+    var improvementBuilder: String = ""
 
     /** What an archaeologist can find on this tile, kept from the things that happened here until the archaeological sites appear */
     var archaeologyRecord: ArchaeologyRecord? = null
@@ -259,6 +261,7 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
         toReturn.resource = resource
         toReturn.resourceAmount = resourceAmount
         toReturn.improvement = improvement
+        toReturn.improvementBuilder = improvementBuilder
         toReturn.archaeologyRecord = archaeologyRecord?.clone()
         @LocalState val cloneImprovementQueue = toReturn.improvementQueue
         cloneImprovementQueue.addAll(improvementQueue.map { it.clone() })
@@ -1088,6 +1091,7 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
     }
 
     fun setImprovementBasic(tileImprovement: TileImprovement?) {
+        if (improvement != tileImprovement?.name) improvementBuilder = ""
         if (tileImprovement == null) {
             this.tileImprovement = null
             improvement = null
@@ -1098,9 +1102,15 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
     }
 
     fun setImprovementBasic(improvementName: String) {
+        if (improvement != improvementName) improvementBuilder = ""
         val tileImprovement = ruleset.tileImprovements[improvementName]
         this.tileImprovement = tileImprovement
         improvement = tileImprovement?.name
+    }
+
+    internal fun updateFeitoriaBuilderResources(builderId: String) {
+        if (builderId.isEmpty() || !tileMap.hasGameInfo()) return
+        tileMap.gameInfo.civilizations.firstOrNull { it.civID == builderId }?.cache?.updateCivResources()
     }
 
     /** Does not remove roads */
@@ -1167,7 +1177,7 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
     /** Adds an entry to the [improvementQueue], by looking up the time it takes using [civInfo] and [unit] */
     fun queueImprovement(improvement: TileImprovement, civInfo: Civilization, unit: MapUnit) {
         val turns = if (civInfo.gameInfo.gameParameters.godMode) 1
-            else improvement.getTurnsToBuild(civInfo, unit)
+            else improvement.getTurnsToBuild(civInfo, unit, this)
         queueImprovement(improvement.name, turns)
     }
 
@@ -1235,6 +1245,8 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
                 clearAllPathfindingCaches()
             }
         }
+        if (improvementIsPillaged && tileImprovement?.hasUnique(UniqueType.SiphonsLuxuriesFromCityState) == true)
+            updateFeitoriaBuilderResources(improvementBuilder)
 
         owningCity?.reassignPopulationDeferred()
         if (owningCity != null)
@@ -1243,12 +1255,16 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
 
     fun setRepaired() {
         improvementQueue.clear()
+        val repairedImprovement = improvementIsPillaged
         if (improvementIsPillaged)
             improvementIsPillaged = false
         else
             roadIsPillaged = false
+        if (repairedImprovement && tileImprovement?.hasUnique(UniqueType.SiphonsLuxuriesFromCityState) == true)
+            updateFeitoriaBuilderResources(improvementBuilder)
 
         owningCity?.reassignPopulationDeferred()
+        if (repairedImprovement) owningCity?.civ?.cache?.updateCivResources()
     }
 
 

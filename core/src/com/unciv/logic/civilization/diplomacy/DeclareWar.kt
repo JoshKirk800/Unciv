@@ -37,6 +37,8 @@ object DeclareWar {
 
         onWarDeclared(diplomacyManager, true, declareWarReason.warType)
         onWarDeclared(otherCivDiplomacy, false, declareWarReason.warType)
+        if (otherCiv.isCityState) civInfo.cache.updateCivResources()
+        if (civInfo.isCityState) otherCiv.cache.updateCivResources()
 
         changeOpinions(diplomacyManager, declareWarReason)
 
@@ -208,6 +210,11 @@ object DeclareWar {
 
         otherCivDiplomacy.addDiminishingModifier(DiplomaticModifiers.DeclaredWarOnUs, -20f)
         otherCivDiplomacy.removeModifier(DiplomaticModifiers.ReturnedCapturedUnits)
+        // CvDiplomacyAI::DoWarDeclaration forgets Landmarks built for either party, regardless of who declared war.
+        diplomacyManager.landmarksBuiltForUs = 0
+        diplomacyManager.removeModifier(DiplomaticModifiers.BuiltLandmarksForUs)
+        otherCivDiplomacy.landmarksBuiltForUs = 0
+        otherCivDiplomacy.removeModifier(DiplomaticModifiers.BuiltLandmarksForUs)
 
         // Apply warmongering
         if (warType == WarType.DirectWar || warType == WarType.JoinWar || warType == WarType.TeamWar) {

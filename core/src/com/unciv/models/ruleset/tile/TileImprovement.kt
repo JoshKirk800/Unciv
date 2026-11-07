@@ -5,6 +5,7 @@ import com.unciv.logic.MultiFilter
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.RoadStatus
+import com.unciv.logic.map.tile.Tile
 import com.unciv.models.Counter
 import com.unciv.models.ruleset.Ruleset
 import com.unciv.models.ruleset.RulesetStatsObject
@@ -33,7 +34,7 @@ class TileImprovement : RulesetStatsObject() {
     override fun legacyRequiredTechs() = if (techRequired == null) emptySequence() else sequenceOf(techRequired!!)
 
     @Readonly
-    fun getTurnsToBuild(civInfo: Civilization, unit: MapUnit): Int {
+    fun getTurnsToBuild(civInfo: Civilization, unit: MapUnit, tile: Tile = unit.getTile()): Int {
         val state = GameContext(civInfo, unit = unit)
         
         val buildSpeedUniques = unit.getMatchingUniques(UniqueType.SpecificImprovementTime, state, checkCivInfoUniques = true)
@@ -44,8 +45,20 @@ class TileImprovement : RulesetStatsObject() {
         // CvUnit::workRate: the AI's workers (not the barbarians') are faster on the higher difficulties
         if (civInfo.receivesAiHandicap())
             increase *= 1f + civInfo.gameInfo.getDifficulty().aiWorkRateModifier
+        // CvPlot::getBuildTime adds the BuildFeatures time before speed and worker-rate modifiers.
+        // The BNW dig clears these removable features (600 base + 400/700/600 in CIV5Builds_Expansion2.xml).
+        val featureTime = if (name == civInfo.gameInfo.ruleset.modOptions.constants.archaeologicalDigImprovement)
+            tile.terrainFeatures.sumOf { feature ->
+                when (feature) {
+                    "Forest" -> 4
+                    "Jungle" -> 7
+                    "Marsh" -> 6
+                    else -> 0
+                }
+            }
+        else 0
         val buildTime = if (increase == 0f) 0f
-        else (civInfo.gameInfo.speed.improvementBuildLengthModifier * civInfo.gameInfo.getStartingEra().buildPercent / 100f * turnsToBuild / increase)
+        else (civInfo.gameInfo.speed.improvementBuildLengthModifier * civInfo.gameInfo.getStartingEra().buildPercent / 100f * (turnsToBuild + featureTime) / increase)
 
         return buildSpeedUniques.fold(buildTime) { calculatedTurnsToBuild, unique ->
                 calculatedTurnsToBuild * unique.params[0].toPercent()

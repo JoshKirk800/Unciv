@@ -217,6 +217,7 @@ enum class UniqueType(
     NoImprovementMaintenanceInSpecificTiles("No Maintenance costs for improvements in [tileFilter] tiles", UniqueTarget.Global),
     SpecificImprovementTime("[relativeAmount]% construction time for [improvementFilter] improvements", UniqueTarget.Global, UniqueTarget.Unit),
     ImprovementTimeIncrease("Can build [improvementFilter] improvements at a [relativeAmount]% rate", UniqueTarget.Global, UniqueTarget.Unit),
+    UniqueLuxuriesInNewAreas("[positiveAmount] unique Luxury resources appear under the first [amount] cities founded in different foreign landmasses", UniqueTarget.Global),
 
     /// Building Maintenance
     GainFreeBuildings("Gain a free [buildingName] [cityFilter]", UniqueTarget.Global, UniqueTarget.Triggerable,
@@ -231,6 +232,7 @@ enum class UniqueType(
         docDescription = MULTIPLICATIVE_BONUS_EXPLANATION),
     TileCostPercentage("[relativeAmount]% Gold cost of acquiring tiles [cityFilter]", UniqueTarget.FollowerBelief, UniqueTarget.Global,
         docDescription = MULTIPLICATIVE_BONUS_EXPLANATION),
+    ExtraTerritoryOnFounding("[nonNegativeAmount] additional tiles claimed when founding a city", UniqueTarget.Global),
 
     /// Policy Cost
     LessPolicyCostFromCities("Each city founded increases culture cost of policies [relativeAmount]% less than normal", UniqueTarget.Global),
@@ -241,6 +243,7 @@ enum class UniqueType(
     LessTechCostFromCities("Each city founded increases Science cost of Technologies [relativeAmount]% less than normal", UniqueTarget.Global),
     LessTechCost("[relativeAmount]% Science cost of researching new Technologies", UniqueTarget.Global,
         docDescription = MULTIPLICATIVE_BONUS_EXPLANATION),
+    TechnologyFromConqueringCity("Gain the cheapest researchable Technology known by the city's owner when conquering a city for the first time", UniqueTarget.Global),
 
     /// Natural Wonders
     StatsFromNaturalWonders("[stats] for every known Natural Wonder", UniqueTarget.Global),
@@ -529,6 +532,7 @@ enum class UniqueType(
     // TODO: Should be replaced by "Can instantly construct a [] improvement <by consuming this unit>"
     CreateWaterImprovements("May create improvements on water resources", UniqueTarget.Unit),
     BuildImprovements("Can build [improvementFilter/terrainFilter] improvements on tiles", UniqueTarget.Unit),
+    ChooseAncientRuinsReward("May choose the reward when entering Ancient Ruins", UniqueTarget.Unit, UniqueTarget.Promotion),
     CanSpreadReligion("Can Spread Religion", UniqueTarget.UnitAction),
     CanRemoveHeresy("Can remove other religions from cities", UniqueTarget.UnitAction),
     MayFoundReligion("May found a religion", UniqueTarget.UnitAction),
@@ -550,6 +554,9 @@ enum class UniqueType(
         docDescription = "Such a unit is used up when it establishes a route, and a new one appears in the city of origin when the route ends. " +
             "Trade routes over land or water follow the domain of the unit. The number of routes is limited by [TradeRouteSlots]."),
     CanTradeWithCityStateForGoldAndInfluence("Can undertake a trade mission with City-State, giving a large sum of gold and [amount] Influence", UniqueTarget.Unit),
+    SellExoticGoods("Can sell [positiveAmount] exotic goods", UniqueTarget.Unit,
+        docDescription = "Each unit can sell this many times beside peaceful foreign territory. Each sale earns 100–400 Gold and 10–30 XP, " +
+            "scaling with distance from the owner's capital divided by half the sum of the map width and height (CvUnit::sellExoticGoods)."),
     CanTransform("Can transform to [unit]", UniqueTarget.UnitAction,
         docDescription = "By default consumes all movement"),
 
@@ -627,6 +634,8 @@ enum class UniqueType(
     HealingEffectsDoubled("All healing effects doubled", UniqueTarget.Unit, UniqueTarget.Global,
         docDescription = "Does not stack"),
     HealsAfterKilling("Heals [amount] damage if it kills a unit", UniqueTarget.Unit, UniqueTarget.Global),
+    HealsAfterKillingNonBarbarian("Heals [amount] damage if it kills a non-Barbarian unit", UniqueTarget.Unit),
+    EnemyTerritoryDamage("Takes [amount] damage at turn end in enemy territory", UniqueTarget.Unit),
     HealOnlyByPillaging("Can only heal by pillaging", UniqueTarget.Unit, UniqueTarget.Global),
     HealsEvenAfterAction("Unit will heal every turn, even if it performs an action", UniqueTarget.Unit),
     HealAdjacentUnits("All adjacent units heal [amount] HP when healing", UniqueTarget.Unit),
@@ -665,6 +674,7 @@ enum class UniqueType(
         docDescription = NUCLEAR_EXCLUSION_EXPLANATION),
     KillUnitCapture("May capture killed [mapUnitFilter] units", UniqueTarget.Unit,
         docDescription = NUCLEAR_EXCLUSION_EXPLANATION),
+    PostCombatRandomPromotion("Replaced by a random promotion from [promotionList] after combat", UniqueTarget.Unit),
 
     // XP
     FlatXPGain("[amount] XP gained from combat", UniqueTarget.Unit, UniqueTarget.Global),
@@ -812,6 +822,7 @@ enum class UniqueType(
     /////// Resource uniques
     ResourceAmountOnTiles("Deposits in [tileFilter] tiles always provide [amount] resources", UniqueTarget.Resource),
     CityStateOnlyResource("Can only be created by Mercantile City-States", UniqueTarget.Resource),
+    UniqueLuxuryForCivilization("Unique Luxury for [civFilter]", UniqueTarget.Resource),
     Stockpiled("Stockpiled", UniqueTarget.Resource,
         docDescription = "This resource is accumulated each turn, rather than having a set of producers and consumers at a given moment." +
                 "The current stockpiled amount can be affected with trigger uniques."),
@@ -841,10 +852,12 @@ enum class UniqueType(
     EnsureMinimumStats("Ensures a minimum tile yield of [stats]", UniqueTarget.Improvement), // City center
 
     CanBuildOutsideBorders("Can be built outside your borders", UniqueTarget.Improvement),
+    CanBuildInCityStateTerritory("Can only be built in City-State territory", UniqueTarget.Improvement),
     CanBuildJustOutsideBorders("Can be built just outside your borders", UniqueTarget.Improvement),
     CanOnlyBeBuiltOnTile("Can only be built on [tileFilter] tiles", UniqueTarget.Improvement),
     CannotBuildOnTile("Cannot be built on [tileFilter] tiles", UniqueTarget.Improvement),
     CanOnlyImproveResource("Can only be built to improve a resource", UniqueTarget.Improvement),
+    SiphonsLuxuriesFromCityState("Provides [positiveAmount] untradable copies of each Luxury resource connected by this City-State to the builder", UniqueTarget.Improvement),
     NoFeatureRemovalNeeded("Does not need removal of [terrainFeature]", UniqueTarget.Improvement),
     RemovesFeaturesIfBuilt("Removes removable features when built", UniqueTarget.Improvement),
 

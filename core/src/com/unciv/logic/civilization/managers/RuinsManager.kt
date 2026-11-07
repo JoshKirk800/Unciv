@@ -1,6 +1,8 @@
 package com.unciv.logic.civilization.managers
 
 import com.unciv.logic.IsPartOfGameInfoSerialization
+import com.unciv.logic.civilization.AlertType
+import com.unciv.logic.civilization.PopupAlert
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.models.ruleset.RuinReward
@@ -31,6 +33,46 @@ class RuinsManager(
         lastChosenRewards[1] = reward
     }
 
+    /** A picker sees the same rewards as a normal explorer, minus rewards whose effect cannot currently be triggered. */
+    fun getEligibleRewards(unit: MapUnit): List<RuinReward> =
+        validRewards.filter { reward ->
+            reward.weight > 0 && isPossibleReward(reward, unit) &&
+                reward.uniqueObjects.any { unique ->
+                    unique.type != UniqueType.PlaySound && unique.conditionalsApply(unit.cache.state) &&
+                        UniqueTriggerActivation.getTriggerFunction(unique, civInfo, unit = unit, tile = unit.getTile()) != null
+                }
+        }
+
+    @Readonly
+    fun hasPendingChoice(unit: MapUnit): Boolean =
+        civInfo.popupAlerts.any { it.type == AlertType.RuinsReward && it.value == unit.id.toString() }
+
+    fun offerChoice(unit: MapUnit) {
+        if (getEligibleRewards(unit).isEmpty()) {
+            selectNextRuinsReward(unit)
+            return
+        }
+        if (!hasPendingChoice(unit))
+            civInfo.popupAlerts.add(PopupAlert(AlertType.RuinsReward, unit.id.toString()))
+    }
+
+    /** Recheck legality at selection time; the alert is the saved, single-use authority for this ruin. */
+    fun chooseReward(unit: MapUnit, rewardName: String): Boolean {
+        if (unit.isDestroyed || unit.civ != civInfo || !hasPendingChoice(unit)) return false
+        val reward = getEligibleRewards(unit).firstOrNull { it.name == rewardName } ?: return false
+        if (!applyReward(reward, unit)) return false
+        civInfo.popupAlerts.removeAll { it.type == AlertType.RuinsReward && it.value == unit.id.toString() }
+        return true
+    }
+    /** A reward may become ineligible while a saved picker is open (for example, the city was lost).
+     *  Give the ordinary eligible reward instead of silently losing an already consumed ruin. */
+    fun resolveUnavailableChoice(unit: MapUnit) {
+        if (!hasPendingChoice(unit)) return
+        if (!unit.isDestroyed && unit.civ == civInfo) selectNextRuinsReward(unit)
+        civInfo.popupAlerts.removeAll { it.type == AlertType.RuinsReward && it.value == unit.id.toString() }
+    }
+
+
     @Readonly
     private fun getShuffledPossibleRewards(triggeringUnit: MapUnit): Iterable<RuinReward> {
         val candidates =
@@ -60,25 +102,27 @@ class RuinsManager(
 
     fun selectNextRuinsReward(triggeringUnit: MapUnit) {
         for (possibleReward in getShuffledPossibleRewards(triggeringUnit)) {
-            var atLeastOneUniqueHadEffect = false
-            for (unique in possibleReward.uniqueObjects) {
-                if (!unique.conditionalsApply(triggeringUnit.cache.state)) continue
-                var uniqueTriggered = false
-                repeat(unique.getUniqueMultiplier(triggeringUnit.cache.state)) {
-                    uniqueTriggered =
-                        UniqueTriggerActivation.triggerUnique(
-                            unique,
-                            triggeringUnit,
-                            notification = possibleReward.notification,
-                            triggerNotificationText = "from the ruins"
-                        ) || uniqueTriggered
-                }
-                atLeastOneUniqueHadEffect = atLeastOneUniqueHadEffect || uniqueTriggered
-            }
-            if (atLeastOneUniqueHadEffect) {
-                rememberReward(possibleReward.name)
-                break
-            }
+            if (applyReward(possibleReward, triggeringUnit)) break
         }
+    }
+
+    private fun applyReward(reward: RuinReward, unit: MapUnit): Boolean {
+        var atLeastOneUniqueHadEffect = false
+        for (unique in reward.uniqueObjects) {
+            if (!unique.conditionalsApply(unit.cache.state)) continue
+            var uniqueTriggered = false
+            repeat(unique.getUniqueMultiplier(unit.cache.state)) {
+                uniqueTriggered =
+                    UniqueTriggerActivation.triggerUnique(
+                        unique,
+                        unit,
+                        notification = reward.notification,
+                        triggerNotificationText = "from the ruins"
+                    ) || uniqueTriggered
+            }
+            atLeastOneUniqueHadEffect = atLeastOneUniqueHadEffect || uniqueTriggered
+        }
+        if (atLeastOneUniqueHadEffect) rememberReward(reward.name)
+        return atLeastOneUniqueHadEffect
     }
 }

@@ -17,7 +17,7 @@ enum class Demand(
     val willIgnoreViolation: DiplomacyFlags,
     val refusedDiplomaticModifier: DiplomaticModifiers,
     val betrayedPromiseDiplomacyModifier: DiplomaticModifiers,
-    val fulfilledPromiseDiplomacyModifier: DiplomaticModifiers,
+    val fulfilledPromiseDiplomacyModifier: DiplomaticModifiers?,
     val demandAlert: AlertType,
     val violationDiscoveredAlert: AlertType,
     val demandText: String,
@@ -91,6 +91,27 @@ enum class Demand(
         wePromisedText = "We promised not to settle near them ([turns] turns remaining)",
         theyPromisedText = "They promised not to settle near us ([turns] turns remaining)"
     ),
+    DoNotDigInOurLands(
+        agreedToDemand = DiplomacyFlags.AgreedToNotDigInOurLands,
+        violationOccurred = DiplomacyFlags.DugInOurLands,
+        willIgnoreViolation = DiplomacyFlags.IgnoreThemDiggingInOurLands,
+        refusedDiplomaticModifier = DiplomaticModifiers.IgnoredRequestToStopDigging,
+        betrayedPromiseDiplomacyModifier = DiplomaticModifiers.BetrayedPromiseToNotDigInOurLands,
+        fulfilledPromiseDiplomacyModifier = null,
+        demandAlert = AlertType.DemandToStopDiggingInOurLands,
+        violationDiscoveredAlert = AlertType.DugInOurLandsDespitePromise,
+        demandText = "Please stop digging up artifacts in our lands.",
+        acceptDemandText = "We will leave your archaeological sites alone.",
+        refuseDemandText = "We will dig where we please.",
+        agreedToDemandText = "[civName] agreed to stop digging up our artifacts!",
+        refusedDemandText = "[civName] refused to stop digging up our artifacts!",
+        violationNoticedText = "You have broken your promise not to dig in our lands.",
+        wePromisedText = "We promised not to dig in their lands",
+        theyPromisedText = "They promised not to dig in our lands"
+    ) {
+        // The AI raises this after an actual foreign dig; don't offer a context-free demand in the diplomacy menu.
+        override fun show(civ: Civilization) = false
+    },
     DoNotAttackUs(
         agreedToDemand = DiplomacyFlags.AgreedToNotAttackUs,
         // first violation = notice military presence near border

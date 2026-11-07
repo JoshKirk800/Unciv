@@ -92,7 +92,8 @@ class TradeEvaluation {
             TradeOfferType.Luxury_Resource -> hasResource(tradeOffer) && offerer.gameInfo.league?.isLuxuryBanned(tradeOffer.name) != true // World Congress Ban Luxury (LR 4.3.3)
             TradeOfferType.Strategic_Resource -> hasResource(tradeOffer)
             TradeOfferType.Stockpiled_Resource -> hasResource(tradeOffer)
-            TradeOfferType.Technology -> true
+            TradeOfferType.Technology -> offerer.tech.isResearched(tradeOffer.name) &&
+                tradeOffer.name !in offerer.tech.noTradeTechnologies
             TradeOfferType.Introduction -> !tradePartner.knows(tradeOffer.name) // You can't introduce them to someone they already know!
             TradeOfferType.WarDeclaration -> offerer.getDiplomacyManager(tradeOffer.name)!!.canDeclareWar()
             TradeOfferType.PeaceProposal -> offerer.isAtWarWith(offerer.gameInfo.getCivilization(tradeOffer.name))

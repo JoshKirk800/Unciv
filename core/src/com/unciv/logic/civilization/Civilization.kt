@@ -229,6 +229,10 @@ class Civilization : IsPartOfGameInfoSerialization {
     // This will NOT be an ArrayList in memory right after GameStarter - but save and reload or pass a next turn, and it will be.
     var cities = listOf<City>()
     var citiesCreated = 0
+    /** Landmasses where the founded-city luxury trait has already granted a resource. */
+    var uniqueLuxuryAreas = HashSet<Int>()
+    /** Landmass of the original capital, even if that city is later captured. */
+    var originalLuxuryArea = -1
 
     /**
      * Constructions (e.g. buildings) that will be disabled when a new city is founded
@@ -358,6 +362,8 @@ class Civilization : IsPartOfGameInfoSerialization {
         toReturn.notificationsLog.addAll(notificationsLog)
         toReturn.notificationCountAtStartTurn = notificationCountAtStartTurn
         toReturn.citiesCreated = citiesCreated
+        toReturn.uniqueLuxuryAreas.addAll(uniqueLuxuryAreas)
+        toReturn.originalLuxuryArea = originalLuxuryArea
         toReturn.popupAlerts.addAll(popupAlerts)
         toReturn.tradeRequests.addAll(tradeRequests)
         toReturn.naturalWonders.addAll(naturalWonders)

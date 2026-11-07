@@ -86,6 +86,7 @@ class TileImprovementFunctions(val tile: Tile) {
 
         return when {
             improvement.name == tile.improvement && !isNormalizeCheck -> false
+            improvement.hasUnique(UniqueType.SiphonsLuxuriesFromCityState, gameContext) && resourceIsVisible -> false
             tile.isCityCenter() -> isNormalizeCheck && improvement.name == Constants.cityCenter
 
             // First we handle a few special improvements
@@ -196,6 +197,8 @@ class TileImprovementFunctions(val tile: Tile) {
         civToActivateBroaderEffects: Civilization? = null,
         unit: MapUnit? = null
     ) {
+        val previousBuilder = tile.improvementBuilder
+        val previouslySiphoned = tile.tileImprovement?.hasUnique(UniqueType.SiphonsLuxuriesFromCityState) == true
         fun updateVisibility() {
             if (!tile.tileMap.hasGameInfo()) return
             // Update the separately-kept "what a civ sees" - unless in map editor where there are no civs
@@ -218,6 +221,8 @@ class TileImprovementFunctions(val tile: Tile) {
             val wasEncampment = tile.isBarbarianEncampment()
             tile.improvementIsPillaged = false
             tile.setImprovementBasic(null)
+            tile.improvementBuilder = ""
+            if (previouslySiphoned) tile.updateFeitoriaBuilderResources(previousBuilder)
             updateVisibility()
             updateCity()
             if (!wasEncampment) return
@@ -239,6 +244,11 @@ class TileImprovementFunctions(val tile: Tile) {
             else -> {
                 tile.improvementIsPillaged = false
                 tile.setImprovementBasic(improvement)
+                tile.improvementBuilder = civToActivateBroaderEffects?.civID ?: ""
+                if (previouslySiphoned) tile.updateFeitoriaBuilderResources(previousBuilder)
+                if (improvement.hasUnique(UniqueType.SiphonsLuxuriesFromCityState)
+                    && (!previouslySiphoned || previousBuilder != tile.improvementBuilder))
+                    tile.updateFeitoriaBuilderResources(tile.improvementBuilder)
                 improvementFieldHasChanged = true
                 if (improvement.hasUnique(UniqueType.Irremovable) || tile.isMarkedForCreatesOneImprovement(improvement.name)) {
                     // I'm not sure what would happen if we try to replace an irremovable improvement

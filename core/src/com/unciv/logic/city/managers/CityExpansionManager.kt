@@ -224,6 +224,8 @@ class CityExpansionManager : IsPartOfGameInfoSerialization {
         tile.improvementFunctions.removeCreatesOneImprovementMarker()
 
         tile.setOwningCity(null)
+        if (tile.tileImprovement?.hasUnique(UniqueType.SiphonsLuxuriesFromCityState) == true)
+            tile.updateFeitoriaBuilderResources(tile.improvementBuilder)
 
         city.civ.cache.updateOurTiles()
         city.cityStats.update()
@@ -249,6 +251,8 @@ class CityExpansionManager : IsPartOfGameInfoSerialization {
 
         city.tiles = city.tiles.withItem(tile.position)
         tile.setOwningCity(city)
+        if (tile.tileImprovement?.hasUnique(UniqueType.SiphonsLuxuriesFromCityState) == true)
+            tile.updateFeitoriaBuilderResources(tile.improvementBuilder)
         city.population.autoAssignPopulation()
         city.civ.cache.updateOurTiles()
         city.cityStats.update()

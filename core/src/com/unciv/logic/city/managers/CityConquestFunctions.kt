@@ -121,6 +121,33 @@ class CityConquestFunctions(val city: City) {
         val reconqueredCityWhileStillInResistance = city.previousOwner == receivingCiv.civID && city.isInResistance()
         // Tourism makes a conquest gentler, as it makes the people of the city see the conqueror as one of their own (CvPlayer::acquireCity)
         val influenceReduction = conqueringCiv.culture.getConquestReductionPercent(conqueredCiv)
+        // CvPlayer::acquireCity checks whether the conqueror has ever owned this city before
+        // transferring it; trades and earlier conquests count as ownership too.
+        if (conqueringCiv.hasUnique(UniqueType.TechnologyFromConqueringCity) &&
+            conqueringCiv.civID !in city.everOwnedBy &&
+            city.foundingCivObject != conqueringCiv &&
+            city.previousOwner != conqueringCiv.civID &&
+            conqueredCiv != conqueringCiv
+        ) {
+            var cheapestCost = Int.MAX_VALUE
+            val cheapest = ArrayList<String>()
+            for (tech in conqueringCiv.gameInfo.ruleset.technologies.values) {
+                if (tech.cost > cheapestCost || !conqueredCiv.tech.isResearched(tech.name) ||
+                    !conqueringCiv.tech.canBeResearched(tech.name)) continue
+                if (tech.cost < cheapestCost) {
+                    cheapestCost = tech.cost
+                    cheapest.clear()
+                }
+                cheapest.add(tech.name)
+            }
+            if (cheapest.isNotEmpty()) {
+                val rng = conqueringCiv.state.stateBasedRandom("CityConquestFunctions.technologyFromConquest", city.location.hashCode())
+                val techName = cheapest.random(rng)
+                conqueringCiv.tech.noTradeTechnologies.add(techName)
+                conqueringCiv.tech.addTechnology(techName)
+            }
+        }
+
 
         destroyBuildingsOnCapture()
 
@@ -323,6 +350,8 @@ class CityConquestFunctions(val city: City) {
 
         oldCiv.cities = oldCiv.cities.withoutItem(city)
         newCiv.cities = newCiv.cities.withItem(city)
+        city.everOwnedBy.add(oldCiv.civID)
+        city.everOwnedBy.add(newCiv.civID)
         city.civ = newCiv
         city.id = if (city.id != NO_ID) city.id else pseudoRandomId(newCiv)
         city.state = GameContext(city)
@@ -389,6 +418,12 @@ class CityConquestFunctions(val city: City) {
 
         newCiv.cache.updateOurTiles()
         oldCiv.cache.updateOurTiles()
+        if (oldCiv.isCityState || newCiv.isCityState)
+            city.getTiles().filter {
+                it.improvementBuilder.isNotEmpty() &&
+                    it.tileImprovement?.hasUnique(UniqueType.SiphonsLuxuriesFromCityState) == true
+            }.distinctBy { it.improvementBuilder }
+                .forEach { it.updateFeitoriaBuilderResources(it.improvementBuilder) }
 
         // Policies such as Iron Curtain grant their free building on every acquisition, not only on conquest (CvPlayer.cpp:2340-2356, in acquireCity)
         newCiv.forEachTriggeredUnique(UniqueType.TriggerUponAcquiringCity, GameContext(civInfo = newCiv, city = city), ignoreCities = false) { unique ->

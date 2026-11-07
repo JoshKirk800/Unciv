@@ -116,6 +116,8 @@ class AlertPopup(
             AlertType.ReligionSpreadDespiteOurPromise -> shouldOpen = addDemandViolationNoticed(Demand.DoNotSpreadReligion)
             AlertType.DemandToStopSpyingOnUs -> shouldOpen = addDemand(Demand.DontSpyOnUs)
             AlertType.SpyingOnUsDespiteOurPromise -> shouldOpen = addDemand(Demand.DontSpyOnUs)
+            AlertType.DemandToStopDiggingInOurLands -> shouldOpen = addDemand(Demand.DoNotDigInOurLands)
+            AlertType.DugInOurLandsDespitePromise -> shouldOpen = addDemandViolationNoticed(Demand.DoNotDigInOurLands)
             AlertType.DemandToNotAttackUs -> shouldOpen = addDemand(Demand.DoNotAttackUs)
             AlertType.AttackedUsDespitePromise -> shouldOpen = addDemandViolationNoticed(Demand.DoNotAttackUs)
             AlertType.AcceptingDemand -> shouldOpen = addAcceptingDemand()
@@ -130,6 +132,7 @@ class AlertPopup(
             AlertType.TechResearched -> addTechResearched()
             AlertType.GoldenAge -> addGoldenAge()
             AlertType.ArchaeologyChoice -> shouldOpen = addArchaeologyChoice()
+            AlertType.RuinsReward -> shouldOpen = addRuinsRewardChoice()
             AlertType.StartIntro -> addStartIntro()
             AlertType.RecapturedCivilian -> shouldOpen = addRecapturedCivilian()
             AlertType.GameHasBeenWon -> addGameHasBeenWon()
@@ -141,6 +144,28 @@ class AlertPopup(
     }
 
     //region AlertType handlers
+
+    private fun addRuinsRewardChoice(): Boolean {
+        val unit = popupAlert.value.toIntOrNull()?.let { viewingCiv.units.getUnitById(it) } ?: return false
+        val manager = viewingCiv.ruinsManager
+        if (!manager.hasPendingChoice(unit)) return false
+        val rewards = manager.getEligibleRewards(unit)
+        if (rewards.isEmpty()) {
+            manager.resolveUnavailableChoice(unit)
+            return false
+        }
+
+        addGoodSizedLabel("Choose a reward from the Ancient Ruins").row()
+        for (reward in rewards) {
+            addButton(reward.name) {
+                if (manager.chooseReward(unit, reward.name)) {
+                    close()
+                    worldScreen.shouldUpdate = true
+                }
+            }.row()
+        }
+        return true
+    }
 
     private fun addArchaeologyChoice(): Boolean {
         val position = popupAlert.value.split(',').map { it.toInt() }
@@ -724,6 +749,8 @@ class AlertPopup(
     //endregion
 
     override fun close() {
+        // The hut has already been consumed. Closing without a selection must not discard its reward.
+        if (popupAlert.type == AlertType.RuinsReward && viewingCiv.popupAlerts.contains(popupAlert)) return
         viewingCiv.popupAlerts.remove(popupAlert)
         worldScreen.shouldUpdate = true
         super.close()
