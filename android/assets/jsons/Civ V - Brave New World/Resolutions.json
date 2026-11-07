@@ -86,6 +86,7 @@
     },
     {
         "name": "World's Fair",
+        // CvLeague::DoProjectReward gives a fixed 500 points; game speed scales the Golden Age threshold, not this grant.
         "projectCostPerPlayer": 350,
         "uniques": [
             "Gain [500] Golden Age points <upon reaching contribution tier [1] of a World Congress project>",
@@ -107,6 +108,7 @@
     },
     {
         "name": "International Space Station",
+        // BaseBeakersTurnsToCount=4 in CIV5Resolutions.xml: four recorded turns, not four times current Science.
         "requiredTechAnyMember": "Satellites",
         "projectCostPerPlayer": 850,
         "uniques": [
