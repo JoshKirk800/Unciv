@@ -146,6 +146,9 @@ class GlobalPoliticsOverviewTable(
         civInfoTable.add(leaderName.toLabel(fontSize = 30)).row()
         civInfoTable.add(civ.civName.toLabel(hideIcons = true)).row()
         civInfoTable.add(civ.tech.era.name.toLabel()).row()
+        if (civ == viewingPlayer.getCiv() || viewingPlayer.getCiv().knows(civ)) {
+            civ.getIdeology()?.let { civInfoTable.add("Ideology: [${it.name}]".toLabel()).row() }
+        }
         return civInfoTable
     }
 
