@@ -25,6 +25,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.util.Locale
+import java.util.UUID
 
 /**
  * An AI-only game played from the first turn to its end: a victory, one civilization left, or the turn limit.
@@ -97,7 +98,7 @@ class FullGameSim {
             }
             seed = env("FULL_SIM_SEED", "7").toLong()
         }
-        return GameStarter.startNewGame(GameSetupInfo(parameters, mapParameters), gameId = "full-sim-${mapParameters.seed}")
+        return GameStarter.startNewGame(GameSetupInfo(parameters, mapParameters), gameId = UUID.nameUUIDFromBytes("full-sim-${mapParameters.seed}".toByteArray()).toString())
     }
 
     private fun players(game: GameInfo) =
