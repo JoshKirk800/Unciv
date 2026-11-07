@@ -6,6 +6,7 @@ import com.unciv.models.ruleset.unique.UniqueMap
 import com.unciv.models.stats.NamedStats
 import com.unciv.ui.screens.civilopediascreen.FormattedLine
 import com.unciv.ui.screens.civilopediascreen.ICivilopediaText
+import yairm210.purity.annotations.Readonly
 
 interface IRulesetObject: IHasUniques, ICivilopediaText {
     var originRuleset: String
@@ -22,6 +23,11 @@ abstract class RulesetObject: IRulesetObject {
 
     override var civilopediaText = listOf<FormattedLine>()
     override fun toString() = name
+
+    /** Not the identity hash: the game iterates hash sets and maps of ruleset objects, and the order must not depend on the run
+     *  (see `tools/determinism_check.py`). Equality stays identity. */
+    @Readonly override fun hashCode(): Int = name.hashCode()
+    @Readonly override fun equals(other: Any?): Boolean = this === other
 }
 
 // Same, but inherits from NamedStats - I couldn't find a way to unify the declarations but this is fine

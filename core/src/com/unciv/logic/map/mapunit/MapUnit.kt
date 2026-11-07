@@ -191,6 +191,11 @@ class MapUnit : IsPartOfGameInfoSerialization {
     // debug helper (please update comment if you see some "$unit" using this - MapUnit.label in WorkerAutomation is console log only as well)
     override fun toString() = "$name - $owner"
 
+    /** Not the identity hash: the game iterates hash sets and maps of these, and the order must not depend on the run
+     *  (see `tools/determinism_check.py`). Equality stays identity. */
+    @Readonly override fun hashCode(): Int = id
+    @Readonly override fun equals(other: Any?): Boolean = this === other
+
     /**
      * Name which should be displayed in UI
      *

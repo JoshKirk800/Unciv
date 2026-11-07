@@ -17,6 +17,11 @@ import kotlin.math.max
 
 
 class Unique(val text: String, val sourceObjectType: UniqueTarget? = null, val sourceObjectName: String? = null) {
+    /** Not the identity hash: the game iterates hash sets and maps of uniques, and the order must not depend on the run
+     *  (see `tools/determinism_check.py`). Equality stays identity. */
+    @Readonly override fun hashCode(): Int = text.hashCode()
+    @Readonly override fun equals(other: Any?): Boolean = this === other
+
     /** This is so the heavy regex-based parsing is only activated once per unique, instead of every time it's called
      *  - for instance, in the city screen, we call every tile unique for every tile, which can lead to ANRs */
     val placeholderText = text.getPlaceholderText()
