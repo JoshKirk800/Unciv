@@ -75,6 +75,56 @@ class EmbarkedStackingTests {
     }
 
     @Test
+    fun `an embarked soldier and a ship can share water but cannot swap`() {
+        val ship = landUnit("Frigate", civ, home)
+        val soldier = landUnit("Warrior", civ, shore)
+
+        assertFalse(soldier.movement.canUnitSwapTo(home))
+        assertFalse(ship.movement.canUnitSwapTo(shore))
+    }
+
+    @Test
+    fun `a soldier cannot swap with a ship stationed in its coastal city`() {
+        home.baseTerrain = Constants.grassland
+        home.setTransients()
+        game.addCity(civ, home)
+        val ship = landUnit("Frigate", civ, home)
+        val soldier = landUnit("Warrior", civ, shore)
+
+        assertFalse(soldier.movement.canUnitSwapTo(home))
+        assertFalse(ship.movement.canUnitSwapTo(shore))
+    }
+
+    @Test
+    fun `two embarked tanks can swap when one shares a tile with a ship`() {
+        home.baseTerrain = Constants.coast
+        home.setTransients()
+        val ship = landUnit("Frigate", civ, home)
+        val coastTank = landUnit("Tank", civ, home)
+        val oceanTank = landUnit("Tank", civ, shore)
+
+        assertTrue(coastTank.movement.canUnitSwapTo(shore))
+        coastTank.movement.swapMoveToTile(shore)
+
+        assertSame(coastTank, shore.militaryUnit)
+        assertSame(ship, home.militaryUnit)
+        assertSame(oceanTank, home.embarkedUnit)
+    }
+
+    @Test
+    fun `embarked tanks sharing ships cannot swap with the ships`() {
+        home.baseTerrain = Constants.coast
+        home.setTransients()
+        landUnit("Frigate", civ, home)
+        landUnit("Frigate", civ, shore)
+        val coastTank = landUnit("Tank", civ, home)
+        val oceanTank = landUnit("Tank", civ, shore)
+
+        assertFalse(coastTank.movement.canUnitSwapTo(shore))
+        assertFalse(oceanTank.movement.canUnitSwapTo(home))
+    }
+
+    @Test
     fun `an embarked civilian can join a naval civilian`() {
         val admiral = landUnit("Great Admiral", civ, home)
         val settler = landUnit("Settler", civ, shore)
