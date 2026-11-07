@@ -1,5 +1,7 @@
 package com.unciv.logic.league
 
+import com.unciv.logic.battle.MapUnitCombatant
+import com.unciv.logic.battle.Nuke
 import com.unciv.logic.civilization.Civilization
 import com.unciv.models.metadata.BaseRuleset
 import com.unciv.models.ruleset.PerpetualConstruction
@@ -250,6 +252,85 @@ class LeagueProjectTests {
 
         val ruleBuilding = game.ruleset.buildings[building]!!
         for (civ in listOf(a, b, c)) assertFalse(ruleBuilding.isBuildable(civ.cities.first().cityConstructions))
+    }
+
+    @Test
+    fun `the station adds one yield per named specialist only in the capital`() {
+        val capital = a.getCapital()!!
+        val otherCity = game.addCity(a, game.tileMap.tileList[7 * nextCell++], initialPopulation = 5)
+        capital.population.addPopulation(4)
+        for (city in listOf(capital, otherCity)) {
+            for (building in listOf("Workshop", "Library", "University"))
+                city.cityConstructions.addBuilding(building)
+            city.population.specialistAllocations.add("Scientist", 1)
+            city.population.specialistAllocations.add("Engineer", 1)
+            city.manualSpecialists = true
+            city.cityStats.update()
+        }
+        val capitalBefore = capital.cityStats.baseStatTree.children["Specialists"]!!.totalStats
+        val otherBefore = otherCity.cityStats.baseStatTree.children["Specialists"]!!.totalStats
+
+        val project = start(station)
+        contribute(project, a, 2550)
+        league.checkProjects()
+        capital.cityStats.update()
+        otherCity.cityStats.update()
+        val capitalAfter = capital.cityStats.baseStatTree.children["Specialists"]!!.totalStats
+        val otherAfter = otherCity.cityStats.baseStatTree.children["Specialists"]!!.totalStats
+        assertEquals(capitalBefore.production + 1f, capitalAfter.production, 0.001f)
+        assertEquals(capitalBefore.science + 1f, capitalAfter.science, 0.001f)
+        assertEquals(otherBefore.production, otherAfter.production, 0.001f)
+        assertEquals(otherBefore.science, otherAfter.science, 0.001f)
+    }
+
+    @Test
+    fun `station tier one uses previous four recorded turns and scientist discoveries get the top bonus`() {
+        gameInfo.turns = 12
+        gameInfo.speed.scienceCostModifier = 1.5f
+        val history = intArrayOf(6, 11, 13, 17, 19, 23, 29, 31)
+        for (civ in listOf(a, b, c))
+            civ.tech.scienceOfLast8Turns = history.clone()
+        val project = start(station)
+        contribute(project, a, 1700)
+        contribute(project, b, 850)
+        contribute(project, c, 425)
+        league.checkProjects()
+
+        // At turn 12 the most recently completed turns are 11, 10, 9, 8:
+        // ring buffer slots 3, 2, 1, 0. Today's output and speed do not multiply this reward.
+        for (civ in listOf(a, b, c)) assertEquals(47, civ.tech.getOverflowScience())
+        // Base 149; +33% uses integer truncation before the research speed multiplier.
+        assertEquals(297, a.tech.getScienceFromGreatScientist())
+        assertEquals(223, b.tech.getScienceFromGreatScientist())
+        assertEquals(223, c.tech.getScienceFromGreatScientist())
+    }
+
+    @Test
+    fun `station building survives an atomic explosion but its city and residents do not gain immunity`() {
+        val capital = a.getCapital()!!
+        capital.population.addPopulation(9)
+        val project = start(station)
+        contribute(project, a, 2550)
+        league.checkProjects()
+        val beforePopulation = capital.population.population
+        val beforeHealth = capital.health
+        val bomb = game.addUnit("Atomic Bomb", b, b.getCapital()!!.getCenterTile())
+        Nuke.NUKE(MapUnitCombatant(bomb), capital.getCenterTile())
+        assertTrue(capital.cityConstructions.isBuilt("International Space Station Complex"))
+        assertTrue(capital.population.population < beforePopulation)
+        assertTrue(capital.health < beforeHealth)
+    }
+
+    @Test
+    fun `world fair golden age points stay fixed while the game speed scales the next golden age threshold`() {
+        gameInfo.speed.modifier = 2f
+        val beforeThreshold = a.goldenAges.happinessRequiredForNextGoldenAge()
+        val project = start(fair)
+        contribute(project, a, 1050)
+        league.checkProjects()
+        assertEquals(500, a.goldenAges.storedHappiness)
+        assertEquals(beforeThreshold, a.goldenAges.happinessRequiredForNextGoldenAge())
+        assertTrue(beforeThreshold > 500)
     }
 
     @Test

@@ -1,11 +1,15 @@
 package com.unciv.ui.screens.leaguescreens
 
+import com.badlogic.gdx.scenes.scene2d.InputEvent
+import com.badlogic.gdx.scenes.scene2d.ui.Button
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton
 import com.badlogic.gdx.scenes.scene2d.ui.Table
 import com.unciv.logic.league.ActiveResolution
 import com.unciv.logic.league.LeagueResultEntry
 import com.unciv.models.Counter
 import com.unciv.testing.GdxTestRunner
 import com.unciv.testing.UiTestSupport
+import com.unciv.ui.components.input.ActivationListener
 import com.unciv.ui.screens.basescreen.BaseScreen
 import com.unciv.ui.screens.overviewscreen.EmpireOverviewCategories
 import com.unciv.ui.screens.overviewscreen.WorldCongressOverview
@@ -65,6 +69,26 @@ class LeagueScreensTests {
         assertFalse(proposal.repeal)
         assertEquals(f.a.civID, proposal.proposer)
         assertFalse(f.league.canPropose(f.a))
+    }
+
+    @Test
+    fun `human can select another civilization from the embargo proposal popup`() {
+        val picker = LeagueProposalPickerScreen(f.a).also { screen = it }
+        val embargo = UiTestSupport.actors(picker.topTable).filterIsInstance<Button>()
+            .first { UiTestSupport.labelTexts(it).any { label -> label == "Embargo" } }
+        embargo.listeners.filterIsInstance<ActivationListener>().first()
+            .tap(InputEvent().apply { listenerActor = embargo }, 0f, 0f, 1, 0)
+
+        assertTrue(texts().toString(), "Choose a civilization" in texts())
+        val target = UiTestSupport.actors(picker.stage).filterIsInstance<TextButton>()
+            .first { UiTestSupport.labelTexts(it).any { label -> label == f.b.civName } }
+        target.listeners.filterIsInstance<ActivationListener>().first()
+            .tap(InputEvent().apply { listenerActor = target }, 0f, 0f, 1, 0)
+        picker.propose()
+
+        val proposal = f.league.proposals.single()
+        assertEquals("Embargo", proposal.resolution)
+        assertEquals(f.b.civID, proposal.proposerChoice)
     }
 
     @Test
