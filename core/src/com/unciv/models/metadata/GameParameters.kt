@@ -32,6 +32,11 @@ class GameParameters : IsPartOfGameInfoSerialization { // Default values are the
     var espionageEnabled = false
     var noStartBias = false
     var shufflePlayerOrder = false
+    var noLeagues = false
+    /** Unlike Civ V's global NO_HAPPINESS/NO_SCIENCE/NO_POLICIES options, these only restrict World Congress resolutions. */
+    var excludeCongressHappinessResolutions = false
+    var excludeCongressScienceResolutions = false
+    var excludeCongressPolicyResolutions = false
 
     var victoryTypes: ArrayList<String> = arrayListOf()
     var startingEra = "Ancient era"
@@ -93,6 +98,10 @@ class GameParameters : IsPartOfGameInfoSerialization { // Default values are the
         parameters.espionageEnabled = espionageEnabled
         parameters.noStartBias = noStartBias
         parameters.shufflePlayerOrder = shufflePlayerOrder
+        parameters.noLeagues = noLeagues
+        parameters.excludeCongressHappinessResolutions = excludeCongressHappinessResolutions
+        parameters.excludeCongressScienceResolutions = excludeCongressScienceResolutions
+        parameters.excludeCongressPolicyResolutions = excludeCongressPolicyResolutions
         parameters.victoryTypes = ArrayList(victoryTypes)
         parameters.startingEra = startingEra
         parameters.showCivilizationStats = showCivilizationStats
@@ -128,6 +137,10 @@ class GameParameters : IsPartOfGameInfoSerialization { // Default values are the
             if (oneCityChallenge) yield("OCC")
             if (!nuclearWeaponsEnabled) yield("No nukes")
             if (godMode) yield("God mode")
+            if (noLeagues) yield("No leagues")
+            if (excludeCongressHappinessResolutions) yield("Exclude Congress happiness resolutions")
+            if (excludeCongressScienceResolutions) yield("Exclude Congress science resolutions")
+            if (excludeCongressPolicyResolutions) yield("Exclude Congress policy resolutions")
             yield("Enabled Victories: " + victoryTypes.joinToString())
             yield(baseRuleset)
             yield(if (mods.isEmpty()) "no mods" else mods.joinToString(",", "mods=(", ")", 6) )

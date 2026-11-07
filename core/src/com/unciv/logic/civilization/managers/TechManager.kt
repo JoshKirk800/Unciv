@@ -59,7 +59,7 @@ class TechManager : IsPartOfGameInfoSerialization {
     // For calculating score
     var repeatingTechsResearched = 0
 
-    /** For calculating Great Scientist yields - see https://civilization.fandom.com/wiki/Great_Scientist_(Civ5)  */
+    /** Recorded per-turn Science, excluding research agreements and Great Scientist discovery grants. */
     var scienceOfLast8Turns = IntArray(8)
     var scienceFromResearchAgreements = 0
     /** This is the list of strings, which is serialized */
@@ -217,10 +217,23 @@ class TechManager : IsPartOfGameInfoSerialization {
         return prerequisites.sortedBy { it.column!!.columnNumber }
     }
 
+    /** Recorded Science of the last [turns] finished turns, as for League project rewards. */
+    fun getScienceFromPreviousTurns(turns: Int): Int {
+        val lastTurn = civInfo.gameInfo.turns - 1
+        if (lastTurn < 0) return 0
+        var science = 0
+        for (offset in 0 until min(turns, min(scienceOfLast8Turns.size, lastTurn + 1)))
+            science += scienceOfLast8Turns[(lastTurn - offset) % scienceOfLast8Turns.size]
+        return science
+    }
+
     @Readonly
     fun getScienceFromGreatScientist(): Int {
-        // https://civilization.fandom.com/wiki/Great_Scientist_(Civ5)
-        return (scienceOfLast8Turns.sum() * civInfo.gameInfo.speed.scienceCostModifier).toInt()
+        val baseScience = scienceOfLast8Turns.sum()
+        val discoveryBonus = civInfo.getMatchingUniques(UniqueType.GreatScientistDiscoveryScience, civInfo.state)
+            .sumOf { it.params[0].toInt() }
+        return ((baseScience + baseScience * discoveryBonus / 100).coerceAtLeast(0) *
+            civInfo.gameInfo.speed.scienceCostModifier).toInt()
     }
 
     private fun addCurrentScienceToScienceOfLast8Turns(science: Int) {

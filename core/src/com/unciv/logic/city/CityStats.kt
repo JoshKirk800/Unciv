@@ -189,6 +189,10 @@ class CityStats(val city: City) {
             if (city.matchesFilter(unique.params[1]))
                 stats.add(unique.stats)
         }
+        city.forEachMatchingUnique(UniqueType.StatsFromNamedSpecialist, city.state) { unique: Unique ->
+            if (unique.params[1] == specialistName && city.matchesFilter(unique.params[2]))
+                stats.add(unique.stats)
+        }
         city.forEachMatchingUnique(UniqueType.StatsFromObject, city.state) { unique: Unique ->
             if (unique.params[1] == specialistName)
                 stats.add(unique.stats)

@@ -76,7 +76,15 @@ class Resolution : RulesetObject() {
     /** The resolution starts a League project, see [projectCostPerPlayer]; it never stays in effect and cannot be repealed */
     val isProject get() = projectCostPerPlayer > 0
 
-    /** Whether the game settings allow this resolution (see [UniqueType.OnlyAvailable]) */
+    /** DLL CvLeague::IsResolutionEffectsValid checks the effect fields, not all science, happiness or policy rewards. */
     @Readonly
-    fun isAvailableInGame(gameInfo: GameInfo): Boolean = !isUnavailableBySettings(gameInfo)
+    fun isAvailableInGame(gameInfo: GameInfo): Boolean {
+        if (isUnavailableBySettings(gameInfo)) return false
+        val options = gameInfo.gameParameters
+        if (options.excludeCongressHappinessResolutions && bansLuxuryHappiness) return false
+        if (options.excludeCongressScienceResolutions &&
+            getMatchingUniques(UniqueType.TechKnownByAnyCivResearchSpeed).any { it.params[0].toInt() != 0 }) return false
+        if (options.excludeCongressPolicyResolutions && (votesForFollowingIdeology != 0 || ideologyPressure != 0)) return false
+        return true
+    }
 }

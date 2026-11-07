@@ -132,6 +132,14 @@ class GameOptionsTable(
             it.addOneCityChallengeCheckbox()
             it.addNuclearWeaponsCheckbox()
             it.addEnableEspionageCheckbox()
+            if (ruleset.resolutions.isNotEmpty()) {
+                it.addNoLeaguesCheckbox()
+                if (!gameParameters.noLeagues) {
+                    it.addExcludeCongressHappinessCheckbox()
+                    it.addExcludeCongressScienceCheckbox()
+                    it.addExcludeCongressPolicyCheckbox()
+                }
+            }
             it.addNoStartBiasCheckbox()
             it.addRandomPlayersCheckbox()
             it.addRandomCityStatesCheckbox()
@@ -213,6 +221,28 @@ class GameOptionsTable(
     private fun Table.addEnableEspionageCheckbox() =
         addCheckbox("Enable Espionage", gameParameters.espionageEnabled)
         { gameParameters.espionageEnabled = it }
+
+    private fun Table.addNoLeaguesCheckbox() =
+        addCheckbox("No World Congress", gameParameters.noLeagues) {
+            gameParameters.noLeagues = it
+            if (it) gameParameters.victoryTypes.remove("Diplomatic")
+            update()
+        }
+
+    private fun Table.addExcludeCongressHappinessCheckbox() =
+        addCheckbox("Exclude World Congress luxury happiness bans", gameParameters.excludeCongressHappinessResolutions) {
+            gameParameters.excludeCongressHappinessResolutions = it
+        }
+
+    private fun Table.addExcludeCongressScienceCheckbox() =
+        addCheckbox("Exclude World Congress shared-technology research bonus", gameParameters.excludeCongressScienceResolutions) {
+            gameParameters.excludeCongressScienceResolutions = it
+        }
+
+    private fun Table.addExcludeCongressPolicyCheckbox() =
+        addCheckbox("Exclude World Congress world ideology", gameParameters.excludeCongressPolicyResolutions) {
+            gameParameters.excludeCongressPolicyResolutions = it
+        }
 
     private fun Table.addRandomNationsPoolCheckbox() {
         randomNationsPoolCheckbox = addCheckbox(
@@ -540,7 +570,7 @@ class GameOptionsTable(
                     update()
             }
             victoryCheckbox.name = victoryType.name
-            victoryCheckbox.isDisabled = locked
+            victoryCheckbox.isDisabled = locked || (gameParameters.noLeagues && ruleset.resolutions.isNotEmpty() && victoryType.name == "Diplomatic")
             victoryConditionsTable.add(victoryCheckbox).left()
             if ((i + 1) % 2 == 0) victoryConditionsTable.row()
         }

@@ -753,6 +753,8 @@ class GameInfo : IsPartOfGameInfoSerialization, HasGameInfoSerializationVersion 
         }
         
         ruleset = RulesetCache.getComplexRuleset(gameParameters)
+        // A save with leagues disabled must not retain active resolution effects when loaded.
+        if (gameParameters.noLeagues || ruleset.resolutions.isEmpty()) league = null
         
         // any mod the saved game lists that is currently not installed causes null pointer
         // exceptions in this routine unless it contained no new objects or was very simple.

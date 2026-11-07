@@ -18,6 +18,8 @@ class LeagueMember : IsPartOfGameInfoSerialization {
     var abstained = 0
     /** Proposals the member may still make before the next session (`bMayPropose` && `iProposals`) */
     var proposalsLeft = 0
+    /** Civ id to recent Congress decisions affecting this member (CvDiplomacyAI congress memory). */
+    var alignmentMemory = LinkedHashMap<String, LeagueAlignmentMemory>()
 
     fun clone(): LeagueMember {
         val toReturn = LeagueMember()
@@ -26,7 +28,28 @@ class LeagueMember : IsPartOfGameInfoSerialization {
         toReturn.delegatesAtStart = delegatesAtStart
         toReturn.abstained = abstained
         toReturn.proposalsLeft = proposalsLeft
+        for ((id, memory) in alignmentMemory) toReturn.alignmentMemory[id] = memory.clone()
         return toReturn
+    }
+}
+
+/**
+ * The turns at which the other civilization last affected our Congress interests.
+ * -1 means never; entries expire 45 turns after the event (CvDiplomacyAI::Get*ProposalScore).
+ */
+class LeagueAlignmentMemory : IsPartOfGameInfoSerialization {
+    var likedProposalTurn = -1
+    var dislikedProposalTurn = -1
+    var supportedProposalTurn = -1
+    var foiledProposalTurn = -1
+    var supportedHostingTurn = -1
+
+    fun clone() = LeagueAlignmentMemory().also {
+        it.likedProposalTurn = likedProposalTurn
+        it.dislikedProposalTurn = dislikedProposalTurn
+        it.supportedProposalTurn = supportedProposalTurn
+        it.foiledProposalTurn = foiledProposalTurn
+        it.supportedHostingTurn = supportedHostingTurn
     }
 }
 
