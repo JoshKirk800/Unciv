@@ -42,6 +42,8 @@ import java.util.Locale
  * same lines, `tools/determinism_check.py` compares them and names the first turn that differs. FULL_SIM_DUMP_TURNS (comma-separated)
  * (or `all`) with FULL_SIM_DUMP_DIR writes the full state JSON, gzipped, after those turns, so that two runs can be diffed.
  *
+ * FULL_SIM_PERTURB_HASH = n: ask for n identity hash codes before the game starts (see the comment in `play`).
+ *
  * The report is rewritten every 25 turns so that a hang or a crash still leaves the story up to that point. The state of the
  * last 25-turn mark is saved to `<report>.checkpoint.save` (and, on a crash, the exception is in the report), so that the turn
  * that failed can be replayed with FULL_SIM_START pointing at the checkpoint.
@@ -79,6 +81,8 @@ class FullGameSim {
             difficulty = "Prince"
             speed = "Standard"
             numberOfCityStates = env("FULL_SIM_CITYSTATES", "8").toInt()
+            // as the new game screen does: every victory that does not need a turn limit; without any, the game never ends
+            victoryTypes.addAll(ruleset.selectableVictories().filter { !it.enablesMaxTurns() }.map { it.name })
             shufflePlayerOrder = false
             this.players = players
         }
@@ -191,6 +195,10 @@ class FullGameSim {
         val game = UncivFiles.gameInfoFromString(startFile.readText())
         UncivGame.Current.gameInfo = game
 
+        // Identity hash codes of objects are handed out in the order they are first asked for, and which codes the objects get differs
+        // between runs. A game whose course depends on them (iterating a hash set of objects that do not define hashCode) is not
+        // reproducible; with this the checker asks for a number of them first, to see whether the course changes.
+        repeat(env("FULL_SIM_PERTURB_HASH", "0").toInt()) { System.identityHashCode(Any()) }
         val out = StringBuilder()
         val events = ArrayList<String>()
         val checkpoint = File(System.getenv("FULL_SIM_OUT")!! + ".checkpoint.save")
