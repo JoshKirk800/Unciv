@@ -860,6 +860,11 @@ class Civilization : IsPartOfGameInfoSerialization {
 
     override fun toString(): String = civID // for debug
 
+    /** Not the identity hash: the game iterates maps and sets of civilizations, and that order must not depend on the run
+     *  (see `tools/determinism_check.py`). Equality stays identity, which is consistent with a hash of the name. */
+    @Readonly override fun hashCode(): Int = civName.hashCode()
+    @Readonly override fun equals(other: Any?): Boolean = this === other
+
     /**
      *  Determine loss conditions.
      *

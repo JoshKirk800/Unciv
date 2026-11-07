@@ -33,8 +33,9 @@ import java.util.Locale
  * PARITY_SIM_RULESET (full name of the base ruleset, default Civ V - Gods & Kings; only used when the start file is generated).
  *
  * The starting game is a saved file: when PARITY_SIM_START exists it is loaded, otherwise a game is generated and saved there.
- * Generating is not reproducible (the world comes from a random game id), so every run that is to be compared must load the
- * same file. Keep it outside the repository; it stays valid for older and newer sources.
+ * The world is made from the seed and a game id fixed to it, so the same sources make the same world again; sources that change what
+ * the generator does make another one, so every run that is to be compared must still load the same file. Keep it outside the
+ * repository; it stays valid for older and newer sources.
  *
  * The output is a summary every 25 turns and at the end: per civilization the city count, population, technologies, policies,
  * gold, happiness and unit count. It is a behaviour fingerprint,
@@ -78,7 +79,7 @@ class ParitySim {
             mapSize = MapSize.Small
             this.seed = seed
         }
-        return GameStarter.startNewGame(GameSetupInfo(parameters, mapParameters))
+        return GameStarter.startNewGame(GameSetupInfo(parameters, mapParameters), gameId = "parity-sim-$seed")
     }
 
     private fun summary(game: GameInfo, turn: Int, out: StringBuilder) {

@@ -203,7 +203,8 @@ object MinorCivPlacer {
             minorCivRatio > 1.35f -> 1
             else -> 0
         }
-        val unassignedCivs = civs.shuffled().toMutableList()
+        val rng = GameContext(gameInfo = regions.first().tileMap.gameInfo).stateBasedRandom("MinorCivPlacer.assignMinorCivsDirectlyToRegions")
+        val unassignedCivs = civs.shuffled(rng).toMutableList()
         if (minorCivPerRegion > 0) {
             regions.forEach {
                 val civsToAssign = unassignedCivs.take(minorCivPerRegion)

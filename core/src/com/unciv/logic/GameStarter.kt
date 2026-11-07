@@ -34,17 +34,20 @@ import yairm210.purity.annotations.Readonly
  *  is fully random per game.
  */
 class GameStarter private constructor(
-    private val gameSetupInfo: GameSetupInfo
+    private val gameSetupInfo: GameSetupInfo,
+    fixedGameId: String?
 ) {
     companion object {
         // temporary instrumentation while tuning/debugging
         private const val consoleTimings = false
 
-        fun startNewGame(gameSetupInfo: GameSetupInfo): GameInfo =
-            GameStarter(gameSetupInfo).gameInfo
+        /** @param gameId normally random. Everything in the new game that is random follows from it and the map seed
+         *  (see [GameContext.stateBasedRandom]), so a fixed id with a fixed seed makes the same world every time - for tests and bug reports */
+        fun startNewGame(gameSetupInfo: GameSetupInfo, gameId: String? = null): GameInfo =
+            GameStarter(gameSetupInfo, gameId).gameInfo
     }
 
-    private val gameInfo = GameInfo()
+    private val gameInfo = GameInfo().apply { if (fixedGameId != null) gameId = fixedGameId }
     private val rng = GameContext(gameInfo = gameInfo).stateBasedRandom("GameStarter")
     private val ruleset: Ruleset
     private lateinit var tileMap: TileMap

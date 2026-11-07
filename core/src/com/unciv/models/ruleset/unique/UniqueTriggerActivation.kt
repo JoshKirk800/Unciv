@@ -1575,7 +1575,7 @@ object UniqueTriggerActivation {
                         // Make a pair of the name and the group instance
                         .map { it to group }
                     }
-                    .shuffled().firstOrNull()
+                    .randomOrNull(rng)
                 if (pair == null) return null
 
                 return {

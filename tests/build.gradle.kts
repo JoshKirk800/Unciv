@@ -36,6 +36,9 @@ tasks {
 
         jvmArgumentProviders.add(MockitoAgentArgumentProvider(mockitoAgent))
 
+        // A whole game played by AIs (com.unciv.dev.FullGameSim) needs far more than the default worker heap
+        if (System.getenv("FULL_SIM_OUT") != null) maxHeapSize = "4g"
+
         // Forward latency-test save file path to the test JVM
         System.getProperty("unciv.nextTurnSaveFile")?.let { systemProperty("unciv.nextTurnSaveFile", it) }
     }
