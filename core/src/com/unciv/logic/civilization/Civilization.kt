@@ -16,6 +16,7 @@ import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.Tile
 import com.unciv.logic.trade.TradeRequest
 import com.unciv.models.Counter
+import com.unciv.models.metadata.BaseRuleset
 import com.unciv.models.metadata.GameParameters
 import com.unciv.models.ruleset.Building
 import com.unciv.models.ruleset.Policy
@@ -969,8 +970,11 @@ class Civilization : IsPartOfGameInfoSerialization {
         if (mapSizeModifier > 1)
             mapSizeModifier = (mapSizeModifier - 1) / 3 + 1
 
-        val modConstants= gameInfo.ruleset.modOptions.constants
-        scoreBreakdown["Cities"] = cities.size * 10 * mapSizeModifier
+        val modConstants = gameInfo.ruleset.modOptions.constants
+        val isBraveNewWorld = gameInfo.ruleset.run {
+            name == BaseRuleset.Civ_V_BNW.fullName || BaseRuleset.Civ_V_BNW.fullName in mods
+        }
+        scoreBreakdown["Cities"] = cities.size * (if (isBraveNewWorld) 8 else 10) * mapSizeModifier
         scoreBreakdown["Population"] = cities.sumOf { it.population.population } * modConstants.scoreFromPopulation * mapSizeModifier
         scoreBreakdown["Tiles"] = cities.sumOf { city -> city.getTiles().count { !it.isWater } } * 1 * mapSizeModifier
         scoreBreakdown["Wonders"] = modConstants.scoreFromWonders * cities
@@ -979,6 +983,24 @@ class Civilization : IsPartOfGameInfoSerialization {
             }.toDouble()
         if (modConstants.scoreFromGreatWorks != 0)
             scoreBreakdown["Great Works"] = modConstants.scoreFromGreatWorks * cities.sumOf { it.greatWorks.getNumWorks() }.toDouble()
+        if (isBraveNewWorld) {
+            // Ordinary branch openers and finishers are DLL policies; ideology selection and
+            // its Unciv completion marker are not. Only an ideology's tenets score.
+            val rulesetPolicies = gameInfo.ruleset.policies
+            scoreBreakdown["Policies"] = policies.getAdoptedPolicies().count { name ->
+                val policy = rulesetPolicies[name] ?: return@count false
+                !policy.branch.isIdeology || policy.isTenet
+            } * 4.0
+            val foundedReligion = religionManager.religion
+            scoreBreakdown["Religion"] =
+                if (gameInfo.isReligionEnabled() && foundedReligion != null && foundedReligion.isMajorReligion()) {
+                    val beliefs = foundedReligion.getAllBeliefsOrdered().count()
+                    val followingCities = gameInfo.civilizations.sumOf { civ ->
+                        civ.cities.count { it.religion.getMajorityReligionName() == foundedReligion.name }
+                    }
+                    beliefs * 20.0 + followingCities
+                } else 0.0
+        }
         scoreBreakdown["Technologies"] = tech.techsResearched.size * 4.0
         scoreBreakdown["Future Tech"] = tech.repeatingTechsResearched * 10.0
 
@@ -1401,6 +1423,8 @@ enum class CivFlags {
     RecentlyBullied,
     TurnsTillCallForBarbHelp,
     RevoltSpawning,
+    /** Serialized countdown until a super-unhappy city's ideological revolt. */
+    CityRevoltCountdown,
     /** After a change of ideology: no gold, science, culture, faith or production for as many turns */
     Anarchy,
 }

@@ -22,6 +22,7 @@ import com.unciv.ui.screens.worldscreen.status.NextTurnProgress
 import com.unciv.utils.Log
 import yairm210.purity.annotations.Readonly
 import kotlin.math.min
+import kotlin.math.sqrt
 import com.unciv.logic.automation.Timers.Companion.timeThis
 
 class TurnManager(val civInfo: Civilization) {
@@ -68,6 +69,7 @@ class TurnManager(val civInfo: Civilization) {
         if (civInfo.isMajorCiv && civInfo.isHuman()) civInfo.gameInfo.league?.notifyStartTurn(civInfo)
         startTurnFlags()
         updateRevolts()
+        updateCityRevolts()
 
         civInfo.forEachTriggeredUnique(UniqueType.TriggerUponTurnStart, civInfo.state, ignoreCities = true) { unique ->
             UniqueTriggerActivation.triggerUnique(unique, civInfo)
@@ -129,6 +131,8 @@ class TurnManager(val civInfo: Civilization) {
         for (flag in civInfo.flagsCountdown.keys.toList()) {
             // In case we remove flags while iterating
             if (!civInfo.flagsCountdown.containsKey(flag)) continue
+            // City revolts only tick while super unhappy with ideological unhappiness.
+            if (flag == CivFlags.CityRevoltCountdown.name) continue
 
             if (flag == CivFlags.CityStateGreatPersonGift.name) {
                 val rng = civInfo.state.stateBasedRandom("TurnManager.startTurnFlags")
@@ -204,6 +208,82 @@ class TurnManager(val civInfo: Civilization) {
             civInfo.addFlag(CivFlags.RevoltSpawning.name, getTurnsBeforeRevolt().coerceAtLeast(1))
             return
         }
+    }
+
+    /**
+     * CvPlayer::DoUpdateCityRevolts: unlike barbarian uprisings, city revolts need public opinion.
+     * Recovery pauses the counter; once it expires the city and recipient are chosen afresh.
+     */
+    fun updateCityRevolts() {
+        if (!civInfo.isMajorCiv || civInfo.getHappiness() > -20 || civInfo.culture.publicOpinion.unhappiness <= 0)
+            return
+
+        val flag = CivFlags.CityRevoltCountdown.name
+        val turnsLeft = civInfo.flagsCountdown[flag] ?: 0
+        if (turnsLeft > 0) {
+            if (turnsLeft > 1) {
+                civInfo.addFlag(flag, turnsLeft - 1)
+                return
+            }
+            civInfo.removeFlag(flag)
+            val (city, recipient) = getCityRevoltTarget() ?: return
+            val location = city.location.toHexCoord()
+            for (observer in civInfo.gameInfo.civilizations) {
+                if (!observer.isMajorCiv || observer.isDefeated()) continue
+                val text = if (observer == civInfo)
+                    "[${city.name}] has revolted and joined [${recipient.civName}]!"
+                else
+                    "[${city.name}] has revolted from [${civInfo.civName}] and joined [${recipient.civName}]!"
+                observer.addNotification(text, location, NotificationCategory.General, NotificationIcon.City)
+            }
+            // A non-conquest ownership change, retaining the city's population and buildings.
+            city.moveToCiv(recipient)
+            for (unit in city.getCenterTile().getUnits().filter { it.civ == civInfo }.toList()) {
+                unit.currentMovement = 0f
+                unit.movement.teleportToClosestMoveableTile()
+            }
+            return
+        }
+
+        val (city, recipient) = getCityRevoltTarget() ?: return
+        val turns = (5 * civInfo.gameInfo.speed.productionCostModifier.coerceAtLeast(1f)).toInt().coerceAtLeast(1)
+        civInfo.addFlag(flag, turns)
+        if (civInfo.isHuman())
+            civInfo.addNotification(
+                "If unhappiness continues, [${city.name}] may revolt and join [${recipient.civName}] in [$turns] turns!",
+                city.location.toHexCoord(), NotificationCategory.General, NotificationIcon.City
+            )
+    }
+
+    /** CvPlayer::GetMostUnhappyCity and GetMostUnhappyCityRecipient. */
+    private fun getCityRevoltTarget(): Pair<com.unciv.logic.city.City, Civilization>? {
+        if (civInfo.cities.size <= 1) return null
+        val preferred = civInfo.culture.publicOpinion.preferredIdeology ?: return null
+        val eligible = civInfo.gameInfo.civilizations.mapNotNull { other ->
+            if (other == civInfo || !other.isMajorCiv || other.isDefeated()
+                || other.getIdeology()?.name != preferred) return@mapNotNull null
+            val capital = other.getCapital(false) ?: return@mapNotNull null
+            val dominance = (other.culture.getInfluenceLevel(civInfo)?.ordinal ?: -1) -
+                (civInfo.culture.getInfluenceLevel(other)?.ordinal ?: -1)
+            if (dominance <= 0) null else Triple(other, capital.getCenterTile(), dominance)
+        }
+        if (eligible.isEmpty()) return null
+
+        // Local happiness in Civ V includes building, garrison, policy and religious effects
+        // capped at population. Unciv only separates building happiness in its city breakdown.
+        val city = civInfo.cities.asSequence().filterNot { it.isCapital() }.maxByOrNull { candidate ->
+            val population = candidate.population.population
+            val localHappiness = (candidate.cityStats.happinessList["Buildings"] ?: 0f)
+                .coerceAtLeast(0f).toInt().coerceAtMost(population)
+            val center = candidate.getCenterTile()
+            population - localHappiness + eligible.sumOf { (_, capital, dominance) ->
+                val distance = center.aerialDistanceTo(capital)
+                if (distance >= 100) 0 else sqrt((100 - distance).toDouble()).toInt() * dominance
+            }
+        } ?: return null
+        val center = city.getCenterTile()
+        val recipient = eligible.minBy { (_, capital, _) -> center.aerialDistanceTo(capital) }.first
+        return city to recipient
     }
 
     private fun doRevoltSpawn() {
