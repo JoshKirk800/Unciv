@@ -244,7 +244,7 @@ class LeagueScreensTests {
         f.league.lastSpecialSession = "Atomic era"
         assertEquals(
             listOf(
-                "Turns until the next World Congress session: [${f.league.turnsUntilSession}]",
+                "Turns until the next United Nations session: [${f.league.turnsUntilSession}]",
                 "Turns until the World Leader vote: [${f.league.getTurnsUntilWorldLeaderSession()}]",
                 "Delegates needed to be elected World Leader: [${f.league.getVotesNeededForWorldLeader()}]"
             ),

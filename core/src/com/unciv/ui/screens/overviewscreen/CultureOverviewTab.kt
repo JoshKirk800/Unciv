@@ -1,6 +1,7 @@
 package com.unciv.ui.screens.overviewscreen
 
 import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.scenes.scene2d.ui.Table
 import com.unciv.Constants
 import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.city.GreatWorkSlot
@@ -72,38 +73,43 @@ class CultureOverviewTab(
         }
         val known = others.filter { civ.knows(it) }
         if (known.isNotEmpty()) {
+            // Own table: in this tab's columns, the Great Work rows below would make every column as wide as their slot buttons
+            val influenceTable = Table().apply { defaults().pad(3f) }
             for (header in listOf("Civilization", "Ideology", "Tourism per turn", "Influence", "Level", "Trend", "Turns to Influential", "Bonuses"))
-                add(header.toLabel()).pad(3f)
-            row()
-            addSeparator()
+                influenceTable.add(header.toLabel())
+            influenceTable.row()
+            influenceTable.addSeparator()
             for (other in known.sortedBy { it.civName }) {
                 val level = culture.getInfluenceLevel(other) ?: InfluenceLevel.Unknown
-                add(other.civName.toLabel(hideIcons = true)).left()
-                add((other.getIdeology()?.name ?: "").toLabel())
-                add(culture.getInfluencePerTurn(other).toString().toLabel())
-                add("${culture.getInfluencePercent(other)}%".toLabel())
-                add(level.label.toLabel(if (level >= InfluenceLevel.Influential) Color.GREEN else Color.WHITE))
+                influenceTable.add(other.civName.toLabel(hideIcons = true)).left()
+                influenceTable.add((other.getIdeology()?.name ?: "").toLabel())
+                influenceTable.add(culture.getInfluencePerTurn(other).toString().toLabel())
+                influenceTable.add("${culture.getInfluencePercent(other)}%".toLabel())
+                influenceTable.add(level.label.toLabel(if (level >= InfluenceLevel.Influential) Color.GREEN else Color.WHITE))
                 val trend = when (culture.getInfluenceTrend(other)) {
                     InfluenceTrend.Rising -> "Rising"
                     InfluenceTrend.Falling -> "Falling"
                     InfluenceTrend.Static -> "Static"
                     null -> ""
                 }
-                add(trend.toLabel())
+                influenceTable.add(trend.toLabel())
                 val turns = culture.getTurnsToInfluential(other)
-                add((if (level >= InfluenceLevel.Influential || turns >= CultureManager.NEVER) "" else turns.toString()).toLabel())
-                add(culture.getRelationsWith(other).joinToString { it.label.tr() }.toLabel())
-                row()
+                influenceTable.add((if (level >= InfluenceLevel.Influential || turns >= CultureManager.NEVER) "" else turns.toString()).toLabel())
+                influenceTable.add(culture.getRelationsWith(other).joinToString("\n") { it.label.tr() }.toLabel())
+                influenceTable.row()
             }
+            add(influenceTable).colspan(COLUMNS).row()
         }
         addPublicOpinion()
         val cities = civ.cities.filter { culture.getCityTourism(it) > 0 }.sortedByDescending { culture.getCityTourism(it) }
         if (cities.isNotEmpty()) {
             add("Tourism of our cities".toLabel(fontSize = Constants.headingFontSize)).colspan(COLUMNS).padTop(15f).row()
+            val cityTable = Table().apply { defaults().pad(3f, 10f, 3f, 10f) }
             for (city in cities) {
-                add(city.name.toLabel()).left().colspan(2)
-                add(culture.getCityTourism(city).toString().toLabel()).left().row()
+                cityTable.add(city.name.toLabel()).left()
+                cityTable.add(culture.getCityTourism(city).toString().toLabel()).right().row()
             }
+            add(cityTable).colspan(COLUMNS).row()
         }
         add("Great Works".toLabel(fontSize = Constants.headingFontSize)).colspan(COLUMNS).padTop(20f).row()
     }
@@ -134,8 +140,11 @@ class CultureOverviewTab(
             add("The public opinion makes [${opinion.unhappiness}] unhappiness".tr().toLabel(Color.RED)).colspan(COLUMNS).row()
     }
 
+    /** One block per building, so that the slot buttons of one building do not widen the columns of all others */
     private fun addBuilding(building: Building, slots: List<GreatWorkSlot>) {
-        add(building.name.toLabel()).left()
+        val block = Table().apply { defaults().pad(3f) }
+        val header = Table()
+        header.add(building.name.toLabel())
         val city = slots.first().city
         val themingEntry = city.greatWorks.getThemingBonusEntry(building)
         val themingText = when {
@@ -143,17 +152,21 @@ class CultureOverviewTab(
             themingEntry == null -> "No theming bonus"
             else -> "{${fillThemingName(themingEntry.name, slots.mapNotNull { it.getWork() })}} +${city.greatWorks.getThemingBonus(building)}"
         }
-        add(themingText.tr().toLabel(if (themingEntry != null) Color.GREEN else Color.GRAY)).left()
+        header.add(themingText.tr().toLabel(if (themingEntry != null) Color.GREEN else Color.GRAY)).padLeft(15f)
+        block.add(header).left().row()
 
-        for (slot in slots) {
+        val slotTable = Table().apply { defaults().pad(3f) }
+        for ((index, slot) in slots.withIndex()) {
+            if (index > 0 && index % SLOTS_PER_ROW == 0) slotTable.row()
             val work = slot.getWork()
             val text = work?.work?.tr() ?: "Empty [${slot.getType().label}] slot".tr()
             val button = (if (slot == selected) "> $text <" else text).toTextButton()
             button.isEnabled = canMove
             button.onClick { slotClicked(slot) }
-            add(button)
+            slotTable.add(button)
         }
-        row()
+        block.add(slotTable).left().padLeft(15f)
+        add(block).colspan(COLUMNS).left().padBottom(5f).row()
     }
 
     /** "Museum of [era] [civ] Art" for the works actually in the building. [era] and [civ] stand for the first work's, which is also the others' where it matters */
@@ -178,6 +191,8 @@ class CultureOverviewTab(
     }
 
     private companion object {
-        const val COLUMNS = 8
+        /** Every row of this tab spans its one column, the tables in it have their own columns */
+        const val COLUMNS = 1
+        const val SLOTS_PER_ROW = 3
     }
 }

@@ -10,8 +10,7 @@ import com.unciv.view.CivView
 /** This controls which Tabs for the [EmpireOverviewScreen] exist and their order.
  *
  *  To add a Tab, build a new [EmpireOverviewTab] subclass and fill out a new entry here, that's all.
- *  Note the enum value's name is used as Tab caption, so if you ever need a non-alphanumeric caption
- *  please redesign to include a property for the caption
+ *  The Tab caption is [caption], the enum value's name unless overridden (needed for captions with spaces).
  */
 enum class EmpireOverviewCategories(
     val iconName: String,
@@ -94,6 +93,7 @@ enum class EmpireOverviewCategories(
         override fun showDisabled(viewingPlayer: CivView) = viewingPlayer.getCiv().notifications.isEmpty() && viewingPlayer.getCiv().notificationsLog.isEmpty()
     },
     WorldCongress("NotificationIcons/WorldCongressVote", 'G', Align.top) {
+        override val caption = "World Congress"
         override fun createTab(viewingPlayer: CivView, overviewScreen: EmpireOverviewScreen, persistedData: EmpireOverviewTabPersistableData?) =
                 WorldCongressOverviewTab(viewingPlayer, overviewScreen)
         override fun testState(viewingPlayer: CivView) =
@@ -107,6 +107,9 @@ enum class EmpireOverviewCategories(
         : this(iconName, KeyCharAndCode(shortcutChar), scrollAlign)
 
     enum class EmpireOverviewTabState { Normal, Disabled, Hidden }
+
+    /** Untranslated Tab caption, also the key that [EmpireOverviewScreen] uses to find the page in its pager */
+    open val caption: String get() = name
 
     abstract fun createTab(viewingPlayer: CivView, overviewScreen: EmpireOverviewScreen, persistedData: EmpireOverviewTabPersistableData?): EmpireOverviewTab
     open fun showDisabled(viewingPlayer: CivView) = false
