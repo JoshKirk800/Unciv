@@ -406,6 +406,8 @@ class UnitMovement(val unit: MapUnit) {
             unit.getMatchInReachableTile()
             ?: escortedUnit?.getMatchInReachableTile()
             ?: return false
+        // CvUnit::CanSwapWithUnitHere requires the same domain; land units and ships can even share water tiles.
+        if (unit.baseUnit.isWaterUnit != otherUnit.baseUnit.isWaterUnit) return false
         val ourPosition = unit.getTile()
         if (otherUnit.owner != unit.owner
             || otherUnit.cache.cannotMove  // redundant but faster, line below would cover it too
