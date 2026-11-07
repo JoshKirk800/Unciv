@@ -1,6 +1,7 @@
 package com.unciv.logic.automation.civilization
 
 import com.unciv.logic.civilization.Civilization
+import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.civilization.NotificationCategory
 import com.unciv.logic.civilization.NotificationIcon
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
@@ -35,7 +36,9 @@ object TradeAutomation {
                 tradeLogic.acceptTrade()
                 otherCiv.addNotification("[${civInfo.civName}] has accepted your trade request", NotificationCategory.Trade, NotificationIcon.Trade, civInfo.civName)
             } else {
-                val counteroffer = getCounteroffer(civInfo, tradeRequest)
+                val counteroffer = if (tradeRequest.trade.ourOffers.any { it.type == TradeOfferType.GreatWork })
+                    null // A Great Work swap is an indivisible one-for-one exchange
+                else getCounteroffer(civInfo, tradeRequest)
                 if (counteroffer != null) {
                     otherCiv.addNotification("[${civInfo.civName}] has made a counteroffer to your trade request", NotificationCategory.Trade, NotificationIcon.Trade, civInfo.civName)
                     otherCiv.tradeRequests.add(counteroffer)
@@ -74,8 +77,8 @@ object TradeAutomation {
                 continue // Don't want to counteroffer straight gold for gold, that's silly
             if (!offer.isTradable())
                 continue // For example resources gained by trade or CS
-            if (offer.type == TradeOfferType.City)
-                continue // Players generally don't want to give up their cities, and they might misclick
+            if (offer.type == TradeOfferType.City || offer.type == TradeOfferType.GreatWork)
+                continue // Don't counteroffer with cities or an unpaired Great Work
             if (offer.type == TradeOfferType.Luxury_Resource)
                 continue // Don't ask for luxuries as counteroffer, players likely don't want to sell them if they didn't offer them already
             if (tradeLogic.currentTrade.theirOffers.any { it.type == offer.type && it.name == offer.name })
@@ -168,6 +171,36 @@ object TradeAutomation {
         return TradeRequest(civInfo.civID, tradeLogic.currentTrade.reverse())
     }
 
+
+    /** Offer an exact same-kind swap that improves our theming without damaging theirs. */
+    fun exchangeGreatWorks(civInfo: Civilization) {
+        if (civInfo.cities.none { it.greatWorks.getNumWorks() > 0 }) return
+        if (civInfo.cities.none { city -> city.greatWorks.getSlots().any { it.building.themingBonuses.isNotEmpty() } }) return
+        for (otherCiv in civInfo.getKnownCivs()) {
+            if (!otherCiv.isMajorCiv || otherCiv.isAtWarWith(civInfo)
+                || otherCiv.tradeRequests.any { it.requestingCiv == civInfo.civID }
+                || civInfo.getDiplomacyManager(otherCiv)!!.hasFlag(DiplomacyFlags.DeclinedGreatWorkExchange)
+                || civInfo.getDiplomacyManager(otherCiv)!!.isRelationshipLevelLE(RelationshipLevel.Enemy)) continue
+            val available = TradeLogic(civInfo, otherCiv)
+            val evaluation = TradeEvaluation()
+            offers@ for (ours in available.ourAvailableOffers.filter { it.type == TradeOfferType.GreatWork }) {
+                val ourSlot = GreatWorkFunctions.findTradeSlot(civInfo, ours.name) ?: continue
+                for (theirs in available.theirAvailableOffers.filter { it.type == TradeOfferType.GreatWork }) {
+                    val theirSlot = GreatWorkFunctions.findTradeSlot(otherCiv, theirs.name) ?: continue
+                    if (!GreatWorkFunctions.canExchange(ourSlot, theirSlot)
+                        || GreatWorkFunctions.themingGain(ourSlot, theirSlot) <= 0
+                        || GreatWorkFunctions.themingGain(theirSlot, ourSlot) < 0) continue
+                    val proposed = Trade()
+                    proposed.ourOffers.add(ours.copy())
+                    proposed.theirOffers.add(theirs.copy())
+                    if (!evaluation.isTradeValid(proposed, civInfo, otherCiv)
+                        || (otherCiv.isAI() && !evaluation.isTradeAcceptable(proposed.reverse(), otherCiv, civInfo))) continue
+                    otherCiv.tradeRequests.add(TradeRequest(civInfo.civID, proposed.reverse()))
+                    break@offers
+                }
+            }
+        }
+    }
 
      fun exchangeLuxuries(civInfo: Civilization) {
         val knownCivs = civInfo.getKnownCivs()

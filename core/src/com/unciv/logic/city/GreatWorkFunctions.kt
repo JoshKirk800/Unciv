@@ -33,6 +33,87 @@ object GreatWorkFunctions {
     @Readonly
     fun getNumWorks(civ: Civilization): Int = civ.cities.sumOf { it.greatWorks.getNumWorks() }
 
+    /** A stable work identity rather than its name or slot: generic artifacts share names, and slots can change contents. */
+    @Readonly
+    fun tradeId(slot: GreatWorkSlot): String = slot.getWork()?.id ?: ""
+
+    @Readonly
+    fun findTradeSlot(civ: Civilization, id: String): GreatWorkSlot? =
+        if (id.isEmpty()) null else civ.cities.asSequence().flatMap { it.greatWorks.getSlots().asSequence() }
+            .firstOrNull { it.getWork()?.id == id }
+
+    @Readonly
+    fun canExchange(first: GreatWorkSlot, second: GreatWorkSlot): Boolean {
+        if (first.city.civ == second.city.civ || !first.city.civ.isMajorCiv || !second.city.civ.isMajorCiv) return false
+        val firstWork = first.getWork() ?: return false
+        val secondWork = second.getWork() ?: return false
+        val definitions = first.city.civ.gameInfo.ruleset.greatWorks
+        val firstType = definitions[firstWork.work]?.type ?: return false
+        return firstType == definitions[secondWork.work]?.type && fits(firstWork, second) && fits(secondWork, first)
+    }
+
+    /** An atomic, one-for-one foreign exchange. Both source slots must still hold the offered works. */
+    fun exchange(first: GreatWorkSlot, second: GreatWorkSlot): Boolean {
+        if (!canExchange(first, second)) return false
+        val firstWork = first.getWork()!!
+        val secondWork = second.getWork()!!
+        first.city.greatWorks.place(secondWork, first)
+        second.city.greatWorks.place(firstWork, second)
+        first.city.cityStats.update()
+        second.city.cityStats.update()
+        return true
+    }
+
+    /** Net change in a civilization's theming if these two slots exchanged works. */
+    @Readonly
+    fun themingGain(first: GreatWorkSlot, second: GreatWorkSlot): Int {
+        if (first.building.themingBonuses.isEmpty() && second.building.themingBonuses.isEmpty()) return 0
+        val firstWork = first.getWork() ?: return 0
+        val secondWork = second.getWork()
+        if (!fits(firstWork, second) || (secondWork != null && !fits(secondWork, first))) return 0
+        val firstWorks = first.city.greatWorks
+        val secondWorks = second.city.greatWorks
+        val firstBefore = firstWorks.getThemingBonus(first.building)
+        val secondBefore = if (first.city === second.city && first.building === second.building) 0
+            else secondWorks.getThemingBonus(second.building)
+        fun themedAfter(slot: GreatWorkSlot): Int {
+            val works = slot.city.greatWorks
+            val slots = works.getSlots(slot.building)
+            return works.getThemingBonus(slot.building, slots.map {
+                when (it) {
+                    first -> secondWork ?: return 0
+                    second -> firstWork
+                    else -> it.getWork() ?: return 0
+                }
+            })
+        }
+        return themedAfter(first) + (if (first.city === second.city && first.building === second.building) 0 else themedAfter(second)) -
+            firstBefore - secondBefore
+    }
+
+    /** Repeatedly make strictly beneficial rearrangements, retaining creator and era on each work. */
+    fun optimizeTheming(civ: Civilization) {
+        val slots = civ.cities.flatMap { it.greatWorks.getSlots() }
+        if (slots.none { it.building.themingBonuses.isNotEmpty() }
+            || slots.count { it.getWork() != null } < 2) return
+        while (true) {
+            var bestGain = 0
+            var bestFirst: GreatWorkSlot? = null
+            var bestSecond: GreatWorkSlot? = null
+            for (i in slots.indices) for (j in i + 1 until slots.size) {
+                val first = if (slots[i].getWork() != null) slots[i] else slots[j]
+                val second = if (first === slots[i]) slots[j] else slots[i]
+                val gain = themingGain(first, second)
+                if (gain > bestGain) {
+                    bestGain = gain
+                    bestFirst = first
+                    bestSecond = second
+                }
+            }
+            if (bestFirst == null || bestSecond == null || !move(bestFirst, bestSecond)) return
+        }
+    }
+
     /** Whether a work fits in the slot, that is whether the types match */
     @Readonly
     fun fits(work: GreatWorkInstance, slot: GreatWorkSlot): Boolean {

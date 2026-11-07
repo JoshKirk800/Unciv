@@ -55,6 +55,8 @@ This file contains the Great Works: the works of art, writing and music that Gre
 A work that exists in a game is placed in one of the Great Work slots of a building, which a building gets from the unique `Has [amount] [Art/Artifact|Literature|Music] Great Work slots`.
 Each Great Work gives its city culture (see `greatWorkBaseCulture` in [ModConstants](5-Miscellaneous-JSON-files.md#modoptionsjson)).
 
+Each placed work has its own persistent identity, even when multiple copies use the same `name` definition. In a peaceful trade between major civilizations, Great Works can be exchanged only one-for-one with another work of the same type (`Art` and `Artifact` are distinct). Both source slots must still contain the offered works when the trade is accepted; neither work may be moved into an incompatible slot. Moving a work between buildings retains its creator, era, and identity.
+
 | Attribute      | Type    | Default  | Notes                                                                                                                                                                                            |
 |----------------|---------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | name           | String  | Required | Must be unique                                                                                                                                                                                   |

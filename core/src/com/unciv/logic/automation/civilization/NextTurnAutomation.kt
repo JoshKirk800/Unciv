@@ -15,6 +15,7 @@ import com.unciv.logic.automation.unit.EspionageAutomation
 import com.unciv.logic.automation.unit.UnitAutomation
 import com.unciv.logic.battle.*
 import com.unciv.logic.city.City
+import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.civilization.AlertType
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.NotificationCategory
@@ -73,6 +74,10 @@ object NextTurnAutomation {
             DiplomacyAutomation.offerDefensivePact(civView)
             DiplomacyAutomation.checkMilitaryPresenceNearBorder(civView)
             TradeAutomation.exchangeLuxuries(civInfo)
+            if (civInfo.gameInfo.ruleset.greatWorks.isNotEmpty()) {
+                GreatWorkFunctions.optimizeTheming(civInfo)
+                TradeAutomation.exchangeGreatWorks(civInfo)
+            }
             
             issueRequests(civView)
             adoptPolicy(civView)  // todo can take a second - why?
@@ -306,6 +311,7 @@ object NextTurnAutomation {
     private fun adoptPolicy(civView: CivView) {
         val civInfo = civView.getCiv()
         val rng = civInfo.state.stateBasedRandom("NextTurnAutomation.adoptPolicy")
+        val seeksCulturalVictory = "Cultural" in civInfo.getPreferredVictoryTypes()
         /*
         # Branch-based policy-to-adopt decision
         Basically the AI prioritizes finishing incomplete branches before moving on, \
@@ -372,7 +378,15 @@ object NextTurnAutomation {
             val policyToAdopt: Policy =
                 if (civInfo.policies.isAdoptable(targetBranch)) targetBranch
                 else targetBranch.policies.filter { civInfo.policies.isAdoptable(it) }
-                    .randomWeighted(rng) { it.getWeightForAiDecision(civInfo.state) }
+                    .randomWeighted(rng) { policy ->
+                        val weight = policy.getWeightForAiDecision(civInfo.state)
+                        if (seeksCulturalVictory && (
+                            policy.hasUnique(UniqueType.TourismTowardsPercent, civInfo.state)
+                                || policy.hasUnique(UniqueType.GreatWorksTourismPercent, civInfo.state)
+                                || policy.hasUnique(UniqueType.LandmarksTourismPercent, civInfo.state)
+                                || policy.hasUnique(UniqueType.FlatTourism, civInfo.state)
+                            )) weight * 3f else weight
+                    }
 
             if (!civInfo.policies.canAdopt(policyToAdopt)) return
             civInfo.policies.adopt(policyToAdopt)

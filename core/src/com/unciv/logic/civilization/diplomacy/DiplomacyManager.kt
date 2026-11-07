@@ -52,6 +52,7 @@ enum class RelationshipLevel(val color: Color) {
 
 enum class DiplomacyFlags {
     DeclinedLuxExchange,
+    DeclinedGreatWorkExchange,
     DeclinedPeace,
     DeclinedResearchAgreement,
     DeclinedEmbassy,

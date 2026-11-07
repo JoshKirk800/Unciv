@@ -2,6 +2,7 @@ package com.unciv.logic.trade
 
 import com.unciv.Constants
 import com.unciv.UncivGame
+import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.trade.TradeOfferType.TradeTypeNumberType
 import com.unciv.models.ruleset.Speed
@@ -46,6 +47,13 @@ data class TradeOffer(val name: String, val type: TradeOfferType, var amount: In
                 val city =
                         UncivGame.Current.gameInfo!!.getCities().firstOrNull { it.id == name }
                 city?.run { "{$name} (${population.population})" } ?: "Non-existent city"
+            }
+            TradeOfferType.GreatWork -> {
+                val slot = UncivGame.Current.gameInfo!!.getCities().asSequence()
+                    .flatMap { it.greatWorks.getSlots().asSequence() }
+                    .firstOrNull { GreatWorkFunctions.tradeId(it) == name }
+                val workName = slot?.getWork()?.work ?: "Great Work"
+                "[$workName] ([${slot?.city?.name ?: "City"}])"
             }
             else -> name
         }.tr(hideIcons = true)

@@ -67,8 +67,8 @@ class TradeTable(
                 }
             }
 
-            tradeView.tryProposeStagedTrade()
-            offerButton.setText("Retract offer".tr())
+            if (tradeView.tryProposeStagedTrade())
+                offerButton.setText("Retract offer".tr())
         }
 
         lowerTable.add(offerButton)
@@ -82,7 +82,7 @@ class TradeTable(
     private fun onChange() {
         offerColumnsTable.update()
         retractOffer()
-        offerButton.isEnabled = !(tradeView.theirStagedOffers().size == 0 && tradeView.ourStagedOffers().size == 0)
+        offerButton.isEnabled = tradeView.canProposeStagedTrade()
     }
 
     fun enableOfferButton(isEnabled: Boolean) {

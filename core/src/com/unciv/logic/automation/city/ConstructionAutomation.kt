@@ -43,6 +43,8 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
     private val cityStats = city.cityStats
 
     private val personality = civInfo.getPersonality()
+    private val seeksCulturalVictory = "Cultural" in civInfo.getPreferredVictoryTypes()
+    private var cachedCityTourism = Int.MIN_VALUE
 
     private val constructionsToAvoid = personality.getMatchingUniques(UniqueType.WillNotBuild, cityState)
         .map{ it.params[0] }
@@ -333,9 +335,24 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
         return value
     }
     
-    @Readonly
     private fun getVictoryBuildingValue(building: Building): Float {
         var value = 0f
+        // CvCityStrategyAI::IsTestCityStrategy_NeedTourismBuilding values a city's tourism-producing
+        // buildings when it already has culture or tourism to amplify. Unciv has no flavor-based city strategy.
+        if (seeksCulturalVictory) {
+            val hasTourismMultiplier = building.hasUnique(UniqueType.GreatWorksTourismPercent)
+                || building.hasUnique(UniqueType.LandmarksTourismPercent)
+                || building.hasUnique(UniqueType.TourismPercent)
+            val flatTourism = if (building.hasUnique(UniqueType.FlatTourism))
+                building.getMatchingUniques(UniqueType.FlatTourism, cityState)
+                    .sumOf { if (city.matchesFilter(it.params[1])) it.params[0].toInt() else 0 }
+            else 0
+            if (hasTourismMultiplier || flatTourism > 0) {
+                if (cachedCityTourism == Int.MIN_VALUE)
+                    cachedCityTourism = civInfo.culture.getCityTourismBeforeModifiers(city)
+                value += 3f * (2 + cachedCityTourism + flatTourism)
+            }
+        }
         if (!cityIsOverAverageProduction) return value
         if (building.hasUnique(UniqueType.TriggersCulturalVictory)
             || building.hasUnique(UniqueType.TriggersVictory)) value += 20f // if we're this close to actually winning, we don't care what your preferred victory type is

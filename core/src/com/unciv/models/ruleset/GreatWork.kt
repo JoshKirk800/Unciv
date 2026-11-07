@@ -2,6 +2,7 @@ package com.unciv.models.ruleset
 
 import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.models.stats.INamed
+import java.util.UUID
 import yairm210.purity.annotations.Readonly
 
 /** What kind of Great Work something is. Art and artifacts share the slots of museums and the like */
@@ -79,27 +80,16 @@ object ArtifactClasses {
  * One Great Work that exists in a game. Works are not unique by name: archaeology can produce the same generic artifact several times.
  * [creatorCiv] and [era] are fixed when it is created and are what theming looks at; the work keeps them when it changes hands.
  */
-class GreatWorkInstance : IsPartOfGameInfoSerialization {
-    var work = ""
+class GreatWorkInstance(
+    var work: String = "",
     /** The civilization the work is attributed to, which is not necessarily the one that owns it */
-    var creatorCiv = ""
-    var era = ""
-    var turnCreated = 0
-
-    fun clone() = GreatWorkInstance().also {
-        it.work = work
-        it.creatorCiv = creatorCiv
-        it.era = era
-        it.turnCreated = turnCreated
-    }
-
-    constructor()
-    constructor(work: String, creatorCiv: String, era: String, turnCreated: Int) {
-        this.work = work
-        this.creatorCiv = creatorCiv
-        this.era = era
-        this.turnCreated = turnCreated
-    }
+    var creatorCiv: String = "",
+    var era: String = "",
+    var turnCreated: Int = 0,
+    /** Stable identity for trade offers. Archaeology can produce multiple copies of the same definition. */
+    var id: String = UUID.randomUUID().toString()
+) : IsPartOfGameInfoSerialization {
+    fun clone() = GreatWorkInstance(work, creatorCiv, era, turnCreated, id)
 
     override fun toString() = work
 }

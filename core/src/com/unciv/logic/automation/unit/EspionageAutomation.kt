@@ -1,6 +1,7 @@
 package com.unciv.logic.automation.unit
 
 import com.unciv.logic.civilization.Civilization
+import com.unciv.logic.civilization.managers.TourismRelation
 import com.unciv.logic.civilization.diplomacy.RelationshipLevel
 import com.unciv.models.Spy
 import com.unciv.models.SpyAction
@@ -37,6 +38,7 @@ class EspionageAutomation(val civInfo: Civilization) {
                     spy.moveTo(capital)
                     continue
                 }
+                automateDiplomat(spy) -> continue
                 randomAction <= 7 && automateSpyStealTech(spy) -> continue
                 randomAction <= 9 && automateSpyRigElection(spy) -> continue
                 automateSpyCounterInteligence(spy) -> continue
@@ -65,6 +67,24 @@ class EspionageAutomation(val civInfo: Civilization) {
             .maxByOrNull { it.population.population }
         spy.moveTo(cityToMoveTo)
         return cityToMoveTo != null
+    }
+
+    /** Send spare agents to useful, visible foreign capitals; one agent per capital. */
+    private fun automateDiplomat(spy: Spy): Boolean {
+        val globalization = civInfo.tech.isResearched("Globalization") && civInfo.gameInfo.league != null
+        val city = civInfo.getKnownCivs().asSequence()
+            .filter { it.isMajorCiv && !it.isDefeated() && !civInfo.isAtWarWith(it) }
+            .mapNotNull { other ->
+                val capital = other.getCapital() ?: return@mapNotNull null
+                if (!spy.canMoveTo(capital, asDiplomat = true)) return@mapNotNull null
+                val propaganda = if (TourismRelation.DifferentIdeologies in civInfo.culture.getRelationsWith(other))
+                    civInfo.culture.getTourism() else 0
+                if (!globalization && propaganda <= 0) return@mapNotNull null
+                capital to (propaganda + if (globalization) 100 else 0)
+            }
+            .maxByOrNull { it.second }?.first ?: return false
+        spy.moveTo(city, asDiplomat = true)
+        return true
     }
 
     /**

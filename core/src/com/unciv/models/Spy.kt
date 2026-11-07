@@ -7,6 +7,7 @@ import com.unciv.logic.civilization.*
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
 import com.unciv.logic.civilization.diplomacy.DiplomaticModifiers
 import com.unciv.logic.civilization.managers.EspionageManager
+import com.unciv.logic.civilization.managers.InfluenceLevel
 import com.unciv.logic.map.HexCoord
 import com.unciv.models.ruleset.unique.Unique
 import com.unciv.models.ruleset.unique.UniqueType
@@ -21,6 +22,8 @@ enum class SpyAction(val displayString: String, val hasCountdownTurns: Boolean, 
     Moving("Moving", true, true, false, true),
     EstablishNetwork("Establishing Network", true, true, false, true),
     Surveillance("Observing City", false, false, true),
+    MakingIntroductions("Making Introductions", true, true, false, true),
+    Schmoozing("Schmoozing", false, false, true, true),
     StealingTech("Stealing Tech", false, true, true, true),
     RiggingElections("Rigging Elections", false, true, true) {
         override fun isDoingWork(spy: Spy) = !spy.civInfo.isAtWarWith(spy.getCity().civ)
@@ -43,6 +46,9 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
 
     // `location == null` means that the spy is in its hideout
     private var location: HexCoord? = null
+    /** A diplomat works in a foreign major's capital instead of stealing technology. */
+    var isDiplomat = false
+        private set
 
     var action = SpyAction.None
         private set
@@ -69,6 +75,7 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
     fun clone(): Spy {
         val toReturn = Spy(name, rank)
         toReturn.location = location
+        toReturn.isDiplomat = isDiplomat
         toReturn.action = action
         toReturn.turnsRemainingForAction = turnsRemainingForAction
         toReturn.progressTowardsStealingTech = progressTowardsStealingTech
@@ -91,13 +98,16 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
         when (action) {
             SpyAction.None -> return
             SpyAction.Moving -> {
-                if (getCity().civ == civInfo)
+                if (isDiplomat)
+                    setAction(SpyAction.MakingIntroductions, (5 * civInfo.gameInfo.speed.modifier).toInt().coerceAtLeast(1))
+                else if (getCity().civ == civInfo)
                     // Your own cities are certainly familiar surroundings, so skip establishing a network
                     setAction(SpyAction.CounterIntelligence, 10)
                 else
-                    // Should depend on cultural familiarity level if that is ever implemented inter-civ
-                    setAction(SpyAction.EstablishNetwork, 3)
+                    setAction(SpyAction.EstablishNetwork, civInfo.culture.getSurveillanceTurns(getCity().civ))
             }
+            SpyAction.MakingIntroductions -> setAction(SpyAction.Schmoozing)
+            SpyAction.Schmoozing -> return
             SpyAction.EstablishNetwork -> {
                 val city = getCity() // This should never throw an exception, as going to the hideout sets your action to None.
                 if (city.civ.isCityState)
@@ -182,7 +192,7 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
         
         var progressThisTurn = getCity().cityStats.currentCityStats.science
         // 25% spy bonus for each level
-        val rankTechStealModifier = rank * civInfo.gameInfo.ruleset.modOptions.constants.spyRankStealPercentBonus
+        val rankTechStealModifier = getEffectiveRank() * civInfo.gameInfo.ruleset.modOptions.constants.spyRankStealPercentBonus
         progressThisTurn *= (rankTechStealModifier + 75f) / 100f
         progressThisTurn *= getEfficiencyModifier().toFloat()
         progressTowardsStealingTech += progressThisTurn.toInt()
@@ -352,7 +362,9 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
         return successPercentage / 100f
     }
 
-    fun moveTo(city: City?) {
+    fun moveTo(city: City?, asDiplomat: Boolean = false) {
+        require(!asDiplomat || (city != null && canMoveTo(city, asDiplomat)))
+        isDiplomat = asDiplomat
         if (city == null) { // Moving to spy hideout
             location = null
             this.city = null
@@ -384,11 +396,13 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
     }
 
     @Readonly
-    fun canMoveTo(city: City): Boolean {
-        if (canDismissAgreementToNotSendSpies(city)) return false
-        if (getCityOrNull() == city) return true
+    fun canMoveTo(city: City, asDiplomat: Boolean = false): Boolean {
+        if (asDiplomat && (!city.civ.isMajorCiv || city.civ == civInfo || !city.isCapital()
+                || civInfo.isAtWarWith(city.civ))) return false
+        if (!asDiplomat && getCityOrNull() == city) return true
+        if (!asDiplomat && canDismissAgreementToNotSendSpies(city)) return false
         if (!city.getCenterTile().isExplored(civInfo)) return false
-        return espionageManager.getSpyAssignedToCity(city) == null
+        return espionageManager.getSpyAssignedToCity(city).let { it == null || it == this }
     }
 
     @Readonly fun isSetUp() = action.isSetUp
@@ -398,11 +412,13 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
     @Readonly fun isDoingWork() = action.isDoingWork(this)
 
     /** Returns the City this Spy is in, or `null` if it is in the hideout. */
-    @Readonly @Suppress("purity") // it seems this also *updates*, hooray.
+    @Readonly @Suppress("purity") // it updates the transient city cache.
     fun getCityOrNull(): City? {
-        if (location == null) return null
-        if (city == null) city = civInfo.gameInfo.tileMap[location!!].getCity()
-        return city
+        val coordinate = location ?: return null
+        // A captured or razed city is no longer the one the spy was assigned to.
+        val current = civInfo.gameInfo.tileMap[coordinate].getCity()
+        if (city !== current) city = current
+        return current
     }
 
     /** Non-null version of [getCityOrNull] for the frequent case it is known the spy cannot be in the hideout.
@@ -429,6 +445,15 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
         val maxRank = civInfo.gameInfo.ruleset.modOptions.constants.maxSpyRank
         var effective = rank
         val city = getCityOrNull() ?: return effective.coerceIn(1, maxRank)
+        val influenceTarget = if (city.civ.isCityState) city.civ.allyCiv else city.civ
+        val level = influenceTarget?.let { civInfo.culture.getInfluenceLevel(it) }
+        effective += when {
+            level == null -> 0
+            level >= InfluenceLevel.Dominant -> 2
+            city.civ.isCityState && level >= InfluenceLevel.Popular -> 1
+            city.civ.isMajorCiv && level >= InfluenceLevel.Influential -> 1
+            else -> 0
+        }
         city.forEachMatchingUnique(UniqueType.CounterIntelligenceSpyRankBonus, city.state, includeCivUniques = true) { unique ->
             if (city.matchesFilter(unique.params[0], viewingCiv = civInfo) &&
                 unique.params[2].equals(action.displayString, ignoreCase = true))

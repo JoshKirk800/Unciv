@@ -60,6 +60,9 @@ class TradeRequest : IsPartOfGameInfoSerialization {
         if (trade.ourOffers.all { it.type == TradeOfferType.Luxury_Resource }
             && trade.theirOffers.all { it.type == TradeOfferType.Luxury_Resource })
             requestingCivDiploManager.setFlag(DiplomacyFlags.DeclinedLuxExchange,5 - (requestingCivInfo.getPersonality()[PersonalityValue.Commerce] / 2).toInt())
+        if (trade.ourOffers.any { it.type == TradeOfferType.GreatWork }
+            && trade.theirOffers.any { it.type == TradeOfferType.GreatWork })
+            requestingCivDiploManager.setFlag(DiplomacyFlags.DeclinedGreatWorkExchange, if (decliningCiv.isAI()) 5 else 10)
         if (trade.ourOffers.any { it.name == Constants.researchAgreement })
             requestingCivDiploManager.setFlag(DiplomacyFlags.DeclinedResearchAgreement,15 - requestingCivInfo.getPersonality()[PersonalityValue.Science].toInt())
         if (trade.ourOffers.any { it.name == Constants.defensivePact })

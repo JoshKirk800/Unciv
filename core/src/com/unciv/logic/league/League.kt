@@ -456,8 +456,7 @@ class League : IsPartOfGameInfoSerialization {
     /**
      * The delegates [civ] has in a session with the parameters of [getSessionInfo] (CvLeague::CalculateStartingVotesForMember, CvVotingClasses.cpp:3223-3359):
      * delegates of the era, those of failed World Leader votes, the host's, those of allied city-states, [UniqueType.WorldCongressDelegates],
-     * and those of the World Religion and World Ideology in effect for civilizations that follow them.
-     * The original's extra delegate per diplomat (Globalization) has no equivalent.
+     * Globalization's delegate per active diplomat, and those of the World Religion and World Ideology in effect.
      */
     fun getDelegates(civ: Civilization): Int {
         if (!canEverVote(civ)) return 0
@@ -466,6 +465,9 @@ class League : IsPartOfGameInfoSerialization {
         if (civ.civID == host) total += session.hostDelegates
         total += session.cityStateDelegates * gameInfo.getAliveCityStates().count { it.allyCiv == civ }
         civ.forEachMatchingUnique(UniqueType.WorldCongressDelegates) { total += it.params[0].toInt() }
+        // CvTeam::processTech applies Globalization's ExtraVotesPerDiplomat=1 (BNW Technologies/CIV5Technologies.xml).
+        if (civ.tech.isResearched("Globalization"))
+            total += gameInfo.getAliveMajorCivs().count { civ.espionageManager.getActiveDiplomatFor(it) != null }
 
         for (active in activeResolutions) {
             val resolution = gameInfo.ruleset.resolutions[active.resolution] ?: continue

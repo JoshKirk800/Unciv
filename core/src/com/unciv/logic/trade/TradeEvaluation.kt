@@ -6,6 +6,7 @@ import com.unciv.logic.automation.civilization.DiplomacyAutomation
 import com.unciv.logic.automation.civilization.MotivationToAttackAutomation
 import com.unciv.logic.automation.civilization.DeclareWarPlanEvaluator
 import com.unciv.logic.city.City
+import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
 import com.unciv.logic.civilization.diplomacy.DiplomaticModifiers
@@ -35,6 +36,17 @@ class TradeEvaluation {
             return false
         }
         
+        val ourWorks = trade.ourOffers.filter { it.type == TradeOfferType.GreatWork }
+        val theirWorks = trade.theirOffers.filter { it.type == TradeOfferType.GreatWork }
+        if (ourWorks.isNotEmpty() || theirWorks.isNotEmpty()) {
+            if (!offerer.isMajorCiv || !tradePartner.isMajorCiv || offerer.isAtWarWith(tradePartner)
+                || ourWorks.size != 1 || theirWorks.size != 1
+                || trade.ourOffers.size != 1 || trade.theirOffers.size != 1
+                || ourWorks[0].amount != 1 || theirWorks[0].amount != 1) return false
+            val ourSlot = GreatWorkFunctions.findTradeSlot(offerer, ourWorks[0].name) ?: return false
+            val theirSlot = GreatWorkFunctions.findTradeSlot(tradePartner, theirWorks[0].name) ?: return false
+            if (!GreatWorkFunctions.canExchange(ourSlot, theirSlot)) return false
+        }
         // No way to tell who offers what in isOfferValid()
         val embassyOffer = TradeOffer(Constants.acceptEmbassy, TradeOfferType.Embassy, speed = offerer.gameInfo.speed)
         val theirDiploManager = tradePartner.getDiplomacyManager(offerer)!!
@@ -97,6 +109,8 @@ class TradeEvaluation {
             TradeOfferType.WarDeclaration -> offerer.getDiplomacyManager(tradeOffer.name)!!.canDeclareWar()
             TradeOfferType.PeaceProposal -> offerer.isAtWarWith(offerer.gameInfo.getCivilization(tradeOffer.name))
             TradeOfferType.City -> offerer.cities.any { it.id == tradeOffer.name }
+            TradeOfferType.GreatWork -> tradeOffer.amount == 1 &&
+                GreatWorkFunctions.findTradeSlot(offerer, tradeOffer.name) != null
         }
     }
 
@@ -107,6 +121,9 @@ class TradeEvaluation {
 
     @Readonly
     fun getTradeAcceptability(trade: Trade, evaluator: Civilization, tradePartner: Civilization, includeDiplomaticGifts:Boolean = false): Int {
+        if ((trade.ourOffers.any { it.type == TradeOfferType.GreatWork }
+                || trade.theirOffers.any { it.type == TradeOfferType.GreatWork })
+            && !isTradeValid(trade, evaluator, tradePartner)) return Int.MIN_VALUE
         val citiesAskedToSurrender = trade.ourOffers.count { it.type == TradeOfferType.City }
         val maxCitiesToSurrender = ceil(evaluator.cities.size.toFloat() / 5).toInt()
         if (citiesAskedToSurrender > maxCitiesToSurrender) {
@@ -230,6 +247,12 @@ class TradeEvaluation {
                 return lowestBuyCost ?: 0
             }
 
+            TradeOfferType.GreatWork -> {
+                val received = GreatWorkFunctions.findTradeSlot(tradePartner, offer.name) ?: return 0
+                val given = trade.ourOffers.firstOrNull { it.type == TradeOfferType.GreatWork }
+                    ?.let { GreatWorkFunctions.findTradeSlot(civInfo, it.name) } ?: return 0
+                return 200 + GreatWorkFunctions.themingGain(given, received).coerceAtLeast(0) * 250
+            }
             TradeOfferType.Technology -> // Currently unused
                 return (sqrt(civInfo.gameInfo.ruleset.technologies[offer.name]!!.cost.toDouble())
                         * civInfo.gameInfo.speed.scienceCostModifier).toInt() * 20
@@ -445,6 +468,12 @@ class TradeEvaluation {
                 val lowestSellCost = resource.getMatchingUniques(UniqueType.AiWillSellAt, GameContext(civInfo))
                     .minOfOrNull { it.params[0].toInt() }
                 return lowestSellCost ?: Int.MAX_VALUE
+            }
+            TradeOfferType.GreatWork -> {
+                val given = GreatWorkFunctions.findTradeSlot(civInfo, offer.name) ?: return Int.MAX_VALUE
+                val received = trade.theirOffers.firstOrNull { it.type == TradeOfferType.GreatWork }
+                    ?.let { GreatWorkFunctions.findTradeSlot(tradePartner, it.name) } ?: return Int.MAX_VALUE
+                return 200 + (-GreatWorkFunctions.themingGain(given, received)).coerceAtLeast(0) * 250
             }
             TradeOfferType.Technology -> return sqrt(civInfo.gameInfo.ruleset.technologies[offer.name]!!.cost.toDouble()).toInt() * 20
             TradeOfferType.Introduction -> return introductionValue(civInfo.gameInfo.ruleset)
