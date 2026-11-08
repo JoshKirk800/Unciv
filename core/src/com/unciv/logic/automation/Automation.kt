@@ -3,185 +3,25 @@ package com.unciv.logic.automation
 import com.unciv.view.GameView
 import com.unciv.view.CivView
 import com.unciv.view.ForeignCivView
-import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.city.City
-import com.unciv.logic.city.CityFocus
-import com.unciv.logic.city.CityStats
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.TileMap
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.ruleset.Building
 import com.unciv.models.ruleset.INonPerpetualConstruction
-import com.unciv.models.ruleset.PerpetualConstruction
 import com.unciv.models.ruleset.tile.ResourceType
 import com.unciv.models.ruleset.tile.TileImprovement
 import com.unciv.models.ruleset.unique.GameContext
-import com.unciv.models.ruleset.unique.Unique
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.models.ruleset.unit.BaseUnit
-import com.unciv.models.stats.Stat
 import com.unciv.models.stats.Stats
 import com.unciv.ui.screens.victoryscreen.RankingType
-import yairm210.purity.annotations.LocalState
 import yairm210.purity.annotations.Readonly
-import kotlin.math.min
 
 
 object Automation {
 
-    @Readonly
-    fun rankTileForCityWork(tile: Tile, city: City): Float {
-        val stats = tile.stats.getTileStats(city, city.civ)
-        return rankStatsForCityWork(stats, city, false)
-    }
 
-    @Readonly
-    fun rankSpecialist(specialist: String, city: City): Float {
-        val stats = city.cityStats.getStatsOfSpecialist(specialist)
-        var rank = rankStatsForCityWork(stats, city, true)
-        // derive GPP score
-        var gpp = 0f
-        if (city.getRuleset().specialists.containsKey(specialist)) { // To solve problems in total remake mods
-            val specialistInfo = city.getRuleset().specialists[specialist]!!
-            gpp = specialistInfo.greatPersonPoints.sumValues().toFloat()
-        }
-        gpp = gpp * (100 + city.currentGPPBonus) / 100
-        rank += gpp // GPP weight
-        return rank
-    }
-
-    // More complicated logic to properly weigh Food vs other Stats (esp Production)
-    @Readonly
-    private fun getFoodModWeight(city: City, surplusFood: Float): Float {
-        val speed = city.civ.gameInfo.speed.modifier
-        // Zero out Growth if close to Unhappiness limit
-        if (city.civ.getHappiness() < -8)
-            return 0f
-        if (city.civ.isAI()) {
-            // Value 1 Growth at less than 2 Production, but above 1 Production + 1 Gold
-            return 1.5f
-        }
-        // Human weights. May be different since AI Happiness is always "easier"
-        // Only apply these for Default to not interfere with Focus weights
-        if (city.getCityFocus() == CityFocus.NoFocus) {
-            if (city.population.population < 5)
-                return 2f
-            if (surplusFood > city.population.getFoodToNextPopulation() / (10 * speed))
-                return 0.75f // get Growth just under Production
-        }
-
-        return 1f
-    }
-
-    @Readonly
-    fun rankStatsForCityWork(stats: Stats, city: City, areWeRankingSpecialist: Boolean): Float
-        = timeThis("Automation.rankStatsForCityWork") {
-        val cityAIFocus = city.getCityFocus()
-        val yieldStats = stats.clone()
-        val cityStatsObj = city.cityStats
-        val civInfo = city.civ
-        val allTechsAreResearched = civInfo.tech.allTechsAreResearched()
-
-        if (areWeRankingSpecialist) {
-            // Specialist Happiness Percentage Change 0f-1f
-            city.forEachMatchingUnique(UniqueType.UnhappinessFromPopulationTypePercentageChange, city.state) { unique: Unique ->
-                if (unique.params[1].startsWith("Specialists") && city.matchesFilter(unique.params[2]))
-                    yieldStats.happiness -= (unique.params[0].toFloat() / 100f)  // relative val is negative, make positive
-            }
-            if (yieldStats.science == 3f || yieldStats.science >= 5f )
-                yieldStats.science *= 1.3f
-        }
-
-        val surplusFood = city.cityStats.currentCityStats[Stat.Food]
-        val starving = surplusFood < 0
-        // If current Production converts Food into Production, then calculate increased Production Yield
-        if (cityStatsObj.canConvertFoodToProduction(surplusFood, city.cityConstructions.getCurrentConstruction())) {
-            // calculate delta increase of food->prod. This isn't linear
-            yieldStats.production += cityStatsObj.getProductionFromExcessiveFood(surplusFood+yieldStats.food) - cityStatsObj.getProductionFromExcessiveFood(surplusFood)
-            yieldStats.food = 0f  // all food goes to 0
-        }
-
-        // Split Food Yield into feedFood, amount needed to not Starve
-        // and growthFood, any amount above that
-        var feedFood = 0f
-        if (starving)
-            feedFood = min(yieldStats.food, -surplusFood).coerceAtLeast(0f)
-        var growthFood = yieldStats.food - feedFood // how much extra Food we yield
-        // Avoid Growth, only count Food that gets you not-starving, but no more
-        if (city.avoidGrowth) {
-            growthFood = 0f
-        }
-        yieldStats.food = 1f
-        
-        // Apply base weights
-        yieldStats.applyRankingWeights()
-
-        val foodBaseWeight = yieldStats.food
-
-        // If starving, need Food, so feedFood > 0
-        // scale feedFood by 14(base weight)*8(super important)
-        // By only scaling what we need to reach Not Starving by x8, we can pick a tile that gives
-        // exactly as much Food as we need to Not Starve that also has other good yields instead of
-        // always picking the Highest Food tile until Not Starving
-        yieldStats.food = feedFood * (foodBaseWeight * 8)
-        // growthFood is any additional food not required to meet Starvation
-
-        // Growth is penalized when Unhappy, see GlobalUniques.json
-        // No Growth if <-10, 1/4 if <0
-        // Reusing food growth code from CityStats.updateFinalStatList()
-        var growthNullifyingUnique = false
-        city.forEachMatchingUnique(UniqueType.NullifiesGrowth, city.state) { _: Unique ->
-            growthNullifyingUnique = true
-        }
-        if (!growthNullifyingUnique) {
-            var newGrowthFood = growthFood  // running count of growthFood
-            val cityStats = CityStats(city)
-            val growthBonuses = cityStats.getGrowthBonus(growthFood)
-            for (growthBonus in growthBonuses) {
-                newGrowthFood += growthBonus.value.food
-            }
-            if (city.isWeLoveTheKingDayActive() && city.civ.getHappiness() >= 0) {
-                newGrowthFood += growthFood / 4
-            }
-            newGrowthFood = newGrowthFood.coerceAtLeast(0f) // floor to 0 for safety
-            
-            yieldStats.food += newGrowthFood * foodBaseWeight * getFoodModWeight(city, surplusFood)
-        }
-
-        if (city.population.population < 10) {
-            // "small city" - we care more about food and less about global problems like gold science and culture
-            // Food already handled above. Gold/Culture have low weights in Stats already
-            yieldStats.science /= 2
-        }
-
-        if (city.civ.stats.statsForNextTurn.gold < 0) {
-            // We have a global problem, we need to deal with it before it leads to science loss
-            yieldStats.gold *= 2
-        }
-
-        if (city.civ.getHappiness() < 5) {
-            yieldStats.happiness *= 2
-        }
-
-        if (allTechsAreResearched) {
-            // Science is useless at this point
-            yieldStats.science *= 0
-        }
-
-        if (city.cityConstructions.getCurrentConstruction() is PerpetualConstruction) {
-            // With 4:1 conversion of production to science, production is overvalued by a factor (12*4)/7 = 6.9
-            yieldStats.production /= 6
-        }
-
-        // Apply City focus
-        for (stat in cityAIFocus.statValuesForFocus) {
-            val currentStat = yieldStats[stat]
-            if (currentStat == 0f) continue
-            val statMultiplier = cityAIFocus.getStatMultiplier(stat)
-            yieldStats[stat] = currentStat * statMultiplier
-        }
-
-        return yieldStats.sum()
     }
 
     /** Determines whether [civInfo] should be allocating military to fending off barbarians */

@@ -3,14 +3,12 @@ package com.unciv.logic.city.managers
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.city.City
 import com.unciv.logic.city.CityFlags
-import com.unciv.logic.city.CityFocus
+import com.unciv.logic.automation.city.CitizenAutomation
 import com.unciv.logic.civilization.CityAction
 import com.unciv.logic.civilization.LocationAction
 import com.unciv.logic.civilization.NotificationCategory
 import com.unciv.logic.civilization.NotificationIcon
 import com.unciv.logic.civilization.OverviewAction
-import com.unciv.models.ruleset.Building
-import com.unciv.models.ruleset.INonPerpetualConstruction
 import com.unciv.models.ruleset.tile.ResourceType
 import com.unciv.models.ruleset.unique.UniqueTriggerActivation
 import com.unciv.models.ruleset.unique.UniqueType
@@ -44,31 +42,12 @@ class CityTurnManager(val city: City) {
             tryWeLoveTheKing()
         nextTurnFlags()
 
-        if (city.isPuppet) {
-            city.setCityFocus(CityFocus.GoldFocus)
-            city.reassignAllPopulation()
-        } else if (city.shouldReassignPopulation || city.civ.isAI()) {
-            if (city.civ.isAI())
-                city.setCityFocus(chooseCityFocus())
-            city.reassignPopulation()  // includes cityStats.update
-        } else
-            city.cityStats.update()
+        CitizenAutomation.doTurn(city)  // focus of AI cities and puppets, then the citizens' reallocation (includes cityStats.update)
 
         // Seed resource demand countdown
         if (city.demandedResource == "" && !city.hasFlag(CityFlags.ResourceDemand)) {
             setWltkResourceDemandCooldown(true)
         }
-    }
-    
-    private fun chooseCityFocus(): CityFocus {
-        // Small cities focus on growing, following Vox Populi.
-        if (city.population.population <= 3) return CityFocus.NoFocus
-        val construction = city.cityConstructions.getCurrentConstruction()
-        // Focus citizens on production while the city builds a world wonder or spaceship part.
-        if (construction is Building && construction.isWonder) return CityFocus.ProductionFocus
-        if (construction is INonPerpetualConstruction && construction.hasUnique(UniqueType.SpaceshipPart))
-            return CityFocus.ProductionFocus
-        return CityFocus.NoFocus
     }
 
     private fun setWltkResourceDemandCooldown(isNewCity: Boolean) {
