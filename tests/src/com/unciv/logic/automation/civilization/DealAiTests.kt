@@ -3,8 +3,11 @@ package com.unciv.logic.automation.civilization
 import com.unciv.Constants
 import com.unciv.logic.automation.diplomacy.MajorCivOpinion
 import com.unciv.logic.automation.diplomacy.PeaceTreatyType
+import com.unciv.logic.automation.strategy.GrandStrategyAi
+import com.unciv.logic.city.GreatWorkSlot
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
+import com.unciv.logic.league.League
 import com.unciv.logic.map.HexCoord
 import com.unciv.logic.trade.Trade
 import com.unciv.logic.trade.TradeEvaluation
@@ -12,6 +15,7 @@ import com.unciv.logic.trade.TradeLogic
 import com.unciv.logic.trade.TradeOffer
 import com.unciv.logic.trade.TradeOfferType
 import com.unciv.models.metadata.BaseRuleset
+import com.unciv.models.ruleset.GreatWorkInstance
 import com.unciv.models.ruleset.ai.DiplomacyPersonality
 import com.unciv.models.ruleset.ai.Flavor
 import com.unciv.models.ruleset.ai.MajorCivApproach
@@ -341,6 +345,98 @@ class DealAiTests {
         val goldOnly = Trade()
         goldOnly.ourOffers.add(gold(50))
         assertFalse(DealAi.isPotentiallyRenewable(goldOnly))
+    }
+    //endregion
+
+    //region Culture and World Congress terms
+
+    private fun placeTenTourism(civ: Civilization) {
+        val capital = civ.getCapital()!!
+        val gallery = game.createBuilding("Has [5] [Art/Artifact] Great Work slots")
+        capital.cityConstructions.addBuilding(gallery)
+        repeat(5) {
+            val work = game.createGreatWork()
+            capital.greatWorks.place(GreatWorkInstance(work.name, civ.civName, "Ancient era", 1), GreatWorkSlot(capital, gallery, it))
+        }
+    }
+
+    @Test
+    fun `open borders from the civ we influence least are worth ten times as much on the culture strategy`() {
+        placeTenTourism(a)
+        val base = DealAi.getOpenBordersValue(a, b, false, false)
+        val other = DealAi.getOpenBordersValue(a, c, false, false)
+        assertFalse("not neighbours", DealAi.wantsOpenBordersWith(a, b))
+        a.ai.grandStrategy = GrandStrategyAi.CULTURE
+        // b comes first among the civs we have no influence on: CvDealAI::GetOpenBordersValue × 1000%
+        assertEquals(base * 10, DealAi.getOpenBordersValue(a, b, false, false))
+        assertEquals("neither the least influenced nor a cramped neighbour", other, DealAi.getOpenBordersValue(a, c, false, false))
+        assertTrue(DealAi.wantsOpenBordersWith(a, b))
+    }
+
+    /** A World Congress with c's proposal of an embargo on a (a strongly likes No, strongly dislikes Yes) */
+    private fun embargoOnA(): League {
+        a.tech.addTechnology("Printing Press")
+        val league = League.tryFound(game.gameInfo)!!
+        game.gameInfo.league = league
+        for (member in league.members.values) member.proposalsLeft = 0
+        league.members.getValue(c.civID).proposalsLeft = 1
+        league.proposeEnact(game.ruleset.resolutions["Embargo"]!!, a.civID, c)
+        return league
+    }
+
+    private fun voteOffer(league: League, choice: String, votes: Int) =
+        TradeOffer(VoteCommitmentItem.name(league.proposals.single().id, choice, false), TradeOfferType.VoteCommitment, votes, -1)
+
+    @Test
+    fun `votes we receive are priced by how much we like the choice, less when they keep most of their votes`() {
+        val league = embargoOnA()
+        feelings(a, b, MajorCivApproach.Neutral, MajorCivOpinion.Neutral)
+        league.members.getValue(b.civID).extraDelegates = 3
+        val all = league.getDelegates(b)
+        assertTrue(all >= 4)
+        // Strong like: 150 per vote; all of their votes: no reduction
+        assertEquals(150 * all, DealAi.getVoteCommitmentValue(a, b, voteOffer(league, League.NO, all), false, false))
+        // Half of their votes or less: 20 less per vote
+        val half = all / 2
+        assertEquals(130 * half, DealAi.getVoteCommitmentValue(a, b, voteOffer(league, League.NO, half), false, false))
+        // A choice we do not like at least weakly is worth nothing
+        assertEquals(0, DealAi.getVoteCommitmentValue(a, b, voteOffer(league, League.YES, all), false, false))
+    }
+
+    @Test
+    fun `votes we give are cheap for a choice we love and refused for one we hate or to a Hostile civ`() {
+        val league = embargoOnA()
+        feelings(a, b, MajorCivApproach.Neutral, MajorCivOpinion.Neutral)
+        // Strong like: 50 per vote, neutral alignment: +0
+        assertEquals(50 * 3, DealAi.getVoteCommitmentValue(a, b, voteOffer(league, League.NO, 3), true, false))
+        assertTrue(DealAi.getVoteCommitmentValue(a, b, voteOffer(league, League.YES, 1), true, false) >= DealAi.NEVER)
+        feelings(a, b, MajorCivApproach.Hostile, MajorCivOpinion.Neutral)
+        assertTrue(DealAi.getVoteCommitmentValue(a, b, voteOffer(league, League.NO, 1), true, false) >= DealAi.NEVER)
+    }
+
+    @Test
+    fun `the AI equalizer asks for the votes it wants when it gives more`() {
+        val league = embargoOnA()
+        feelings(a, b, MajorCivApproach.Neutral, MajorCivOpinion.Neutral)
+        feelings(b, a, MajorCivApproach.Neutral, MajorCivOpinion.Neutral)
+        // b can commit its votes to a once a's diplomat schmoozes in b's capital
+        for (tile in game.tileMap.values) tile.setExplored(a, true)
+        val spy = a.espionageManager.addSpy()
+        spy.moveTo(b.getCapital()!!, asDiplomat = true)
+        repeat(20) { if (a.espionageManager.getActiveDiplomatFor(b) == null) a.espionageManager.endTurn() }
+        assertTrue(LeagueAutomation.canCommitVote(b, a))
+
+        val wanted = LeagueAutomation.desiredVoteCommitments(a, b).single()
+        assertEquals(League.NO, wanted.choice)
+        val trade = Trade()
+        val votesValue = DealAi.getTradeItemValue(a, b, VoteCommitmentItem.offer(wanted, game.gameInfo.speed), false, true, trade)
+        var amount = 1
+        while (DealAi.getTradeItemValue(a, b, gpt(amount), true, true, trade) < votesValue) amount++
+        trade.ourOffers.add(gpt(amount))
+        DealAi.doEqualizeDealWithAI(a, b, trade)
+        val asked = trade.theirOffers.single { it.type == TradeOfferType.VoteCommitment }
+        assertEquals(wanted.votes, asked.amount)
+        assertEquals(league.proposals.single().id, VoteCommitmentItem.parse(asked)!!.proposalId)
     }
     //endregion
 }
