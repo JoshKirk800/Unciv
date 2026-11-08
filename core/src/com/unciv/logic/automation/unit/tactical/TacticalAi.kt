@@ -77,6 +77,7 @@ object TacticalAi {
     fun automate(civ: Civilization, units: List<MapUnit>, cache: AutomationCache, attackStage: (MapUnit) -> Boolean) = timeThis("AI.Tactical") {
         val state = civ.ai.tactical
         val tacticalUnits = commandeerUnits(civ, units, cache).toMutableList()
+        val commandeered = tacticalUnits.size
         val map = state.map
         PostureSelection.updatePostures(civ, state, map)
         val danger = civ.ai.plotDanger
@@ -114,6 +115,10 @@ object TacticalAi {
         // CvTacticalAI::EstablishTacticalPriorities: every move with a priority of 0 or more, the highest first, stable in XML order
         val priorities = civ.gameInfo.ruleset.ai.tacticalMoves.associate { it.name to it.priority }
         for (step in steps.filter { (priorities[it.name] ?: -1) >= 0 }.sortedByDescending { priorities[it.name] }) step.run()
+        AiDecisionLog.log(civ) {
+            "Tactical: $commandeered units commandeered, ${commandeered - tacticalUnits.size} commanded; postures " +
+                state.postures.filter { it.posture != TacticalPosture.None }.joinToString { "${it.posture}${if (it.isWater) " (sea)" else ""}" }.ifEmpty { "-" }
+        }
     }
 
     /**

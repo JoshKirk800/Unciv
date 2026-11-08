@@ -208,10 +208,11 @@ class CivAi : IsPartOfGameInfoSerialization {
      *  CvArmyAI::CanTacticalAIInterruptUnit of the army the unit is in: false if the unit sits in an army the tactical AI must leave alone
      *  (CvTacticalAI::CommandeerUnits). Units in no army can always be interrupted.
      */
+    @Suppress("FunctionOnlyReturningConstant", "UNUSED_PARAMETER") // true until the operations keep their armies in the state, which decide it
     fun canTacticalAiInterrupt(unit: MapUnit): Boolean = true
 
-    /** CvUnit::GetDeployFromOperationTurn: the game turn an army released the unit at its target, -1 if it never did */
-    fun deployFromOperationTurn(unit: MapUnit): Int = -1
+    /** CvUnit::GetDeployFromOperationTurn: the game turn an army released the unit at its target, -100 if it never did */
+    fun deployFromOperationTurn(unit: MapUnit): Int = -100
 
     //region Personality (CvFlavorManager, CvDiplomacyAI personality)
 
