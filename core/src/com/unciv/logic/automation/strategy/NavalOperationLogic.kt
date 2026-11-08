@@ -17,12 +17,13 @@ import com.unciv.view.GameView
 /**
  *  The naval operations of CvAIOperation.cpp: CvAINavalOperation (CvAIOperationNavalBombardment, CvAIOperationNavalSuperiority,
  *  CvAIOperationPureNavalCityAttack), CvAINavalEscortedOperation (the colonization party, [AiOperationType.NAVAL_COLONIZE]) and its
- *  descendants CvAIOperationNavalAttack / NavalSneakAttack / NavalCityStateAttack (an invasion with transports and escorts), and
+ *  descendants CvAIOperationNavalAttack / NavalSneakAttack / NavalCityStateAttack (an invasion: land units that embark, with warships), and
  *  CvAIOperationNukeAttack: Init, target finding, ArmyInPosition, CheckOnTarget. The base machinery is [AiOperationLogic], the ships are moved
  *  by [com.unciv.logic.automation.unit.NavalOperationMoves].
  *
- *  Deviations, with the reason: land units have no transports in Unciv, they embark and sail themselves, so an invasion army is the ships and
- *  the land units it fills slots with, all moving as a formation on water; an army's operation area is the one the original gives it
+ *  As in the original, land units embark themselves (there are no transports): an invasion army is the land units and the warships of its
+ *  slots (UNITAI_ASSAULT_SEA is the Frigate, Galleass and the like), all moving as a formation on water.
+ *  Deviations, with the reason: an army's operation area is the one the original gives it
  *  (bombardment, superiority and pure naval attacks: the water at the muster point, which no city lies on, so cities do not train for
  *  them, their ships come from the reserves and the last one is bought; invasions: the landmass of the target); the original's colonization
  *  party is never started by BNW's AI (nothing calls addAIOperation for it) - here a settler whose best site is overseas starts it

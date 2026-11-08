@@ -58,7 +58,7 @@ enum class AiOperationType(
     val isEnemyTerritory get() = moveType == OperationMoveType.EnemyTerritory
     /** The attacks on a city by land (CvAIOperationBasicCityAttack and its subclasses) */
     val isCityAttack get() = isEnemyTerritory && this != DESTROY_BARBARIAN_CAMP && this != PILLAGE_ENEMY
-    /** CvAIOperationNavalAttack and its subclasses: transports with escorts to a coastal city */
+    /** CvAIOperationNavalAttack and its subclasses: land units that embark, with warships, against a coastal city */
     val isNavalInvasion get() = this == NAVAL_ATTACK || this == NAVAL_SNEAK_ATTACK || this == CITY_STATE_NAVAL_ATTACK
     /** CvAINavalOperation and its subclasses: the operations of ships only */
     val isNavalFleet get() = allNaval
