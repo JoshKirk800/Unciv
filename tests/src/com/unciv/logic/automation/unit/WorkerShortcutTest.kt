@@ -2,7 +2,6 @@ package com.unciv.logic.automation.unit
 
 import com.unciv.Constants
 import com.unciv.UncivGame
-import com.unciv.logic.automation.civilization.AutomationCache
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.Tile
@@ -15,9 +14,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The shortcut at the top of [WorkerAutomation.automateWorkerAction]: a worker that is already working on a suitable
- * tile finishes there instead of walking to a (possibly better) tile - "minimizing worker-turns".
- * A tile that is not suitable (low priority) does not hold the worker.
+ * The bail-out of CvBuilderTaskingAI::EvaluateBuilder ([WorkerAutomation.executeWorkerMove]): a worker that is already building
+ * keeps building instead of walking to a (possibly better) tile.
  */
 @RunWith(BaseTestRunner::class)
 internal class WorkerShortcutTest {
@@ -53,7 +51,7 @@ internal class WorkerShortcutTest {
     }
 
     private fun automate(worker: MapUnit) =
-        workerAutomation.automateWorkerAction(GameView(civInfo.gameInfo, civInfo).getMapUnitView(worker), hashSetOf(), AutomationCache())
+        workerAutomation.automateWorkerAction(GameView(civInfo.gameInfo, civInfo).getMapUnitView(worker), hashSetOf())
 
     @Test
     fun `a worker on a suitable tile finishes its improvement instead of walking to a better one`() {
