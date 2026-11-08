@@ -10458,5 +10458,278 @@
         }
       ]
     }
+  ],
+  "tacticalMoves": [
+    {
+      "name": "TACTICAL_UNASSIGNED",
+      "priority": -1,
+      "operationsCanRecruit": true
+    },
+    {
+      "name": "TACTICAL_MOVE_NONCOMBATANTS_TO_SAFETY",
+      "priority": 0,
+      "operationsCanRecruit": true
+    },
+    {
+      "name": "TACTICAL_CAPTURE_CITY",
+      "priority": 150,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_DAMAGE_CITY",
+      "priority": 15,
+      "operationsCanRecruit": true,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_DESTROY_HIGH_UNIT",
+      "priority": 140,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_DESTROY_MEDIUM_UNIT",
+      "priority": 120,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_DESTROY_LOW_UNIT",
+      "priority": 110,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_TO_SAFETY",
+      "priority": 11,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_ATTRIT_HIGH_UNIT",
+      "priority": 17,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_ATTRIT_MEDIUM_UNIT",
+      "priority": 15,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_ATTRIT_LOW_UNIT",
+      "priority": 12,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_REPOSITION",
+      "priority": 1,
+      "operationsCanRecruit": true,
+      "offenseFlavorWeight": 50,
+      "defenseFlavorWeight": 50
+    },
+    {
+      "name": "TACTICAL_BARBARIAN_CAMP",
+      "priority": 10,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_PILLAGE",
+      "priority": 40,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_SAFE_BOMBARDS",
+      "priority": 60,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_HEAL",
+      "priority": 8,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_ANCIENT_RUINS",
+      "priority": 25,
+      "operationsCanRecruit": true,
+      "offenseFlavorWeight": 50,
+      "defenseFlavorWeight": 50
+    },
+    {
+      "name": "TACTICAL_GARRISON_TO_ALLOW_BOMBARD",
+      "priority": 20,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_BASTION_ALREADY_THERE",
+      "priority": 7,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_GARRISON_ALREADY_THERE",
+      "priority": 6,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_GUARD_IMPROVEMENT_ALREADY_THERE",
+      "priority": 3,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_BASTION_1_TURN",
+      "priority": 5,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_GARRISON_1_TURN",
+      "priority": 4,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_GUARD_IMPROVEMENT_1_TURN",
+      "priority": 2,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_AIR_SWEEP",
+      "priority": 135,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_AIR_INTERCEPT",
+      "priority": 130,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_AIR_REBASE",
+      "priority": 1,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_POSTURE_WITHDRAW",
+      "priority": 95,
+      "dominanceZoneMove": true
+    },
+    {
+      "name": "TACTICAL_POSTURE_HEDGEHOG",
+      "priority": 50,
+      "dominanceZoneMove": true
+    },
+    {
+      "name": "TACTICAL_POSTURE_SHORE_BOMBARDMENT",
+      "priority": 100,
+      "dominanceZoneMove": true
+    },
+    {
+      "name": "TACTICAL_CLOSE_ON_TARGET",
+      "priority": 45,
+      "dominanceZoneMove": true
+    },
+    {
+      "name": "TACTICAL_MOVE_OPERATIONS",
+      "priority": 80
+    },
+    {
+      "name": "TACTICAL_EMERGENCY_PURCHASES",
+      "priority": 200,
+      "dominanceZoneMove": true
+    },
+    {
+      "name": "TACTICAL_ATTACK_VERY_HIGH_PRIORITY_CIVILIAN",
+      "priority": 130,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_ATTACK_HIGH_PRIORITY_CIVILIAN",
+      "priority": 100,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_ATTACK_MEDIUM_PRIORITY_CIVILIAN",
+      "priority": 40,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_ATTACK_LOW_PRIORITY_CIVILIAN",
+      "priority": 30,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_ESCORT_EMBARKED_UNIT",
+      "priority": 10,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_PLUNDER_TRADE_UNIT",
+      "priority": 100
+    },
+    {
+      "name": "TACTICAL_PARK_ON_TRADE_ROUTE",
+      "priority": 8
+    },
+    {
+      "name": "TACTICAL_OFFENSIVE_POSTURE_MOVES",
+      "priority": 105,
+      "dominanceZoneMove": true
+    },
+    {
+      "name": "TACTICAL_POSTURE_SIT_AND_BOMBARD",
+      "priority": -1
+    },
+    {
+      "name": "TACTICAL_POSTURE_ATTRIT_FROM_RANGE",
+      "priority": -1
+    },
+    {
+      "name": "TACTICAL_POSTURE_EXPLOIT_FLANKS",
+      "priority": -1
+    },
+    {
+      "name": "TACTICAL_POSTURE_STEAMROLL",
+      "priority": -1
+    },
+    {
+      "name": "TACTICAL_POSTURE_SURGICAL_CITY_STRIKE",
+      "priority": -1
+    },
+    {
+      "name": "TACTICAL_POSTURE_COUNTERATTACK",
+      "priority": -1
+    },
+    {
+      "name": "TACTICAL_DEFENSIVE_AIRLIFT",
+      "priority": 42,
+      "dominanceZoneMove": true
+    },
+    {
+      "name": "TACTICAL_PILLAGE_CITADEL",
+      "priority": 125,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_PILLAGE_RESOURCE",
+      "priority": 35,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_PILLAGE_CITADEL_NEXT_TURN",
+      "priority": 25,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_PILLAGE_RESOURCE_NEXT_TURN",
+      "priority": 15,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_PILLAGE_NEXT_TURN",
+      "priority": 10,
+      "offenseFlavorWeight": 100
+    }
   ]
 }
