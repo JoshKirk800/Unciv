@@ -298,7 +298,7 @@ class EconomicMilitaryAiTests {
     fun `need happiness uses half the happiness personality as margin, critical a fixed -3`() {
         val civ = neutralCiv()
         civ.ai.setPersonalityFlavor(Flavor.Happiness, 8)
-        game.addCity(civ, tile(0, 0), initialPopulation = 3)
+        game.addCity(civ, tile(0, 0), initialPopulation = 3).cityStats.update()
         val need = economicDef("ECONOMICAISTRATEGY_NEED_HAPPINESS")
         val critical = economicDef("ECONOMICAISTRATEGY_NEED_HAPPINESS_CRITICAL")
         civ.stats.happiness = 4
@@ -310,6 +310,23 @@ class EconomicMilitaryAiTests {
         assertTrue(EconomicMilitaryStrategyTests.needHappinessCritical(civ, critical))
         civ.stats.happiness = -2
         assertFalse(EconomicMilitaryStrategyTests.needHappinessCritical(civ, critical))
+    }
+
+    @Test
+    fun `need happiness needs some unhappiness as well as population`() {
+        val civ = neutralCiv()
+        val city = game.addCity(civ, tile(0, 0), initialPopulation = 3)
+        val need = economicDef("ECONOMICAISTRATEGY_NEED_HAPPINESS")
+        val critical = economicDef("ECONOMICAISTRATEGY_NEED_HAPPINESS_CRITICAL")
+        civ.stats.happiness = -5
+        city.cityStats.happinessList = linkedMapOf("Cities" to 0f, "Population" to 0f)
+        assertFalse(EconomicMilitaryStrategyTests.needHappiness(civ, need))
+        assertFalse(EconomicMilitaryStrategyTests.needHappinessCritical(civ, critical))
+        city.cityStats.happinessList = linkedMapOf("Cities" to -0.5f, "Population" to -0.4f)
+        assertFalse("less than 1 unhappiness", EconomicMilitaryStrategyTests.needHappiness(civ, need))
+        city.cityStats.happinessList = linkedMapOf("Cities" to -3f, "Population" to -3f)
+        assertTrue(EconomicMilitaryStrategyTests.needHappiness(civ, need))
+        assertTrue(EconomicMilitaryStrategyTests.needHappinessCritical(civ, critical))
     }
 
     @Test
