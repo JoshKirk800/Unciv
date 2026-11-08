@@ -225,16 +225,31 @@ object EconomicMilitaryStrategyTests {
         return settlers >= def.weightThreshold + extraSettlers
     }
 
-    /** IsTestStrategy_NeedHappiness: with population, excess happiness <= (HAPPINESS personality x threshold mod) / weight threshold (2) */
+    /**
+     *  CvPlayer::GetUnhappiness: the unhappiness of the city count, the citizens and the occupied cities (the negative parts of the cities'
+     *  happiness lists, whose AI-handicap scaling is already in them) plus the public opinion unhappiness (scaled for an AI player), as a whole number.
+     */
+    internal fun unhappiness(civ: Civilization): Int {
+        var fromCities = 0f
+        for (city in civ.cities)
+            for (source in UNHAPPINESS_SOURCES) fromCities -= city.cityStats.happinessList[source] ?: 0f
+        var opinion = civ.culture.publicOpinion.unhappiness.toFloat()
+        if (!civ.isHuman()) opinion *= civ.gameInfo.getDifficulty().aiUnhappinessModifier
+        return fromCities.toInt() + opinion.toInt()
+    }
+
+    private val UNHAPPINESS_SOURCES = listOf("Cities", "Population", "Occupied City")
+
+    /** IsTestStrategy_NeedHappiness: with population and some unhappiness, excess happiness <= (HAPPINESS personality x threshold mod) / weight threshold (2) */
     fun needHappiness(civ: Civilization, def: PlayerStrategyDef): Boolean {
-        if (civ.cities.sumOf { it.population.population } <= 0) return false
+        if (civ.cities.sumOf { it.population.population } <= 0 || unhappiness(civ) <= 0) return false
         return civ.getHappiness() <= civ.ai.weightThresholdModifier(def) / def.weightThreshold
     }
 
-    /** IsTestStrategy_NeedHappinessCritical: not losing all wars; with population, excess happiness <= the weight threshold (-3) */
+    /** IsTestStrategy_NeedHappinessCritical: not losing all wars; with population and some unhappiness, excess happiness <= the weight threshold (-3) */
     fun needHappinessCritical(civ: Civilization, def: PlayerStrategyDef): Boolean {
         if (WarStateAi.stateAllWars(civ) == StateAllWars.Losing) return false
-        if (civ.cities.sumOf { it.population.population } <= 0) return false
+        if (civ.cities.sumOf { it.population.population } <= 0 || unhappiness(civ) <= 0) return false
         return civ.getHappiness() <= def.weightThreshold
     }
 
