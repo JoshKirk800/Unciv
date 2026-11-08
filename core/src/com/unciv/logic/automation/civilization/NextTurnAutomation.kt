@@ -53,66 +53,68 @@ object NextTurnAutomation {
 
         val civView = GameView(civInfo.gameInfo, civInfo).civView
 
-        respondToPopupAlerts(civView)
-        TradeAutomation.respondToTradeRequests(civInfo, tradeAndChangeState)
+        timeThis("AI.respondToPopupAlerts") { respondToPopupAlerts(civView) }
+        timeThis("AI.respondToTradeRequests") { TradeAutomation.respondToTradeRequests(civInfo, tradeAndChangeState) }
 
         if (tradeAndChangeState && civInfo.isMajorCiv) {
-            if (!civView.ruleset.modOptions.hasUnique(UniqueType.DiplomaticRelationshipsCannotChange)) {
+            if (!civView.ruleset.modOptions.hasUnique(UniqueType.DiplomaticRelationshipsCannotChange)) timeThis("AI.diplomacyWarPeace") {
                 DiplomacyAutomation.declareWar(civView)
                 DiplomacyAutomation.offerPeaceTreaty(civView)
                 DiplomacyAutomation.askForHelp(civView)
                 DiplomacyAutomation.offerDeclarationOfFriendship(civView)
             }
             if (civView.isReligionEnabled()) {
-                ReligionAutomation.spendFaithOnReligion(civInfo)
+                timeThis("AI.spendFaithOnReligion") { ReligionAutomation.spendFaithOnReligion(civInfo) }
             }
 
-            DiplomacyAutomation.denounce(civView)
-            DiplomacyAutomation.offerToEstablishEmbassy(civView)
-            DiplomacyAutomation.offerOpenBorders(civView)
-            DiplomacyAutomation.offerResearchAgreement(civView)
-            DiplomacyAutomation.offerDefensivePact(civView)
-            DiplomacyAutomation.checkMilitaryPresenceNearBorder(civView)
-            TradeAutomation.exchangeLuxuries(civInfo)
-            if (civInfo.gameInfo.ruleset.greatWorks.isNotEmpty()) {
+            timeThis("AI.diplomacyOffers") {
+                DiplomacyAutomation.denounce(civView)
+                DiplomacyAutomation.offerToEstablishEmbassy(civView)
+                DiplomacyAutomation.offerOpenBorders(civView)
+                DiplomacyAutomation.offerResearchAgreement(civView)
+                DiplomacyAutomation.offerDefensivePact(civView)
+                DiplomacyAutomation.checkMilitaryPresenceNearBorder(civView)
+            }
+            timeThis("AI.exchangeLuxuries") { TradeAutomation.exchangeLuxuries(civInfo) }
+            if (civInfo.gameInfo.ruleset.greatWorks.isNotEmpty()) timeThis("AI.greatWorks") {
                 GreatWorkFunctions.optimizeTheming(civInfo)
                 TradeAutomation.exchangeGreatWorks(civInfo)
             }
             
-            issueRequests(civView)
-            adoptPolicy(civView)  // todo can take a second - why?
-            freeUpSpaceResources(civView)
+            timeThis("AI.issueRequests") { issueRequests(civView) }
+            timeThis("AI.adoptPolicy") { adoptPolicy(civView) }  // todo can take a second - why?
+            timeThis("AI.freeUpSpaceResources") { freeUpSpaceResources(civView) }
         } else if (civView.isCityState) {
             civInfo.cityStateFunctions.getFreeTechForCityState()
             civInfo.cityStateFunctions.updateDiplomaticRelationshipForCityState()
         }
 
-        chooseTechToResearch(civView)
-        automateCityBombardment(civView)
-        if (tradeAndChangeState) UseGoldAutomation.useGold(civInfo)
-        if (tradeAndChangeState && !civView.isCityState) {
+        timeThis("AI.chooseTechToResearch") { chooseTechToResearch(civView) }
+        timeThis("AI.automateCityBombardment") { automateCityBombardment(civView) }
+        if (tradeAndChangeState) timeThis("AI.useGold") { UseGoldAutomation.useGold(civInfo) }
+        if (tradeAndChangeState && !civView.isCityState) timeThis("AI.cityStates") {
             protectCityStates(civView)
             bullyCityStates(civView)
         }
         val cache = AutomationCache()
-        automateUnits(civView, cache)  // this is the most expensive part
+        timeThis("AI.automateUnits") { automateUnits(civView, cache) }  // this is the most expensive part
 
         if (tradeAndChangeState && civInfo.isMajorCiv) {
             if (civView.isReligionEnabled()) {
                 // Can only be done now, as the prophet first has to decide to found/enhance a religion
-                ReligionAutomation.chooseReligiousBeliefs(civInfo)
+                timeThis("AI.chooseReligiousBeliefs") { ReligionAutomation.chooseReligiousBeliefs(civInfo) }
             }
             if (civInfo.gameInfo.isEspionageEnabled()) {
                 // Do after cities are conquered
-                EspionageAutomation(civInfo).automateSpies()
+                timeThis("AI.automateSpies") { EspionageAutomation(civInfo).automateSpies() }
             }
         }
 
-        automateCities(civView)  // second most expensive
-        if (tradeAndChangeState) trainSettler(civView)
+        timeThis("AI.automateCities") { automateCities(civView) }  // second most expensive
+        if (tradeAndChangeState) timeThis("AI.trainSettler") { trainSettler(civView) }
         // I'm not sure what will happen if we *don't* vote when we can, so automate vote even when forced automation
-        tryVoteForDiplomaticVictory(civView)
-        LeagueAutomation.automateLeague(civInfo) // the World Congress of Brave New World, also for skipped turns
+        timeThis("AI.tryVoteForDiplomaticVictory") { tryVoteForDiplomaticVictory(civView) }
+        timeThis("AI.automateLeague") { LeagueAutomation.automateLeague(civInfo) } // the World Congress of Brave New World, also for skipped turns
     }
 
     fun automateGoldToSciencePercentage(civView: CivView) {
