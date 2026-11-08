@@ -1,6 +1,8 @@
 package com.unciv.logic.trade
 
 import com.unciv.Constants
+import com.unciv.logic.automation.civilization.LeagueAutomation
+import com.unciv.logic.automation.civilization.VoteCommitmentItem
 import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.city.managers.SpyFleeReason
 import com.unciv.logic.civilization.AlertType
@@ -237,6 +239,11 @@ class TradeLogic(val ourCivilization: Civilization, val otherCivilization: Civil
                     }
 
                     tradePartnerDiplo.makePeace()
+                }
+                TradeOfferType.VoteCommitment -> {
+                    val commitment = VoteCommitmentItem.parse(offer)
+                    if (commitment != null)
+                        LeagueAutomation.addVoteCommitment(from, to, commitment.proposalId, commitment.choice, offer.amount, commitment.repeal)
                 }
                 else -> {}
             }

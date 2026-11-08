@@ -21,7 +21,9 @@ enum class TradeOfferType(val numberType: TradeTypeNumberType, val isImmediate: 
     WarDeclaration      (TradeTypeNumberType.None, true),
     PeaceProposal      (TradeTypeNumberType.None, true),
     City                (TradeTypeNumberType.None, true),
-    GreatWork           (TradeTypeNumberType.None, true);
+    GreatWork           (TradeTypeNumberType.None, true),
+    /** A promise to vote on a World Congress proposal (CvDeal TRADE_ITEM_VOTE_COMMITMENT): name "proposalId/choice/repeal", amount = votes */
+    VoteCommitment      (TradeTypeNumberType.Simple, true);
     
     enum class TradeTypeNumberType { None, Simple, Gold }
 }

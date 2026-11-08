@@ -2,6 +2,7 @@ package com.unciv.logic.trade
 
 import com.unciv.Constants
 import com.unciv.UncivGame
+import com.unciv.logic.automation.civilization.VoteCommitmentItem
 import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.trade.TradeOfferType.TradeTypeNumberType
@@ -48,6 +49,8 @@ data class TradeOffer(val name: String, val type: TradeOfferType, var amount: In
                         UncivGame.Current.gameInfo!!.getCities().firstOrNull { it.id == name }
                 city?.run { "{$name} (${population.population})" } ?: "Non-existent city"
             }
+            TradeOfferType.VoteCommitment ->
+                VoteCommitmentItem.parse(this)?.let { "Vote [${it.choice}] on proposal [${it.proposalId}]" } ?: name
             TradeOfferType.GreatWork -> {
                 val slot = UncivGame.Current.gameInfo!!.getCities().asSequence()
                     .flatMap { it.greatWorks.getSlots().asSequence() }

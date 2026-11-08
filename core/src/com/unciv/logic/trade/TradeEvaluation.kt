@@ -2,6 +2,7 @@ package com.unciv.logic.trade
 
 import com.unciv.Constants
 import com.unciv.logic.automation.civilization.DealAi
+import com.unciv.logic.automation.civilization.LeagueAutomation
 import com.unciv.logic.automation.diplomacy.WarGoal
 import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.civilization.Civilization
@@ -64,7 +65,7 @@ class TradeEvaluation {
         return true
     }
 
-    @Readonly
+    @Readonly @Suppress("purity") // the vote commitment check reads the league AI
     private fun isOfferValid(tradeOffer: TradeOffer, offerer: Civilization, tradePartner: Civilization, isPeaceDeal: Boolean): Boolean {
 
         @Readonly
@@ -100,6 +101,7 @@ class TradeEvaluation {
             TradeOfferType.City -> offerer.cities.any { it.id == tradeOffer.name }
             TradeOfferType.GreatWork -> tradeOffer.amount == 1 &&
                 GreatWorkFunctions.findTradeSlot(offerer, tradeOffer.name) != null
+            TradeOfferType.VoteCommitment -> !offerer.isAtWarWith(tradePartner) && LeagueAutomation.canCommitVote(offerer, tradePartner)
         }
     }
 

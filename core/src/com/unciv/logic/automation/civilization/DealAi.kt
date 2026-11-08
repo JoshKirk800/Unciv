@@ -108,6 +108,7 @@ object DealAi {
             }
             TradeOfferType.PeaceProposal -> getThirdPartyPeaceValue(us, them, us.gameInfo.getCivilization(offer.name), fromMe)
             TradeOfferType.WarDeclaration -> getThirdPartyWarValue(us, them, us.gameInfo.getCivilization(offer.name), fromMe)
+            TradeOfferType.VoteCommitment -> getVoteCommitmentValue(us, them, offer, fromMe, useEvenValue)
             TradeOfferType.GreatWork, TradeOfferType.Technology, TradeOfferType.Introduction, TradeOfferType.Stockpiled_Resource ->
                 getUncivItemValue(us, them, offer, fromMe, useEvenValue, trade)
         }
@@ -373,6 +374,7 @@ object DealAi {
             }
             if (them.cities.size == 1) value = value * 50 / 100
         }
+        value = value * CultureAutomation.openBordersValuePercent(us, them, receiving = !fromMe) / 100
         if (useEvenValue) {
             value += getOpenBordersValue(them, us, !fromMe, false)
             value /= 2
@@ -490,6 +492,59 @@ object DealAi {
             else -> {}
         }
         return value
+    }
+
+    /**
+     *  CvDealAI::GetVoteCommitmentValue, per vote. Votes we give: by how much we like the proposal (50-300, [NEVER] when we strongly
+     *  dislike it), by our alignment with [them] (-50..+50, [NEVER] for enemies or war), [NEVER] if we are Hostile or planning war on them.
+     *  Votes we receive: by how much we like it (50-200, -100000 if not at least weakly), less 20/40 when they keep many votes in hand.
+     */
+    fun getVoteCommitmentValue(us: Civilization, them: Civilization, offer: TradeOffer, fromMe: Boolean, useEvenValue: Boolean): Int {
+        val commitment = VoteCommitmentItem.parse(offer) ?: return 0
+        val votes = offer.amount
+        var value = 0
+        val desire = LeagueAutomation.evaluateVoteForTrade(us, commitment.proposalId, commitment.choice, votes, commitment.repeal)
+        if (fromMe) {
+            value += when (desire) {
+                LeagueDesire.NEVER, LeagueDesire.STRONG_DISLIKE -> NEVER
+                LeagueDesire.DISLIKE -> 300
+                LeagueDesire.WEAK_DISLIKE -> 200
+                LeagueDesire.NEUTRAL, LeagueDesire.WEAK_LIKE, LeagueDesire.LIKE -> 150
+                LeagueDesire.STRONG_LIKE, LeagueDesire.ALWAYS -> 50
+            }
+            value += when (LeagueAutomation.evaluateAlignment(us, them)) {
+                LeagueAlignment.LIBERATOR, LeagueAlignment.LEADER -> -50
+                LeagueAlignment.ALLY -> -35
+                LeagueAlignment.CONFIDANT, LeagueAlignment.FRIEND -> -25
+                LeagueAlignment.RIVAL -> 25
+                LeagueAlignment.HATRED -> 50
+                LeagueAlignment.ENEMY, LeagueAlignment.WAR -> NEVER
+                else -> 0
+            }
+            val approach = us.ai.diplomacy.approachTowards(them, false)
+            if (approach == MajorCivApproach.Hostile || approach == MajorCivApproach.War) value += NEVER
+        } else {
+            value += when (desire) {
+                LeagueDesire.WEAK_LIKE -> 50
+                LeagueDesire.LIKE -> 100
+                LeagueDesire.STRONG_LIKE -> 150
+                LeagueDesire.ALWAYS -> 200
+                else -> -NEVER
+            }
+            val league = us.gameInfo.league
+            if (league != null) {
+                val startingVotes = league.getDelegates(them)
+                val ratio = if (startingVotes > 0) votes.toFloat() / startingVotes else 1f
+                if (ratio <= 0.25f) value -= 40
+                else if (ratio <= 0.5f) value -= 20
+            }
+        }
+        var total = max(value, 0).toLong() * votes
+        if (useEvenValue) {
+            total += getVoteCommitmentValue(them, us, offer, !fromMe, false)
+            total /= 2
+        }
+        return clamp(total)
     }
 
     /** Unciv items without a CvDealAI counterpart: Unciv's own prices (no gold inflation) */
@@ -628,6 +683,8 @@ object DealAi {
         if (even.total in amountUnder..amountOver) return true
 
         val eq = Equalizer(us, them, trade, true, even)
+        eq.addVoteCommitmentToThem(false, amountOver)
+        eq.addVoteCommitmentToUs(false, amountUnder)
         eq.addResourceToThem(false, amountOver, dealDuration)
         eq.addResourceToUs(false, amountUnder, dealDuration)
         // DoAddOpenBordersToThem/ToUs are called with bDontChange...ExistingItems = true here, so they never add anything
@@ -681,6 +738,8 @@ object DealAi {
         val over = check.amountOverWeWillRequest
         val under = check.amountUnderWeWillOffer
         val eq = Equalizer(us, human, trade, false, check.value)
+        eq.addVoteCommitmentToThem(dontChangeTheirExistingItems, over)
+        eq.addVoteCommitmentToUs(dontChangeMyExistingItems, under)
         eq.addEmbassyToThem(dontChangeTheirExistingItems, over)
         eq.addEmbassyToUs(dontChangeMyExistingItems, under)
         eq.addResourceToThem(dontChangeTheirExistingItems, over, dealDuration)
@@ -725,6 +784,37 @@ object DealAi {
 
         private fun isPossible(fromUs: Boolean, offer: TradeOffer) =
             isPossibleToTradeItem(trade, if (fromUs) us else them, if (fromUs) them else us, offer, fromUs, if (fromUs) ourAvailable else theirAvailable)
+
+        fun addVoteCommitmentToThem(dontChange: Boolean, amountOver: Int) {
+            if (dontChange || total >= 0) return
+            if (hasVoteCommitment()) return
+            if (!LeagueAutomation.canCommitVote(them, us)) return
+            for (commitment in LeagueAutomation.desiredVoteCommitments(us, them)) {
+                val offer = VoteCommitmentItem.offer(commitment, us.gameInfo.speed)
+                if (!isPossible(false, offer)) continue
+                if (item(false, offer) + total <= amountOver) {
+                    trade.theirOffers.add(offer)
+                    recompute()
+                }
+            }
+        }
+
+        fun addVoteCommitmentToUs(dontChange: Boolean, amountUnder: Int) {
+            if (dontChange || total <= 0) return
+            if (hasVoteCommitment()) return
+            if (!LeagueAutomation.canCommitVote(us, them)) return
+            for (commitment in LeagueAutomation.desiredVoteCommitments(them, us)) {
+                val offer = VoteCommitmentItem.offer(commitment, us.gameInfo.speed)
+                if (!isPossible(true, offer)) continue
+                if (-item(true, offer) + total >= amountUnder) {
+                    trade.ourOffers.add(offer)
+                    recompute()
+                }
+            }
+        }
+
+        private fun hasVoteCommitment() = trade.ourOffers.any { it.type == TradeOfferType.VoteCommitment }
+            || trade.theirOffers.any { it.type == TradeOfferType.VoteCommitment }
 
         /** CvDeal::ChangeResourceTrade then AddResourceTrade: an existing item is changed in place without re-evaluating, as in the original */
         private fun addOrChangeResource(list: TradeOffersList, offer: TradeOffer) {
@@ -952,6 +1042,7 @@ object DealAi {
                 if (receiverGives.any { it.name == offer.name && it.type == offer.type }) return false
                 return available.any { it.name == offer.name && it.type == offer.type }
             }
+            TradeOfferType.VoteCommitment -> return !from.isAtWarWith(to) && LeagueAutomation.canCommitVote(from, to)
             else -> return available.any { it.name == offer.name && it.type == offer.type && it.amount >= offer.amount }
         }
     }
@@ -1172,10 +1263,11 @@ object DealAi {
     }
 
     /**
-     *  CvDiplomacyAI::IsWantsOpenBordersWithPlayer without its culture branch: only with neighbours
+     *  CvDiplomacyAI::IsWantsOpenBordersWithPlayer: the culture branch (CultureAutomation.wantsOpenBordersWith), else only with neighbours
      *  we are not Hostile, Guarded or Afraid toward and who are not stronger than us.
      */
     fun wantsOpenBordersWith(us: Civilization, them: Civilization): Boolean {
+        if (CultureAutomation.wantsOpenBordersWith(us, them)) return true
         if (us.getProximity(them) != Proximity.Neighbors) return false
         val approach = us.ai.diplomacy.approachTowards(them, true)
         if (approach == MajorCivApproach.Hostile || approach == MajorCivApproach.Guarded || approach == MajorCivApproach.Afraid) return false
