@@ -226,6 +226,9 @@ class AiOperations : IsPartOfGameInfoSerialization {
     /** CvPlayer::numOperationsOfType */
     fun numOperationsOfType(type: AiOperationType) = operations.count { it.type == type }
 
+    /** CvPlayerAI::GetNumUnitsNeededToBeBuilt: the sum of CvAIOperation::GetNumUnitsNeededToBeBuilt, the slots not yet committed to a city */
+    fun numUnitsNeededToBeBuilt() = operations.sumOf { it.slotsToBuild.size }
+
     fun operationById(id: Int) = operations.firstOrNull { it.id == id }
 
     /** The army [unit] serves in, CvUnit::getArmyID */
