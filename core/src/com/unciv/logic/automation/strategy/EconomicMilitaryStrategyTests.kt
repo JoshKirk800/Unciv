@@ -251,12 +251,14 @@ object EconomicMilitaryStrategyTests {
     }
 
     /**
-     *  IsTestStrategy_FoundCity (the test; launching the found-city operation is the settling port's): AI players with at least one city,
-     *  a settler (UNITAI_SETTLE) and a settle area.
+     *  IsTestStrategy_FoundCity (the test; launching the found-city operation is [com.unciv.logic.automation.unit.SettlerAutomation.launchOperation]):
+     *  AI players with at least one city and a loose settler (UNITAI_SETTLE that is in no army, so not one an operation already moves)
+     *  and a settle area.
      */
     fun foundCity(civ: Civilization): Boolean {
         if (civ.isHuman() || civ.cities.isEmpty()) return false
-        if (civ.units.getCivUnits().none { UnitAiTypes.current(it) == UnitAiType.SETTLE }) return false
+        val operations = civ.ai.operations
+        if (civ.units.getCivUnits().none { UnitAiTypes.current(it) == UnitAiType.SETTLE && operations.armyOf(it) == null }) return false
         return SettleAreas.bestSettleAreas(civ, minimumSettleFertility(civ)).count > 0
     }
 
