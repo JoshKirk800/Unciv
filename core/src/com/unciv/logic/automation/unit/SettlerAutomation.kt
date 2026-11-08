@@ -1,6 +1,7 @@
 package com.unciv.logic.automation.unit
 
 import com.unciv.logic.IsPartOfGameInfoSerialization
+import com.unciv.logic.automation.AiDecisionLog
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.civilization.AutomationCache
 import com.unciv.logic.automation.strategy.ProductionAi
@@ -90,14 +91,24 @@ object SettlerAutomation {
         var operation = unit.settlerOperation
         var target = operation?.target?.let { civ.gameInfo.tileMap.getOrNull(it.x, it.y) }
         if (operation == null || target == null) {
-            operation = startOperation(unit) ?: return@timeThis  // No site: a settler outside an operation stays where it is
-            unit.settlerOperation = operation
-            target = civ.gameInfo.tileMap[operation.target!!]
+            operation = startOperation(unit) ?: run {  // No site: a settler outside an operation stays where it is
+                AiDecisionLog.log(civ) { "settler ${unit.id} at ${unit.getTile().position}: no settle site" }
+                return@timeThis
+            }
+            val started = operation
+            unit.settlerOperation = started
+            val site = civ.gameInfo.tileMap[started.target!!]
+            target = site
+            AiDecisionLog.log(civ) {
+                "settler ${unit.id} at ${unit.getTile().position}: ${if (started.foundCity) "found city" else "quick colony"} at ${site.position} " +
+                    "(area ${started.area}, ${if (started.escorted) "escorted" else "alone"}, distance ${site.aerialDistanceTo(unit.getTile())})"
+            }
         }
 
         // CvAIEscortedOperation: the escort died on its way - abort, a new operation starts next turn
         if (operation.escortUnitId != -1 && assignedEscort(unit) == null) {
             unit.settlerOperation = null
+            AiDecisionLog.log(civ) { "settler ${unit.id}: escort died, operation aborted" }
             return@timeThis
         }
         // CvAIOperationFoundCity::ShouldAbort: no escort after 15 turns (or waiting outside our borders), and no city has committed to train
@@ -109,9 +120,14 @@ object SettlerAutomation {
         // CvAIOperationFoundCity::ArmyInPosition: the site was taken or can no longer hold a city - find another one.
         // No path to the new site either (GetBestSettlePlot does not check paths): AI_ABORT_LOST_PATH, a new operation starts next turn
         if (!isStillValidTarget(unit, target) || !unit.movement.canReach(target)) {
-            val newTarget = retarget(unit, operation, target)
+            val lost = target
+            val newTarget = retarget(unit, operation, lost)
             if (newTarget == null || !unit.movement.canReach(newTarget)) {
                 unit.settlerOperation = null
+                AiDecisionLog.log(civ) {
+                    "settler ${unit.id} at ${unit.getTile().position}: site ${lost.position} lost, " +
+                        if (newTarget == null) "no other site" else "no path to ${newTarget.position}"
+                }
                 return@timeThis
             }
             target = newTarget
