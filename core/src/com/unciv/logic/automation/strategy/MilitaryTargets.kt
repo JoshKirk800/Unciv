@@ -28,7 +28,7 @@ enum class CityAttackApproach(val multiplier: Int) { UNRESTRICTED(10), OPEN(8), 
 /**
  *  The step finder of the original (GC.getStepFinder(): a hex path over terrain that ignores units) as far as the military AI needs it:
  *  a land route an army of [civ] could walk against [enemy] - explored, not water, not impassable, and territory it may enter (its own,
- *  the enemy's, that of civilizations it is at war with or may pass through). One path length is a step.
+ *  the enemy's, friendly land, city-state land and that of civilizations it is at war with). One path length is a step.
  *  Scratch arrays are reused between calls; not thread safe, one instance per civilization AI.
  */
 class StepFinder {
@@ -44,11 +44,16 @@ class StepFinder {
         counter = 0
     }
 
-    /** StepValid: [tile] can be walked on by an army of [civ] heading for [enemy] */
+    /**
+     *  StepValid: [tile] can be walked on by an army of [civ] heading for [enemy]. Land that has an owner is valid when the owner is
+     *  [enemy], the tile is friendly territory for [civ], or the owner is a city-state or at war with [civ]: the original lets any civilization
+     *  cross city-state land and only a major that is neither the enemy, a friend nor at war blocks the route. This is the route planner's
+     *  rule, not the movement rules ([com.unciv.logic.civilization.diplomacy.DiplomacyFunctions.canPassThroughTiles]), which the units walk by.
+     */
     fun isValid(civ: Civilization, enemy: Civilization?, tile: Tile): Boolean {
         if (tile.isWater || tile.isImpassible() || !civ.hasExplored(tile)) return false
         val owner = tile.getOwner() ?: return true
-        return owner == civ || owner == enemy || owner.isBarbarian || civ.isAtWarWith(owner) || civ.diplomacyFunctions.canPassThroughTiles(owner)
+        return owner == enemy || tile.isFriendlyTerritory(civ) || owner.isCityState || owner.isBarbarian || civ.isAtWarWith(owner)
     }
 
     private fun seaValid(civ: Civilization, tile: Tile) = tile.isWater && civ.hasExplored(tile)
