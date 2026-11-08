@@ -19,7 +19,7 @@ object DebugUtils {
     /** This flag paints the last computed settler tile ranking onto the map tiles. */
     var SHOW_SETTLER_SCORES: Boolean = false
 
-    /** Last settler tile ranking computed by CityLocationTileRanker, for [SHOW_SETTLER_SCORES]. */
+    /** Last settler site scores (SettleAreas.bestSettlePlot) of the selected settler, for [SHOW_SETTLER_SCORES]. */
     var SETTLER_SCORES: Map<HexCoord, Float> = emptyMap()
 
     /** For when you need to test something in an advanced game and don't have time to faff around */

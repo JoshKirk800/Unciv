@@ -10,7 +10,9 @@ import com.unciv.view.isPreparingAirSweep
 import com.unciv.view.isPreparingParadrop
 import com.badlogic.gdx.graphics.Color
 import com.unciv.UncivGame
-import com.unciv.logic.automation.unit.CityLocationTileRanker
+import com.unciv.logic.automation.unit.SettleAreas
+import com.unciv.logic.map.tile.Tile
+import com.unciv.utils.DebugUtils
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.ui.components.extensions.colorFromRGB
 import com.unciv.view.AttackableTileView
@@ -238,10 +240,14 @@ object WorldMapTileUpdater {
         if (unitView.hasUnique(UniqueType.FoundCity)
             && UncivGame.Current.settings.showSettlersSuggestedCityLocations) {
             val unit = unitView.getUnit()
-            CityLocationTileRanker.getBestTilesToFoundCity(unit, 5, minimumValue = 50f).tileRankMap.asSequence()
-                .filter { it.key.isExplored(unit.civ) }.sortedByDescending { it.value }.take(3).forEach {
-                    tileGroups[tileMapView.getTile(it.key)]!!.layerOverlay.showGoodCityLocationIndicator()
-                }
+            // The sites the AI would pick for this settler (CvPlayer::GetBestSettlePlot scores)
+            val scores = HashMap<Tile, Int>()
+            SettleAreas.bestSettlePlot(unit, escorted = false, area = -1, targetedSites = emptyList(), scores = scores)
+            if (DebugUtils.SHOW_SETTLER_SCORES)
+                DebugUtils.SETTLER_SCORES = scores.entries.associate { it.key.position to it.value.toFloat() }
+            scores.entries.sortedByDescending { it.value }.take(3).forEach {
+                tileGroups[tileMapView.getTile(it.key)]!!.layerOverlay.showGoodCityLocationIndicator()
+            }
         }
     }
 

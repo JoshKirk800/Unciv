@@ -10,7 +10,7 @@ import com.unciv.UncivGame
 import com.unciv.logic.automation.Automation
 import com.unciv.logic.automation.diplomacy.PromiseAi
 import com.unciv.logic.automation.Timers.Companion.timeThis
-import com.unciv.logic.automation.unit.CivilianUnitAutomation
+import com.unciv.logic.automation.unit.SettlerAutomation
 import com.unciv.logic.automation.unit.EspionageAutomation
 import com.unciv.logic.automation.unit.UnitAutomation
 import com.unciv.logic.battle.*
@@ -27,9 +27,7 @@ import com.unciv.logic.map.tile.Tile
 import com.unciv.models.ruleset.MilestoneType
 import com.unciv.models.ruleset.nation.PersonalityValue
 import com.unciv.models.ruleset.tile.ResourceType
-import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unique.UniqueType
-import com.unciv.models.ruleset.unit.BaseUnit
 import com.unciv.models.stats.Stat
 import com.unciv.utils.randomWeighted
 import com.unciv.view.CivView
@@ -102,7 +100,6 @@ object NextTurnAutomation {
         }
 
         timeThis("AI.automateCities") { automateCities(civView) }  // second most expensive
-        if (tradeAndChangeState) timeThis("AI.trainSettler") { trainSettler(civView) }
         // I'm not sure what will happen if we *don't* vote when we can, so automate vote even when forced automation
         timeThis("AI.tryVoteForDiplomaticVictory") { tryVoteForDiplomaticVictory(civView) }
         timeThis("AI.automateLeague") { LeagueAutomation.automateLeague(civInfo) } // the World Congress of Brave New World, also for skipped turns
@@ -428,6 +425,10 @@ object NextTurnAutomation {
         }
     }
     
+    /**
+     *  Brings an escort to the settlers whose operation wants one (a CvAIOperationFoundCity, see [SettlerAutomation.wantsEscort]):
+     *  Unciv's stand-in for the operation's CvAIOperation::GrabUnitsFromTheReserves. Quick-colonize settlers travel alone.
+     */
     @VisibleForTesting
     fun automateSettlerEscorting(civView: CivView){
         val civInfo = civView.getCiv()
@@ -437,15 +438,15 @@ object NextTurnAutomation {
                 it.civ == civInfo
                     && it.type.isLandUnit() // a ship can reach a port, but the escort it swaps with cannot follow it to sea
                     && it.health >= 100
-                    // only draft a unit from the core of the empire, or it'll interfere with other anti-barb activities
-                    && (it.currentTile.aerialDistanceTo(capitalTile) < tile.aerialDistanceTo(capitalTile))
+                    // only draft a unit from the core of the empire (at most as far from the capital as the settler), or it'll interfere with other anti-barb activities
+                    && (it.currentTile.aerialDistanceTo(capitalTile) <= tile.aerialDistanceTo(capitalTile))
                     && it.movement.canReach(tile) 
             }
             .sortedBy { it.currentTile.aerialDistanceTo(tile) }
             .maxByOrNull { it.baseUnit.strength } // could be more sophisticated based on promotions, movement speed etc.
         
         val settlersToAccompany = civInfo.units.getCivUnits()
-            .filter { it.isCivilian() && it.hasUnique(UniqueType.FoundCity) }
+            .filter { it.isCivilian() && it.hasUnique(UniqueType.FoundCity) && SettlerAutomation.wantsEscort(it) }
         
         for (settler in settlersToAccompany) {
             val escortUnit = bestUnitInRange(settler.currentTile, 3) ?: continue
@@ -490,59 +491,6 @@ object NextTurnAutomation {
 
             city.cityConstructions.chooseNextConstruction()
         }
-    }
-
-    private fun trainSettler(civView: CivView) {
-        val civInfo = civView.getCiv()
-        val personality = civInfo.getPersonality()
-        if (civView.isCityState) return
-        if (civInfo.isOneCityChallenger()) return
-        if (civView.cities().isEmpty()) return
-        if (civView.getHappiness() <= civView.cities().size) return
-        if (CivilianUnitAutomation.isLateGame(civView)){
-            // all suitable land may be occupied already
-            // 10 tiles away and 6 "options" are heuristics based on nothing, feel free to change 
-            var unoccupiedNearishTiles = 0
-            for (city in civInfo.cities)
-                city.getCenterTile().forEachTileInDistance(10) {
-                    if (it.owningCity == null && it.neighbors.all { neighbor -> neighbor.owningCity == null }) unoccupiedNearishTiles++
-                }
-            if (unoccupiedNearishTiles < 6) return
-        } 
-
-        // This is a tough one - if we don't ignore conditionals we could have units that can found only on certain tiles that are ignored
-        // If we DO ignore conditionals we could get a unit that can only found if there's a certain tech, or something
-        // Allow up to 2 settlers in flight (built or in production) so early expansion isn't serialized to
-        // one settler at a time - the stock happiness/military guards below still bound how many we build.
-        val maxSettlersInFlight = 2
-        val settlersInFlight = civInfo.units.getCivUnits().count { it.hasUnique(UniqueType.FoundCity, GameContext.IgnoreConditionals) } +
-            civInfo.cities.count {
-                val currentConstruction = it.cityConstructions.getCurrentConstruction()
-                currentConstruction is BaseUnit && currentConstruction.isCityFounder()
-            }
-        if (settlersInFlight >= maxSettlersInFlight) return
-        val settlerUnits = civView.ruleset.units.values
-                .filter { it.isCityFounder() && it.isBuildable(civInfo) &&
-                    personality.getMatchingUniques(UniqueType.WillNotBuild, civInfo.state)
-                        .none { unique -> it.matchesFilter(unique.params[0], civInfo.state) } }
-        if (settlerUnits.isEmpty()) return
-
-        // The "defend them first" gate permanently latches peaceful, happy civs at ~4 cities. Bypass it when
-        // we clearly have room to expand safely: at peace, ample happiness, still early, and in a game with
-        // other major civs whose presence deters an opportunistic attack (this is a bad idea in a 1v1 duel).
-        val hasSlackToExpandSafely = !civView.isAtWar() && civView.getHappiness() >= 8 && civInfo.gameInfo.turns < 150
-            && civInfo.gameInfo.civilizations.count { it.isMajorCiv && it.isAlive() } >= 3
-        if (civView.getUnits().count { it.isMilitary() } < civView.cities().size && !hasSlackToExpandSafely)
-            return // We need someone to defend them first
-
-        val bestCity = civInfo.cities
-            .filterNot { it.isPuppet || it.population.population < 3 }
-            // don't re-target a city that is already producing a settler (reachable now that 2 may be in flight)
-            .filterNot { (it.cityConstructions.getCurrentConstruction() as? BaseUnit)?.isCityFounder() == true }
-            .maxByOrNull { it.cityStats.currentCityStats.production }
-            ?: return
-        if (bestCity.cityConstructions.getBuiltBuildings().count() > 1) // 2 buildings or more, otherwise focus on self first
-            bestCity.cityConstructions.setCurrentConstruction(settlerUnits.minByOrNull { it.cost }!!.name)
     }
 
     // Technically, this function should also check for civs that have liberated one or more cities

@@ -1,6 +1,7 @@
 package com.unciv.logic.automation.unit
 
 import com.unciv.logic.civilization.Civilization
+import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.ai.Flavor
 import com.unciv.models.ruleset.tile.ResourceType
 import com.unciv.models.ruleset.tile.TileImprovement
@@ -8,9 +9,6 @@ import com.unciv.models.ruleset.tile.TileResource
 
 /** Resources.Happiness of every luxury in the original's XML; Unciv has no per-resource happiness (CivInfoStatsForNextTurn uses 4 per luxury) */
 private const val LUXURY_RESOURCE_HAPPINESS = 4
-
-/** BUILDER_TASKING_PLOT_EVAL_MULTIPLIER_LUXURY_RESOURCE of the BNW XML */
-private const val DEFAULT_LUXURY_RESOURCE_MULTIPLIER = 750
 
 /**
  *  CvBuilderTaskingAI::GetResourceWeight: how much [civ] wants to hook up [resource] with [improvement] on a tile holding [quantity] of it.
@@ -40,8 +38,7 @@ fun resourceWeight(civ: Civilization, resource: TileResource, improvement: TileI
 
     when (resource.resourceType) {
         ResourceType.Luxury -> {
-            val multiplier = aiRules.defines["BUILDER_TASKING_PLOT_EVAL_MULTIPLIER_LUXURY_RESOURCE"]?.toInt() ?: DEFAULT_LUXURY_RESOURCE_MULTIPLIER
-            var modifier = multiplier * LUXURY_RESOURCE_HAPPINESS
+            var modifier = aiRules.define(AiDefine.BUILDER_TASKING_PLOT_EVAL_MULTIPLIER_LUXURY_RESOURCE) * LUXURY_RESOURCE_HAPPINESS
             if (civ.getResourceAmount(resource) != 0) modifier = modifier * 3 / 4
             weight *= modifier
         }

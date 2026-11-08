@@ -102,7 +102,6 @@ class ModConstants {
 
     // AI behaviour
     var workboatAutomationSearchMaxTiles = 37
-    var minimumCityLocationTileValue = 53f
 
     // Civilization
     var minimumWarDuration = 10
