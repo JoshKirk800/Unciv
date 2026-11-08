@@ -4,6 +4,7 @@ import com.unciv.Constants
 import com.unciv.logic.automation.civilization.AutomationCache
 import com.unciv.logic.automation.strategy.ExplorationAi
 import com.unciv.logic.automation.strategy.ExplorationPlots
+import com.unciv.logic.automation.strategy.ReconState
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.mapunit.MapUnit
@@ -352,6 +353,21 @@ class HomelandAiTests {
         see()
         HomelandAi.doTurn(civ, listOf(scout), AutomationCache())
         assertEquals(hills, scout.getTile())
+    }
+
+    @Test
+    fun `a land explorer with no target and no way home is disbanded, and recon keeps counting it so it asks for no replacement`() {
+        exploreOnlyAround(tile(0), 6)
+        game.addCity(civ, tile(4))
+        val scout = game.addUnit("Scout", civ, tile(0))
+        for (neighbor in tile(0).neighbors) game.setTileTerrain(neighbor.position, Constants.ocean)
+        civ.ai.economic.doReconState(civ)
+        assertEquals("with its explorer alive recon is not needed", ReconState.Neutral, civ.ai.economic.reconState)
+        see()
+        HomelandAi.doTurn(civ, listOf(scout), AutomationCache())
+        assertTrue(scout.isDestroyed)
+        civ.ai.economic.doReconState(civ)
+        assertEquals("the disbanded explorer still counts", ReconState.Neutral, civ.ai.economic.reconState)
     }
 
     // endregion
