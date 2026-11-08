@@ -3,7 +3,11 @@ package com.unciv.logic.automation.unit
 import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.civilization.AutomationCache
+import com.unciv.logic.automation.strategy.ProductionAi
+import com.unciv.logic.automation.strategy.UnitAiType
+import com.unciv.logic.automation.strategy.UnitAiTypes
 import com.unciv.logic.automation.unit.CivilianUnitAutomation.tryRunAwayIfNeccessary
+import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.mapunit.MapUnit
@@ -12,6 +16,7 @@ import com.unciv.models.UnitActionType
 import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.ai.DiplomacyPersonality
 import com.unciv.models.ruleset.unique.UniqueType
+import com.unciv.models.ruleset.unit.BaseUnit
 import com.unciv.view.MapUnitView
 import com.unciv.view.TileView
 import yairm210.purity.annotations.LocalState
@@ -32,6 +37,13 @@ class SettlerOperation : IsPartOfGameInfoSerialization {
     var escorted = false
     /** Game turn the operation started, for the 15-turn wait for an escort (CvAIOperationFoundCity::ShouldAbort) */
     var turnStarted = 0
+    /** The city that committed to train the escort (CvAIOperation::m_viListOfUnitsCitiesHaveCommittedToBuild), null if none has */
+    var escortCityId: String? = null
+    /** The unit type that city trains (CvCity::m_unitBeingBuiltForOperation) and the unit AI type it gets (the escort slot's primary or secondary one) */
+    var escortUnit: String? = null
+    var escortUnitAi: String? = null
+    /** The escort trained for this operation, who joins the settler (CvAIOperation: the escort slot of the army); -1 until it exists */
+    var escortUnitId = -1
 
     @Readonly
     fun clone(): SettlerOperation {
@@ -41,6 +53,10 @@ class SettlerOperation : IsPartOfGameInfoSerialization {
         toReturn.foundCity = foundCity
         toReturn.escorted = escorted
         toReturn.turnStarted = turnStarted
+        toReturn.escortCityId = escortCityId
+        toReturn.escortUnit = escortUnit
+        toReturn.escortUnitAi = escortUnitAi
+        toReturn.escortUnitId = escortUnitId
         return toReturn
     }
 }
@@ -50,8 +66,11 @@ class SettlerOperation : IsPartOfGameInfoSerialization {
  *  (which area, escorted or not) and the settler side of CvAIOperationFoundCity / CvAIOperationQuickColonize (target from
  *  CvPlayer::GetBestSettlePlot, retarget when the site is lost, found on arrival).
  *
- *  Not ported (operations and armies are out of scope): the escort is not recruited by the operation - Unciv's
- *  [com.unciv.logic.automation.civilization.NextTurnAutomation.automateSettlerEscorting] sends one to settlers whose operation wants it.
+ *  The escort of a found-city operation is recruited as the original does: a city asks CvCity::GetUnitForOperation ([settlerAwaitingEscort],
+ *  [escortUnitFor]) when it chooses its production ([com.unciv.logic.automation.city.ConstructionAutomation]), commits to train it
+ *  ([commitEscort]), and the unit it trains becomes the escort ([onUnitTrained], [tryJoinSettler]). Not ported (the other operations and
+ *  armies are out of scope): GrabUnitsFromTheReserves - Unciv's
+ *  [com.unciv.logic.automation.civilization.NextTurnAutomation.automateSettlerEscorting] drafts a unit near a waiting settler instead.
  */
 object SettlerAutomation {
     /** Turns a FOUND_CITY settler waits for an escort before it goes alone (CvAIOperationFoundCity::ShouldAbort) */
@@ -76,9 +95,16 @@ object SettlerAutomation {
             target = civ.gameInfo.tileMap[operation.target!!]
         }
 
-        // CvAIOperationFoundCity::ShouldAbort: waiting for an escort that never came - go alone after 15 turns
-        if (operation.foundCity && operation.escorted && !hasEscort(unit)
-            && civ.gameInfo.turns - operation.turnStarted > ESCORT_WAIT_TURNS) operation.escorted = false
+        // CvAIEscortedOperation: the escort died on its way - abort, a new operation starts next turn
+        if (operation.escortUnitId != -1 && assignedEscort(unit) == null) {
+            unit.settlerOperation = null
+            return@timeThis
+        }
+        // CvAIOperationFoundCity::ShouldAbort: no escort after 15 turns (or waiting outside our borders), and no city has committed to train
+        // one - go alone
+        if (operation.foundCity && operation.escorted && !hasEscort(unit) && operation.escortUnitId == -1
+            && (civ.gameInfo.turns - operation.turnStarted > ESCORT_WAIT_TURNS || unit.getTile().getOwner() != civ)
+            && committedCity(civ, operation) == null) operation.escorted = false
 
         // CvAIOperationFoundCity::ArmyInPosition: the site was taken or can no longer hold a city - find another one
         if (!isStillValidTarget(unit, target) || !unit.movement.canReach(target)) {
@@ -109,6 +135,79 @@ object SettlerAutomation {
 
     /** A military land unit of ours on the settler's tile */
     private fun hasEscort(unit: MapUnit): Boolean = unit.getTile().militaryUnit?.civ == unit.civ
+
+    /** The escort trained for the settler's operation, while it lives (the unit in the army's escort slot) */
+    fun assignedEscort(settler: MapUnit): MapUnit? {
+        val id = settler.settlerOperation?.escortUnitId ?: return null
+        if (id < 0) return null
+        return settler.civ.units.getCivUnits().firstOrNull { it.id == id }
+    }
+
+    /** The city that has committed to train the escort of [operation] and still does (CvAIOperation::m_viListOfUnitsCitiesHaveCommittedToBuild) */
+    private fun committedCity(civ: Civilization, operation: SettlerOperation): City? {
+        val id = operation.escortCityId ?: return null
+        val city = civ.cities.firstOrNull { it.id == id } ?: return null
+        return if (city.cityConstructions.currentConstructionName() == operation.escortUnit) city else null
+    }
+
+    /**
+     *  The settler whose operation CvCity::GetUnitForOperation would serve in [city]: CvPlayer::PeekAtNextUnitToBuildForOperationSlot(area of
+     *  the city) - an escorted found-city operation still waiting for its escort (AI_OPERATION_STATE_RECRUITING_UNITS), mustering on the
+     *  city's landmass, that no city has committed to yet.
+     */
+    fun settlerAwaitingEscort(city: City): MapUnit? {
+        val civ = city.civ
+        val area = city.getCenterTile().getContinent()
+        return civ.units.getCivUnits().firstOrNull { settler ->
+            val operation = settler.settlerOperation
+            operation != null && operation.foundCity && operation.escorted && operation.escortUnitId == -1 && !hasEscort(settler)
+                && settler.getTile().getContinent() == area && committedCity(civ, operation) == null
+        }
+    }
+
+    /**
+     *  CvCity::GetUnitForOperation for the escort slot of MUFORMATION_SETTLER_ESCORT: the unit CvUnitProductionAI::RecommendUnit picks for the
+     *  slot's primary unit AI (UNITAI_DEFENSE), else for its secondary one (UNITAI_COUNTER), with that AI type; null if [city] can train neither.
+     */
+    fun escortUnitFor(city: City): Pair<BaseUnit, UnitAiType>? {
+        ProductionAi.recommendUnit(city, UnitAiType.DEFENSE)?.let { return it to UnitAiType.DEFENSE }
+        return ProductionAi.recommendUnit(city, UnitAiType.COUNTER)?.let { it to UnitAiType.COUNTER }
+    }
+
+    /** CvCity::CommitToBuildingUnitForOperation: [city] trains [unit] as the escort of [settler]'s operation, the unit AI [unitAi] it gets */
+    fun commitEscort(settler: MapUnit, city: City, unit: BaseUnit, unitAi: UnitAiType) {
+        val operation = settler.settlerOperation ?: return
+        operation.escortCityId = city.id
+        operation.escortUnit = unit.name
+        operation.escortUnitAi = unitAi.xmlName
+    }
+
+    /**
+     *  CvCity::CreateUnit with bUseToSatisfyOperation: a unit [city] trained for a settler's operation takes the unit AI of the slot and
+     *  becomes its escort (CvPlayer::CityFinishedBuildingUnitForOperationSlot).
+     *  @return whether [unit] was the escort of an operation - the original then skips the recon assignment of units just trained
+     */
+    fun onUnitTrained(unit: MapUnit, city: City): Boolean {
+        for (settler in unit.civ.units.getCivUnits()) {
+            val operation = settler.settlerOperation ?: continue
+            if (operation.escortCityId != city.id || operation.escortUnit != unit.name) continue
+            UnitAiType.ofXmlName(operation.escortUnitAi)?.let { UnitAiTypes.set(unit, it) }
+            operation.escortCityId = null
+            operation.escortUnit = null
+            operation.escortUnitAi = null
+            operation.escortUnitId = unit.id
+            return true
+        }
+        return false
+    }
+
+    /** The escort of a settler's operation joins the settler where it waits and then follows it (the army moves together) */
+    fun tryJoinSettler(unit: MapUnit): Boolean {
+        val settler = unit.civ.units.getCivUnits().firstOrNull { it.settlerOperation?.escortUnitId == unit.id } ?: return false
+        val settlerTile = settler.getTile()
+        if (unit.getTile() != settlerTile && unit.movement.canReach(settlerTile)) unit.movement.headTowards(settlerTile)
+        return true
+    }
 
     /** Sites other settlers of [civ] are heading to (CvPlayer::IsPlotTargetedForCity) */
     private fun targetedSites(civ: Civilization, except: MapUnit): List<Tile> = civ.units.getCivUnits()

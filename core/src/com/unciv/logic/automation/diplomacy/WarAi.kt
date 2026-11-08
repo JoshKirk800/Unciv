@@ -1,15 +1,22 @@
 package com.unciv.logic.automation.diplomacy
 
+import com.unciv.logic.automation.strategy.ArmyType
+import com.unciv.logic.automation.strategy.ProductionAi
+import com.unciv.logic.automation.strategy.UnitAiType
+import com.unciv.logic.automation.strategy.UnitAiTypes
 import com.unciv.logic.automation.strategy.WarStateAi
+import com.unciv.logic.automation.unit.SettleAreas
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.diplomacy.DeclareWarReason
 import com.unciv.logic.civilization.diplomacy.WarType
 import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.ai.AiRuleset
+import com.unciv.models.ruleset.ai.FormationSlotDef
 import com.unciv.models.ruleset.ai.MajorCivApproach
 import com.unciv.models.ruleset.ai.MinorCivApproach
 import com.unciv.models.ruleset.ai.MultiUnitFormationDef
+import com.unciv.models.ruleset.unit.BaseUnit
 
 /**
  *  War-making of CvDiplomacyAI: MakeWar (targets by war projection and proximity²), DoMakeWarOnPlayer (one war with majors at a time,
@@ -81,7 +88,11 @@ object WarAi {
             val targetCity = targetCity(civ, target) ?: return
             val muster = musterCity(civ, targetCity) ?: return
             val formation = formationOf(civ, target, muster, targetCity, rules) ?: return
-            if (!isAttackReady(civ, formation.first, formation.second, rules)) return
+            if (!isAttackReady(civ, formation.first, formation.second, rules)) {
+                // The army cannot be formed yet: the cities build its units (CvMilitaryAI::RequestSneakAttack / RequestCityStateAttack)
+                civ.ai.military.requestArmy(bySea = formation.second)
+                return
+            }
             memory.attackOperation = true
         }
         // The army is in position: let loose the dogs of war
@@ -153,7 +164,7 @@ object WarAi {
     /**
      *  CvMilitaryAI::IsAttackReady / MilitaryAIHelpers::NumberOfFillableSlots: every required slot of [formation] can be filled by our units
      *  (not scouts, at least AI_OPERATIONAL_PERCENT_HEALTH_FOR_OPERATION health, able to move by sea if needed) that pass [isInPlace].
-     *  A scout is a unit whose AI type is UNITAI_EXPLORE(_SEA); Unciv units have no AI type of their own, so it is the unit's default one.
+     *  A scout is a unit whose current AI type is UNITAI_EXPLORE(_SEA) ([UnitAiTypes.current]).
      */
     fun isAttackReady(civ: Civilization, formation: MultiUnitFormationDef, bySea: Boolean, rules: AiRuleset,
                       isInPlace: (com.unciv.logic.map.tile.Tile) -> Boolean = { true }): Boolean {
@@ -164,8 +175,8 @@ object WarAi {
             if (slots.isEmpty()) break
             val types = unitAiTypesOf(rules, unit.name)
             if (types.isEmpty()) continue
-            val defaultAi = defaultUnitAiOf(rules, unit.name)
-            if (defaultAi == "UNITAI_EXPLORE" || defaultAi == "UNITAI_EXPLORE_SEA") continue
+            val currentAi = UnitAiTypes.current(unit)
+            if (currentAi == UnitAiType.EXPLORE || currentAi == UnitAiType.EXPLORE_SEA) continue
             if (unit.health < minHealth) continue
             if (bySea && !unit.baseUnit.isWaterUnit && unit.cache.cannotEmbark) continue
             if (!isInPlace(unit.getTile())) continue
@@ -176,6 +187,60 @@ object WarAi {
         }
         val required = filled + slots.count { it.required }
         return filled >= required
+    }
+
+    /**
+     *  MilitaryAIHelpers::FirstSlotCityCanFill: after our units that are not exploring, healthy enough and (for a naval formation) able to
+     *  move by sea have taken the slots of [formation] they fit, the unit AI of the first required slot still empty - its secondary one if
+     *  [secondary]; in a coastal city the first such slot with a sea unit AI. Null (NO_UNITAI) if every required slot is filled.
+     */
+    fun firstSlotCityCanFill(civ: Civilization, formation: MultiUnitFormationDef, bySea: Boolean, coastal: Boolean, secondary: Boolean,
+                             rules: AiRuleset = civ.gameInfo.ruleset.ai): UnitAiType? {
+        val slots = formation.slots.toMutableList()
+        val minHealth = rules.define(AiDefine.AI_OPERATIONAL_PERCENT_HEALTH_FOR_OPERATION)
+        for (unit in civ.units.getCivUnits()) {
+            if (slots.isEmpty()) break
+            val types = unitAiTypesOf(rules, unit.name)
+            if (types.isEmpty()) continue
+            val currentAi = UnitAiTypes.current(unit)
+            if (currentAi == UnitAiType.EXPLORE || currentAi == UnitAiType.EXPLORE_SEA) continue
+            if (unit.health < minHealth) continue
+            if (bySea && !unit.baseUnit.isWaterUnit && unit.cache.cannotEmbark) continue
+            val index = slots.indexOfFirst { it.primaryUnitAi in types || it.secondaryUnitAi in types }
+            if (index >= 0) slots.removeAt(index)
+        }
+        fun typeOf(slot: FormationSlotDef) = UnitAiType.ofXmlName(if (secondary) slot.secondaryUnitAi else slot.primaryUnitAi)
+        if (coastal) {
+            val seaSlot = slots.firstOrNull { it.required && UnitAiType.ofXmlName(it.primaryUnitAi) in SEA_ARMY_UNIT_AIS }
+            if (seaSlot != null) return typeOf(seaSlot)
+        }
+        return slots.firstOrNull { it.required }?.let { typeOf(it) }
+    }
+
+    private val SEA_ARMY_UNIT_AIS = setOf(UnitAiType.ASSAULT_SEA, UnitAiType.ATTACK_SEA, UnitAiType.RESERVE_SEA, UnitAiType.ESCORT_SEA)
+
+    /**
+     *  CvMilitaryAI::GetUnitForArmy: while an army is being built ([MilitaryAi.armyTypeBeingBuilt]), the unit [city] would train for it -
+     *  the best unit for the first empty required slot of the city attack formation (the naval invasion one for a sea army), else for the
+     *  secondary unit AI of that slot. Null if no army is being built, the formation is full, or the city cannot train such a unit.
+     */
+    fun unitForArmy(city: City): BaseUnit? {
+        val civ = city.civ
+        val type = civ.ai.military.armyTypeBeingBuilt ?: return null
+        val rules = civ.gameInfo.ruleset.ai
+        val bySea = type == ArmyType.NavalInvasion
+        val name = when {
+            bySea -> "MUFORMATION_NAVAL_INVASION"
+            civ.gameInfo.ruleset.difficulties.keys.indexOf(civ.gameInfo.difficulty) > 4 && SettleAreas.aiMapHint(civ.gameInfo) and 1 == 0 ->
+                "MUFORMATION_BIGGER_CITY_ATTACK_FORCE"
+            else -> "MUFORMATION_BASIC_CITY_ATTACK_FORCE"
+        }
+        val formation = rules.multiUnitFormations.firstOrNull { it.name == name } ?: return null
+        for (secondary in listOf(false, true)) {
+            val unitAi = firstSlotCityCanFill(civ, formation, bySea, city.isCoastal(), secondary, rules) ?: continue
+            ProductionAi.recommendUnit(city, unitAi)?.let { return it }
+        }
+        return null
     }
 
     private var unitAiIndexOwner: AiRuleset? = null
