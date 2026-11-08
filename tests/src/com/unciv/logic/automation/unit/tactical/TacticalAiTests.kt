@@ -1,6 +1,8 @@
 package com.unciv.logic.automation.unit.tactical
 
 import com.unciv.logic.automation.civilization.AutomationCache
+import com.unciv.logic.automation.strategy.UnitAiType
+import com.unciv.logic.automation.strategy.UnitAiTypes
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
 import com.unciv.models.metadata.BaseRuleset
@@ -91,6 +93,29 @@ class TacticalAiTests {
         civ.viewableTiles = emptySet()
         civ.ai.invalidateTurnCaches()
         assertTrue(TacticalAi.commandeerUnits(civ, listOf(unit), AutomationCache()).isEmpty())
+    }
+
+    @Test
+    fun `a unit with the explore unit AI is never commandeered, however near the enemy, while a unit with another military AI is`() {
+        game.addUnit("Warrior", enemy, tile(3))
+        val scout = game.addUnit("Scout", civ, tile(1))
+        val explorer = game.addUnit("Warrior", civ, tile(0))
+        val soldier = game.addUnit("Warrior", civ, tile(2))
+        UnitAiTypes.set(explorer, UnitAiType.EXPLORE)
+        assertEquals(UnitAiType.EXPLORE, UnitAiTypes.current(scout))
+        see()
+        assertEquals(listOf(soldier), TacticalAi.commandeerUnits(civ, listOf(scout, explorer, soldier), AutomationCache()))
+    }
+
+    @Test
+    fun `a unit that can paradrop is commandeered with no enemy near, unless it has moved or stands outside friendly territory`() {
+        val home = game.addCity(civ, tile(-12), initialPopulation = 1)
+        val ready = game.addUnit("Paratrooper", civ, home.getCenterTile())
+        val moved = game.addUnit("Paratrooper", civ, home.getCenterTile().neighbors.first()).also { it.currentMovement = 1f }
+        val abroad = game.addUnit("Paratrooper", civ, tile(14))
+        val walker = game.addUnit("Warrior", civ, home.getCenterTile().neighbors.last())
+        see()
+        assertEquals(listOf(ready), TacticalAi.commandeerUnits(civ, listOf(ready, moved, abroad, walker), AutomationCache()))
     }
 
     // endregion
