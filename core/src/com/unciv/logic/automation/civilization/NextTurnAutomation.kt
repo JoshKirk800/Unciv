@@ -268,19 +268,6 @@ object NextTurnAutomation {
         PolicyAutomation.doPolicyAi(civInfo)
     }
 
-    fun chooseGreatPerson(civView: CivView) {
-        val civInfo = civView.getCiv()
-        val greatPeople = civInfo.greatPeople.getFreeGreatPersonOptions()
-        if (greatPeople.isEmpty()) return
-        val rng = civInfo.state.stateBasedRandom("NextTurnAutomation.chooseGreatPerson")
-        var greatPerson = greatPeople.random(rng)
-        val scienceGP = greatPeople.firstOrNull { it.uniques.contains("Great Person - [Science]") }
-        if (scienceGP != null)  greatPerson = scienceGP
-        // Humans would pick a prophet or engineer, but it'd require more sophistication on part of the AI - a scientist is the safest option for now
-
-        civInfo.greatPeople.chooseFreeGreatPerson(greatPerson.name)
-    }
-
     /** If we are able to build a spaceship but have already spent our resources, try disbanding
      *  a unit and selling a building to make room. Can happen due to trades etc */
     private fun freeUpSpaceResources(civView: CivView) {

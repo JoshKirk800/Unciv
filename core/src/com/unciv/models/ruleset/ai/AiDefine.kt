@@ -96,7 +96,6 @@ enum class AiDefine(val default: Float) {
     IDEOLOGY_SCORE_FRIENDLY(12f),
     IDEOLOGY_SCORE_HAPPINESS(3f),
     SUPER_UNHAPPY_THRESHOLD(-20f),
-
     // CvDiplomacyAI war states, target values, military strength (WarStateAi)
     AI_DIPLO_PLOT_RANGE_FROM_CITY_HOME_FRONT(5f),
     MAX_CITY_HIT_POINTS(200f),
@@ -229,4 +228,7 @@ enum class AiDefine(val default: Float) {
     AI_CITIZEN_VALUE_SCIENCE(7f),
     AI_CITIZEN_VALUE_CULTURE(15f),
     AI_CITIZEN_VALUE_FAITH(5f),
+
+    // CvPlayerAI Great People directives (GreatPersonAutomation)
+    AI_TACTICAL_RECRUIT_RANGE(8f),
 }

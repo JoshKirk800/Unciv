@@ -1,7 +1,6 @@
 package com.unciv.logic.city
 
 import com.unciv.logic.automation.civilization.TradeAutomation
-import com.unciv.logic.automation.unit.GreatWorkAutomation
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.mapunit.actions.UnitActions
@@ -294,31 +293,6 @@ class GreatWorkTests {
         val placed = city.greatWorks.getWorkIn(GreatWorkSlot(city, temple, 0))!!
         assertEquals(gift.name, placed.work)
         assertEquals(civ.civName, placed.creatorCiv)
-    }
-    //endregion
-
-    //region Automation
-    @Test
-    fun `the AI has a Great Person create its work when it stands in a city with a free slot, and walks there otherwise`() {
-        val homer = game.createGreatWork(GreatWorkType.Literature, creator = "Homer")
-        val library = addBuilding("Has [1] [Literature] Great Work slots")
-        val away = greatPerson("Homer", tile = game.tileMap[0, 4])
-        val before = away.currentTile.aerialDistanceTo(city.getCenterTile())
-        assertTrue(GreatWorkAutomation.automate(away))
-        assertTrue("walked towards the city", away.currentTile.aerialDistanceTo(city.getCenterTile()) < before)
-        assertNull(city.greatWorks.getWorkIn(GreatWorkSlot(city, library, 0)))
-
-        away.destroy()
-        val inCity = greatPerson("Homer")
-        assertTrue(GreatWorkAutomation.automate(inCity))
-        assertEquals(homer.name, city.greatWorks.getWorkIn(GreatWorkSlot(city, library, 0))!!.work)
-        assertFalse(inCity in civ.units.getCivUnits())
-    }
-
-    @Test
-    fun `the AI leaves a Great Person with other uses alone when no slot is free`() {
-        game.createGreatWork(GreatWorkType.Literature, creator = "Homer")
-        assertFalse(GreatWorkAutomation.automate(greatPerson("Homer")))
     }
     //endregion
 

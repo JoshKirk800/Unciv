@@ -1,9 +1,8 @@
 package com.unciv.models.ruleset.unique
 
-import com.unciv.view.GameView
 import com.unciv.Constants
 import com.unciv.UncivGame
-import com.unciv.logic.automation.civilization.NextTurnAutomation
+import com.unciv.logic.automation.unit.GreatPersonAutomation
 import com.unciv.logic.city.City
 import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.map.tile.ArchaeologyFunctions
@@ -552,7 +551,7 @@ object UniqueTriggerActivation {
                         civInfo.addNotification(notification, NotificationCategory.General)
 
                     if (civInfo.isAI() || UncivGame.Current.worldScreen?.autoPlay?.isAutoPlayingAndFullAutoPlayAI() == true) {
-                        NextTurnAutomation.chooseGreatPerson(GameView(civInfo.gameInfo, civInfo).civView)
+                        GreatPersonAutomation.chooseFreeGreatPeople(civInfo)
                     }
                     true
                 }
