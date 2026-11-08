@@ -1,6 +1,7 @@
 package com.unciv.logic.automation.unit
 
 import com.unciv.logic.automation.diplomacy.WarGoal
+import com.unciv.logic.automation.unit.tactical.TacticalAi
 import com.unciv.logic.automation.unit.tactical.TacticalSafety
 import com.unciv.view.hasMovement
 import com.unciv.view.isAirUnit
@@ -90,6 +91,13 @@ object UnitAutomation {
                 return AirUnitAutomation.automateMissile(unitView)
 
             return AirUnitAutomation.automateBomber(unitView)
+        }
+
+        // A human's automated unit has no tactical turn of its own before this (NextTurnAutomation.automateUnits gives AI and auto play one):
+        // the tactical AI commands it on its own, for its attacks, safety and garrison duty
+        if (isHumanAndNotAutoplaying && unit.isMilitary()) {
+            TacticalAi.automate(unit.civ, listOf(unit), cache)
+            if (unit in cache.processedUnits) return
         }
 
         // Settlers get their escort from their operation (OperationMoves); Great People are accompanied here
