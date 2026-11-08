@@ -424,6 +424,17 @@ class GreatPersonAutomationTests {
         civ.ai.grandStrategy = GrandStrategyAi.CULTURE
         assertEquals(GreatPeopleDirective.TourismBlast, GreatPersonAutomation.directiveMusician(musician))
     }
+
+    @Test
+    fun `a concert tour whose target cannot be reached any more retargets instead of moving`() {
+        val target = tile(5, 0)
+        for (neighbor in target.neighbors) game.setTileTerrain(neighbor.position, "Ocean") // no embarking without Optics
+        val musician = greatPerson("Great Musician")
+        musician.greatPersonTarget = target.position
+        assertTrue(GreatPersonAutomation.automate(musician) { false })
+        assertNull("no reachable tour target: the operation ends", musician.greatPersonTarget)
+        assertEquals(city.getCenterTile(), musician.currentTile)
+    }
     //endregion
 
     //region General and admiral
