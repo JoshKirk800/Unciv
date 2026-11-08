@@ -36,6 +36,7 @@ class AiRuleset {
     var itemFlavors = ArrayList<ItemFlavors>()
     var unitAiTypes = ArrayList<UnitAiTypesDef>()
     var handicaps = ArrayList<HandicapDef>()
+    var policyBranches = ArrayList<PolicyBranchAiDef>()
 
     /** The ruleset this belongs to - needed to derive flavors of objects without a table entry */
     @Transient lateinit var ruleset: Ruleset
@@ -79,6 +80,7 @@ class AiRuleset {
         mergeByName(minorCivFlavors, other.minorCivFlavors)
         mergeByName(unitAiTypes, other.unitAiTypes)
         mergeByName(handicaps, other.handicaps)
+        mergeByName(policyBranches, other.policyBranches)
         for (entry in other.itemFlavors) {
             val index = itemFlavors.indexOfFirst { it.kind == entry.kind && it.name == entry.name }
             if (index >= 0) itemFlavors[index] = entry else itemFlavors.add(entry)
@@ -98,6 +100,7 @@ class AiRuleset {
         itemFlavors.clear()
         unitAiTypes.clear()
         handicaps.clear()
+        policyBranches.clear()
         clearCaches()
     }
 
@@ -145,6 +148,13 @@ class AiRuleset {
         val index = itemFlavorIndex ?: itemFlavors.associateByTo(HashMap()) { it.kind + "/" + it.name }.also { itemFlavorIndex = it }
         return index["$kind/$name"]
     }
+
+    /** A HandicapInfos column (AI*, *NumOptionsConsidered) of the difficulty named [difficulty], null if the ruleset has none */
+    fun handicapValue(difficulty: String, column: String): Int? =
+        handicaps.firstOrNull { it.name == difficulty }?.values?.get(column)
+
+    /** The policy AI columns of a policy branch, null if the ruleset has no entry for it */
+    fun policyBranchOf(branchName: String): PolicyBranchAiDef? = policyBranches.firstOrNull { it.name == branchName }
     //endregion
 
     //region Item flavors

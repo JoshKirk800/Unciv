@@ -24,7 +24,6 @@ import yairm210.purity.annotations.Readonly
  *  * These biases can be indexed with a [PersonalityValue] as key, [get]/[set]
  *  * Defines [preferredVictoryType] - shown in the Civilopedia only; the AI pursues its grand strategy (`civ.ai`)
  *  * Defines the AI personality of the original game: [flavors], [diplomacyPersonality], [majorCivApproachBiases], [minorCivApproachBiases]
- *  * Defines Policy preferences in [priorities]
  *  * Can have [civilopediaText], but not [uniques] (effect not implemented, guarded by `RulesetValidator`)
  *  * API: [scaledFocus], [inverseScaledFocus], [inverseModifierFocus], [scaleStats]
  */
@@ -46,7 +45,6 @@ class Personality : RulesetObject() {
     var expansion: Float = 5f
     var denounceWillingness: Float = 5f
 
-    var priorities = LinkedHashMap<String, Int>()
     var preferredVictoryType: String = Constants.neutralVictoryType
     var isNeutralPersonality: Boolean = false
 

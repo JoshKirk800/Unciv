@@ -1696,7 +1696,7 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	This unique is automatically hidden from users.
 
-	Applicable to: Tech, Policy, FounderBelief, FollowerBelief, Building, Promotion, EventChoice
+	Applicable to: Tech, FounderBelief, FollowerBelief, Building, Promotion, EventChoice
 
 ??? example  "Will not be displayed in Civilopedia"
 	Supports conditionals that need only a Game as context and nothing else.
@@ -1731,13 +1731,6 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 	Meant to be used together with conditionals, like "Unavailable &lt;after generating a Great Prophet&gt;".
 
 	Applicable to: Resolution, Tech, Policy, FounderBelief, FollowerBelief, Building, Unit, Promotion, Improvement, Ruins, Event, EventChoice, Victory
-
-??? example  "[relativeAmount]% weight to this choice for AI decisions"
-	Example: "[+20]% weight to this choice for AI decisions"
-
-	This unique is automatically hidden from users.
-
-	Applicable to: Tech, Policy, FounderBelief, FollowerBelief, Building, Promotion, EventChoice
 
 ??? example  "Will not be displayed in Civilopedia"
 	Supports conditionals that need only a Game as context and nothing else.
@@ -1834,7 +1827,7 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	This unique is automatically hidden from users.
 
-	Applicable to: Tech, Policy, FounderBelief, FollowerBelief, Building, Promotion, EventChoice
+	Applicable to: Tech, FounderBelief, FollowerBelief, Building, Promotion, EventChoice
 
 ??? example  "Will not be displayed in Civilopedia"
 	Supports conditionals that need only a Game as context and nothing else.
@@ -2161,7 +2154,7 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	This unique is automatically hidden from users.
 
-	Applicable to: Tech, Policy, FounderBelief, FollowerBelief, Building, Promotion, EventChoice
+	Applicable to: Tech, FounderBelief, FollowerBelief, Building, Promotion, EventChoice
 
 ??? example  "Will not be displayed in Civilopedia"
 	Supports conditionals that need only a Game as context and nothing else.
@@ -2376,7 +2369,7 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	This unique is automatically hidden from users.
 
-	Applicable to: Tech, Policy, FounderBelief, FollowerBelief, Building, Promotion, EventChoice
+	Applicable to: Tech, FounderBelief, FollowerBelief, Building, Promotion, EventChoice
 
 ??? example  "Will not be displayed in Civilopedia"
 	Supports conditionals that need only a Game as context and nothing else.
@@ -3155,7 +3148,7 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	This unique is automatically hidden from users.
 
-	Applicable to: Tech, Policy, FounderBelief, FollowerBelief, Building, Promotion, EventChoice
+	Applicable to: Tech, FounderBelief, FollowerBelief, Building, Promotion, EventChoice
 
 ??? example  "Will not be displayed in Civilopedia"
 	Supports conditionals that need only a Game as context and nothing else.
@@ -4066,7 +4059,7 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	This unique is automatically hidden from users.
 
-	Applicable to: Tech, Policy, FounderBelief, FollowerBelief, Building, Promotion, EventChoice
+	Applicable to: Tech, FounderBelief, FollowerBelief, Building, Promotion, EventChoice
 
 ??? example  "Will not be displayed in Civilopedia"
 	Supports conditionals that need only a Game as context and nothing else.

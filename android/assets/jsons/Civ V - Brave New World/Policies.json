@@ -2,13 +2,6 @@
     {
         "name": "Tradition",
         "era": "Ancient era",
-        "priorities": {
-            "Neutral": 5,
-            "Cultural": 5,
-            "Diplomatic": 5,
-            "Domination": 5,
-            "Scientific": 5
-        },
         "uniques": [
             "[+3 Culture] [in capital]",
             "[-25]% Culture cost of natural border growth [in all cities]"
@@ -27,8 +20,7 @@
                 "name": "Oligarchy",
                 "uniques": [
                     "Units in cities cost no Maintenance",
-                    "[+50]% Strength for cities <with a garrison> <when attacking>",
-                    "[-100]% weight to this choice for AI decisions"
+                    "[+50]% Strength for cities <with a garrison> <when attacking>"
                 ],
                 "row": 1,
                 "column": 3
@@ -75,13 +67,6 @@
     {
         "name": "Liberty",
         "era": "Ancient era",
-        "priorities": {
-            "Neutral": 10,
-            "Cultural": 10,
-            "Diplomatic": 10,
-            "Domination": 10,
-            "Scientific": 10
-        },
         "uniques": [
             "[+1 Culture] [in all cities]"
         ],
@@ -99,8 +84,7 @@
                 "name": "Citizenship",
                 "uniques": [
                     "Can build [all] improvements at a [+25]% rate",
-                    "Free [Worker] appears",
-                    "[-100]% weight to this choice for AI decisions"
+                    "Free [Worker] appears"
                 ],
                 "row": 1,
                 "column": 4
@@ -130,8 +114,7 @@
                 "name": "Meritocracy",
                 "uniques": [
                     "[+1 Happiness] [in all cities connected to capital]",
-                    "[-5]% Unhappiness from [Population] [in all non-occupied cities]",
-                    "[-100]% weight to this choice for AI decisions"
+                    "[-5]% Unhappiness from [Population] [in all non-occupied cities]"
                 ],
                 "requires": ["Citizenship"],
                 "row": 2,
@@ -149,13 +132,6 @@
     {
         "name": "Honor",
         "era": "Ancient era",
-        "priorities": {
-            "Neutral": 5,
-            "Cultural": 5,
-            "Diplomatic": 5,
-            "Domination": 5,
-            "Scientific": 5
-        },
         "uniques": [
             "[+33]% Strength <vs [Barbarian] units>",
             "Earn [100]% of killed [Barbarian] unit's [Strength] as [Culture]",
@@ -223,18 +199,10 @@
     {
         "name": "Piety",
         "era": "Ancient era",
-        "priorities": {
-            "Neutral": 0,
-            "Cultural": 0,
-            "Diplomatic": 0,
-            "Domination": 0,
-            "Scientific": 0
-        },
         "uniques": [
             "[+100]% Production when constructing [Shrine] buildings [in all cities]",
             "[+100]% Production when constructing [Temple] buildings [in all cities]",
-            "Only available <when religion is enabled>",
-            "[-100]% weight to this choice for AI decisions <when religion is disabled>"
+            "Only available <when religion is enabled>"
         ],
         "policies": [
             {
@@ -296,16 +264,8 @@
     {
         "name": "Patronage",
         "era": "Classical era",
-        "priorities": {
-            "Neutral": 5,
-            "Cultural": 5,
-            "Diplomatic": 10,
-            "Domination": 5,
-            "Scientific": 5
-        },
         "uniques": [
-            "[-25]% City-State Influence degradation",
-            "[-100]% weight to this choice for AI decisions <when number of [Remaining [City-State] Civilizations] is less than [2]>"
+            "[-25]% City-State Influence degradation"
         ],
         "policies": [
             {
@@ -364,13 +324,6 @@
     {
         "name": "Aesthetics",
         "era": "Classical era",
-        "priorities": {
-            "Neutral": 5,
-            "Cultural": 10,
-            "Diplomatic": 5,
-            "Domination": 5,
-            "Scientific": 5
-        },
         "uniques": [
             "[Great Writer] is earned [+25]% faster",
             "[Great Artist] is earned [+25]% faster",
@@ -440,13 +393,6 @@
     {
         "name": "Commerce",
         "era": "Medieval era",
-        "priorities": {
-            "Neutral": 5,
-            "Cultural": 5,
-            "Diplomatic": 5,
-            "Domination": 5,
-            "Scientific": 5
-        },
         "uniques": [
             "[+25]% [Gold] [in capital]"
         ],
@@ -514,13 +460,6 @@
     {
         "name": "Exploration",
         "era": "Medieval era",
-        "priorities": {
-            "Neutral": 5,
-            "Cultural": 5,
-            "Diplomatic": 5,
-            "Domination": 5,
-            "Scientific": 5
-        },
         "uniques": [
             "[+1] Movement <for [{Military} {Water}] units>",
             "[+1] Sight <for [{Military} {Water}] units>"
@@ -588,13 +527,6 @@
     {
         "name": "Rationalism",
         "era": "Renaissance era",
-        "priorities": {
-            "Neutral": 10,
-            "Cultural": 10,
-            "Diplomatic": 10,
-            "Domination": 10,
-            "Scientific": 10
-        },
         "uniques": [
             "[+10]% [Science] <while the empire is happy>"
         ],
@@ -641,8 +573,7 @@
             {
                 "name": "Scientific Revolution",
                 "uniques": [
-                    "Science gained from research agreements [+50]%",
-                    "[-100]% weight to this choice for AI decisions"
+                    "Science gained from research agreements [+50]%"
                 ],
                 "requires": ["Sovereignty"],
                 "row": 3,
@@ -661,13 +592,6 @@
     {
         "name": "Freedom",
         "era": "Industrial era",
-        "priorities": {
-            "Neutral": 5,
-            "Cultural": 10,
-            "Diplomatic": 5,
-            "Domination": 5,
-            "Scientific": 10
-        },
         "uniques": [
             "Is an ideology",
             "Unavailable <before the [Modern era]> <when number of [[Factory] Buildings] is less than [3]>",
@@ -860,13 +784,6 @@
     {
         "name": "Autocracy",
         "era": "Industrial era",
-        "priorities": {
-            "Neutral": 5,
-            "Cultural": 5,
-            "Diplomatic": 5,
-            "Domination": 10,
-            "Scientific": 5
-        },
         "uniques": [
             "Is an ideology",
             "Unavailable <before the [Modern era]> <when number of [[Factory] Buildings] is less than [3]>",
@@ -889,8 +806,7 @@
                 "name": "United Front",
                 "uniques": [
                     "Tenet Level 1",
-                    "Militaristic City-States grant units [2] times as fast when you are at war with a common nation",
-                    "[-100]% weight to this choice for AI decisions"
+                    "Militaristic City-States grant units [2] times as fast when you are at war with a common nation"
                 ],
                 "row": 1,
                 "column": 3
@@ -1063,13 +979,6 @@
     {
         "name": "Order",
         "era": "Industrial era",
-        "priorities": {
-            "Neutral": 10,
-            "Cultural": 5,
-            "Diplomatic": 10,
-            "Domination": 5,
-            "Scientific": 5
-        },
         "uniques": [
             "Is an ideology",
             "Unavailable <before the [Modern era]> <when number of [[Factory] Buildings] is less than [3]>",

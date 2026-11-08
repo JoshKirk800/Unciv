@@ -1,6 +1,7 @@
 package com.unciv.logic.automation.strategy
 
 import com.unciv.Constants
+import com.unciv.logic.automation.diplomacy.DiplomacyAi
 import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.civilization.Civilization
@@ -92,6 +93,9 @@ class CivAi : IsPartOfGameInfoSerialization {
     var isCramped = false
     /** Aggression of other majors this player has seen, by civID */
     var aggressionMemory = HashMap<String, AggressionMemory>()
+    /** CvDiplomacyAI war state memory (turns at war, war states, target values, military strength comparison), see [WarStateAi] */
+    var warStates = WarStateMemory()
+    var diplomacy = DiplomacyAi()
     //endregion
 
     //region Transients
@@ -125,11 +129,14 @@ class CivAi : IsPartOfGameInfoSerialization {
         toReturn.militaryStrategies.putAll(militaryStrategies)
         toReturn.isCramped = isCramped
         for ((civId, memory) in aggressionMemory) toReturn.aggressionMemory[civId] = memory.clone()
+        toReturn.warStates = warStates.clone()
+        toReturn.diplomacy = diplomacy.clone()
         return toReturn
     }
 
     fun setTransients(civ: Civilization) {
         this.civ = civ
+        diplomacy.civ = civ
         personalityVector = null
         activeFlavorVector = null
         strategyVersion++
