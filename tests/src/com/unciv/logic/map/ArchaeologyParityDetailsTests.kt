@@ -1,6 +1,8 @@
 package com.unciv.logic.map
 
 import com.unciv.json.json
+import com.unciv.logic.automation.diplomacy.OpinionAi
+import com.unciv.models.ruleset.ai.MinorCivApproach
 import com.unciv.logic.civilization.PlayerType
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.AlertType
@@ -102,18 +104,21 @@ class ArchaeologyParityDetailsTests {
     fun `a foreign landmark improves AI major opinion with diminishing integer credit reset at war`() {
         val ownerCity = owner.cities.first()
         val diplomacy = owner.getDiplomacyManager(builder)!!
-        val initialOpinion = diplomacy.opinionOfOtherCiv()
+        fun landmarkOpinion(): Float {
+            OpinionAi.updateOpinion(owner, builder)
+            return diplomacy.diplomaticModifiers[DiplomaticModifiers.BuiltLandmarksForUs.name] ?: 0f
+        }
         val first = site(1, 6, ownerCity)
         assertTrue(ArchaeologyFunctions.execute(builder, first, ArchaeologyChoice.Landmark, null))
-        assertEquals(initialOpinion + 20f, diplomacy.opinionOfOtherCiv(), 0.001f)
+        assertEquals(20f, landmarkOpinion(), 0.001f)
         val second = site(-1, 7, ownerCity)
         assertTrue(ArchaeologyFunctions.execute(builder, second, ArchaeologyChoice.Landmark, null))
-        assertEquals(initialOpinion + 26f, diplomacy.opinionOfOtherCiv(), 0.001f)
+        assertEquals(26f, landmarkOpinion(), 0.001f)
         assertEquals(2, diplomacy.clone().landmarksBuiltForUs)
         assertEquals(2, json().fromJson(DiplomacyManager::class.java, json().toJson(diplomacy)).landmarksBuiltForUs)
         builder.getDiplomacyManager(owner)!!.declareWar()
         assertEquals(0, diplomacy.landmarksBuiltForUs)
-        assertFalse(diplomacy.hasModifier(DiplomaticModifiers.BuiltLandmarksForUs))
+        assertEquals(0f, landmarkOpinion(), 0.001f)
     }
 
     @Test
@@ -141,8 +146,9 @@ class ArchaeologyParityDetailsTests {
         game.gameInfo.currentPlayerCiv = owner
         game.gameInfo.nextTurn()
         assertFalse(diplomacy.hasFlag(DiplomacyFlags.AgreedToNotDigInOurLands))
-        // The full turn applies normal modifier decay after the -30 breach penalty.
-        assertTrue(diplomacy.diplomaticModifiers[DiplomaticModifiers.BetrayedPromiseToNotDigInOurLands.name]!! in -30f..-29f)
+        // GetBrokenNoDiggingPromiseScore: 30, permanent
+        OpinionAi.updateOpinion(owner, builder)
+        assertEquals(-30f, diplomacy.diplomaticModifiers[DiplomaticModifiers.BetrayedPromiseToNotDigInOurLands.name]!!, 0.001f)
         assertTrue(builder.popupAlerts.any { it.type == AlertType.DugInOurLandsDespitePromise })
         assertEquals(10, diplomacy.clone().negativeArchaeologyPoints)
         val restored = json().fromJson(DiplomacyManager::class.java, json().toJson(diplomacy))
@@ -155,10 +161,13 @@ class ArchaeologyParityDetailsTests {
     fun `refusing the dig promise costs twenty opinion and remains remembered`() {
         val diplomacy = owner.getDiplomacyManager(builder)!!
         builder.getDiplomacyManager(owner)!!.refuseDemand(Demand.DoNotDigInOurLands)
+        OpinionAi.updateOpinion(owner, builder)
         assertEquals(-20f, diplomacy.diplomaticModifiers[DiplomaticModifiers.IgnoredRequestToStopDigging.name] ?: 0f, 0.001f)
         assertFalse(diplomacy.hasModifier(DiplomaticModifiers.BetrayedPromiseToNotDigInOurLands))
         repeat(120) { with(DiplomacyTurnManager) { diplomacy.nextTurn() } }
         assertTrue(diplomacy.hasFlag(DiplomacyFlags.IgnoreThemDiggingInOurLands))
+        OpinionAi.updateOpinion(owner, builder)
+        assertEquals(-20f, diplomacy.diplomaticModifiers[DiplomaticModifiers.IgnoredRequestToStopDigging.name] ?: 0f, 0.001f)
     }
 
     @Test
@@ -172,9 +181,9 @@ class ArchaeologyParityDetailsTests {
         val find = site(-5, 2, stateCity)
         assertTrue(builder.ai.isGoingForDiploVictory())
         assertEquals(ArchaeologyChoice.Landmark, ArchaeologyFunctions.chooseForAi(builder, find, 0, 0))
-        builder.getDiplomacyManager(state)!!.setFlag(DiplomacyFlags.WaryOf, -1)
+        builder.ai.minorCivApproaches[state.civID] = MinorCivApproach.Conquest
         assertEquals("planned conquest rules out a Landmark", ArchaeologyChoice.ArtifactOfFirst, ArchaeologyFunctions.chooseForAi(builder, find, 0, 0))
-        builder.getDiplomacyManager(state)!!.removeFlag(DiplomacyFlags.WaryOf)
+        builder.ai.minorCivApproaches.remove(state.civID)
         builder.ai.grandStrategy = "AIGRANDSTRATEGY_SPACESHIP"
         assertEquals(ArchaeologyChoice.ArtifactOfFirst, ArchaeologyFunctions.chooseForAi(builder, find, 0, 0))
         builder.ai.grandStrategy = "AIGRANDSTRATEGY_UNITED_NATIONS"

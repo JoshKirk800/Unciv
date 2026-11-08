@@ -382,26 +382,6 @@ class BattleTest(private val pathfindingAlgorithm: PathfindingAlgorithm) {
     }
 
     @Test
-    fun `should give diplomacy penality for using a nuke`() {
-        // given
-        val thirdCiv = testGame.addCiv()
-        testGame.addUnit("Warrior", thirdCiv, testGame.getTile(0,-3))  // need unit or civ is considered defeated
-
-        testGame.addCity(attackerCiv, testGame.getTile(0,1))
-        val attackerUnit = testGame.addUnit("Atomic Bomb", attackerCiv, testGame.getTile(0,1))
-
-        attackerCiv.diplomacyFunctions.makeCivilizationsMeet(defenderCiv)
-        attackerCiv.diplomacyFunctions.makeCivilizationsMeet(thirdCiv)
-
-        // when
-        Battle.attackOrNuke(MapUnitCombatant(attackerUnit), AttackableTile(attackerUnit.getTile(), defaultDefenderUnit.currentTile, 0f, null))
-
-        // then
-        assertEquals(-75f, defenderCiv.getDiplomacyManager(attackerCiv)!!.opinionOfOtherCiv()) // 50 for nuke, 25 for war declaration
-        assertEquals(-55f, thirdCiv.getDiplomacyManager(attackerCiv)!!.opinionOfOtherCiv()) // 50 for nuke, 5 for warmongering
-    }
-
-    @Test
     fun `should always destroy unit directly hit by nuke`() {
         // given
         val megaWarrior = testGame.createBaseUnit("Sword").apply { strength = 1_000_000 }

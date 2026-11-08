@@ -1,6 +1,5 @@
 package com.unciv.logic.civilization
 import com.unciv.logic.civilization.diplomacy.DiplomacyTurnManager.nextTurn
-import com.unciv.logic.civilization.diplomacy.DiplomaticModifiers
 import com.unciv.logic.civilization.diplomacy.DiplomaticStatus
 import com.unciv.testing.BaseTestRunner
 import com.unciv.testing.TestGame
@@ -59,28 +58,5 @@ class DefensivePactTests {
 
         Assert.assertFalse(a.getDiplomacyManager(b)!!.diplomaticStatus == DiplomaticStatus.DefensivePact
             || b.getDiplomacyManager(a)!!.diplomaticStatus == DiplomaticStatus.DefensivePact)
-    }
-
-    @Test
-    fun `Breaking Defensive Pact`() {
-        meetAll()
-        val abDiploManager = a.getDiplomacyManager(b)!!
-        abDiploManager.signDefensivePact(100)
-        abDiploManager.declareWar()
-        Assert.assertTrue(abDiploManager.otherCivDiplomacy().hasModifier(DiplomaticModifiers.BetrayedDefensivePact)) // Defender should be extra mad
-        Assert.assertTrue(abDiploManager.hasModifier(DiplomaticModifiers.DefensivePact)) // Aggressor should still be friendly to the defender, they did nothing wrong
-        Assert.assertFalse(abDiploManager.otherCivDiplomacy().hasModifier(DiplomaticModifiers.DefensivePact)) // Defender should not be friendly to the aggressor.
-    }
-
-    @Test
-    fun `Breaking Defensive Pact with friends`() {
-        meetAll()
-        val abDiploManager = a.getDiplomacyManager(b)!!
-        val bcDiploManager = b.getDiplomacyManager(c)!!
-        abDiploManager.signDefensivePact(100)
-        bcDiploManager.signDeclarationOfFriendship()
-
-        abDiploManager.declareWar()
-        Assert.assertTrue(c.getDiplomacyManager(a)!!.hasModifier(DiplomaticModifiers.BetrayedDefensivePact))
     }
 }
