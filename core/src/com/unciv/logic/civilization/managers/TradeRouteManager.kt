@@ -6,6 +6,7 @@ import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.NotificationCategory
 import com.unciv.logic.civilization.NotificationIcon
+import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.TradeRoutePathfinder
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.Tile
@@ -24,6 +25,9 @@ import kotlin.math.ceil
 /** A city a trade unit could send a route to, and what the route would be */
 class TradeDestination(val city: City, val kind: TradeRouteKind, val path: List<Tile>)
 
+/** A connection the trade AI considers: from one of our cities, in one domain (CvTradeAI's TradeConnection) */
+class TradeRouteCandidate(val origin: City, val destination: TradeDestination, val isSea: Boolean)
+
 /**
  * The trade routes a civilization has started (CvPlayerTrade and CvGameTrade in the original).
  * Their effects on the cities are added in [com.unciv.logic.city.CityStats] from [getStatsForCity].
@@ -31,6 +35,9 @@ class TradeDestination(val city: City, val kind: TradeRouteKind, val path: List<
 class TradeRouteManager : IsPartOfGameInfoSerialization {
 
     var routes = ArrayList<TradeRoute>()
+
+    /** The game turn each of our connections was last plundered, by [plunderKey] (CvPlayerTrade::m_aTradeConnectionWasPlundered) */
+    var plunderedConnections = HashMap<String, Int>()
 
     @Transient
     lateinit var civ: Civilization
@@ -41,10 +48,21 @@ class TradeRouteManager : IsPartOfGameInfoSerialization {
     private val possibleRoutes = HashMap<Pair<Boolean, Int>, Boolean>()
     @Transient @Cache
     private var possibleRoutesTurn = -1
+    @Transient @Cache
+    private val potentialConnections = HashMap<String, Boolean>()
+    @Transient @Cache
+    private var potentialConnectionsTurn = -1
+
+    /** The trade AI's ordered connections for [aiRoutesTurn] (CvHomelandAI::ExecuteTradeUnitMoves keeps one list per turn) */
+    @Transient @Cache
+    var aiPrioritizedRoutes: List<TradeRouteCandidate> = emptyList()
+    @Transient @Cache
+    var aiRoutesTurn = -1
 
     fun clone(): TradeRouteManager {
         val toReturn = TradeRouteManager()
         routes.mapTo(toReturn.routes) { it.clone() }
+        toReturn.plunderedConnections.putAll(plunderedConnections)
         return toReturn
     }
 
@@ -140,9 +158,9 @@ class TradeRouteManager : IsPartOfGameInfoSerialization {
         return kinds
     }
 
-    /** CvGameTrade::CanCreateTradeRoute without the path */
+    /** CvGameTrade::CanCreateTradeRoute without the path; [ignoreExisting] keeps connections that already carry a route */
     @Readonly
-    fun canConnect(origin: City, destination: City, kind: TradeRouteKind): Boolean {
+    fun canConnect(origin: City, destination: City, kind: TradeRouteKind, ignoreExisting: Boolean = false): Boolean {
         if (origin == destination || origin.isBeingRazed || destination.isBeingRazed) return false
         if (!destination.getCenterTile().isExplored(civ)) return false
         val destinationCiv = destination.civ
@@ -159,7 +177,7 @@ class TradeRouteManager : IsPartOfGameInfoSerialization {
             }
         }
         // The original refuses a second route from and to the same cities, whatever it carries
-        return routes.none { it.origin == origin.location && it.destination == destination.location }
+        return ignoreExisting || routes.none { it.origin == origin.location && it.destination == destination.location }
     }
 
     /** The cities a unit that is in [origin] can start a route to, with the path. Empty if the unit is not the right one. */
@@ -170,8 +188,12 @@ class TradeRouteManager : IsPartOfGameInfoSerialization {
         return getDestinations(origin, unit.isWaterUnit, unique.params[0].toInt())
     }
 
+    /**
+     * The cities a unit of the given domain and base range could start a route to from [origin], with the path.
+     * [ignoreExisting] includes connections that already carry one of our routes (CvTradeAI::GetAvailableTR).
+     */
     @Readonly
-    private fun getDestinations(origin: City, isSea: Boolean, baseRange: Int, onlyOne: Boolean = false): List<TradeDestination> {
+    fun getDestinations(origin: City, isSea: Boolean, baseRange: Int, onlyOne: Boolean = false, ignoreExisting: Boolean = false): List<TradeDestination> {
         if (origin.civ != civ) return emptyList()
         val range = getRange(origin, isSea, baseRange)
         val maxDistance = (range * 100 + 99) / 50 // a step costs at least 50
@@ -181,13 +203,48 @@ class TradeRouteManager : IsPartOfGameInfoSerialization {
             if (originTile.aerialDistanceTo(destination.getCenterTile()) > maxDistance) continue
             val kinds = if (destination.civ == civ) getDomesticKinds(origin) else listOf(TradeRouteKind.International)
             for (kind in kinds) {
-                if (!canConnect(origin, destination, kind)) continue
+                if (!canConnect(origin, destination, kind, ignoreExisting)) continue
                 val path = TradeRoutePathfinder.findPath(civ, originTile, destination.getCenterTile(), isSea, range) ?: continue
                 result.add(TradeDestination(destination, kind, path))
                 if (onlyOne) return result
             }
         }
         return result
+    }
+
+    /** The trade unit of a domain this civilization would use: the first in the ruleset, as the civilization's equivalent, `null` if none */
+    @Readonly
+    fun getTradeUnitType(isSea: Boolean): BaseUnit? = civ.gameInfo.ruleset.units.values
+        .firstOrNull { isTradeUnit(it) && it.isWaterUnit == isSea && it.uniqueTo == null }
+        ?.let { civ.getEquivalentUnit(it) }
+
+    /** The base range of [unit] as a trade unit (the original hard-codes 10 for land and 20 for sea) */
+    @Readonly
+    fun getBaseRange(unit: BaseUnit): Int? =
+        unit.getMatchingUniques(UniqueType.EstablishTradeRoutes, GameContext.IgnoreConditionals).firstOrNull()?.params?.get(0)?.toInt()
+
+    /** CvPlayerTrade::GetNumPotentialConnections(origin, domain) > 0: whether [origin] could start any route in the domain; kept for the turn */
+    @Readonly
+    fun hasPotentialConnection(origin: City, isSea: Boolean): Boolean {
+        if (potentialConnectionsTurn != civ.gameInfo.turns) {
+            potentialConnections.clear()
+            potentialConnectionsTurn = civ.gameInfo.turns
+        }
+        return potentialConnections.getOrPut(origin.id + if (isSea) ":sea" else ":land") {
+            val baseRange = getTradeUnitType(isSea)?.let { getBaseRange(it) }
+            baseRange != null && getDestinations(origin, isSea, baseRange, onlyOne = true).isNotEmpty()
+        }
+    }
+
+    /** CvPlayerTrade::GetNumTradeRoutesRemaining(bContinueTraining = false): free slots, trade units in production taking one */
+    @Readonly
+    fun getNumRoutesRemaining(): Int = getNumSlots() - getSlotsUsed()
+
+    /** Whether the connection from [origin] to [destination] was plundered in the last 30 turns (CvPlayerTrade::CheckTradeConnectionWasPlundered) */
+    @Readonly
+    fun wasPlunderedRecently(origin: City, destination: City): Boolean {
+        val turn = plunderedConnections[plunderKey(origin.location, destination.location)] ?: return false
+        return turn + PLUNDER_MEMORY_TURNS > civ.gameInfo.turns
     }
     //endregion
 
@@ -224,6 +281,8 @@ class TradeRouteManager : IsPartOfGameInfoSerialization {
 
     //region Moving
     fun startTurn() {
+        // CvPlayerTrade::UpdateTradeConnectionWasPlundered
+        plunderedConnections.values.removeAll { it + PLUNDER_MEMORY_TURNS <= civ.gameInfo.turns }
         for (route in routes.toList()) {
             if (stepRoute(route)) {
                 if (route.circuitsCompleted >= route.circuitsToComplete) expire(route)
@@ -322,6 +381,8 @@ class TradeRouteManager : IsPartOfGameInfoSerialization {
         val origin = route.getOriginCity()?.name
         val destination = route.getDestinationCity()?.name
         removeRoute(route)
+        // CvPlayerTrade::PlunderTradeRoute -> AddTradeConnectionWasPlundered on the owner
+        plunderedConnections[plunderKey(route.origin, route.destination)] = civ.gameInfo.turns
 
         civ.addNotification("Our trade route from [$origin] to [$destination] was plundered by [${plunderingCiv.civName}]!",
             tile.position, NotificationCategory.Trade, route.unitName, NotificationIcon.War)
@@ -521,5 +582,10 @@ class TradeRouteManager : IsPartOfGameInfoSerialization {
     companion object {
         /** The name that the effects of the routes carry in the statistics of a city */
         const val STAT_SOURCE = "Active trade routes"
+        /** CvPlayerTrade::UpdateTradeConnectionWasPlundered: iTurnsUntilForget, hard-coded in the original */
+        const val PLUNDER_MEMORY_TURNS = 30
+
+        @Readonly
+        fun plunderKey(origin: HexCoord, destination: HexCoord) = "${origin.x},${origin.y}>${destination.x},${destination.y}"
     }
 }

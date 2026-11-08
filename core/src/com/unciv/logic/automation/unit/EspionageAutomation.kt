@@ -1,126 +1,467 @@
 package com.unciv.logic.automation.unit
 
+import com.unciv.logic.automation.civilization.DiplomatUsefulness
+import com.unciv.logic.automation.civilization.LeagueAutomation
+import com.unciv.logic.automation.civilization.MinorCivHelpers
+import com.unciv.logic.automation.diplomacy.WarGoal
+import com.unciv.logic.city.City
+import com.unciv.logic.civilization.CityStatePersonality
 import com.unciv.logic.civilization.Civilization
-import com.unciv.logic.civilization.managers.TourismRelation
-import com.unciv.logic.civilization.diplomacy.RelationshipLevel
+import com.unciv.logic.civilization.Proximity
+import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
+import com.unciv.logic.civilization.diplomacy.DiplomaticStatus
+import com.unciv.logic.civilization.managers.InfluenceLevel
 import com.unciv.models.Spy
 import com.unciv.models.SpyAction
-import kotlin.random.Random
+import com.unciv.models.ruleset.ai.AiDefine
+import com.unciv.models.ruleset.ai.Flavor
+import com.unciv.models.ruleset.ai.MinorCivApproach
+import kotlin.math.ceil
+import kotlin.math.floor
 
-class EspionageAutomation(val civInfo: Civilization) {
-    private val civsToStealFrom: List<Civilization> by lazy {
-        civInfo.getKnownCivs().filter {otherCiv -> otherCiv.isMajorCiv
-            && otherCiv.cities.any { it.getCenterTile().isExplored(civInfo) && civInfo.espionageManager.getSpyAssignedToCity(it) == null }
-            && civInfo.espionageManager.getTechsToSteal(otherCiv).isNotEmpty() }.toList()
-    }
+/** How many living spies the AI wants in each role (CvEspionageAI::FindTargetSpyNumbers) */
+class SpyTargets(var offensive: Int = 0, var defensive: Int = 0, var cityState: Int = 0, var diplomat: Int = 0)
 
-    private val getCivsToStealFromSorted: List<Civilization> =
-        civsToStealFrom.sortedBy { otherCiv -> civInfo.espionageManager.spyList
-            .count { it.isDoingWork() && it.getCityOrNull()?.civ == otherCiv }
-        }
+/**
+ * The spy AI of a civilization: CvEspionageAI (CvEspionageClasses.cpp), run once per turn by [automateSpies] (CvEspionageAI::DoTurn).
+ *
+ * The thefts themselves happen in [Spy.endTurn] (the AI takes the first stealable technology, CvEspionageAI::StealTechnology).
+ * Inputs the original reads and what stands in for them:
+ * - Declaration of Friendship, denunciation, stop-spying promise: [DiplomacyFlags.DeclarationOfFriendship], [DiplomacyFlags.Denunciation],
+ *   the target's [DiplomacyFlags.AgreedToNotSendSpies] towards us; research agreement [DiplomacyFlags.ResearchAgreement], defensive pact
+ *   [DiplomaticStatus.DefensivePact], open borders the two `hasOpenBorders`.
+ * - War goal: `civ.ai.diplomacy.warGoal`; minor civ approach: `civ.ai.minorCivApproaches`; diplomat usefulness: CvLeagueAI's port in
+ *   [LeagueAutomation]; influence levels: [com.unciv.logic.civilization.managers.CultureManager.getInfluenceLevel] (unmet = no level).
+ * - The steal-rate memory of the original's city espionage (m_aiLastBasePotential, m_aiNumTimesCityRobbed) and the AI memory
+ *   (m_aiCivOutOfTechTurn, m_bUNCountdownStarted) are in [com.unciv.logic.civilization.managers.EspionageManager].
+ *
+ * Kept from the shipped DLL: when a diplomat is placed the defensive counter is the one raised (CvEspionageAI::DoTurn), and a placement into a
+ * city the spy cannot enter still uses up the role's turn. Deviation: scores are 64-bit, so no overflow of "maximum turns x modifier".
+ */
+class EspionageAutomation(private val civInfo: Civilization) {
+    private val espionage = civInfo.espionageManager
+    private val gameInfo = civInfo.gameInfo
 
-    private val cityStatesToRig: List<Civilization> by lazy {
-        civInfo.getKnownCivs().filter { otherCiv -> otherCiv.isMinorCiv && otherCiv.knows(civInfo) && !civInfo.isAtWarWith(otherCiv) }.toList()
-    }
-
+    /** CvEspionageAI::DoTurn */
     fun automateSpies() {
-        val spies = civInfo.espionageManager.spyList
-        val spiesToMove = spies.filter { it.isAlive() && !it.isDoingWork() }
-        for (spy in spiesToMove) {
-            val randomSeed = spies.size + spies.indexOf(spy) + civInfo.gameInfo.turns
-            val randomAction = Random(randomSeed).nextInt(10)
+        if (!civInfo.isMajorCiv) return
+        val spies = espionage.spyList
+        updateCivOutOfTechTurn()
+        attemptCoups()
 
-            // Try each operation based on the random value and the success rate
-            // If an operation was not successfull try the next one
-            val capital = civInfo.getCapital()
-            when {
-                capital != null && spies.none { it.getCityOrNull() == capital } -> {
-                    spy.moveTo(capital)
-                    continue
-                }
-                automateDiplomat(spy) -> continue
-                randomAction <= 7 && automateSpyStealTech(spy) -> continue
-                randomAction <= 9 && automateSpyRigElection(spy) -> continue
-                automateSpyCounterInteligence(spy) -> continue
-                // We might have been doing counter intelligence and wanted to look for something better
-                spy.isDoingWork() -> continue
-                // Retry initial operations one more time, without the randomAction check
-                automateSpyStealTech(spy) -> continue
-                automateSpyRigElection(spy) -> continue
-            }
-            // There is nothing for our spy to do, put it in a random city
-            val chosenCity = civInfo.gameInfo.getCities().filter { spy.canMoveTo(it) }
-                .maxByOrNull { it.cityStats.currentCityStats.science }
-            spy.moveTo(chosenCity)
+        // EvaluateUnassignedSpies, EvaluateDefensiveSpies, EvaluateDiplomatSpies, and the flags CvPlayerEspionage::ProcessSpy sets every turn
+        for (spy in spies) if (spy.isAlive() && isReconsideredEveryTurn(spy)) spy.evaluateReassignment = true
+
+        // When the United Nations countdown starts, every spy reconsiders its post
+        if (!espionage.unCountdownStarted && gameInfo.league?.unitedNations == true) {
+            espionage.unCountdownStarted = true
+            for (spy in spies) if (spy.isAlive()) spy.evaluateReassignment = true
         }
-        spies.forEach { checkIfShouldStageCoup(it) }
-    }
 
-    /**
-     * Moves the spy to a city that we can steal a tech from
-     */
-    private fun automateSpyStealTech(spy: Spy): Boolean {
-        if (civsToStealFrom.isEmpty()) return false
-        // We want to move the spy to the city with the highest science generation
-        // Players can't usually figure this out so lets do highest population instead
-        val cityToMoveTo = getCivsToStealFromSorted.first().cities.filter { spy.canMoveTo(it) }
-            .maxByOrNull { it.population.population }
-        spy.moveTo(cityToMoveTo)
-        return cityToMoveTo != null
-    }
+        val targets = findTargetSpyNumbers()
+        val diplomatCities = if (targets.diplomat > 0) buildDiplomatCityList() else emptyList()
+        val offenseCities = if (targets.offensive > 0) buildOffenseCityList() else emptyList()
+        val defenseCities = if (targets.defensive > 0) buildDefenseCityList() else emptyList()
+        val minorCities = if (targets.cityState > 0) buildMinorCityList() else emptyList()
 
-    /** Send spare agents to useful, visible foreign capitals; one agent per capital. */
-    private fun automateDiplomat(spy: Spy): Boolean {
-        val globalization = civInfo.tech.isResearched("Globalization") && civInfo.gameInfo.league != null
-        val city = civInfo.getKnownCivs().asSequence()
-            .filter { it.isMajorCiv && !it.isDefeated() && !civInfo.isAtWarWith(it) }
-            .mapNotNull { other ->
-                val capital = other.getCapital() ?: return@mapNotNull null
-                if (!spy.canMoveTo(capital, asDiplomat = true)) return@mapNotNull null
-                val propaganda = if (TourismRelation.DifferentIdeologies in civInfo.culture.getRelationsWith(other))
-                    civInfo.culture.getTourism() else 0
-                if (!globalization && propaganda <= 0) return@mapNotNull null
-                capital to (propaganda + if (globalization) 100 else 0)
+        var assignedDiplomats = 0
+        var assignedDefense = 0
+        var assignedOffense = 0
+        var assignedCityState = 0
+        // Spies in a city of the top of the list of their role stay; flagged spies elsewhere are pulled out
+        for (spy in spies) {
+            if (!spy.isAlive()) continue
+            val city = spy.getCityOrNull() ?: continue
+            val alreadyAssigned = when {
+                spy.isDiplomat && city in diplomatCities.take(targets.diplomat) -> { assignedDiplomats++; true }
+                city in defenseCities.take(targets.defensive) -> { assignedDefense++; true }
+                !spy.isDiplomat && city in offenseCities.take(targets.offensive) -> { assignedOffense++; true }
+                city in minorCities.take(targets.cityState) -> { assignedCityState++; true }
+                else -> false
             }
-            .maxByOrNull { it.second }?.first ?: return false
-        spy.moveTo(city, asDiplomat = true)
-        return true
+            if (spy.evaluateReassignment) {
+                if (alreadyAssigned) spy.evaluateReassignment = false
+                else spy.moveTo(null)
+            }
+        }
+
+        // Flagged spies in the hideout go where a role still needs one: diplomat, defense, offense, city-state
+        for (spy in spies) {
+            if (!spy.isAlive() || !spy.evaluateReassignment) continue
+            spy.evaluateReassignment = false
+            if (spy.getCityOrNull() != null) continue
+            when {
+                targets.diplomat > assignedDiplomats -> {
+                    // The shipped DLL raises the defensive counter here, not the diplomat one
+                    if (placeInFirstFree(spy, diplomatCities, targets.diplomat, asDiplomat = true)) assignedDefense++
+                }
+                targets.defensive > assignedDefense -> if (placeInFirstFree(spy, defenseCities, targets.defensive)) assignedDefense++
+                targets.offensive > assignedOffense -> if (placeInFirstFree(spy, offenseCities, targets.offensive)) assignedOffense++
+                targets.cityState > assignedCityState -> if (placeInFirstFree(spy, minorCities, targets.cityState)) assignedCityState++
+            }
+        }
     }
 
     /**
-     * Moves the spy to a random city-state
+     * The first of the top [count] cities of [cities] without one of our spies gets [spy] (CvPlayerEspionage::MoveSpyTo, which does nothing
+     * if CanMoveSpyTo fails). @return whether such a city was found, whether or not the spy could enter it
      */
-    private fun automateSpyRigElection(spy: Spy): Boolean {
-        val cityToMoveTo = cityStatesToRig.flatMap { it.cities }
-            .filter { !it.isBeingRazed && spy.canMoveTo(it)
-                    && (it.civ.getDiplomacyManager(civInfo)!!.getInfluence() < 150 || it.civ.allyCiv != civInfo) }
-            .maxByOrNull { it.civ.getDiplomacyManager(civInfo)!!.getInfluence() }
-        spy.moveTo(cityToMoveTo)
-        return cityToMoveTo != null
+    private fun placeInFirstFree(spy: Spy, cities: List<City>, count: Int, asDiplomat: Boolean = false): Boolean {
+        for (city in cities.take(count)) {
+            if (espionage.getSpyAssignedToCity(city) != null) continue
+            if ((city.civ == civInfo || civInfo.knows(city.civ)) && spy.canMoveTo(city, asDiplomat)) spy.moveTo(city, asDiplomat)
+            return true
+        }
+        return false
     }
-    
-    
 
     /**
-     * Moves the spy to a random city of ours
+     * Spies the original flags for reassignment every turn: in the hideout, in our own cities, diplomats, and spies in a major civilization's
+     * city that have nothing left to steal or steal less than 1 science per turn (CvPlayerEspionage::ProcessSpy).
      */
-    private fun automateSpyCounterInteligence(spy: Spy): Boolean {
-        val cityToMoveTo = civInfo.cities.filter { spy.canMoveTo(it) }
-            .maxByOrNull { it.cityStats.currentCityStats.science }
-        if (cityToMoveTo == null) return false
-        spy.moveTo(cityToMoveTo)
-        return true
+    private fun isReconsideredEveryTurn(spy: Spy): Boolean {
+        val city = spy.getCityOrNull() ?: return true
+        if (city.civ == civInfo || spy.isDiplomat) return true
+        if (!city.civ.isMajorCiv) return false
+        return when (spy.action) {
+            SpyAction.Surveillance -> true // Unciv's state for "nothing to steal" or "no science here"
+            SpyAction.StealingTech -> spy.getStealProgressPerTurn() < 1f
+            else -> false
+        }
     }
 
-    private fun checkIfShouldStageCoup(spy: Spy) {
-        if (!spy.canDoCoup()) return
-        if (spy.getCoupChanceOfSuccess(false) < .7) return
-        val allyCiv = spy.getCity().civ.allyCiv
-        // Don't coup city-states whose allies are out friends
-        if (allyCiv != null && civInfo.getDiplomacyManager(allyCiv)?.isRelationshipLevelGE(RelationshipLevel.Friend) == true) return
-        val spies = civInfo.espionageManager.spyList
-        val randomSeed = spies.size + spies.indexOf(spy) + civInfo.gameInfo.turns
-        val randomAction = Random(randomSeed).nextInt(100)
-        if (randomAction < 20) spy.setAction(SpyAction.Coup, 1)
+    //region Thefts and coups
+    /** CvEspionageAI::UpdateCivOutOfTechTurn: remembers the turn each civilization we watch had nothing left to steal */
+    private fun updateCivOutOfTechTurn() {
+        for (other in gameInfo.civilizations) {
+            if (other == civInfo || !other.isMajorCiv) continue
+            val watched = espionage.spyList.any { spy -> spy.isSetUp() && spy.getCityOrNull()?.civ == other }
+            if (!watched) continue
+            if (espionage.getTechsToSteal(other).isEmpty()) espionage.civOutOfTechTurn[other.civID] = gameInfo.turns
+        }
+    }
+
+    /**
+     * CvEspionageAI::AttemptCoups: every spy that can stage a coup (set up in a city-state allied to someone else) tries it with a
+     * probability equal to its chance of success, unless the ally has a Declaration of Friendship with us.
+     */
+    private fun attemptCoups() {
+        val random = civInfo.ai.random("AttemptCoups")
+        for (spy in espionage.spyList) {
+            if (!canStageCoup(spy)) continue
+            val ally = spy.getCity().civ.allyCiv!!
+            if (civInfo.getDiplomacyManager(ally)?.hasFlag(DiplomacyFlags.DeclarationOfFriendship) == true) continue
+            val chancePercent = (spy.getCoupChanceOfSuccess(true) * 100).toInt()
+            if (random.nextInt(100) < chancePercent) {
+                spy.setAction(SpyAction.Coup, 1)
+                spy.evaluateReassignment = true // CvPlayerEspionage::AttemptCoup
+            }
+        }
+    }
+
+    /** CvPlayerEspionage::CanStageCoup: surveillance in a city-state whose ally is another civilization */
+    private fun canStageCoup(spy: Spy): Boolean {
+        if (!spy.isAlive() || !spy.isSetUp() || spy.action == SpyAction.Coup) return false
+        val owner = spy.getCityOrNull()?.civ ?: return false
+        val ally = owner.allyCiv
+        return owner.isCityState && ally != null && ally != civInfo
+    }
+    //endregion
+
+    //region Spy numbers
+    /** CvEspionageAI::FindTargetSpyNumbers: splits the living spies by role from the grand strategy and our rank in technologies */
+    fun findTargetSpyNumbers(): SpyTargets {
+        val targets = SpyTargets()
+        var remaining = espionage.spyList.count { it.isAlive() }
+        if (remaining == 0) return targets
+        val ai = civInfo.ai
+        val techRatio = techRatio(civInfo)
+        var offenseAllocated = false
+
+        when {
+            ai.isGoingForDiploVictory() -> {
+                var diplomats = 0f
+                for (other in gameInfo.civilizations) {
+                    if (other == civInfo || !other.isMajorCiv || !other.isAlive()) continue
+                    diplomats += when (LeagueAutomation.getDiplomatUsefulnessAtCiv(civInfo, other)) {
+                        DiplomatUsefulness.HIGH -> 1f
+                        DiplomatUsefulness.MEDIUM -> 0.5f
+                        DiplomatUsefulness.LOW -> 0.25f
+                        DiplomatUsefulness.NONE -> 0f
+                    }
+                }
+                targets.diplomat = minOf(remaining, floor(diplomats).toInt())
+                remaining -= targets.diplomat
+                targets.offensive = ceil(techRatio * remaining).toInt()
+                offenseAllocated = true
+                remaining -= targets.offensive
+                targets.cityState = minOf(remaining, metCityStatesAtPeace().count())
+            }
+            ai.isGoingForWorldConquest() -> {
+                targets.offensive = ceil(techRatio * remaining).toInt()
+                offenseAllocated = true
+                remaining -= targets.offensive
+                targets.cityState = minOf(remaining, metCityStatesAtPeace().count { it.cityStateType.name == MILITARISTIC })
+            }
+            ai.isGoingForCultureVictory() -> {
+                targets.diplomat = minOf(remaining, 2, getMaxPropagandaDiplomatsWanted())
+                remaining -= targets.diplomat
+            }
+            ai.isGoingForSpaceshipVictory() -> targets.cityState = 0
+            else -> targets.cityState = remaining / 3
+        }
+
+        remaining -= targets.cityState
+        if (!offenseAllocated) {
+            targets.offensive = ceil(techRatio * remaining).toInt()
+            remaining -= targets.offensive
+        }
+        targets.defensive = remaining
+
+        // Rationalization: no more defenders than own cities, no more thieves than foreign cities we know of
+        val foreignCities = gameInfo.civilizations.asSequence()
+            .filter { it != civInfo && it.isMajorCiv }
+            .sumOf { other -> other.cities.count { it.getCenterTile().isExplored(civInfo) } }
+        val ownCities = civInfo.cities.size
+        while (targets.defensive > ownCities) {
+            if (targets.offensive < foreignCities) targets.offensive++
+            targets.defensive--
+        }
+        while (targets.offensive > foreignCities) {
+            if (targets.defensive < ownCities) targets.defensive++
+            targets.offensive--
+        }
+        return targets
+    }
+
+    private fun metCityStatesAtPeace(): Sequence<Civilization> = gameInfo.civilizations.asSequence()
+        .filter { it.isCityState && it.isAlive() && civInfo.knows(it) && !civInfo.isAtWarWith(it) }
+
+    /** CvPlayerCulture::WantsDiplomatDoingPropaganda: once every other civilization is at Exotic influence or above, the two highest levels */
+    fun wantsDiplomatDoingPropaganda(target: Civilization): Boolean = propagandaTargets()?.contains(target) == true
+
+    /** CvPlayerCulture::GetMaxPropagandaDiplomatsWanted */
+    private fun getMaxPropagandaDiplomatsWanted(): Int = propagandaTargets()?.size ?: 0
+
+    /** The (at most two) civilizations a propaganda diplomat is wanted with, `null` if some civilization is below Exotic influence */
+    private fun propagandaTargets(): List<Civilization>? {
+        var first: Civilization? = null
+        var firstLevel = -1
+        var second: Civilization? = null
+        var secondLevel = -1
+        for (other in gameInfo.civilizations) {
+            if (other == civInfo || !other.isMajorCiv || !other.isAlive()) continue
+            val level = civInfo.culture.getInfluenceLevel(other)?.ordinal ?: InfluenceLevel.Unknown.ordinal
+            if (level < InfluenceLevel.Exotic.ordinal) return null
+            if (level > firstLevel && level > secondLevel) {
+                second = first; secondLevel = firstLevel
+                first = other; firstLevel = level
+            } else if (level > secondLevel) {
+                second = other; secondLevel = level
+            }
+        }
+        return listOfNotNull(first, second)
+    }
+    //endregion
+
+    //region City lists
+    /**
+     * CvEspionageAI::BuildDiplomatCityList: going for Culture, the capitals of the civilizations [wantsDiplomatDoingPropaganda];
+     * otherwise the revealed capitals ranked by diplomat usefulness (none excluded).
+     */
+    fun buildDiplomatCityList(): List<City> {
+        val majors = gameInfo.civilizations.filter { it != civInfo && it.isMajorCiv && it.isAlive() }
+        if (civInfo.ai.isGoingForCultureVictory()) {
+            val wanted = propagandaTargets() ?: return emptyList()
+            return majors.filter { it in wanted }.mapNotNull { it.getCapital() }
+        }
+        return majors.mapNotNull { other ->
+            val usefulness = LeagueAutomation.getDiplomatUsefulnessAtCiv(civInfo, other)
+            if (usefulness == DiplomatUsefulness.NONE) return@mapNotNull null
+            val capital = other.getCapital() ?: return@mapNotNull null
+            if (!capital.getCenterTile().isExplored(civInfo)) return@mapNotNull null
+            capital to usefulness.ordinal
+        }.sortedByDescending { it.second }.map { it.first }
+    }
+
+    /** CvEspionageAI::BuildOffenseCityList: the revealed cities of the other major civilizations, by [offenseScore], lowest first */
+    fun buildOffenseCityList(): List<City> {
+        val maxTechCost = maxResearchableTechCostTimes100()
+        val maxStealCost = HashMap<Civilization, Int>()
+        val scored = ArrayList<Pair<City, Long>>()
+        for (other in gameInfo.civilizations) {
+            if (other == civInfo || !other.isMajorCiv) continue
+            for (city in other.cities) {
+                if (!city.getCenterTile().isExplored(civInfo)) continue
+                val cost = maxStealCost.getOrPut(other) { maxStealableTechCostTimes100(other) }.takeIf { it > 0 } ?: maxTechCost
+                scored.add(city to offenseScore(city, cost))
+            }
+        }
+        return scored.sortedBy { it.second }.map { it.first }
+    }
+
+    /**
+     * The score of a city in CvEspionageAI::BuildOffenseCityList: estimated turns to steal x diplomatic multiplier; a civilization that ran out
+     * of stealable technologies this turn gets the maximum, one that did before is multiplied by that turn.
+     * @param techCostTimes100 the most expensive technology we could steal there (else that we could research), x100
+     */
+    fun offenseScore(city: City, techCostTimes100: Int): Long {
+        val target = city.civ
+        var score = estimatedTurnsToSteal(city, techCostTimes100) * diplomaticModifier(target)
+        val outOfTechTurn = espionage.civOutOfTechTurn[target.civID] ?: -1
+        if (outOfTechTurn == gameInfo.turns) score = MAX_INT
+        else if (outOfTechTurn > 0) score *= outOfTechTurn
+        return score
+    }
+
+    /** CvEspionageAI::BuildOffenseCityList: the live rate if our spy steals there, else the potential seen last time, else the population */
+    private fun estimatedTurnsToSteal(city: City, techCostTimes100: Int): Long {
+        val spy = espionage.getSpyAssignedToCity(city)
+        if (spy != null && spy.action == SpyAction.StealingTech) {
+            return if (spy.getStealProgressPerTurn() > 0f) spy.turnsRemainingForAction.toLong() else MAX_INT
+        }
+        val lastPotential = espionage.lastBasePotential[city.id] ?: 0
+        if (lastPotential > 0) return (techCostTimes100 / lastPotential).toLong()
+        val population = city.population.population
+        return if (population > 0) (techCostTimes100 / (population * 100)).toLong() else MAX_INT
+    }
+
+    /** The diplomatic multiplier of CvEspionageAI::BuildOffenseCityList: 1 at war or preparing one, otherwise 10 and more */
+    fun diplomaticModifier(target: Civilization): Long {
+        if (civInfo.ai.diplomacy.warGoal(target) == WarGoal.Prepare || civInfo.isAtWarWith(target)) return 1
+        var modifier = 10L
+        val ours = civInfo.getDiplomacyManager(target) ?: return modifier
+        val theirs = target.getDiplomacyManager(civInfo)
+        if (theirs?.hasFlag(DiplomacyFlags.AgreedToNotSendSpies) == true) modifier *= 100
+        if (ours.hasFlag(DiplomacyFlags.Denunciation) || theirs?.hasFlag(DiplomacyFlags.Denunciation) == true) modifier /= 2
+        else if (ours.hasFlag(DiplomacyFlags.DeclarationOfFriendship)) modifier *= 50
+        if (ours.hasFlag(DiplomacyFlags.ResearchAgreement)) modifier *= 5
+        if (ours.diplomaticStatus == DiplomaticStatus.DefensivePact) modifier *= 50
+        if (theirs?.hasOpenBorders == true) modifier *= 2 // we let them in
+        if (ours.hasOpenBorders) modifier *= 2 // they let us in
+        return modifier
+    }
+
+    private fun maxResearchableTechCostTimes100(): Int = gameInfo.ruleset.technologies.keys.asSequence()
+        .filter { !civInfo.tech.isResearched(it) && civInfo.tech.canBeResearched(it) }
+        .maxOfOrNull { civInfo.tech.costOfTech(it) * 100 } ?: -1
+
+    /** CvPlayerEspionage::BuildStealableTechList: m_aiMaxTechCost */
+    private fun maxStealableTechCostTimes100(other: Civilization): Int =
+        espionage.getTechsToSteal(other).maxOfOrNull { civInfo.tech.costOfTech(it) * 100 } ?: -1
+
+    /** CvEspionageAI::BuildDefenseCityList: our cities by how fast a spy would steal there, fastest first */
+    fun buildDefenseCityList(): List<City> = civInfo.cities.sortedByDescending { espionage.getBaseStealRateTimes100(it) }
+
+    /** CvEspionageAI::BuildMinorCityList: one city per met city-state at peace with us, by [minorCityScore], highest first */
+    fun buildMinorCityList(): List<City> {
+        val plan = getCityStatePlan()
+        val growthFlavor = civInfo.ai.personalityAndGrandStrategy(Flavor.Growth)
+        val scored = ArrayList<Pair<City, Long>>()
+        for (cityState in gameInfo.civilizations) {
+            if (!cityState.isCityState || !cityState.isAlive() || !civInfo.knows(cityState) || civInfo.isAtWarWith(cityState)) continue
+            val city = cityState.cities.firstOrNull { it.getCenterTile().isExplored(civInfo) } ?: continue
+            scored.add(city to minorCityScore(cityState, plan, growthFlavor))
+        }
+        return scored.sortedByDescending { it.second }.map { it.first }
+    }
+
+    /** The score of a city-state in CvEspionageAI::BuildMinorCityList */
+    fun minorCityScore(cityState: Civilization, plan: CityStatePlan, growthFlavor: Int): Long {
+        val rules = gameInfo.ruleset.ai
+        val influence = cityState.getDiplomacyManager(civInfo)?.getInfluence()?.toInt() ?: 0
+        val isAlly = cityState.allyCiv == civInfo
+        val ai = civInfo.ai
+        var value = 100L
+        when (plan.kind) {
+            CityStatePlanKind.PlayNormal -> {
+                val approach = ai.minorCivApproaches[cityState.civID] ?: MinorCivApproach.Ignore
+                if (approach == MinorCivApproach.Protective || approach == MinorCivApproach.Friendly) {
+                    val trait = cityState.cityStateType.name
+                    if (trait == MARITIME && civInfo.getHappiness() >= 0)
+                        value += rules.define(AiDefine.MC_GIFT_WEIGHT_MARITIME_GROWTH).toLong() * growthFlavor * maxOf(1, civInfo.cities.size / 3)
+                    if (trait == MILITARISTIC && !ai.isGoingForWorldConquest())
+                        value += rules.define(AiDefine.MC_GIFT_WEIGHT_MILITARISTIC)
+                    value += MinorCivHelpers.numResourcesMajorLacks(cityState, civInfo).toLong() * rules.define(AiDefine.MC_GIFT_WEIGHT_RESOURCE_WE_NEED)
+                    if (approach == MinorCivApproach.Protective) value += rules.define(AiDefine.MC_GIFT_WEIGHT_PROTECTIVE)
+                    if (cityState.cityStatePersonality == CityStatePersonality.Hostile) value += rules.define(AiDefine.MC_GIFT_WEIGHT_HOSTILE)
+                    value += when (civInfo.getProximity(cityState)) {
+                        Proximity.Neighbors -> rules.define(AiDefine.MC_GIFT_WEIGHT_NEIGHBORS)
+                        Proximity.Close -> rules.define(AiDefine.MC_GIFT_WEIGHT_CLOSE)
+                        Proximity.Far -> rules.define(AiDefine.MC_GIFT_WEIGHT_FAR)
+                        else -> 0
+                    }
+                    if (MinorCivHelpers.isRecentlyBulliedByMajor(cityState, civInfo)) value -= 100
+                    if (isAlly) {
+                        if (!MinorCivHelpers.isCloseToNotBeingAllies(cityState, civInfo)) value = 0
+                    } else value += influence
+                }
+                if (ai.isGoingForWorldConquest() && cityState.cityStateType.name == MILITARISTIC) value += 999
+            }
+            CityStatePlanKind.CollectVotes -> {
+                if (isAlly) {
+                    if (!MinorCivHelpers.isCloseToNotBeingAllies(cityState, civInfo)) value = 0
+                } else value += if (cityState.allyCiv != null) influence else influence * 2
+            }
+            CityStatePlanKind.AttackToPreventDefeat, CityStatePlanKind.DefendForWin -> {
+                val threat = plan.diploThreat!!
+                if (cityState.allyCiv == threat)
+                    value = MAX_INT - (cityState.getDiplomacyManager(threat)?.getInfluence()?.toInt() ?: 0)
+            }
+        }
+        return value
+    }
+
+    /**
+     * CvEspionageAI::GetCityStatePlan: once the United Nations countdown has started, a civilization allied with at least half of the
+     * city-states makes us attack its allies (or defend ours if it is us); with at least a quarter, we collect votes.
+     */
+    fun getCityStatePlan(): CityStatePlan {
+        if (!espionage.unCountdownStarted) return CityStatePlan(CityStatePlanKind.PlayNormal, null)
+        val cityStates = gameInfo.civilizations.filter { it.isCityState && it.isAlive() }
+        var threat: Civilization? = null
+        var maxVotes = 0
+        for (major in gameInfo.civilizations) {
+            if (!major.isMajorCiv) continue
+            val votes = cityStates.count { it.allyCiv == major }
+            if (votes > maxVotes) {
+                maxVotes = votes
+                threat = major
+            }
+        }
+        val kind = when {
+            threat == null -> CityStatePlanKind.PlayNormal
+            maxVotes >= cityStates.size / 2 -> if (threat == civInfo) CityStatePlanKind.DefendForWin else CityStatePlanKind.AttackToPreventDefeat
+            maxVotes >= cityStates.size / 4 -> CityStatePlanKind.CollectVotes
+            else -> CityStatePlanKind.PlayNormal
+        }
+        return CityStatePlan(kind, threat)
+    }
+    //endregion
+
+    enum class CityStatePlanKind { PlayNormal, CollectVotes, AttackToPreventDefeat, DefendForWin }
+    class CityStatePlan(val kind: CityStatePlanKind, val diploThreat: Civilization?)
+
+    companion object {
+        /** MAX_INT of the original's scores */
+        private const val MAX_INT = Int.MAX_VALUE.toLong()
+        private const val MARITIME = "Maritime"
+        private const val MILITARISTIC = "Militaristic"
+
+        /**
+         * CvTechAI::GetTechRatio: our position among the living major civilizations by number of known technologies (stable in the order of
+         * the civilizations), 0 for the first and 1 for the last.
+         */
+        fun techRatio(civ: Civilization): Float {
+            val ranked = civ.gameInfo.getAliveMajorCivs().sortedByDescending { it.tech.techsResearched.size }
+            if (ranked.size < 2) return 0f
+            return ranked.indexOf(civ).coerceAtLeast(0) / (ranked.size - 1).toFloat()
+        }
+
+        /** CvEspionageAI::EvaluateSpiesAssignedToTargetPlayer: after promising [other] to stop spying, our spies there reconsider their post */
+        fun onAgreedToStopSpying(civ: Civilization, other: Civilization) {
+            for (spy in civ.espionageManager.spyList)
+                if (spy.isAlive() && spy.getCityOrNull()?.civ == other) spy.evaluateReassignment = true
+        }
     }
 }

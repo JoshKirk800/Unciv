@@ -16,6 +16,17 @@ class EspionageManager : IsPartOfGameInfoSerialization {
     var spyList = ArrayList<Spy>()
     val erasSpyEarnedFor = LinkedHashSet<String>()
 
+    /** The game turn our first spy arrived (CvEspionageAI::m_iTurnEspionageStarted), -1 before; read by espionage strategy tests */
+    var turnEspionageStarted = -1
+    /** How often a foreign spy stole a technology in each of our cities, by [City.id] (CvCityEspionage::m_aiNumTimesCityRobbed) */
+    var timesCityRobbed = HashMap<String, Int>()
+    /** The steal rate x100 our spy saw when surveillance was established in a foreign city, by [City.id] (CvCityEspionage::m_aiLastBasePotential) */
+    var lastBasePotential = HashMap<String, Int>()
+    /** AI memory: the turn each civilization (by civID) we had surveillance on last had nothing left to steal (CvEspionageAI::m_aiCivOutOfTechTurn) */
+    var civOutOfTechTurn = HashMap<String, Int>()
+    /** AI memory: whether the United Nations countdown already made every spy reconsider its post (CvEspionageAI::m_bUNCountdownStarted) */
+    var unCountdownStarted = false
+
     @Transient
     lateinit var civInfo: Civilization
 
@@ -30,6 +41,11 @@ class EspionageManager : IsPartOfGameInfoSerialization {
         val toReturn = EspionageManager()
         spyList.mapTo(toReturn.spyList) { it.clone() }
         toReturn.erasSpyEarnedFor.addAll(erasSpyEarnedFor)
+        toReturn.turnEspionageStarted = turnEspionageStarted
+        toReturn.timesCityRobbed.putAll(timesCityRobbed)
+        toReturn.lastBasePotential.putAll(lastBasePotential)
+        toReturn.civOutOfTechTurn.putAll(civOutOfTechTurn)
+        toReturn.unCountdownStarted = unCountdownStarted
         return toReturn
     }
 
@@ -38,6 +54,8 @@ class EspionageManager : IsPartOfGameInfoSerialization {
         for (spy in spyList) {
             spy.setTransients(civInfo)
         }
+        // Saves from before the field existed: espionage started at the latest now
+        if (turnEspionageStarted == -1 && spyList.isNotEmpty()) turnEspionageStarted = civInfo.gameInfo.turns
     }
 
     fun endTurn() {
@@ -65,6 +83,7 @@ class EspionageManager : IsPartOfGameInfoSerialization {
         val newSpy = Spy(spyName, getStartingSpyRank())
         newSpy.setTransients(civInfo)
         spyList.add(newSpy)
+        if (turnEspionageStarted == -1) turnEspionageStarted = civInfo.gameInfo.turns
         return newSpy
     }
 
@@ -85,6 +104,23 @@ class EspionageManager : IsPartOfGameInfoSerialization {
             techsToSteal.add(tech)
         }
         return techsToSteal
+    }
+
+    /**
+     * How fast a spy without rank steals in [city]: CvPlayerEspionage::CalcPerTurn(SPY_STATE_GATHERING_INTEL, city, -1).
+     * The city's science x100 with the percentages of the city owner against spies ([UniqueType.EnemySpyEffectiveness]) and of this
+     * civilization's spies ([UniqueType.SpyEffectiveness]) summed as in the original; at least 1. The game speed factor of the original
+     * is left out: Unciv puts it into the cost of the theft instead.
+     */
+    @Readonly
+    fun getBaseStealRateTimes100(city: City): Int {
+        var percent = 100
+        for (unique in city.getMatchingUniques(UniqueType.EnemySpyEffectiveness, city.state, includeCivUniques = true))
+            if (city.matchesFilter(unique.params[1])) percent += unique.params[0].toInt()
+        for (unique in civInfo.getMatchingUniques(UniqueType.SpyEffectiveness))
+            if (city.matchesFilter(unique.params[1], civInfo)) percent += unique.params[0].toInt()
+        val science = (city.cityStats.currentCityStats.science * 100).toInt()
+        return maxOf(science * percent / 100, 1)
     }
 
     @Readonly fun getSpiesInCity(city: City): List<Spy> = spyList.filter { it.getCityOrNull() == city }

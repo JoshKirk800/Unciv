@@ -924,6 +924,7 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
         if (demand == Demand.DoNotDigInOurLands) otherCivDiplomacy().negativeArchaeologyPoints =
             (otherCivDiplomacy().negativeArchaeologyPoints - 10).coerceAtLeast(0)
         else addModifier(DiplomaticModifiers.UnacceptableDemands, -10f)
+        if (demand == Demand.DontSpyOnUs && civInfo.isAI()) com.unciv.logic.automation.unit.EspionageAutomation.onAgreedToStopSpying(civInfo, otherCiv)
         val text = demand.agreedToDemandText.fillPlaceholders(civInfo.civName)
         otherCiv.addNotification(text, NotificationCategory.Diplomacy, NotificationIcon.Diplomacy, civInfo.civName)
         queueOtherCivPopupIfUnique(PopupAlert(AlertType.AcceptingDemand, civInfo.civID))
