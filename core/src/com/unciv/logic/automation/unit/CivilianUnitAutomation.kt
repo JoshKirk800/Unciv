@@ -65,7 +65,7 @@ object CivilianUnitAutomation {
             return mapUnit.civ.getWorkerAutomation().roadToAutomation.automateConnectRoad(unit, dangerousTiles)
 
         if (unit.hasUnique(UniqueType.BuildImprovements))
-            return mapUnit.civ.getWorkerAutomation().automateWorkerAction(unit, dangerousTiles, cache)
+            return mapUnit.civ.getWorkerAutomation().automateWorkerAction(unit, dangerousTiles)
 
         if (unit.hasUniqueToCreateWaterImprovements()) {
             if (!mapUnit.civ.getWorkerAutomation().automateWorkBoats(unit))
@@ -179,7 +179,7 @@ object CivilianUnitAutomation {
         //  (depending on number of cities) and after that they should just be used to start golden
         //  ages?
 
-        if (SpecificUnitAutomation.automateImprovementPlacer(mapUnit)) return
+        if (SpecificUnitAutomation.automateImprovementPlacer(mapUnit) { unit.getTile().getTileMap().getTile(it) in dangerousTiles }) return
         
         val goldenAgeAction = UnitActions.getUnitActions(mapUnit, UnitActionType.TriggerUnique)
             .filter { it.action != null && it.associatedUnique?.type in listOf(UniqueType.OneTimeEnterGoldenAge,

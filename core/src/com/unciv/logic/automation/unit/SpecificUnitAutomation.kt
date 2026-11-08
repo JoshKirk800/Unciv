@@ -1,22 +1,17 @@
 package com.unciv.logic.automation.unit
 
 import com.unciv.view.TileView
-import com.unciv.logic.automation.Automation
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.diplomacy.DiplomaticModifiers
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.UnitActionType
 import com.unciv.models.ruleset.Building
-import com.unciv.models.ruleset.tile.TerrainType
 import com.unciv.models.ruleset.unique.UniqueType
-import com.unciv.models.stats.Stat
 import com.unciv.logic.map.mapunit.actions.UnitActions
 import com.unciv.logic.map.mapunit.actions.UnitActionsFromUniques
-import com.unciv.view.GameView
 import com.unciv.view.MapUnitView
 import yairm210.purity.annotations.Readonly
-import kotlin.math.roundToInt
 
 object SpecificUnitAutomation {
 
@@ -82,15 +77,7 @@ object SpecificUnitAutomation {
                     it in unit.civ.viewableTiles // we can see them
                             && it.neighbors.any { tile -> tile.getOwner() == unit.civ }// they are close to our borders
                 }
-                .sortedBy {
-                    // get closest tiles
-                    val distance = it.aerialDistanceTo(unit.currentTile)
-                    // ...also get priorities to steal the most valuable for them
-                    val owner = it.getOwner()
-                    if (owner != null)
-                        distance - owner.getWorkerAutomation().getBasePriority(unitView.getTile().getTileMap().getTile(it), unitView).roundToInt()
-                    else distance
-                }
+                .sortedBy { it.aerialDistanceTo(unit.currentTile) } // get closest tiles
                 .firstOrNull { unit.movement.canReach(it) } // canReach is performance-heavy and always a last resort
         // if there is a good tile to steal - go there
         if (tileToSteal != null) {
@@ -108,78 +95,15 @@ object SpecificUnitAutomation {
         return false
     }
 
-    /** @return whether there was any progress in placing the improvement. A return value of `false`
-     * can be interpreted as: the unit doesn't know where to place the improvement or is stuck. */
-    fun automateImprovementPlacer(unit: MapUnit) : Boolean {
-        val improvementBuildingUnique = unit.getMatchingUniques(UniqueType.ConstructImprovementInstantly).firstOrNull()
-            ?: return false
-
-        val improvementName = improvementBuildingUnique.params[0]
-        val improvement = unit.civ.gameInfo.ruleset.tileImprovements[improvementName]
-            ?: return false
-        val relatedStat = improvement.maxByOrNull { it.value }?.key ?: Stat.Culture
-
-        val citiesByStatBoost = unit.civ.cities.sortedByDescending {
-            it.cityStats.statPercentBonusTree.totalStats[relatedStat]
-        }
-
-        val averageTerrainStatsValue = unit.civ.gameInfo.ruleset.terrains.values.asSequence()
-            .filter { it.type == TerrainType.Land }
-            .map { Automation.rankStatsValue(it, GameView(unit.civ.gameInfo, unit.civ).civView) }
-            .average()
-
-        for (city in citiesByStatBoost) {
-            val applicableTiles = city.getWorkableTiles().filter {
-                it.isLand && (it.tileResource?.isImprovedBy(improvementName) != false) && !it.isCityCenter()
-                    && (unit.currentTile == it || unit.movement.canMoveTo(it))
-                    // okay if we replace regular improvements by great improvements, but not the other way around
-                    && (it.tileImprovement == null || !it.tileImprovement!!.hasUnique(UniqueType.GreatImprovement))
-                    && it.improvementFunctions.canBuildImprovement(improvement, unit.cache.state)
-                    && (!improvement.hasUnique(UniqueType.GreatImprovement) || Automation.rankStatsValue(it.getBaseTerrain().cloneStats(), GameView(unit.civ.gameInfo, unit.civ).civView) > averageTerrainStatsValue)
-            }
-
-            if (applicableTiles.none()) continue
-
-            val pathToCity = unit.movement.getShortestPath(city.getCenterTile())
-
-            if (pathToCity.isEmpty()) continue
-            if (pathToCity.size > 2 && unit.getTile().getCity() != city) {
-                // Radius 5 is quite arbitrary. Few units have such a high movement radius although
-                // streets might modify it. Also there might be invisible units, so this is just an
-                // approximation for relative safety and simplicity.
-                val enemyUnitsNearby = unit.getTile().getTilesInDistance(5).any { tileNearby ->
-                    tileNearby.getUnits().any { unitOnTileNearby ->
-                        unitOnTileNearby.isMilitary() && unitOnTileNearby.civ.isAtWarWith(unit.civ)
-                    }
-                }
-                // Don't move until you're accompanied by a military unit if there are enemies nearby.
-                if (unit.getTile().militaryUnit == null && enemyUnitsNearby) return true
-                unit.movement.headTowards(city.getCenterTile())
-                return true
-            }
-
-            // if we got here, we're pretty close, start looking!
-            val chosenTile = applicableTiles.sortedByDescending {
-                Automation.rankTile(
-                    it,
-                    GameView(unit.civ.gameInfo, unit.civ).civView,
-                )
-            }
-                .firstOrNull { unit.movement.canReach(it) }
-                ?: continue // to another city
-
-            val unitTileBeforeMovement = unit.currentTile
-            unit.movement.headTowards(chosenTile)
-            if (unit.currentTile == chosenTile) {
-                if (unit.currentTile.isPillaged())
-                    UnitActions.invokeUnitAction(unit, UnitActionType.Repair)
-                else UnitActions.invokeUnitAction(unit, UnitActionType.CreateImprovement)
-                return true
-            }
-            return unitTileBeforeMovement != unit.currentTile
-        }
-        // No city needs this improvement.
-        return false
+    /**
+     *  CvHomelandAI::ExecuteWorkerMove for a Great Person directed to construct its improvement: the builder directive of
+     *  [BuilderTaskingAi.evaluateBuilder] over the improvements the unit creates; it moves to the plot, or creates the improvement there.
+     *  @param isDangerous the plots the unit must avoid (the original's plot danger)
+     *  @return whether there was a directive; `false`: the unit knows no plot for its improvement
+     */
+    fun automateImprovementPlacer(unit: MapUnit, isDangerous: (Tile) -> Boolean = { false }): Boolean {
+        if (unit.getMatchingUniques(UniqueType.ConstructImprovementInstantly).none()) return false
+        return unit.civ.getWorkerAutomation().executeWorkerMove(unit, isDangerous)
     }
 
     /** @return whether there was any progress in conducting the trade mission. A return value of
