@@ -11,11 +11,11 @@ import com.unciv.logic.automation.Automation
 import com.unciv.logic.automation.diplomacy.PromiseAi
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.unit.SettlerAutomation
+import com.unciv.logic.automation.unit.ArchaeologistAutomation
 import com.unciv.logic.automation.unit.EspionageAutomation
 import com.unciv.logic.automation.unit.UnitAutomation
 import com.unciv.logic.battle.*
 import com.unciv.logic.city.City
-import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.civilization.AlertType
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.NotificationCategory
@@ -65,8 +65,9 @@ object NextTurnAutomation {
                 DiplomacyAutomation.checkMilitaryPresenceNearBorder(civInfo)
             }
             if (civInfo.gameInfo.ruleset.greatWorks.isNotEmpty()) timeThis("AI.greatWorks") {
-                GreatWorkFunctions.optimizeTheming(civInfo)
-                TradeAutomation.exchangeGreatWorks(civInfo)
+                // CvEconomicAI::DoTurn, AI part: DisbandExtraArchaeologists, then CvPlayerCulture::DoSwapGreatWorks
+                ArchaeologistAutomation.disbandExtraArchaeologists(civInfo)
+                GreatWorkSwapAutomation.doSwapGreatWorks(civInfo)
             }
             
             timeThis("AI.issueRequests") { issueRequests(civView) }

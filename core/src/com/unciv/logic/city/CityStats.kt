@@ -80,6 +80,11 @@ class StatTreeNode {
  * so its field in [City] is @Transient and no such annotation is needed here.
  */
 class CityStats(val city: City) {
+    companion object {
+        /** The [finalStatList] entry of the production that a settler-like construction makes of the excess food */
+        const val EXCESS_FOOD_TO_PRODUCTION = "Excess food to production"
+    }
+
     //region Fields, Transient
 
     var baseStatTree = StatTreeNode()
@@ -640,7 +645,7 @@ class CityStats(val city: City) {
         newFinalStatList["Maintenance"] = Stats(gold = -buildingsMaintenance.toInt().toFloat())
 
         if (canConvertFoodToProduction(totalFood, currentConstruction)) {
-            newFinalStatList["Excess food to production"] =
+            newFinalStatList[EXCESS_FOOD_TO_PRODUCTION] =
                 Stats(production = getProductionFromExcessiveFood(totalFood), food = -totalFood)
         }
 

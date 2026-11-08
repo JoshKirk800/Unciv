@@ -77,6 +77,7 @@ The bonus is added to the culture of the city, and is changed by the uniques `[r
 |------------------------|---------|----------|--------------------------------------------------------------------------------------|
 | name                   | String  | Required | The name of the bonus. `[era]` and `[civ]` stand for the era and the civilization the works have in common |
 | bonus                  | Integer | 0        | Culture the bonus gives                                                              |
+| aiPriority             | Integer | 0        | The AI themes buildings in the order of the `aiPriority` of their first bonus, highest first |
 | sameEra                | Boolean | false    | All works are from the same era                                                      |
 | uniqueEras             | Boolean | false    | No two works are from the same era                                                   |
 | mustBeArt              | Boolean | false    | None of the works is an artifact                                                     |

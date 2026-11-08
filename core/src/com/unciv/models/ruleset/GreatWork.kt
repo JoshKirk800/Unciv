@@ -103,6 +103,11 @@ class ThemingBonus {
     /** Named for the bonus, as in "World's Most Visited Museum" */
     var name = ""
     var bonus = 0
+    /**
+     * The order in which the AI themes buildings, higher first (AIPriority of Building_ThemingBonuses). Only the first bonus of a building counts,
+     * as in CvPlayerCulture's SortThemingBonus
+     */
+    var aiPriority = 0
     /** All works are from the same era */
     var sameEra = false
     /** No two works are from the same era */

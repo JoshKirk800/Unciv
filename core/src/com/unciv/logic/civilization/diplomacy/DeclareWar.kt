@@ -159,6 +159,7 @@ object DeclareWar {
                     NotificationCategory.Trade, diplomacyManager.otherCiv.civName, NotificationIcon.Trade)
         diplomacyManager.trades.clear()
         diplomacyManager.civInfo.tradeRequests.removeAll { it.requestingCiv == diplomacyManager.otherCiv.civID }
+        com.unciv.logic.automation.civilization.LeagueAutomation.cancelVoteCommitmentsToPlayer(diplomacyManager.civInfo, diplomacyManager.otherCiv) // CvGameDeals::DoEndTradedItem
 
         // Must come *before* state is "at war" so units know they're not allowed in tiles without open borders anymore
         diplomacyManager.updateHasOpenBorders()

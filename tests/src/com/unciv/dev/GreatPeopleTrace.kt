@@ -155,6 +155,8 @@ internal class GreatPeopleTrace(private val game: GameInfo) {
             text.appendLine("  slots filled now: " + GreatWorkSlotType.entries.joinToString { type ->
                 "${type.label} ${civ.cities.sumOf { it.greatWorks.getNumWorks(type) }}/${civ.cities.sumOf { city -> city.greatWorks.getSlots().count { it.getType() == type } }}"
             })
+            val themed = civ.cities.sumOf { city -> city.cityConstructions.getBuiltBuildings().count { city.greatWorks.getThemingBonus(it) > 0 } }
+            text.appendLine("  theming now: $themed themed buildings, +${civ.cities.sumOf { it.greatWorks.getTotalThemingBonus() }} culture")
         }
         return text.toString()
     }

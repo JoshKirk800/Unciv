@@ -123,7 +123,7 @@
 	{
 		"name": "The Great Library",
 		"themingBonuses": [
-			{"name": "Library of Ancient Knowledge", "bonus": 2, "uniqueEras": true, "requiresUniquePlayers": true},
+			{"name": "Library of Ancient Knowledge", "bonus": 2, "aiPriority": 2, "uniqueEras": true, "requiresUniquePlayers": true},
 		],
 		"science": 3,
 		"culture": 1,
@@ -652,7 +652,7 @@
 	{
 		"name": "Oxford University",
 		"themingBonuses": [
-			{"name": "Library of World Literature", "bonus": 2, "uniqueEras": true, "requiresAnyButOwner": true},
+			{"name": "Library of World Literature", "bonus": 2, "aiPriority": 1, "uniqueEras": true, "requiresAnyButOwner": true},
 		],
 		"cost": 125,
 		"science": 3,
@@ -764,7 +764,7 @@
 	{
 		"name": "Sistine Chapel",
 		"themingBonuses": [
-			{"name": "Chapel of [era] [civ] Art", "bonus": 2, "sameEra": true, "mustBeArt": true, "requiresSamePlayer": true},
+			{"name": "Chapel of [era] [civ] Art", "bonus": 2, "aiPriority": 3, "sameEra": true, "mustBeArt": true, "requiresSamePlayer": true},
 		],
 		"culture": 1,
 		"isWonder": true,
@@ -853,7 +853,7 @@
 	{
 		"name": "Globe Theatre",
 		"themingBonuses": [
-			{"name": "Theater of [era] [civ] Literature", "bonus": 2, "sameEra": true, "requiresSamePlayer": true},
+			{"name": "Theater of [era] [civ] Literature", "bonus": 2, "aiPriority": 3, "sameEra": true, "requiresSamePlayer": true},
 		],
 		"culture": 2,
 		"isWonder": true,
@@ -884,7 +884,7 @@
 	{
 		"name": "Hermitage",
 		"themingBonuses": [
-			{"name": "Museum of World Art", "bonus": 3, "uniqueEras": true, "mustBeArt": true, "requiresUniquePlayers": true},
+			{"name": "Museum of World Art", "bonus": 3, "aiPriority": 4, "uniqueEras": true, "mustBeArt": true, "requiresUniquePlayers": true},
 		],
 		"cost": 125,
 		"percentStatBonus": {"culture": 50},
@@ -914,7 +914,7 @@
 	{
 		"name": "Uffizi",
 		"themingBonuses": [
-			{"name": "Museum of [era] [civ] Art", "bonus": 3, "sameEra": true, "mustBeArt": true, "requiresSamePlayer": true},
+			{"name": "Museum of [era] [civ] Art", "bonus": 3, "aiPriority": 6, "sameEra": true, "mustBeArt": true, "requiresSamePlayer": true},
 		],
 		"culture": 2,
 		"isWonder": true,
@@ -979,18 +979,18 @@
 	{
 		"name": "Museum",
 		"themingBonuses": [
-			{"name": "Museum of [era] [civ] Art", "bonus": 2, "sameEra": true, "mustBeArt": true, "requiresOwner": true},
-			{"name": "Museum of [era] [civ] Art", "bonus": 2, "sameEra": true, "mustBeArt": true, "requiresAnyButOwner": true},
-			{"name": "Museum of [era] [civ] Warfare", "bonus": 2, "sameEra": true, "mustBeArtifact": true, "requiresOwner": true},
-			{"name": "Museum of [era] [civ] Warfare", "bonus": 2, "sameEra": true, "mustBeArtifact": true, "requiresAnyButOwner": true},
-			{"name": "Museum of [era] Art", "bonus": 1, "sameEra": true, "mustBeArt": true},
-			{"name": "Museum of [era] Warfare", "bonus": 1, "sameEra": true, "mustBeArtifact": true},
-			{"name": "[civ] Museum of the [era] Era", "bonus": 1, "sameEra": true, "requiresOwner": true},
-			{"name": "World Museum of the [era] Era", "bonus": 1, "sameEra": true, "requiresAnyButOwner": true},
-			{"name": "Collection of [civ] Art", "bonus": 1, "mustBeArt": true, "requiresOwner": true},
-			{"name": "Collection of [civ] Art", "bonus": 1, "mustBeArt": true, "requiresAnyButOwner": true},
-			{"name": "Collection of [civ] Warfare", "bonus": 1, "mustBeArtifact": true, "requiresOwner": true},
-			{"name": "Collection of [civ] Warfare", "bonus": 1, "mustBeArtifact": true, "requiresAnyButOwner": true},
+			{"name": "Museum of [era] [civ] Art", "bonus": 2, "aiPriority": 2, "sameEra": true, "mustBeArt": true, "requiresOwner": true},
+			{"name": "Museum of [era] [civ] Art", "bonus": 2, "aiPriority": 2, "sameEra": true, "mustBeArt": true, "requiresAnyButOwner": true},
+			{"name": "Museum of [era] [civ] Warfare", "bonus": 2, "aiPriority": 2, "sameEra": true, "mustBeArtifact": true, "requiresOwner": true},
+			{"name": "Museum of [era] [civ] Warfare", "bonus": 2, "aiPriority": 2, "sameEra": true, "mustBeArtifact": true, "requiresAnyButOwner": true},
+			{"name": "Museum of [era] Art", "bonus": 1, "aiPriority": 1, "sameEra": true, "mustBeArt": true},
+			{"name": "Museum of [era] Warfare", "bonus": 1, "aiPriority": 1, "sameEra": true, "mustBeArtifact": true},
+			{"name": "[civ] Museum of the [era] Era", "bonus": 1, "aiPriority": 1, "sameEra": true, "requiresOwner": true},
+			{"name": "World Museum of the [era] Era", "bonus": 1, "aiPriority": 1, "sameEra": true, "requiresAnyButOwner": true},
+			{"name": "Collection of [civ] Art", "bonus": 1, "aiPriority": 1, "mustBeArt": true, "requiresOwner": true},
+			{"name": "Collection of [civ] Art", "bonus": 1, "aiPriority": 1, "mustBeArt": true, "requiresAnyButOwner": true},
+			{"name": "Collection of [civ] Warfare", "bonus": 1, "aiPriority": 1, "mustBeArtifact": true, "requiresOwner": true},
+			{"name": "Collection of [civ] Warfare", "bonus": 1, "aiPriority": 1, "mustBeArtifact": true, "requiresAnyButOwner": true},
 		],
 		"culture": 1,
 		"requiredBuilding": "Opera House",
@@ -1002,7 +1002,7 @@
 	{
 		"name": "The Louvre",
 		"themingBonuses": [
-			{"name": "World's Most Visited Museum", "bonus": 4, "uniqueEras": true, "mustBeEqualArtArtifact": true, "requiresUniquePlayers": true},
+			{"name": "World's Most Visited Museum", "bonus": 4, "aiPriority": 5, "uniqueEras": true, "mustBeEqualArtArtifact": true, "requiresUniquePlayers": true},
 		],
 		"culture": 2,
 		"isWonder": true,
@@ -1127,7 +1127,7 @@
 	{
 		"name": "Broadway",
 		"themingBonuses": [
-			{"name": "Showplace for [era] [civ] Music", "bonus": 3, "sameEra": true, "requiresSamePlayer": true},
+			{"name": "Showplace for [era] [civ] Music", "bonus": 3, "aiPriority": 2, "sameEra": true, "requiresSamePlayer": true},
 		],
 		"uniques": ["Has [3] [Music] Great Work slots"],
 		"culture": 2,
@@ -1273,7 +1273,7 @@
 	{
 		"name": "Sydney Opera House",
 		"themingBonuses": [
-			{"name": "Center for the [civ] Musical Arts", "bonus": 2, "uniqueEras": true, "requiresSamePlayer": true},
+			{"name": "Center for the [civ] Musical Arts", "bonus": 2, "aiPriority": 1, "uniqueEras": true, "requiresSamePlayer": true},
 		],
 		"isWonder": true,
 		"percentStatBonus": {"culture": 50},

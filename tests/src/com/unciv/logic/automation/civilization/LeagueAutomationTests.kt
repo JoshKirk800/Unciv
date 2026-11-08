@@ -1,5 +1,7 @@
 package com.unciv.logic.automation.civilization
 
+import com.unciv.logic.automation.strategy.GrandStrategyAi
+import com.unciv.logic.city.CityStats
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
 import com.unciv.logic.civilization.diplomacy.DiplomaticModifiers
@@ -8,6 +10,7 @@ import com.unciv.logic.league.League
 import com.unciv.logic.league.LeagueProposal
 import com.unciv.models.metadata.BaseRuleset
 import com.unciv.models.ruleset.ResolutionDecision
+import com.unciv.models.stats.Stats
 import com.unciv.testing.GdxTestRunner
 import com.unciv.testing.TestGame
 import org.junit.Assert.assertEquals
@@ -74,30 +77,30 @@ class LeagueAutomationTests {
     //region Alignment
     @Test
     fun `alignment is self for oneself and war for an enemy`() {
-        assertEquals(LeagueAlignment.SELF, evaluator(a).evaluateAlignment(a))
+        assertEquals(LeagueAlignment.SELF, LeagueAutomation.evaluateAlignment(a, a))
         for (civ in listOf(a, b)) civ.getDiplomacyManager(if (civ == a) b else a)!!.diplomaticStatus = DiplomaticStatus.War
-        assertEquals(LeagueAlignment.WAR, evaluator(a).evaluateAlignment(b))
+        assertEquals(LeagueAlignment.WAR, LeagueAutomation.evaluateAlignment(a, b))
     }
 
     @Test
     fun `friendship with a good opinion makes a friend and denunciation with a bad one a rival`() {
-        assertEquals(LeagueAlignment.NEUTRAL, evaluator(a).evaluateAlignment(b))
+        assertEquals(LeagueAlignment.NEUTRAL, LeagueAutomation.evaluateAlignment(a, b))
         val toB = a.getDiplomacyManager(b)!!
         toB.setFlag(DiplomacyFlags.DeclarationOfFriendship, 20)
-        assertEquals("+1 for the declaration alone is neutral", LeagueAlignment.NEUTRAL, evaluator(a).evaluateAlignment(b))
+        assertEquals("+1 for the declaration alone is neutral", LeagueAlignment.NEUTRAL, LeagueAutomation.evaluateAlignment(a, b))
         toB.diplomaticModifiers[DiplomaticModifiers.DeclarationOfFriendship.name] = 50f // opinion 50: Friend, +1
-        assertEquals(LeagueAlignment.FRIEND, evaluator(a).evaluateAlignment(b))
+        assertEquals(LeagueAlignment.FRIEND, LeagueAutomation.evaluateAlignment(a, b))
 
         val toC = a.getDiplomacyManager(c)!!
         toC.setFlag(DiplomacyFlags.Denunciation, 20)
         toC.diplomaticModifiers[DiplomaticModifiers.Denunciation.name] = -50f // opinion -50: Enemy, -1
-        assertEquals(LeagueAlignment.RIVAL, evaluator(a).evaluateAlignment(c))
+        assertEquals(LeagueAlignment.RIVAL, LeagueAutomation.evaluateAlignment(a, c))
     }
 
     @Test
     fun `a civilization that is not alive or no major civilization is neutral`() {
         val cityState = gameInfo.civilizations.first { it.isCityState }
-        assertEquals(LeagueAlignment.NEUTRAL, evaluator(a).evaluateAlignment(cityState))
+        assertEquals(LeagueAlignment.NEUTRAL, LeagueAutomation.evaluateAlignment(a, cityState))
     }
 
     @Test
@@ -106,15 +109,15 @@ class LeagueAutomationTests {
         game.addCity(a, cityTile())
         league.members.getValue(b.civID).proposalsLeft = 2
         league.proposeEnact(resolution("World's Fair"), null, b)
-        assertEquals(LeagueAlignment.FRIEND, evaluator(a).evaluateAlignment(b))
+        assertEquals(LeagueAlignment.FRIEND, LeagueAutomation.evaluateAlignment(a, b))
         val saved = league.clone()
         assertEquals(gameInfo.turns, saved.members.getValue(a.civID).alignmentMemory.getValue(b.civID).likedProposalTurn)
         gameInfo.turns++
         league.proposeEnact(resolution("Embargo"), a.civID, b)
-        assertEquals(LeagueAlignment.RIVAL, evaluator(a).evaluateAlignment(b))
+        assertEquals(LeagueAlignment.RIVAL, LeagueAutomation.evaluateAlignment(a, b))
         assertEquals(-1, saved.members.getValue(a.civID).alignmentMemory.getValue(b.civID).dislikedProposalTurn)
         gameInfo.turns += 45
-        assertEquals(LeagueAlignment.NEUTRAL, evaluator(a).evaluateAlignment(b))
+        assertEquals(LeagueAlignment.NEUTRAL, LeagueAutomation.evaluateAlignment(a, b))
     }
 
     @Test
@@ -128,10 +131,10 @@ class LeagueAutomationTests {
         league.vote(election.id, c, 2, c.civID)
         league.doTurn()
         assertEquals(b.civID, league.host)
-        assertEquals(LeagueAlignment.FRIEND, evaluator(b).evaluateAlignment(a))
-        assertEquals(LeagueAlignment.NEUTRAL, evaluator(b).evaluateAlignment(c))
+        assertEquals(LeagueAlignment.FRIEND, LeagueAutomation.evaluateAlignment(b, a))
+        assertEquals(LeagueAlignment.NEUTRAL, LeagueAutomation.evaluateAlignment(b, c))
         gameInfo.turns += 45
-        assertEquals(LeagueAlignment.NEUTRAL, evaluator(b).evaluateAlignment(a))
+        assertEquals(LeagueAlignment.NEUTRAL, LeagueAutomation.evaluateAlignment(b, a))
     }
 
     @Test
@@ -143,8 +146,8 @@ class LeagueAutomationTests {
         val fair = onTable().single()
         for (civ in majors) league.vote(fair.id, civ, league.getDelegatesLeft(civ), League.YES)
         league.doTurn()
-        assertEquals(LeagueAlignment.FRIEND, evaluator(b).evaluateAlignment(a))
-        assertEquals(LeagueAlignment.FRIEND, evaluator(b).evaluateAlignment(c))
+        assertEquals(LeagueAlignment.FRIEND, LeagueAutomation.evaluateAlignment(b, a))
+        assertEquals(LeagueAlignment.FRIEND, LeagueAutomation.evaluateAlignment(b, c))
 
         league.proposals.clear()
         for (member in league.members.values) member.proposalsLeft = 0
@@ -157,10 +160,10 @@ class LeagueAutomationTests {
         league.vote(embargo.id, b, league.getDelegatesLeft(b), League.YES)
         league.vote(embargo.id, c, league.getDelegatesLeft(c), League.NO)
         league.doTurn()
-        assertEquals(LeagueAlignment.RIVAL, evaluator(b).evaluateAlignment(a))
-        assertEquals(LeagueAlignment.RIVAL, evaluator(b).evaluateAlignment(c))
+        assertEquals(LeagueAlignment.RIVAL, LeagueAutomation.evaluateAlignment(b, a))
+        assertEquals(LeagueAlignment.RIVAL, LeagueAutomation.evaluateAlignment(b, c))
         gameInfo.turns += 45
-        assertEquals(LeagueAlignment.NEUTRAL, evaluator(b).evaluateAlignment(a))
+        assertEquals(LeagueAlignment.NEUTRAL, LeagueAutomation.evaluateAlignment(b, a))
     }
     //endregion
 
@@ -409,6 +412,104 @@ class LeagueAutomationTests {
             val resolution = game.ruleset.resolutions[active.resolution]
             assertTrue(resolution != null && resolution.playerProposable)
         }
+    }
+    //endregion
+
+    //region International projects (CvLeagueAI::ScoreVoteChoiceYesNo, eLeagueProjectEnabled)
+    /** Production of each civilization's cities, [fromFood] of it being what a settler makes of excess food */
+    private fun setProduction(civ: Civilization, production: Float, fromFood: Float = 0f) {
+        for (city in civ.cities) {
+            city.cityStats.currentCityStats = Stats(production = production)
+            city.cityStats.finalStatList.clear()
+            if (fromFood > 0f) city.cityStats.finalStatList[CityStats.EXCESS_FOOD_TO_PRODUCTION] = Stats(production = fromFood)
+        }
+    }
+
+    @Test
+    fun `project support follows the production rank and the culture or science grand strategy`() {
+        setProduction(a, 30f)
+        setProduction(b, 20f)
+        setProduction(c, 10f)
+        a.ai.grandStrategy = GrandStrategyAi.CULTURE
+        // first of three: ratio 1, +40 and strong production
+        assertEquals(40 + 30, evaluator(a).scoreEffects(resolution("World's Fair"), null))
+        assertEquals(40 + 40, evaluator(a).scoreEffects(resolution("International Games"), null))
+        assertEquals("not seeking science", 40 + 10, evaluator(a).scoreEffects(resolution("International Space Station"), null))
+        a.ai.grandStrategy = GrandStrategyAi.SPACESHIP
+        assertEquals(40 + 50, evaluator(a).scoreEffects(resolution("International Space Station"), null))
+        assertEquals(40 + 10, evaluator(a).scoreEffects(resolution("World's Fair"), null))
+
+        // second of three: ratio 2/3, +20 and still strong
+        b.ai.grandStrategy = GrandStrategyAi.CULTURE
+        assertEquals(20 + 30, evaluator(b).scoreEffects(resolution("World's Fair"), null))
+        // last of three: ratio 1/3, -20 and weak, so the strategy bonus is not given
+        c.ai.grandStrategy = GrandStrategyAi.CULTURE
+        assertEquals(-20 + 10, evaluator(c).scoreEffects(resolution("World's Fair"), null))
+    }
+
+    @Test
+    fun `production that comes from excess food does not count as production might`() {
+        // 30 production of which 25 from food is 5 of might: last of three
+        setProduction(a, 30f, fromFood = 25f)
+        setProduction(b, 20f)
+        setProduction(c, 10f)
+        a.ai.grandStrategy = GrandStrategyAi.CULTURE
+        assertEquals(-20 + 10, evaluator(a).scoreEffects(resolution("World's Fair"), null))
+    }
+    //endregion
+
+    //region Vote commitments (CvLeagueAI vote trading)
+    @Test
+    fun `desire levels follow the bands of EvaluateDesire`() {
+        val expected = listOf(-106 to LeagueDesire.NEVER, -105 to LeagueDesire.STRONG_DISLIKE, -76 to LeagueDesire.STRONG_DISLIKE,
+            -75 to LeagueDesire.DISLIKE, -46 to LeagueDesire.DISLIKE, -45 to LeagueDesire.WEAK_DISLIKE, -16 to LeagueDesire.WEAK_DISLIKE,
+            -15 to LeagueDesire.NEUTRAL, 15 to LeagueDesire.NEUTRAL, 16 to LeagueDesire.WEAK_LIKE, 45 to LeagueDesire.WEAK_LIKE,
+            46 to LeagueDesire.LIKE, 75 to LeagueDesire.LIKE, 76 to LeagueDesire.STRONG_LIKE, 105 to LeagueDesire.STRONG_LIKE, 106 to LeagueDesire.ALWAYS)
+        for ((score, desire) in expected) assertEquals("score $score", desire, LeagueDesire.of(score))
+    }
+
+    private fun proposeEmbargoOnA(): LeagueProposal {
+        for (member in league.members.values) member.proposalsLeft = 0
+        league.members.getValue(b.civID).proposalsLeft = 1
+        league.proposeEnact(resolution("Embargo"), a.civID, b)
+        return onTable().single()
+    }
+
+    @Test
+    fun `an AI wants the votes of another civilization on the choice it desires most`() {
+        val embargo = proposeEmbargoOnA()
+        // An embargo on itself scores -100 for yes (strong dislike) and +100 for no (strong like)
+        assertEquals(LeagueDesire.STRONG_DISLIKE, LeagueAutomation.evaluateVoteForTrade(a, embargo.id, League.YES, 1, repeal = false))
+        assertEquals(LeagueDesire.STRONG_LIKE, LeagueAutomation.evaluateVoteForTrade(a, embargo.id, League.NO, 1, repeal = false))
+        assertEquals("not on the table as a repeal", LeagueDesire.NEVER, LeagueAutomation.evaluateVoteForTrade(a, embargo.id, League.NO, 1, repeal = true))
+
+        val desired = LeagueAutomation.desiredVoteCommitments(a, c).single()
+        assertEquals(a.civID, desired.toCiv)
+        assertEquals(embargo.id, desired.proposalId)
+        assertEquals(League.NO, desired.choice)
+        assertTrue(desired.enact)
+        assertTrue(league.getCoreVotes(c) > 0)
+        assertEquals("the core votes of the civilization asked", league.getCoreVotes(c), desired.votes)
+    }
+
+    @Test
+    fun `committed votes are cast when the session starts and the commitment is used up`() {
+        val embargo = proposeEmbargoOnA()
+        // A proposal that is not on the table: dropped (first, as a member with no votes left keeps what it could not honor, as in the DLL)
+        LeagueAutomation.addVoteCommitment(c, b, 999, League.YES, 1, repeal = false)
+        LeagueAutomation.addVoteCommitment(c, b, embargo.id, League.YES, 1, repeal = false)
+        startSession()
+        assertEquals(1, embargo.votes.filter { it.voter == c.civID && it.choice == League.YES }.sumOf { it.delegates })
+        assertTrue(league.members.getValue(c.civID).voteCommitments.isEmpty())
+    }
+
+    @Test
+    fun `war cancels the commitments to the enemy`() {
+        val embargo = proposeEmbargoOnA()
+        LeagueAutomation.addVoteCommitment(c, b, embargo.id, League.YES, 1, repeal = false)
+        LeagueAutomation.addVoteCommitment(c, a, embargo.id, League.NO, 1, repeal = false)
+        c.getDiplomacyManager(b)!!.declareWar()
+        assertEquals(listOf(a.civID), league.members.getValue(c.civID).voteCommitments.map { it.toCiv })
     }
     //endregion
 }

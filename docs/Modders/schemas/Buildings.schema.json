@@ -108,6 +108,7 @@
           "properties": {
             "name": { "type": "string", "description": "The name of the bonus. [era] and [civ] stand for the era and the civilization the works have in common." },
             "bonus": { "type": "integer", "description": "Culture the bonus gives." },
+            "aiPriority": { "type": "integer", "description": "The AI themes buildings in the order of the aiPriority of their first bonus, highest first." },
             "sameEra": { "type": "boolean", "description": "All works are from the same era." },
             "uniqueEras": { "type": "boolean", "description": "No two works are from the same era." },
             "mustBeArt": { "type": "boolean", "description": "None of the works is an artifact." },
