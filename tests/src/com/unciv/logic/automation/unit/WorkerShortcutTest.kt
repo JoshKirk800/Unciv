@@ -51,7 +51,7 @@ internal class WorkerShortcutTest {
     }
 
     private fun automate(worker: MapUnit) =
-        workerAutomation.automateWorkerAction(GameView(civInfo.gameInfo, civInfo).getMapUnitView(worker), hashSetOf())
+        workerAutomation.automateWorkerAction(GameView(civInfo.gameInfo, civInfo).getMapUnitView(worker))
 
     @Test
     fun `a worker on a suitable tile finishes its improvement instead of walking to a better one`() {

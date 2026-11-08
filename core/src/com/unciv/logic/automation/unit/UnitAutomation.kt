@@ -1,6 +1,7 @@
 package com.unciv.logic.automation.unit
 
 import com.unciv.logic.automation.diplomacy.WarGoal
+import com.unciv.logic.automation.unit.tactical.TacticalSafety
 import com.unciv.view.hasMovement
 import com.unciv.view.isAirUnit
 import com.unciv.view.isCivilian
@@ -57,13 +58,14 @@ object UnitAutomation {
     fun automateUnitMoves(unitView: MapUnitView, cache: AutomationCache = AutomationCache()):Unit = timeThis("automateUnitMoves") {
         val unit = unitView.getUnit()
         check(!unit.civ.isBarbarian) { "Barbarians is not allowed here." }
-
+        // CvUnit::TurnProcessed: a routine that ran before (the tactical AI) already decided this unit's moves
+        if (unit in cache.processedUnits) return
         // Might die next turn - move!
         if (unit.getDamageFromTerrain() > 0 && tryHealUnit(unitView, cache)) return
 
 
         if (unitView.isCivilian()) {
-            CivilianUnitAutomation.automateCivilianUnit(unitView, getDangerousTiles(unitView), cache)
+            CivilianUnitAutomation.automateCivilianUnit(unitView, cache)
             return
         }
 
@@ -79,7 +81,7 @@ object UnitAutomation {
                     unitView.hasUnique(UniqueType.FoundPuppetCity) ||
                     unitView.hasUnique(UniqueType.ReligiousUnit) || unitView.hasUnique(UniqueType.CreateWaterImprovements))
             && !unit.civ.isAtWar()){
-            CivilianUnitAutomation.automateCivilianUnit(unitView, getDangerousTiles(unitView), cache)
+            CivilianUnitAutomation.automateCivilianUnit(unitView, cache)
             return
         }
 
@@ -106,7 +108,7 @@ object UnitAutomation {
 
         if (tryGoToRuin(unitView) && !unitView.hasMovement()) return
 
-        if (unitView.unitHealth < 50 && (tryRetreat(unitView, cache) || tryHealUnit(unitView, cache))) return // do nothing but heal
+        if (unitView.unitHealth < 50 && tryHealUnit(unitView, cache)) return // do nothing but heal
 
         // CvHomelandAI::PlotExplorerMoves / PlotExplorerSeaMoves: AI units in the explore role (CvEconomicAI recon) explore first
         if (unit.civ.isAI() && UnitAiTypes.current(unit).let { it == UnitAiType.EXPLORE || it == UnitAiType.EXPLORE_SEA }
@@ -287,9 +289,20 @@ object UnitAutomation {
         repeat(unitView.maxAttacksPerTurn() - unitView.attacksThisTurn) {
             if (BattleHelper.tryAttackNearbyEnemy(unitView)) return true
             // Calvary style tctic, attack and then retreat
-            if (unitView.unitHealth < 50 && tryRetreat(unitView, cache)) return true
+            if (unitView.unitHealth < 50 && TacticalSafety.moveToSafety(unitView.getUnit(), unitView.civ().getCiv().ai.plotDanger)) return true
         }
         return false
+    }
+
+    /**
+     *  The attacks of a unit under tactical control ([TacticalAi]) until the tactical attack moves are ported: the unit AI's own attack, for
+     *  units that are not hurt (a unit below half health retreats or heals instead).
+     *  @return whether the unit's turn is over: it attacked or has no movement left
+     */
+    fun tryTacticalAttack(unitView: MapUnitView, cache: AutomationCache): Boolean {
+        if (unitView.unitHealth < 50 || unitView.isCivilian()) return false
+        val attacksBefore = unitView.attacksThisTurn
+        return tryAttacking(unitView, cache) || unitView.attacksThisTurn > attacksBefore || !unitView.hasMovement()
     }
 
     private fun tryHeadTowardsEncampment(unitView: MapUnitView): Boolean {
@@ -306,65 +319,6 @@ object UnitAutomation {
         return true
     }
 
-    private fun tryRetreat(unitView: MapUnitView, cache: AutomationCache): Boolean {
-        // Precondition: This must be a military unit
-        if (unitView.isCivilian()) return false
-        if (unitView.isAirUnit()) return false
-        val civ = unitView.civ()
-        val unitTile = unitView.getTile()
-        // Better to do a more healing oriented move then
-        if (ThreatManager.getDistanceToClosestEnemyUnit(civ, cache, unitTile, 4, true) > 3) return false
-
-
-        val unitDistanceToTiles = unitView.getDistanceToTiles()
-        val closestCity = civ.cities().minByOrNull { it.getCenterTile().aerialDistanceTo(unitTile) }
-            ?.takeIf { it.getCenterTile().aerialDistanceTo(unitTile) < 20 }
-
-        // Finding the distance to the closest enemy is expensive, so lets sort the tiles using a cheaper function
-        val sortedTilesToRetreatTo: Sequence<TileView> = if (closestCity != null) {
-            // If we have a city, lets favor the tiles closer to that city
-            unitDistanceToTiles.asSequence().map { it.key }.sortedBy { it.aerialDistanceTo(closestCity.getCenterTile()) }
-        } else {
-            // Rare case, what if we don't have a city nearby?
-            // Lets favor the tiles that don't have enemies close by
-            // Ideally we should check in a greater radius but might get way too expensive
-            unitDistanceToTiles.asSequence().map { it.key }.sortedByDescending { ThreatManager.getDistanceToClosestEnemyUnit(civ, cache, it, 3, false) }
-        }
-
-        val ourDistanceToClosestEnemy = ThreatManager.getDistanceToClosestEnemyUnit(civ, cache, unitTile, 4, false)
-        // Lets check all tiles and swap with the first one
-        for (retreatTile in sortedTilesToRetreatTo) {
-            val tileDistanceToClosestEnemy = ThreatManager.getDistanceToClosestEnemyUnit(civ, cache, retreatTile, 4, false)
-            if (ourDistanceToClosestEnemy >= tileDistanceToClosestEnemy) continue
-
-            val otherUnit = retreatTile.militaryUnit
-            if (otherUnit == null) {
-                // See if we can retreat to the tile
-                if (!unitView.canMoveTo(retreatTile)) continue
-                unitView.tryMoveToTile(retreatTile)
-                return true
-            } else if (otherUnit.civ() == civ) {
-                // The tile is taken, lets see if we want to swap retreat to it
-                if (otherUnit.unitHealth <= 80) continue
-                if (otherUnit.getBaseUnit().isRanged()) {
-                    // Don't swap ranged units closer than they have to be
-                    val range = otherUnit.getBaseUnit().range
-                    if (ourDistanceToClosestEnemy < range)
-                        continue
-                }
-                if (unitView.canSwapTo(retreatTile)) {
-                    unitView.tryHeadTowards(retreatTile) // we need to move through the intermediate tiles
-                    // if nothing changed
-                    if (unitView.getTile().getNeighbors().contains(otherUnit.getTile()) && unitView.canSwapTo(retreatTile)) {
-                        unitView.trySwapMoveToTile(retreatTile)
-                    }
-                    return true
-                }
-            }
-        }
-        return false
-    }
-
     private fun tryHealUnit(unitView: MapUnitView, cache: AutomationCache): Boolean {
         if (unitView.getBaseUnit().isRanged() && unitView.hasUnique(UniqueType.HealsEvenAfterAction))
             return false // will heal anyway, and attacks don't hurt
@@ -378,16 +332,18 @@ object UnitAutomation {
         val unitDistanceToTiles = unitView.getDistanceToTiles()
         if (unitDistanceToTiles.isEmpty()) return true // can't move, so...
 
-        val dangerousTiles = ThreatManager.getDangerousTiles(cache, unitView, 3)
-        
+        val danger = unitView.civ().getCiv().ai.plotDanger
+        // The original's PlotDanger, and the tiles that would hurt the unit by their terrain
+        fun isDangerous(tile: TileView) = danger.get(tile) > 0 || unitView.getDamageFromTerrain(tile) > 0
+
         // If the unit can heal on this tile in two turns, just heal here
-        if (unitView.getTile() !in dangerousTiles 
+        if (!isDangerous(unitView.getTile())
             && canUnitHealInTurnsOnCurrentTile(unitView, cache, 3)) return true
 
         val currentUnitTile = unitView.getTile()
 
         val viableTilesForHealing = unitDistanceToTiles.keys
-                .filter { it !in dangerousTiles && unitView.canMoveTo(it) }
+                .filter { !isDangerous(it) && unitView.canMoveTo(it) }
         val tilesByHealingRate = viableTilesForHealing.groupBy { unitView.healingAmountForTile(it) }
 
         if (tilesByHealingRate.keys.all { it == 0 }) { // We can't heal here at all! We're probably embarked
@@ -443,25 +399,6 @@ object UnitAutomation {
         // Round up, otherwise e.g. 99 health over 2 turns would give 0 required healing per turn
         val healthRequiredPerTurn = ceil((100 - unitView.unitHealth).toFloat() / turns).toInt()
         return healthRequiredPerTurn <= unitView.healingAmountForTile(unitTile)
-    }
-
-    @Readonly
-    private fun getDangerousTiles(unitView: MapUnitView): HashSet<TileView> {
-        val civ = unitView.civ()
-        val nearbyEnemyUnits = unitView.getTile().getExploredTilesInDistance(3)
-            .flatMap { tile -> tile.getVisibleUnits().filter { civ.isAtWarWith(it.civ()) } }
-
-        val tilesInRangeOfAttack = nearbyEnemyUnits
-            .flatMap { it.getTile().getExploredTilesInDistance((it.getMaxMovement() - 1) + it.getRange()) }
-
-        val tilesWithinBombardmentRange = unitView.getTile().getExploredTilesInDistance(3)
-            .filter { it.isCityCenter() && it.getCity()!!.owningCiv().isAtWarWith(civ) }
-            .flatMap { it.getExploredTilesInDistance(it.getCity()!!.getBombardRange()) }
-
-        val tilesWithTerrainDamage = unitView.getTile().getExploredTilesInDistance(3)
-            .filter { unitView.getDamageFromTerrain(it) > 0 }
-
-        return (tilesInRangeOfAttack + tilesWithinBombardmentRange + tilesWithTerrainDamage).toHashSet()
     }
 
     /**

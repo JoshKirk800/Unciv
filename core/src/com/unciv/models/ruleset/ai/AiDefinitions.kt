@@ -161,3 +161,13 @@ class MultiUnitFormationDef : INamed {
     override var name = ""
     var slots = ArrayList<FormationSlotDef>()
 }
+
+/** One TacticalMoves row (CvTacticalMoveXMLEntry): [priority] orders the moves of a turn, [dominanceZoneMove] runs them once per dominance zone */
+class TacticalMoveDef : INamed {
+    override var name = ""
+    var priority = 0
+    var operationsCanRecruit = false
+    var dominanceZoneMove = false
+    var offenseFlavorWeight = 0
+    var defenseFlavorWeight = 0
+}

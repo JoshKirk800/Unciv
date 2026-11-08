@@ -62,12 +62,11 @@ object SpecificUnitAutomation {
     /**
      *  CvHomelandAI::ExecuteWorkerMove for a Great Person directed to construct its improvement: the builder directive of
      *  [BuilderTaskingAi.evaluateBuilder] over the improvements the unit creates; it moves to the plot, or creates the improvement there.
-     *  @param isDangerous the plots the unit must avoid (the original's plot danger)
      *  @return whether there was a directive; `false`: the unit knows no plot for its improvement
      */
-    fun automateImprovementPlacer(unit: MapUnit, isDangerous: (Tile) -> Boolean = { false }): Boolean {
+    fun automateImprovementPlacer(unit: MapUnit): Boolean {
         if (unit.getMatchingUniques(UniqueType.ConstructImprovementInstantly).none()) return false
-        return unit.civ.getWorkerAutomation().executeWorkerMove(unit, isDangerous)
+        return unit.civ.getWorkerAutomation().executeWorkerMove(unit)
     }
 
     fun automateAddInCapital(unit: MapUnitView) {

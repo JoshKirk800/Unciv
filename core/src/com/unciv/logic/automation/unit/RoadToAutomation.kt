@@ -33,8 +33,7 @@ class RoadToAutomation(val civInfo: Civilization) {
      * - End automation upon finish
      */
     // TODO: Caching
-    @Suppress("UNUSED_PARAMETER")  // tilesWhereWeWillBeCaptured may be useful in the future
-    fun automateConnectRoad(unitView: MapUnitView, tilesWhereWeWillBeCaptured: Set<TileView>) {
+    fun automateConnectRoad(unitView: MapUnitView) {
         val unit = unitView.getUnit()
         val tileMapView = unitView.getTile().getTileMap()
         if (actualBestRoadAvailable == RoadStatus.None) return
