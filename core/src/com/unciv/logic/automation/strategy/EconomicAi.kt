@@ -2,6 +2,7 @@ package com.unciv.logic.automation.strategy
 
 import com.unciv.logic.GameInfo
 import com.unciv.logic.IsPartOfGameInfoSerialization
+import com.unciv.logic.automation.WaterBodies
 import com.unciv.logic.automation.civilization.UseGoldAutomation
 import com.unciv.logic.automation.diplomacy.AiThreat
 import com.unciv.logic.civilization.Civilization
@@ -117,7 +118,7 @@ class EconomicAi : IsPartOfGameInfoSerialization {
             }
         }
 
-        if (civ.cities.none { it.isCoastal() }) {
+        if (civ.cities.none { WaterBodies.isCoastal(it) }) {
             navalReconState = ReconState.Enough
             return
         }

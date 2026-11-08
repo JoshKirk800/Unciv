@@ -12,8 +12,7 @@ import com.unciv.logic.city.City
 import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.managers.ReligionState
-import com.unciv.logic.map.BFS
-import com.unciv.logic.map.TileMap
+import com.unciv.logic.automation.WaterBodies
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.UnitActionType
@@ -677,17 +676,18 @@ object GreatPersonAutomation {
     private fun executeAdmiralMoves(unit: MapUnit): Boolean {
         val civ = unit.civ
         val apollo = isSpaceshipHomestretch(civ)
-        val holyCity = civ.religionManager.getHolyCity()?.takeIf { it.civ == civ && it.isCoastal() }
+        val bodies = WaterBodies.of(civ)
+        val holyCity = civ.religionManager.getHolyCity()?.takeIf { it.civ == civ && bodies.isCoastalLand(it.getCenterTile()) }
         val notAtFriendlyCity = !unit.currentTile.isCityCenter() || unit.currentTile.getOwner() != civ
         var best: City? = null
         var bestWeight = Int.MIN_VALUE
         for (city in civ.cities) {
-            if (apollo && city.isCapital() || city == holyCity || !city.isCoastal()) continue
+            if (apollo && city.isCapital() || city == holyCity || !bodies.isCoastalLand(city.getCenterTile())) continue
             val tile = city.getCenterTile()
             if (tile.getUnits().any { it != unit && isGeneralOrAdmiral(it) }) continue
             val turns = turnsToReach(unit, tile)
             if (notAtFriendlyCity && turns == Int.MAX_VALUE) continue
-            var weight = largestAdjacentWater(tile)
+            var weight = bodies.largestAdjacentWater(tile)
             val damage = city.getMaxHealth() - city.health
             if (damage > 0) weight /= damage
             if (turns != Int.MAX_VALUE) weight -= turns
@@ -699,26 +699,6 @@ object GreatPersonAutomation {
         if (best != null && unit.currentTile != best.getCenterTile()) moveTo(unit, best.getCenterTile())
         return true
     }
-
-    /** The game's water bodies: for each water tile, the size of its connected body of water (computed once per map) */
-    private val waterBodySizes = WeakHashMap<TileMap, HashMap<Tile, Int>>()
-
-    /** CvPlot::GetSizeLargestAdjacentWater: the size of the largest body of water next to [tile] */
-    private fun largestAdjacentWater(tile: Tile): Int {
-        val sizes = waterBodySizes.getOrPut(tile.tileMap) { HashMap() }
-        var largest = 0
-        for (neighbor in tile.neighbors) {
-            if (!neighbor.isWater) continue
-            val size = sizes[neighbor] ?: run {
-                val body = BFS(neighbor) { it.isWater }.apply { stepToEnd() }.getReachedTiles()
-                for (water in body) sizes[water] = body.size
-                body.size
-            }
-            if (size > largest) largest = size
-        }
-        return largest
-    }
-
 
     //endregion
 

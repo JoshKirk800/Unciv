@@ -1,6 +1,7 @@
 package com.unciv.logic.automation.strategy
 
 import com.unciv.logic.IsPartOfGameInfoSerialization
+import com.unciv.logic.automation.WaterBodies
 import com.unciv.logic.automation.city.ConstructionAutomation
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
@@ -496,7 +497,7 @@ object CitySpecializationAi {
             var best: CityData? = null
             var bestValue = -1
             for (data in unassigned) {
-                if (def.mustBeCoastal && !data.city.isCoastal()) continue
+                if (def.mustBeCoastal && !WaterBodies.isCoastal(data.city, 100)) continue
                 val value = if (yieldIndex == GENERAL) data.weights.sum() else data.weights[yieldIndex]
                 if (value > bestValue) {
                     bestValue = value

@@ -2,6 +2,7 @@ package com.unciv.logic.automation.city
 
 import com.unciv.UncivGame
 import com.unciv.logic.automation.AiDecisionLog
+import com.unciv.logic.automation.WaterBodies
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.strategy.AiOperations
 import com.unciv.logic.automation.strategy.MilitaryOperations
@@ -17,9 +18,7 @@ import com.unciv.logic.civilization.CityAction
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.NotificationCategory
 import com.unciv.logic.civilization.NotificationIcon
-import com.unciv.logic.map.TileMap
 import com.unciv.logic.map.mapunit.MapUnit
-import com.unciv.logic.map.tile.Tile
 import com.unciv.models.ruleset.Building
 import com.unciv.models.ruleset.IConstruction
 import com.unciv.models.ruleset.INonPerpetualConstruction
@@ -31,7 +30,6 @@ import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.models.ruleset.unit.BaseUnit
 import com.unciv.models.stats.Stat
 import com.unciv.ui.screens.cityscreen.CityScreen
-import java.util.WeakHashMap
 
 /**
  *  The production choice of a city: CvCityAI::AI_chooseProduction and CvCityStrategyAI::ChooseProduction (CvCityStrategyAI.cpp).
@@ -311,45 +309,5 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
             NotificationCategory.Production,
             NotificationIcon.Construction
         )
-    }
-
-    /** The connected water bodies of the map (the original's water CvAreas), computed once per map and turn */
-    private class WaterBodies(val turn: Int, tileCount: Int) {
-        val bodyIds = IntArray(tileCount) { -1 }
-        val sizes = ArrayList<Int>()
-
-        fun bodyOf(tile: Tile): Int = bodyIds[tile.zeroBasedIndex]
-        fun size(body: Int): Int = sizes[body]
-
-        companion object {
-            private val cache = WeakHashMap<TileMap, WaterBodies>()
-
-            fun of(civ: Civilization): WaterBodies {
-                val turn = civ.gameInfo.turns
-                synchronized(cache) { cache[civ.gameInfo.tileMap]?.let { if (it.turn == turn) return it } }
-                val tiles = civ.gameInfo.tileMap.tileList
-                val bodies = WaterBodies(turn, tiles.size)
-                val stack = ArrayList<Tile>()
-                for (start in tiles) {
-                    if (!start.isWater || bodies.bodyIds[start.zeroBasedIndex] >= 0) continue
-                    val id = bodies.sizes.size
-                    var size = 0
-                    bodies.bodyIds[start.zeroBasedIndex] = id
-                    stack.add(start)
-                    while (stack.isNotEmpty()) {
-                        val tile = stack.removeAt(stack.lastIndex)
-                        size++
-                        for (neighbor in tile.neighbors) {
-                            if (!neighbor.isWater || bodies.bodyIds[neighbor.zeroBasedIndex] >= 0) continue
-                            bodies.bodyIds[neighbor.zeroBasedIndex] = id
-                            stack.add(neighbor)
-                        }
-                    }
-                    bodies.sizes.add(size)
-                }
-                synchronized(cache) { cache[civ.gameInfo.tileMap] = bodies }
-                return bodies
-            }
-        }
     }
 }

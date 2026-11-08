@@ -1,5 +1,6 @@
 package com.unciv.logic.automation.strategy
 
+import com.unciv.logic.automation.WaterBodies
 import com.unciv.logic.automation.diplomacy.WarGoal
 import com.unciv.logic.automation.unit.SettleAreas
 import com.unciv.logic.city.GreatWorkFunctions
@@ -56,7 +57,7 @@ object EconomicMilitaryStrategyTests {
             needImprovement(civ, Stat.Food, "AICITYSTRATEGY_NEED_IMPROVEMENT_FOOD") }
         tests.register("ECONOMICAISTRATEGY_NEED_IMPROVEMENT_PRODUCTION") { civ, _ ->
             needImprovement(civ, Stat.Production, "AICITYSTRATEGY_NEED_IMPROVEMENT_PRODUCTION") }
-        tests.register("ECONOMICAISTRATEGY_ONE_OR_FEWER_COASTAL_CITIES") { civ, _ -> civ.cities.count { it.isCoastal() } <= 1 }
+        tests.register("ECONOMICAISTRATEGY_ONE_OR_FEWER_COASTAL_CITIES") { civ, _ -> civ.cities.count { WaterBodies.isCoastal(it) } <= 1 }
         tests.register(EconomicAi.LOSING_MONEY) { civ, def -> losingMoney(civ, def) }
         tests.register("ECONOMICAISTRATEGY_HALT_GROWTH_BUILDINGS") { civ, _ -> haltGrowthBuildings(civ) }
         tests.register("ECONOMICAISTRATEGY_TOO_MANY_UNITS") { civ, _ -> civ.stats.getUnitSupplyDeficit() > 0 }
@@ -366,12 +367,12 @@ object EconomicMilitaryStrategyTests {
         return best != capital.getCenterTile().getContinent() && best != -1
     }
 
-    /** IsTestStrategy_MostlyOnTheCoast: population of coastal cities at least that of the others, and some */
+    /** IsTestStrategy_MostlyOnTheCoast: population of cities on a body of water of at least 100 tiles (no lakes or small inland seas) at least that of the others, and some */
     fun mostlyOnTheCoast(civ: Civilization): Boolean {
         var coastal = 0
         var inland = 0
         for (city in civ.cities) {
-            if (city.isCoastal()) coastal += city.population.population
+            if (WaterBodies.isCoastal(city, 100)) coastal += city.population.population
             else inland += city.population.population
         }
         return coastal > 0 && coastal >= inland

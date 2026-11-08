@@ -1,6 +1,7 @@
 package com.unciv.logic.automation.strategy
 
 import com.unciv.Constants
+import com.unciv.logic.automation.WaterBodies
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.tile.Tile
@@ -439,7 +440,7 @@ object CityStrategyAi {
         tests.registerCity("AICITYSTRATEGY_SMALL_CITY") { city, _ -> isSmallCity(city) }
         tests.registerCity("AICITYSTRATEGY_MEDIUM_CITY") { city, _ -> isMediumCity(city) }
         tests.registerCity("AICITYSTRATEGY_LARGE_CITY") { city, _ -> isLargeCity(city) }
-        tests.registerCity("AICITYSTRATEGY_LANDLOCKED") { city, _ -> !city.isCoastal() }
+        tests.registerCity("AICITYSTRATEGY_LANDLOCKED") { city, _ -> !WaterBodies.isCoastal(city) }
         tests.registerCity(NEED_TILE_IMPROVERS) { city, def -> needTileImprovers(city, def.weightThreshold) }
         tests.registerCity("AICITYSTRATEGY_WANT_TILE_IMPROVERS") { city, def ->
             wantTileImprovers(city, def.weightThreshold + city.civ.ai.weightThresholdModifier(def))
@@ -473,7 +474,7 @@ object CityStrategyAi {
         tests.registerCity("AICITYSTRATEGY_FOREST_CITY") { city, _ -> isForestCity(city) }
         tests.registerCity("AICITYSTRATEGY_HILL_CITY") { city, _ -> isHillCity(city) }
         tests.registerCity("AICITYSTRATEGY_JUNGLE_CITY") { city, _ -> isJungleCity(city) }
-        tests.registerCity("AICITYSTRATEGY_COAST_CITY") { city, _ -> city.isCoastal() }
+        tests.registerCity("AICITYSTRATEGY_COAST_CITY") { city, _ -> WaterBodies.isCoastal(city) }
         tests.registerCity("AICITYSTRATEGY_GOOD_GP_CITY") { city, _ -> isGoodGreatPersonCity(city) }
         tests.registerCity("AICITYSTRATEGY_NEED_CULTURE_BUILDING") { city, _ -> needCultureBuilding(city) }
         tests.registerCity("AICITYSTRATEGY_NEED_TOURISM_BUILDING") { city, _ -> needTourismBuilding(city) }
