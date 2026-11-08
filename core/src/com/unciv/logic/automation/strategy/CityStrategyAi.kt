@@ -24,6 +24,9 @@ import kotlin.math.floor
  *  reads CvCity::getThreatValue, the danger map's [com.unciv.logic.automation.unit.PlotDanger.cityThreat] ([CityThreat]).
  */
 object CityStrategyAi {
+    private const val NEED_TILE_IMPROVERS_LOCKOUT_TURNS = 25
+    private const val WANT_TILE_IMPROVERS_LOCKOUT_TURNS = 10
+    private const val ENOUGH_TILE_IMPROVERS_LOCKOUT_TURNS = 10
     private const val NEED_TILE_IMPROVERS = "AICITYSTRATEGY_NEED_TILE_IMPROVERS"
     private const val NEED_NAVAL_TILE_IMPROVEMENT = "AICITYSTRATEGY_NEED_NAVAL_TILE_IMPROVEMENT"
     private const val CAPITAL_UNDER_THREAT = "AICITYSTRATEGY_CAPITAL_UNDER_THREAT"
@@ -227,8 +230,16 @@ object CityStrategyAi {
     fun isLargeCity(city: City): Boolean =
         city.population.population >= city.civ.gameInfo.ruleset.ai.define(AiDefine.AI_CITYSTRATEGY_LARGE_CITY_POP_THRESHOLD)
 
+    /** CvEconomicAI::GetLastTurnWorkerDisbanded is set and the game turn is at most [turns] after it */
+    private fun workerDisbandedWithin(civ: Civilization, turns: Int): Boolean {
+        val last = civ.ai.economic.lastTurnWorkerDisbanded
+        return last >= 0 && civ.gameInfo.turns - last <= turns
+    }
+
+    /** IsTestCityStrategy_NeedTileImprovers: false for 25 turns after a worker was scrapped (CvEconomicAI::DisbandExtraWorkers), before anything else */
     fun needTileImprovers(city: City, weightThreshold: Int): Boolean {
         val civ = city.civ
+        if (workerDisbandedWithin(civ, NEED_TILE_IMPROVERS_LOCKOUT_TURNS)) return false
         val numCities = civ.cities.size
         val numWorkers = numLandWorkers(civ)
         if (civ.isCityState) {
@@ -249,6 +260,7 @@ object CityStrategyAi {
 
     fun wantTileImprovers(city: City, perCityThreshold: Int): Boolean {
         val civ = city.civ
+        if (workerDisbandedWithin(civ, WANT_TILE_IMPROVERS_LOCKOUT_TURNS)) return false
         if (!civ.isCityState && WarStateAi.stateAllWars(civ) == StateAllWars.Losing) return false
         val numWorkers = numLandWorkers(civ)
         if (numWorkers >= civ.cities.size * 3 / 2 + 1) return false
@@ -283,6 +295,7 @@ object CityStrategyAi {
 
     fun enoughTileImprovers(city: City, perCityThreshold: Int): Boolean {
         val civ = city.civ
+        if (workerDisbandedWithin(civ, ENOUGH_TILE_IMPROVERS_LOCKOUT_TURNS)) return true
         if (city.ai.isCityStrategyActive(NEED_TILE_IMPROVERS)) return false
         val numBuilders = numLandWorkers(civ)
         if (civ.isCityState && numBuilders >= civ.cities.size) return true
