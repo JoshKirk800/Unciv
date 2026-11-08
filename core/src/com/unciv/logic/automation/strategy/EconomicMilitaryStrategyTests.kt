@@ -33,6 +33,8 @@ object EconomicMilitaryStrategyTests {
     const val REALLY_EXPAND_TO_OTHER_CONTINENTS = "ECONOMICAISTRATEGY_REALLY_EXPAND_TO_OTHER_CONTINENTS"
     const val LOSING_WARS = "MILITARYAISTRATEGY_LOSING_WARS"
     const val WAR_MOBILIZATION = "MILITARYAISTRATEGY_WAR_MOBILIZATION"
+    /** MAX_MAJOR_CIVS of the original: the player slots its per-civ loops pass over */
+    private const val MAX_MAJOR_CIVS = 22
 
     internal fun registerAll(tests: StrategyTests) {
         // CvEconomicAI::DoTurn
@@ -410,10 +412,13 @@ object EconomicMilitaryStrategyTests {
 
     /**
      *  The weight of IsTestStrategy_WarMobilization: 25 under conquest; per other major +100 if preparing war on it, else +50 if our
-     *  approach is WAR, HOSTILE or AFRAID, else +25 if GUARDED or DECEPTIVE. (AT_WAR blocks the strategy, see [registerAll].)
+     *  approach is WAR, HOSTILE or AFRAID, else +25 if GUARDED or DECEPTIVE. (AT_WAR blocks the strategy, see [registerAll].) Once
+     *  [MilitaryAi.armyTypeBeingBuilt] is set (never cleared) every pass of the original's loop over its [MAX_MAJOR_CIVS] player slots, empty
+     *  slots and our own included, adds 100 whatever the other civ is: 2200, far above the threshold.
      */
     fun warMobilizationWeight(civ: Civilization): Int {
         var weight = if (civ.ai.isGoingForWorldConquest()) 25 else 0
+        if (civ.ai.military.armyTypeBeingBuilt != null) return weight + 100 * MAX_MAJOR_CIVS
         for (other in civ.gameInfo.civilizations) {
             if (other == civ || !other.isMajorCiv) continue
             if (civ.ai.diplomacy.warGoal(other) == WarGoal.Prepare) {
