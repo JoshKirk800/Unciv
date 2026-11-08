@@ -1,6 +1,5 @@
 package com.unciv.logic.civilization
 
-import com.unciv.logic.automation.civilization.PolicyAutomation
 import com.unciv.logic.city.City
 import com.unciv.models.metadata.BaseRuleset
 import com.unciv.models.ruleset.Policy
@@ -10,12 +9,10 @@ import com.unciv.testing.GdxTestRunner
 import com.unciv.testing.TestGame
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlin.random.Random
 
 @RunWith(GdxTestRunner::class)
 class IdeologyTests {
@@ -323,40 +320,6 @@ class IdeologyTests {
         sharer.diplomacyFunctions.makeCivilizationsMeet(other)
         sharer.getDiplomacyManager(other)!!.makePeace()
         assertEquals("10 less 34% for a different ideology, nothing from the policy", 6, sharer.culture.getInfluencePerTurn(other))
-    }
-    //endregion
-
-    //region The AI
-    @Test
-    fun `the AI that wants to conquer does not choose Freedom, one that wants science not Autocracy`() {
-        reachEra(civ, "Modern era")
-        game.gameInfo.gameParameters.victoryTypes = ArrayList(game.ruleset.victories.keys)
-        civ.ai.grandStrategy = "AIGRANDSTRATEGY_CONQUEST"
-        for (seed in 0 until 40) assertTrue(PolicyAutomation.chooseIdeology(civ, Random(seed))!!.name != "Freedom")
-        civ.ai.grandStrategy = "AIGRANDSTRATEGY_SPACESHIP"
-        for (seed in 0 until 40) assertTrue(PolicyAutomation.chooseIdeology(civ, Random(seed))!!.name != "Autocracy")
-        civ.ai.grandStrategy = "AIGRANDSTRATEGY_UNITED_NATIONS"
-        for (seed in 0 until 40) assertTrue(PolicyAutomation.chooseIdeology(civ, Random(seed))!!.name != "Order")
-    }
-
-    @Test
-    fun `the AI chooses nothing when it cannot, or has an ideology`() {
-        assertNull(PolicyAutomation.chooseIdeology(civ, Random(1)))
-        reachEra(civ, "Modern era")
-        civ.policies.adopt(order)
-        assertNull(PolicyAutomation.chooseIdeology(civ, Random(1)))
-    }
-
-    @Test
-    fun `the AI takes a tenet of the highest level that it can`() {
-        reachEra(civ, "Modern era")
-        civ.policies.adopt(order)
-        civ.policies.freeTenets = 30
-        for (t in tenetsOfLevel(order, 1)) civ.policies.adopt(t)
-        assertEquals("with all of the first level, the second is next", 2, PolicyAutomation.chooseTenet(civ, Random(2))!!.tenetLevel)
-        civ.policies.adopt(tenetsOfLevel(order, 2)[0])
-        civ.policies.adopt(tenetsOfLevel(order, 2)[1])
-        assertEquals(3, PolicyAutomation.chooseTenet(civ, Random(2))!!.tenetLevel)
     }
     //endregion
 

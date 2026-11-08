@@ -160,18 +160,6 @@ open class Stats(
      * @return a new [Stats] instance */
     @Readonly operator fun div(number: Float) = times(1/number)
 
-    /** **Mutating function**
-     * Apply weighting for Production Ranking */
-    fun applyRankingWeights() {
-        food *= 14
-        production *= 12.01f // tie break Production vs gold
-        gold *= 6 // 2 gold worth about 1 production
-        science *= 9.01f // 4 Science better than 3 Production
-        culture *= 8
-        happiness *= 10 // base
-        faith *= 7
-    }
-
     /** Common stringification logic shared by [toString], [toStringForNotifications],
      * [toStringWithoutIcons] and [toStringOnlyIcons] - see those for semantics of the parameters. */
     @Readonly

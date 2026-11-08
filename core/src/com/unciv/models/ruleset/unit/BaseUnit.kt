@@ -1,5 +1,7 @@
 package com.unciv.models.ruleset.unit
 
+import com.unciv.logic.automation.strategy.EconomicAi
+import com.unciv.logic.automation.unit.SettlerAutomation
 import com.unciv.Constants
 import com.unciv.logic.GameInfo
 import com.unciv.logic.MultiFilter
@@ -134,6 +136,7 @@ class BaseUnit : RulesetObject(), INonPerpetualConstruction {
         unit.civ = civInfo
         unit.owner = civInfo.civID
         unit.id = unitId ?: civInfo.gameInfo.getNextUnitId()
+        unit.turnCreated = civInfo.gameInfo.turns
 
         // must be after setting name & civInfo because it sets the baseUnit according to the name
         // and the civInfo is required for using `hasUnique` when determining its movement options
@@ -388,6 +391,8 @@ class BaseUnit : RulesetObject(), INonPerpetualConstruction {
             unit.currentMovement = 0f
 
         addConstructionBonuses(unit, cityConstructions)
+        // CvCity::CreateUnit: a unit trained for an operation joins it, any other may be sent exploring
+        if (!SettlerAutomation.onUnitTrained(unit, cityConstructions.city)) EconomicAi.onUnitTrained(unit)
 
         return unit
     }

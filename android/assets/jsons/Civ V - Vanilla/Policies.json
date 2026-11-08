@@ -2,13 +2,6 @@
     {
         "name": "Tradition",
         "era": "Ancient era",
-        "priorities": {
-            "Neutral": 0,
-            "Cultural": 10,
-            "Diplomatic": 0,
-            "Domination": 0,
-            "Scientific": 10
-        },
         "uniques": [
             "[+3 Culture] [in capital]",
             "[-25]% Culture cost of natural border growth [in all cities]"
@@ -72,13 +65,6 @@
     {
         "name": "Liberty",
         "era": "Ancient era",
-        "priorities": {
-            "Neutral": 10,
-            "Cultural": 10,
-            "Diplomatic": 20,
-            "Domination": 20,
-            "Scientific": 20
-        },
         "uniques": ["[+1 Culture] [in all cities]"],
         "policies": [
 
@@ -142,13 +128,6 @@
     {
         "name": "Honor",
         "era": "Ancient era",
-        "priorities": {
-            "Neutral": 0,
-            "Cultural": 0,
-            "Diplomatic": 0,
-            "Domination": 10,
-            "Scientific": 0
-        },
         "uniques": [
             "[+25]% Strength <vs [Barbarian] units>",
             "Earn [100]% of killed [Barbarian] unit's [Strength] as [Culture]",
@@ -215,13 +194,6 @@
     {
         "name": "Piety",
         "era": "Classical era",
-        "priorities": {
-            "Neutral": 0,
-            "Cultural": 10,
-            "Diplomatic": 0,
-            "Domination": 0,
-            "Scientific": 0
-        },
         "uniques": [
             "[+15]% Production when constructing [Culture] buildings [in all cities]",
             "Only available <before adopting [Rationalism]>"
@@ -284,16 +256,8 @@
     {
         "name": "Patronage",
         "era": "Medieval era",
-        "priorities": {
-            "Neutral": 0,
-            "Cultural": 0,
-            "Diplomatic": 20,
-            "Domination": 0,
-            "Scientific": 0
-        },
         "uniques": [
-            "[-25]% City-State Influence degradation",
-            "[-100]% weight to this choice for AI decisions <when number of [Remaining [City-State] Civilizations] is less than [2]>"
+            "[-25]% City-State Influence degradation"
         ],
         "policies": [
             {
@@ -353,13 +317,6 @@
     {
         "name": "Commerce",
         "era": "Medieval era",
-        "priorities": {
-            "Neutral": 0,
-            "Cultural": 10,
-            "Diplomatic": 10,
-            "Domination": 20,
-            "Scientific": 10
-        },
         "uniques": ["[+25]% [Gold] [in capital]"],
         "policies": [
             {
@@ -416,13 +373,6 @@
     {
         "name": "Rationalism",
         "era": "Renaissance era",
-        "priorities": {
-            "Neutral": 0,
-            "Cultural": 10,
-            "Diplomatic": 0,
-            "Domination": 0,
-            "Scientific": 40
-        },
         "uniques": [
             "Science gained from research agreements [+50]%",
             "Only available <before adopting [Piety]>"
@@ -482,13 +432,6 @@
     {
         "name": "Freedom",
         "era": "Renaissance era",
-        "priorities": {
-            "Neutral": 30,
-            "Cultural": 30,
-            "Diplomatic": 30,
-            "Domination": 0,
-            "Scientific": 30
-        },
         "uniques": [
             "[+25]% Great Person generation [in all cities]",
             "Only available <before adopting [Autocracy]>",
@@ -544,13 +487,6 @@
     {
         "name": "Autocracy",
         "era": "Industrial era",
-        "priorities": {
-            "Neutral": 30,
-            "Cultural": 0,
-            "Diplomatic": 0,
-            "Domination": 30,
-            "Scientific": 0
-        },
         "uniques": [
             "[-33]% maintenance costs <for [All] units>",
             "Only available <before adopting [Order]>",
@@ -610,13 +546,6 @@
     {
         "name": "Order",
         "era": "Industrial era",
-        "priorities": {
-            "Neutral": 30,
-            "Cultural": 0,
-            "Diplomatic": 30,
-            "Domination": 0,
-            "Scientific": 30
-        },
         "uniques": [
             "[+1 Happiness] [in all cities]",
             "Only available <before adopting [Autocracy]>",

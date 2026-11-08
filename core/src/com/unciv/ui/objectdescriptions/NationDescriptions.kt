@@ -208,11 +208,5 @@ object NationDescriptions {
             add(biases)
             space()
         }
-
-        if (priorities.isEmpty()) return@buildCivilopediaText
-        add("Policy priorities:")
-        for ((name, value) in priorities) {
-            add("[$name]: [$value]", indent = 1)
-        }
     }
 }

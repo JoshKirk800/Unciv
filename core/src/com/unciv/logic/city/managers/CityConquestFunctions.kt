@@ -2,6 +2,7 @@ package com.unciv.logic.city.managers
 
 import com.unciv.Constants
 import com.unciv.GUI
+import com.unciv.logic.automation.diplomacy.DiplomacyEvents
 import com.unciv.logic.battle.Battle
 import com.unciv.logic.city.City
 import com.unciv.logic.city.City.Companion.NO_ID
@@ -11,7 +12,6 @@ import com.unciv.logic.city.CityFocus
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.NotificationCategory
 import com.unciv.logic.civilization.NotificationIcon
-import com.unciv.logic.civilization.diplomacy.DiplomaticModifiers
 import com.unciv.logic.civilization.diplomacy.DiplomaticStatus
 import com.unciv.logic.map.mapunit.UnitPromotions
 import com.unciv.logic.trade.TradeLogic
@@ -26,7 +26,6 @@ import com.unciv.utils.withoutItem
 import yairm210.purity.annotations.Readonly
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.roundToInt
 import kotlin.random.Random
 
 /** Helper class for containing 200 lines of "how to move cities between civs" */
@@ -207,27 +206,13 @@ class CityConquestFunctions(val city: City) {
     }
 
     private fun diplomaticRepercussionsForConqueringCity(oldCiv: Civilization, conqueringCiv: Civilization) {
-        val currentPopulation = city.population.population
-        val percentageOfCivPopulationInThatCity = currentPopulation * 100f /
-                oldCiv.cities.sumOf { it.population.population }
-        val aggroGenerated = 10f + percentageOfCivPopulationInThatCity.roundToInt()
-
         // How can you conquer a city but not know the civ you conquered it from?!
         // I don't know either, but some of our players have managed this, and crashed their game!
         if (!conqueringCiv.knows(oldCiv))
             conqueringCiv.diplomacyFunctions.makeCivilizationsMeet(oldCiv)
 
-        oldCiv.getDiplomacyManager(conqueringCiv)!!
-                .addModifier(DiplomaticModifiers.CapturedOurCities, -aggroGenerated)
-
-        for (thirdPartyCiv in conqueringCiv.getKnownCivs().filter { it.isMajorCiv }) {
-            val aggroGeneratedForOtherCivs = (aggroGenerated / 10).roundToInt().toFloat()
-            if (thirdPartyCiv.isAtWarWith(oldCiv)) // Shared Enemies should like us more
-                thirdPartyCiv.getDiplomacyManager(conqueringCiv)!!
-                        .addModifier(DiplomaticModifiers.SharedEnemy, aggroGeneratedForOtherCivs) // Cool, keep at it! =D
-            else thirdPartyCiv.getDiplomacyManager(conqueringCiv)!!
-                    .addModifier(DiplomaticModifiers.WarMongerer, -aggroGeneratedForOtherCivs) // Uncool bro.
-        }
+        // What the diplomacy AIs make of it (CvPlayer::acquireCity: war damage, warmonger penalties)
+        DiplomacyEvents.onCityConquered(conqueringCiv, oldCiv, city)
     }
 
     fun liberateCity(conqueringCiv: Civilization) {
@@ -276,9 +261,8 @@ class CityConquestFunctions(val city: City) {
 
     private fun diplomaticRepercussionsForLiberatingCity(conqueringCiv: Civilization, conqueredCiv: Civilization) {
         val foundingCiv = city.foundingCivObject!!
-        val percentageOfCivPopulationInThatCity = city.population.population *
-            100f / (foundingCiv.cities.sumOf { it.population.population } + city.population.population)
-        val respectForLiberatingOurCity = 10f + percentageOfCivPopulationInThatCity.roundToInt()
+        // What the diplomacy AIs make of it (CvPlayer::DoLiberatePlayer: liberated cities, resurrection, warmonger negated)
+        DiplomacyEvents.onCityLiberated(conqueringCiv, foundingCiv, receiverWasAlive = !foundingCiv.isDefeated())
 
         if (foundingCiv.isMajorCiv) {
             if (foundingCiv.isDefeated()) { // resurrected civ
@@ -299,10 +283,9 @@ class CityConquestFunctions(val city: City) {
 
             // In order to get "plus points" in Diplomacy, you have to establish diplomatic relations if you haven't yet
             foundingCiv.getDiplomacyManagerOrMeet(conqueringCiv)
-                .addModifier(DiplomaticModifiers.CapturedOurCities, respectForLiberatingOurCity)
             val openBordersTrade = TradeLogic(foundingCiv, conqueringCiv)
             openBordersTrade.currentTrade.ourOffers.add(TradeOffer(Constants.openBorders, TradeOfferType.Agreement, speed = conqueringCiv.gameInfo.speed))
-            openBordersTrade.acceptTrade(false)
+            openBordersTrade.acceptTrade()
         } else {
             // Liberating a city state gives a large amount of influence, and peace
             // as per discussion in #15226 
@@ -326,14 +309,8 @@ class CityConquestFunctions(val city: City) {
                 val tradeLogic = TradeLogic(foundingCiv, civ)
                 tradeLogic.currentTrade.ourOffers.add(TradeOffer(Constants.peaceTreaty, TradeOfferType.Treaty, speed = conqueringCiv.gameInfo.speed))
                 tradeLogic.currentTrade.theirOffers.add(TradeOffer(Constants.peaceTreaty, TradeOfferType.Treaty, speed = conqueringCiv.gameInfo.speed))
-                tradeLogic.acceptTrade(false)
+                tradeLogic.acceptTrade()
             }
-        }
-
-        val otherCivsRespectForLiberating = (respectForLiberatingOurCity / 10).roundToInt().toFloat()
-        for (thirdPartyCiv in conqueringCiv.getKnownCivs().filter { it.isMajorCiv && it != conqueredCiv }) {
-            thirdPartyCiv.getDiplomacyManager(conqueringCiv)!!
-                .addModifier(DiplomaticModifiers.LiberatedCity, otherCivsRespectForLiberating) // Cool, keep at it! =D
         }
     }
 

@@ -4,6 +4,7 @@ import com.unciv.view.GameView
 import com.unciv.UncivGame
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.HexCoord
+import com.unciv.logic.automation.unit.SettlerOperation
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.models.metadata.GameSettings.PathfindingAlgorithm
 import com.unciv.models.metadata.GameSettings.PathfindingAlgorithm.AStarPathfinding
@@ -46,7 +47,7 @@ class NextTurnAutomationTest(private val algorithm: PathfindingAlgorithm) {
 
     @Test
     fun `automateSettlerEscorting replaces low hp escort`() {
-        val settler = testGame.addUnit("Settler", civInfo, testGame.tileMap[0,2])
+        val settler = testGame.addUnit("Settler", civInfo, testGame.tileMap[0,2]).also(::wantEscort)
         val highHpWarrior = testGame.addUnit("Warrior", civInfo, testGame.tileMap[0,1])
         val lowHpWarrior = testGame.addUnit("Warrior", civInfo, testGame.tileMap[0,2])
         lowHpWarrior.takeDamage(90)
@@ -71,8 +72,8 @@ class NextTurnAutomationTest(private val algorithm: PathfindingAlgorithm) {
         // calls escortedUnit.movement.canMoveTo(includeOtherEscortUnit = false) 
         // and escortedUnit.movement.canUnitSwapToReachableTile(checkEscorted = false)
         // but AStar assumes includeOtherEscortUnit always true.
-        val settler1 = testGame.addUnit("Settler", civInfo, testGame.tileMap[0,2])
-        val settler2 = testGame.addUnit("Settler", civInfo, testGame.tileMap[0,1])
+        val settler1 = testGame.addUnit("Settler", civInfo, testGame.tileMap[0,2]).also(::wantEscort)
+        val settler2 = testGame.addUnit("Settler", civInfo, testGame.tileMap[0,1]).also(::wantEscort)
         val highHpWarrior = testGame.addUnit("Warrior", civInfo, testGame.tileMap[0,1])
         val lowHpWarrior = testGame.addUnit("Warrior", civInfo, testGame.tileMap[0,2])
         lowHpWarrior.takeDamage(90)
@@ -102,7 +103,7 @@ class NextTurnAutomationTest(private val algorithm: PathfindingAlgorithm) {
         civInfo.tech.addTechnology("Optics") // lets land units embark
         testGame.setTileTerrain(HexCoord(0, 2), "Coast")
         testGame.addCity(civInfo, testGame.tileMap[0,3])
-        val settler = testGame.addUnit("Settler", civInfo, testGame.tileMap[0,3])
+        val settler = testGame.addUnit("Settler", civInfo, testGame.tileMap[0,3]).also(::wantEscort)
         val warrior = testGame.addUnit("Warrior", civInfo, testGame.tileMap[0,3])
         val ship = testGame.addUnit("Caravel", civInfo, testGame.tileMap[0,2])
         warrior.startEscorting()
@@ -204,6 +205,11 @@ class NextTurnAutomationTest(private val algorithm: PathfindingAlgorithm) {
             "unaffected unit was still automated",
             bystander.currentTile != bystanderStart || bystander.currentMovement < 2f
         )
+    }
+
+    /** Gives [settler] a found-city operation that wants an escort: only such settlers get one */
+    private fun wantEscort(settler: MapUnit) {
+        settler.settlerOperation = SettlerOperation().apply { foundCity = true; escorted = true }
     }
 
     /** Puts [unit]'s Mockito-spy in the civ unit list and runs [action] the first time automation asks it for terrain damage on its current tile. */

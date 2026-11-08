@@ -26,18 +26,6 @@
       "expansion": Expansion,
       "denounceWillingness": Denouncing
 
-      "priorities": {
-          "Tradition": Culture + Wonder,
-          "Liberty": Expansion + TileImprovement,
-          "Honor": Boldness + War,
-          "Commerce": Gold + Chatiness,
-          "Patronage": CityStateCompetitiveness + CSFriendly,
-          "Piety": Faith + CS Friendly,
-          "Rationalism": Science + Spaceship,
-          "Freedom": Hapiness + Growth,
-          "Autocracy": Boldness + Military training,
-          "Order": Defensive + Production
-      },
       "civilopediaText": [
           {"text": "Alexander the Great, born in Macedon, was one of the most skilled generals, even more by his young age, and in only 17 years he conquered all the Greek known world."}
       ]
@@ -59,18 +47,6 @@
     "loyal": 7,
     "expansion": 4,
     "denounceWillingness": 5,
-    "priorities": {
-      "Tradition": 7,
-      "Liberty": 5,
-      "Honor": 4,
-      "Commerce": 5,
-      "Patronage": 5,
-      "Piety": 6,
-      "Rationalism": 5,
-      "Freedom": 5,
-      "Autocracy": 4,
-      "Order": 7
-    },
     "flavors": {
       "Offense": 5,
       "Defense": 7,
@@ -160,18 +136,6 @@
     "loyal": 4,
     "expansion": 8,
     "denounceWillingness": 7,
-    "priorities": {
-      "Tradition": 7,
-      "Liberty": 8,
-      "Honor": 8,
-      "Commerce": 4,
-      "Patronage": 3,
-      "Piety": 6,
-      "Rationalism": 7,
-      "Freedom": 5,
-      "Autocracy": 8,
-      "Order": 5
-    },
     "civilopediaText": [
       {
         "text": "Alexander the Great, born in Macedon, was one of the most skilled generals, even more by his young age, and in only 17 years he conquered all the Greek known world."
@@ -266,18 +230,6 @@
     "loyal": 4,
     "expansion": 6,
     "denounceWillingness": 6,
-    "priorities": {
-      "Tradition": 5,
-      "Liberty": 6,
-      "Honor": 7,
-      "Commerce": 4,
-      "Patronage": 3,
-      "Piety": 5,
-      "Rationalism": 8,
-      "Freedom": 5,
-      "Autocracy": 7,
-      "Order": 3
-    },
     "flavors": {
       "Offense": 7,
       "Defense": 3,
@@ -367,18 +319,6 @@
     "loyal": 6,
     "expansion": 5,
     "denounceWillingness": 5,
-    "priorities": {
-      "Tradition": 5,
-      "Liberty": 5,
-      "Honor": 8,
-      "Commerce": 8,
-      "Patronage": 4,
-      "Piety": 8,
-      "Rationalism": 5,
-      "Freedom": 4,
-      "Autocracy": 7,
-      "Order": 4
-    },
     "civilopediaText": [
       {
         "text": "The general Askia turned the Songhai nation into the most powerful state of West Africa, bringing a golden age of religion and knowledge."
@@ -473,18 +413,6 @@
     "loyal": 4,
     "expansion": 7,
     "denounceWillingness": 6,
-    "priorities": {
-      "Tradition": 5,
-      "Liberty": 7,
-      "Honor": 9,
-      "Commerce": 7,
-      "Patronage": 3,
-      "Piety": 5,
-      "Rationalism": 3,
-      "Freedom": 5,
-      "Autocracy": 8,
-      "Order": 4
-    },
     "civilopediaText": [
       {
         "text": "'The Scourge of God' united the Hunnic tribes, and led them to great wealth and glory, antagonizing the Romans across his borders relentlessly."
@@ -579,18 +507,6 @@
     "loyal": 4,
     "expansion": 8,
     "denounceWillingness": 7,
-    "priorities": {
-      "Tradition": 5,
-      "Liberty": 9,
-      "Honor": 6,
-      "Commerce": 6,
-      "Patronage": 7,
-      "Piety": 4,
-      "Rationalism": 6,
-      "Freedom": 6,
-      "Autocracy": 5,
-      "Order": 8
-    },
     "civilopediaText": [
       {
         "text": "The creator of the Pax Romana and the Roman Empire, who ended a long civil war and brought peace to the entire Mediterranean, possibly the greatest emperor of Rome."
@@ -685,18 +601,6 @@
     "loyal": 6,
     "expansion": 7,
     "denounceWillingness": 8,
-    "priorities": {
-      "Tradition": 5,
-      "Liberty": 7,
-      "Honor": 4,
-      "Commerce": 5,
-      "Patronage": 7,
-      "Piety": 4,
-      "Rationalism": 8,
-      "Freedom": 5,
-      "Autocracy": 5,
-      "Order": 7
-    },
     "civilopediaText": [
       {
         "text": "The successful political career of the Iron Chancellor cannot be undermined, for he united Germany as we know it today, in his own way."
@@ -791,18 +695,6 @@
     "loyal": 6,
     "expansion": 5,
     "denounceWillingness": 6,
-    "priorities": {
-      "Tradition": 7,
-      "Liberty": 5,
-      "Honor": 6,
-      "Commerce": 6,
-      "Patronage": 5,
-      "Piety": 8,
-      "Rationalism": 7,
-      "Freedom": 8,
-      "Autocracy": 6,
-      "Order": 6
-    },
     "civilopediaText": [
       {
         "text": "The noble warrior fought with bravery and courage to gain the freedom of the Celtic people from the Roman subjugation, inspiring many others after her."
@@ -897,18 +789,6 @@
     "loyal": 7,
     "expansion": 7,
     "denounceWillingness": 4,
-    "priorities": {
-      "Tradition": 6,
-      "Liberty": 7,
-      "Honor": 6,
-      "Commerce": 7,
-      "Patronage": 6,
-      "Piety": 7,
-      "Rationalism": 4,
-      "Freedom": 6,
-      "Autocracy": 7,
-      "Order": 5
-    },
     "flavors": {
       "Offense": 7,
       "Defense": 4,
@@ -998,18 +878,6 @@
     "loyal": 6,
     "expansion": 8,
     "denounceWillingness": 6,
-    "priorities": {
-      "Tradition": 6,
-      "Liberty": 8,
-      "Honor": 3,
-      "Commerce": 6,
-      "Patronage": 7,
-      "Piety": 8,
-      "Rationalism": 10,
-      "Freedom": 2,
-      "Autocracy": 3,
-      "Order": 6
-    },
     "flavors": {
       "Offense": 6,
       "Defense": 6,
@@ -1099,18 +967,6 @@
     "loyal": 8,
     "expansion": 5,
     "denounceWillingness": 4,
-    "priorities": {
-      "Tradition": 5,
-      "Liberty": 6,
-      "Honor": 3,
-      "Commerce": 7,
-      "Patronage": 4,
-      "Piety": 7,
-      "Rationalism": 6,
-      "Freedom": 8,
-      "Autocracy": 3,
-      "Order": 7
-    },
     "flavors": {
       "Offense": 3,
       "Defense": 7,
@@ -1200,18 +1056,6 @@
     "loyal": 6,
     "expansion": 7,
     "denounceWillingness": 5,
-    "priorities": {
-      "Tradition": 3,
-      "Liberty": 7,
-      "Honor": 7,
-      "Commerce": 8,
-      "Patronage": 5,
-      "Piety": 5,
-      "Rationalism": 5,
-      "Freedom": 5,
-      "Autocracy": 6,
-      "Order": 5
-    },
     "flavors": {
       "Offense": 7,
       "Defense": 5,
@@ -1301,18 +1145,6 @@
     "loyal": 5,
     "expansion": 6,
     "denounceWillingness": 6,
-    "priorities": {
-      "Tradition": 6,
-      "Liberty": 6,
-      "Honor": 4,
-      "Commerce": 8,
-      "Patronage": 8,
-      "Piety": 5,
-      "Rationalism": 6,
-      "Freedom": 5,
-      "Autocracy": 4,
-      "Order": 6
-    },
     "flavors": {
       "Offense": 3,
       "Defense": 6,
@@ -1402,18 +1234,6 @@
     "loyal": 3,
     "expansion": 3,
     "denounceWillingness": 6,
-    "priorities": {
-      "Tradition": 5,
-      "Liberty": 3,
-      "Honor": 2,
-      "Commerce": 9,
-      "Patronage": 8,
-      "Piety": 7,
-      "Rationalism": 5,
-      "Freedom": 5,
-      "Autocracy": 3,
-      "Order": 5
-    },
     "flavors": {
       "Offense": 3,
       "Defense": 5,
@@ -1503,18 +1323,6 @@
     "loyal": 4,
     "expansion": 8,
     "denounceWillingness": 6,
-    "priorities": {
-      "Tradition": 6,
-      "Liberty": 8,
-      "Honor": 6,
-      "Commerce": 6,
-      "Patronage": 5,
-      "Piety": 7,
-      "Rationalism": 4,
-      "Freedom": 6,
-      "Autocracy": 6,
-      "Order": 6
-    },
     "flavors": {
       "Offense": 5,
       "Defense": 6,
@@ -1604,18 +1412,6 @@
     "loyal": 7,
     "expansion": 3,
     "denounceWillingness": 6,
-    "priorities": {
-      "Tradition": 8,
-      "Liberty": 3,
-      "Honor": 1,
-      "Commerce": 4,
-      "Patronage": 4,
-      "Piety": 9,
-      "Rationalism": 7,
-      "Freedom": 10,
-      "Autocracy": 1,
-      "Order": 5
-    },
     "flavors": {
       "Offense": 4,
       "Defense": 5,
@@ -1705,18 +1501,6 @@
     "loyal": 6,
     "expansion": 8,
     "denounceWillingness": 5,
-    "priorities": {
-      "Tradition": 4,
-      "Liberty": 8,
-      "Honor": 9,
-      "Commerce": 6,
-      "Patronage": 2,
-      "Piety": 3,
-      "Rationalism": 4,
-      "Freedom": 5,
-      "Autocracy": 8,
-      "Order": 3
-    },
     "flavors": {
       "Offense": 8,
       "Defense": 3,
@@ -1806,18 +1590,6 @@
     "loyal": 6,
     "expansion": 4,
     "denounceWillingness": 5,
-    "priorities": {
-      "Tradition": 5,
-      "Liberty": 4,
-      "Honor": 6,
-      "Commerce": 6,
-      "Patronage": 6,
-      "Piety": 4,
-      "Rationalism": 7,
-      "Freedom": 5,
-      "Autocracy": 6,
-      "Order": 6
-    },
     "flavors": {
       "Offense": 6,
       "Defense": 6,
@@ -1907,18 +1679,6 @@
     "loyal": 7,
     "expansion": 4,
     "denounceWillingness": 5,
-    "priorities": {
-      "Tradition": 7,
-      "Liberty": 4,
-      "Honor": 3,
-      "Commerce": 6,
-      "Patronage": 4,
-      "Piety": 7,
-      "Rationalism": 4,
-      "Freedom": 8,
-      "Autocracy": 4,
-      "Order": 8
-    },
     "flavors": {
       "Offense": 4,
       "Defense": 8,
@@ -2008,18 +1768,6 @@
     "loyal": 7,
     "expansion": 6,
     "denounceWillingness": 5,
-    "priorities": {
-      "Tradition": 4,
-      "Liberty": 6,
-      "Honor": 7,
-      "Commerce": 7,
-      "Patronage": 5,
-      "Piety": 5,
-      "Rationalism": 5,
-      "Freedom": 5,
-      "Autocracy": 7,
-      "Order": 4
-    },
     "flavors": {
       "Offense": 7,
       "Defense": 4,
@@ -2109,18 +1857,6 @@
     "loyal": 6,
     "expansion": 5,
     "denounceWillingness": 3,
-    "priorities": {
-      "Tradition": 6,
-      "Liberty": 5,
-      "Honor": 2,
-      "Commerce": 8,
-      "Patronage": 4,
-      "Piety": 9,
-      "Rationalism": 8,
-      "Freedom": 7,
-      "Autocracy": 3,
-      "Order": 6
-    },
     "flavors": {
       "Offense": 4,
       "Defense": 6,
@@ -2210,18 +1946,6 @@
     "loyal": 8,
     "expansion": 9,
     "denounceWillingness": 4,
-    "priorities": {
-      "Tradition": 5,
-      "Liberty": 9,
-      "Honor": 2,
-      "Commerce": 5,
-      "Patronage": 4,
-      "Piety": 8,
-      "Rationalism": 5,
-      "Freedom": 6,
-      "Autocracy": 2,
-      "Order": 7
-    },
     "flavors": {
       "Offense": 3,
       "Defense": 7,
@@ -2311,18 +2035,6 @@
     "loyal": 5,
     "expansion": 7,
     "denounceWillingness": 6,
-    "priorities": {
-      "Tradition": 5,
-      "Liberty": 7,
-      "Honor": 5,
-      "Commerce": 7,
-      "Patronage": 3,
-      "Piety": 8,
-      "Rationalism": 3,
-      "Freedom": 5,
-      "Autocracy": 5,
-      "Order": 4
-    },
     "flavors": {
       "Offense": 6,
       "Defense": 4,
@@ -2412,18 +2124,6 @@
     "loyal": 8,
     "expansion": 8,
     "denounceWillingness": 7,
-    "priorities": {
-      "Tradition": 5,
-      "Liberty": 8,
-      "Honor": 5,
-      "Commerce": 5,
-      "Patronage": 6,
-      "Piety": 5,
-      "Rationalism": 4,
-      "Freedom": 7,
-      "Autocracy": 5,
-      "Order": 7
-    },
     "flavors": {
       "Offense": 4,
       "Defense": 7,
@@ -2513,18 +2213,6 @@
     "loyal": 5,
     "expansion": 7,
     "denounceWillingness": 7,
-    "priorities": {
-      "Tradition": 5,
-      "Liberty": 7,
-      "Honor": 4,
-      "Commerce": 8,
-      "Patronage": 7,
-      "Piety": 5,
-      "Rationalism": 5,
-      "Freedom": 6,
-      "Autocracy": 4,
-      "Order": 5
-    },
     "flavors": {
       "Offense": 5,
       "Defense": 6,
@@ -2614,18 +2302,6 @@
     "loyal": 3,
     "expansion": 8,
     "denounceWillingness": 6,
-    "priorities": {
-      "Tradition": 6,
-      "Liberty": 8,
-      "Honor": 10,
-      "Commerce": 5,
-      "Patronage": 4,
-      "Piety": 8,
-      "Rationalism": 5,
-      "Freedom": 6,
-      "Autocracy": 9,
-      "Order": 3
-    },
     "flavors": {
       "Offense": 9,
       "Defense": 3,
@@ -2715,18 +2391,6 @@
     "loyal": 2,
     "expansion": 8,
     "denounceWillingness": 3,
-    "priorities": {
-      "Tradition": 8,
-      "Liberty": 8,
-      "Honor": 10,
-      "Commerce": 4,
-      "Patronage": 7,
-      "Piety": 3,
-      "Rationalism": 7,
-      "Freedom": 4,
-      "Autocracy": 9,
-      "Order": 3
-    },
     "flavors": {
       "Offense": 6,
       "Defense": 3,
@@ -2816,18 +2480,6 @@
     "loyal": 4,
     "expansion": 4,
     "denounceWillingness": 6,
-    "priorities": {
-      "Tradition": 6,
-      "Liberty": 5,
-      "Honor": 5,
-      "Commerce": 5,
-      "Patronage": 5,
-      "Piety": 5,
-      "Rationalism": 8,
-      "Freedom": 5,
-      "Autocracy": 5,
-      "Order": 6
-    },
     "flavors": {
       "Offense": 5,
       "Defense": 6,
@@ -2917,18 +2569,6 @@
     "loyal": 3,
     "expansion": 8,
     "denounceWillingness": 7,
-    "priorities": {
-      "Tradition": 6,
-      "Liberty": 8,
-      "Honor": 9,
-      "Commerce": 5,
-      "Patronage": 6,
-      "Piety": 5,
-      "Rationalism": 5,
-      "Freedom": 5,
-      "Autocracy": 9,
-      "Order": 5
-    },
     "flavors": {
       "Offense": 8,
       "Defense": 5,
@@ -3018,18 +2658,6 @@
     "loyal": 7,
     "expansion": 4,
     "denounceWillingness": 4,
-    "priorities": {
-      "Tradition": 7,
-      "Liberty": 4,
-      "Honor": 3,
-      "Commerce": 4,
-      "Patronage": 4,
-      "Piety": 8,
-      "Rationalism": 8,
-      "Freedom": 6,
-      "Autocracy": 3,
-      "Order": 7
-    },
     "flavors": {
       "Offense": 5,
       "Defense": 7,
@@ -3119,18 +2747,6 @@
     "loyal": 5,
     "expansion": 6,
     "denounceWillingness": 5,
-    "priorities": {
-      "Tradition": 7,
-      "Liberty": 6,
-      "Honor": 4,
-      "Commerce": 9,
-      "Patronage": 3,
-      "Piety": 6,
-      "Rationalism": 5,
-      "Freedom": 4,
-      "Autocracy": 4,
-      "Order": 5
-    },
     "flavors": {
       "Offense": 6,
       "Defense": 5,
@@ -3220,18 +2836,6 @@
     "loyal": 7,
     "expansion": 5,
     "denounceWillingness": 6,
-    "priorities": {
-      "Tradition": 7,
-      "Liberty": 6,
-      "Honor": 4,
-      "Commerce": 6,
-      "Patronage": 5,
-      "Piety": 5,
-      "Rationalism": 5,
-      "Freedom": 9,
-      "Autocracy": 3,
-      "Order": 6
-    },
     "flavors": {
       "Offense": 4,
       "Defense": 6,
@@ -3321,18 +2925,6 @@
     "loyal": 6,
     "expansion": 8,
     "denounceWillingness": 5,
-    "priorities": {
-      "Tradition": 5,
-      "Liberty": 8,
-      "Honor": 5,
-      "Commerce": 5,
-      "Patronage": 5,
-      "Piety": 5,
-      "Rationalism": 5,
-      "Freedom": 6,
-      "Autocracy": 5,
-      "Order": 8
-    },
     "flavors": {
       "Offense": 5,
       "Defense": 8,
@@ -3422,18 +3014,6 @@
     "loyal": 4,
     "expansion": 5,
     "denounceWillingness": 4,
-    "priorities": {
-      "Tradition": 9,
-      "Liberty": 6,
-      "Honor": 4,
-      "Commerce": 6,
-      "Patronage": 5,
-      "Piety": 8,
-      "Rationalism": 6,
-      "Freedom": 6,
-      "Autocracy": 4,
-      "Order": 7
-    },
     "flavors": {
       "Offense": 4,
       "Defense": 6,
@@ -3523,18 +3103,6 @@
     "loyal": 7,
     "expansion": 6,
     "denounceWillingness": 5,
-    "priorities": {
-      "Tradition": 8,
-      "Liberty": 6,
-      "Honor": 5,
-      "Commerce": 5,
-      "Patronage": 5,
-      "Piety": 7,
-      "Rationalism": 6,
-      "Freedom": 6,
-      "Autocracy": 5,
-      "Order": 8
-    },
     "flavors": {
       "Offense": 5,
       "Defense": 8,
@@ -3624,18 +3192,6 @@
     "loyal": 8,
     "expansion": 5,
     "denounceWillingness": 4,
-    "priorities": {
-      "Tradition": 5,
-      "Liberty": 5,
-      "Honor": 4,
-      "Commerce": 5,
-      "Patronage": 4,
-      "Piety": 6,
-      "Rationalism": 9,
-      "Freedom": 5,
-      "Autocracy": 4,
-      "Order": 7
-    },
     "flavors": {
       "Offense": 4,
       "Defense": 7,
@@ -3725,18 +3281,6 @@
     "loyal": 8,
     "expansion": 11,
     "denounceWillingness": 8,
-    "priorities": {
-      "Tradition": 2,
-      "Liberty": 11,
-      "Honor": 9,
-      "Commerce": 6,
-      "Patronage": 5,
-      "Piety": 2,
-      "Rationalism": 2,
-      "Freedom": 6,
-      "Autocracy": 9,
-      "Order": 5
-    },
     "flavors": {
       "Offense": 8,
       "Defense": 4,
@@ -3826,18 +3370,6 @@
     "loyal": 5,
     "expansion": 8,
     "denounceWillingness": 7,
-    "priorities": {
-      "Tradition": 6,
-      "Liberty": 8,
-      "Honor": 8,
-      "Commerce": 5,
-      "Patronage": 6,
-      "Piety": 6,
-      "Rationalism": 7,
-      "Freedom": 4,
-      "Autocracy": 8,
-      "Order": 4
-    },
     "flavors": {
       "Offense": 7,
       "Defense": 4,
@@ -3927,18 +3459,6 @@
     "loyal": 5,
     "expansion": 4,
     "denounceWillingness": 5,
-    "priorities": {
-      "Tradition": 7,
-      "Liberty": 4,
-      "Honor": 4,
-      "Commerce": 6,
-      "Patronage": 6,
-      "Piety": 7,
-      "Rationalism": 6,
-      "Freedom": 6,
-      "Autocracy": 4,
-      "Order": 8
-    },
     "flavors": {
       "Offense": 4,
       "Defense": 8,
@@ -4028,18 +3548,6 @@
     "loyal": 7,
     "expansion": 7,
     "denounceWillingness": 4,
-    "priorities": {
-      "Tradition": 6,
-      "Liberty": 7,
-      "Honor": 7,
-      "Commerce": 6,
-      "Patronage": 6,
-      "Piety": 5,
-      "Rationalism": 7,
-      "Freedom": 6,
-      "Autocracy": 7,
-      "Order": 8
-    },
     "flavors": {
       "Offense": 6,
       "Defense": 8,
@@ -4129,18 +3637,6 @@
     "loyal": 7,
     "expansion": 6,
     "denounceWillingness": 5,
-    "priorities": {
-      "Tradition": 6,
-      "Liberty": 7,
-      "Honor": 4,
-      "Commerce": 7,
-      "Patronage": 7,
-      "Piety": 5,
-      "Rationalism": 5,
-      "Freedom": 7,
-      "Autocracy": 4,
-      "Order": 5
-    },
     "flavors": {
       "Offense": 3,
       "Defense": 5,
@@ -4230,18 +3726,6 @@
     "loyal": 4,
     "expansion": 6,
     "denounceWillingness": 7,
-    "priorities": {
-      "Tradition": 6,
-      "Liberty": 6,
-      "Honor": 7,
-      "Commerce": 5,
-      "Patronage": 7,
-      "Piety": 6,
-      "Rationalism": 9,
-      "Freedom": 7,
-      "Autocracy": 7,
-      "Order": 7
-    },
     "flavors": {
       "Offense": 5,
       "Defense": 7,

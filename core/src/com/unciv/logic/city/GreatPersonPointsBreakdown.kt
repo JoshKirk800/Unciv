@@ -48,11 +48,7 @@ class GreatPersonPointsBreakdown private constructor(private val ruleset: Rulese
             return unique.sourceObjectType!!.name + "/" + unique.sourceObjectName
         }
 
-        /** List all percentage bonuses that apply to all GPP
-         *
-         *  This is used internally from the public constructor to include them in the brakdown,
-         *  and exposed to autoAssignPopulation via [getGreatPersonPercentageBonus]
-         */
+        /** List all percentage bonuses that apply to all GPP, to include them in the breakdown */
         @Readonly
         private fun getPercentagesApplyingToAllGP(city: City) = sequence {
             // Now add boni for GreatPersonPointPercentage
@@ -72,13 +68,6 @@ class GreatPersonPointsBreakdown private constructor(private val ruleset: Rulese
                     yield(AllGPPercentageEntry("Declaration of Friendship", null, unique.params[0].toInt()))
             }
         }
-
-        /** Aggregate all percentage bonuses that apply to all GPP
-         *
-         *  For use by [City.getGreatPersonPercentageBonus] (which in turn is only used by autoAssignPopulation)
-         */
-        @Readonly
-        fun getGreatPersonPercentageBonus(city: City) = getPercentagesApplyingToAllGP(city).sumOf { it.bonus }
     }
 
     /** Collects all GPP names that have base points */

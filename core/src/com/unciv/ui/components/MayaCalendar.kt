@@ -1,10 +1,9 @@
 package com.unciv.ui.components
 
-import com.unciv.view.GameView
 import com.badlogic.gdx.graphics.Color
 import com.unciv.Constants
 import com.unciv.UncivGame
-import com.unciv.logic.automation.civilization.NextTurnAutomation
+import com.unciv.logic.automation.unit.GreatPersonAutomation
 import com.unciv.logic.civilization.Civilization
 import com.unciv.models.translations.tr
 import com.unciv.ui.popups.Popup
@@ -89,7 +88,7 @@ object MayaCalendar {
         if (!isNewCycle(year, game.getYear(-1))) return
         civInfo.greatPeople.triggerMayanGreatPerson()
         if (civInfo.isAI() || UncivGame.Current.worldScreen?.autoPlay?.isAutoPlayingAndFullAutoPlayAI() == true)
-            NextTurnAutomation.chooseGreatPerson(GameView(civInfo.gameInfo, civInfo).civView)
+            GreatPersonAutomation.chooseFreeGreatPeople(civInfo)
     }
 
     // User interface to explain changed year display

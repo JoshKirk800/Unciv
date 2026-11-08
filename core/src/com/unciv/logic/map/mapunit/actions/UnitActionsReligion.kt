@@ -1,5 +1,6 @@
 package com.unciv.logic.map.mapunit.actions
 
+import com.unciv.logic.automation.diplomacy.DiplomacyEvents
 import com.unciv.logic.civilization.NotificationCategory
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
 import com.unciv.logic.civilization.managers.ReligionState
@@ -74,8 +75,9 @@ object UnitActionsReligion {
         ))
     }
 
+    /** The pressure a Spread Religion action of [unit] adds (the original's religious strength × RELIGION_MISSIONARY_PRESSURE_MULTIPLIER) */
     @Readonly
-    private fun getPressureAddedFromSpread(unit: MapUnit): Int {
+    internal fun getPressureAddedFromSpread(unit: MapUnit): Int {
         var pressureAdded = unit.baseUnit.religiousStrength.toFloat()
 
         unit.forEachMatchingUnique(UniqueType.SpreadReligionStrength, checkCivInfoUniques = true) { unique ->
@@ -114,6 +116,8 @@ object UnitActionsReligion {
                 val newReligion = city.religion.getMajorityReligion()
                 if (previousReligion != newReligion && newReligion != null && city.civ != unit.civ) {
                     city.civ.addNotification("[${unit.civ.civName}]'s [${unit.name}] has converted [${city.name}] to [${newReligion.name}]!", NotificationCategory.Religion)
+                    // CvCityReligions::RecomputeFollowers: the diplomacy hit of a conversion with a responsible party
+                    DiplomacyEvents.onCityConverted(city.civ, unit.civ, city, previousReligion?.name, newReligion.name)
                 }
 
                 UnitActionModifiers.activateSideEffects(unit, newStyleUnique)

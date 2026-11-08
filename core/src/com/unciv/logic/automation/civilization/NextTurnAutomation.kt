@@ -8,14 +8,14 @@ import com.unciv.view.isNuclearWeapon
 import com.unciv.view.isAtWar
 import com.unciv.UncivGame
 import com.unciv.logic.automation.Automation
-import com.unciv.logic.automation.ThreatLevel
+import com.unciv.logic.automation.diplomacy.PromiseAi
 import com.unciv.logic.automation.Timers.Companion.timeThis
-import com.unciv.logic.automation.unit.CivilianUnitAutomation
+import com.unciv.logic.automation.unit.SettlerAutomation
+import com.unciv.logic.automation.unit.ArchaeologistAutomation
 import com.unciv.logic.automation.unit.EspionageAutomation
 import com.unciv.logic.automation.unit.UnitAutomation
 import com.unciv.logic.battle.*
 import com.unciv.logic.city.City
-import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.civilization.AlertType
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.NotificationCategory
@@ -25,15 +25,15 @@ import com.unciv.logic.civilization.diplomacy.*
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.ruleset.MilestoneType
+import com.unciv.models.ruleset.nation.PersonalityValue
+import com.unciv.models.ruleset.tile.ResourceType
+import com.unciv.models.ruleset.unique.UniqueType
+import com.unciv.models.stats.Stat
 import com.unciv.models.ruleset.Policy
 import com.unciv.models.ruleset.PolicyBranch
-import com.unciv.models.ruleset.nation.PersonalityValue
 import com.unciv.models.ruleset.tech.Technology
-import com.unciv.models.ruleset.tile.ResourceType
 import com.unciv.models.ruleset.unique.GameContext
-import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.models.ruleset.unit.BaseUnit
-import com.unciv.models.stats.Stat
 import com.unciv.ui.screens.victoryscreen.RankingType
 import com.unciv.utils.randomWeighted
 import com.unciv.view.CivView
@@ -57,28 +57,25 @@ object NextTurnAutomation {
         timeThis("AI.respondToTradeRequests") { TradeAutomation.respondToTradeRequests(civInfo, tradeAndChangeState) }
 
         if (tradeAndChangeState && civInfo.isMajorCiv) {
-            if (!civView.ruleset.modOptions.hasUnique(UniqueType.DiplomaticRelationshipsCannotChange)) timeThis("AI.diplomacyWarPeace") {
-                DiplomacyAutomation.declareWar(civView)
-                DiplomacyAutomation.offerPeaceTreaty(civView)
-                DiplomacyAutomation.askForHelp(civView)
-                DiplomacyAutomation.offerDeclarationOfFriendship(civView)
-            }
+            // CvPlayerAI::AI_doTurnPostDiplomacy order: CvDiplomacyAI::DoTurn (war, demands, planning), then the contacts, the deals, the requests
+            val relationshipsCanChange = !civView.ruleset.modOptions.hasUnique(UniqueType.DiplomaticRelationshipsCannotChange)
+            if (relationshipsCanChange) timeThis("AI.DiplomacyActions") { DiplomacyAutomation.doTurn(civInfo) }
+            // CvDiplomacyAI::DoTurn: DoContactMinorCivs before DoContactMajorCivs
+            if (relationshipsCanChange) CityStateAi.contactMinorCivs(civInfo)
             if (civView.isReligionEnabled()) {
                 timeThis("AI.spendFaithOnReligion") { ReligionAutomation.spendFaithOnReligion(civInfo) }
             }
 
-            timeThis("AI.diplomacyOffers") {
-                DiplomacyAutomation.denounce(civView)
-                DiplomacyAutomation.offerToEstablishEmbassy(civView)
-                DiplomacyAutomation.offerOpenBorders(civView)
-                DiplomacyAutomation.offerResearchAgreement(civView)
-                DiplomacyAutomation.offerDefensivePact(civView)
-                DiplomacyAutomation.checkMilitaryPresenceNearBorder(civView)
+            if (relationshipsCanChange) DiplomacyAutomation.contactMajorCivs(civInfo)
+            if (relationshipsCanChange) TradeAutomation.doOffers(civInfo)
+            if (relationshipsCanChange) {
+                DiplomacyAutomation.contactMajorCivsAfterOffers(civInfo)
+                DiplomacyAutomation.checkMilitaryPresenceNearBorder(civInfo)
             }
-            timeThis("AI.exchangeLuxuries") { TradeAutomation.exchangeLuxuries(civInfo) }
             if (civInfo.gameInfo.ruleset.greatWorks.isNotEmpty()) timeThis("AI.greatWorks") {
-                GreatWorkFunctions.optimizeTheming(civInfo)
-                TradeAutomation.exchangeGreatWorks(civInfo)
+                // CvEconomicAI::DoTurn, AI part: DisbandExtraArchaeologists, then CvPlayerCulture::DoSwapGreatWorks
+                ArchaeologistAutomation.disbandExtraArchaeologists(civInfo)
+                GreatWorkSwapAutomation.doSwapGreatWorks(civInfo)
             }
             
             timeThis("AI.issueRequests") { issueRequests(civView) }
@@ -89,13 +86,10 @@ object NextTurnAutomation {
             civInfo.cityStateFunctions.updateDiplomaticRelationshipForCityState()
         }
 
-        timeThis("AI.chooseTechToResearch") { chooseTechToResearch(civView) }
+        timeThis("AI.chooseTechToResearch") { TechAutomation.chooseTechToResearch(civInfo) }
         timeThis("AI.automateCityBombardment") { automateCityBombardment(civView) }
-        if (tradeAndChangeState) timeThis("AI.useGold") { UseGoldAutomation.useGold(civInfo) }
-        if (tradeAndChangeState && !civView.isCityState) timeThis("AI.cityStates") {
-            protectCityStates(civView)
-            bullyCityStates(civView)
-        }
+        if (tradeAndChangeState) timeThis("AI.considerAnnex") { CityConquestAutomation.considerAnnex(civInfo) }
+        if (tradeAndChangeState) timeThis("AI.upgradeUnits") { UseGoldAutomation.plotUpgradeMoves(civInfo) }
         val cache = AutomationCache()
         timeThis("AI.automateUnits") { automateUnits(civView, cache) }  // this is the most expensive part
 
@@ -106,12 +100,11 @@ object NextTurnAutomation {
             }
             if (civInfo.gameInfo.isEspionageEnabled()) {
                 // Do after cities are conquered
-                timeThis("AI.automateSpies") { EspionageAutomation(civInfo).automateSpies() }
+                EspionageAutomation(civInfo).automateSpies()
             }
         }
 
         timeThis("AI.automateCities") { automateCities(civView) }  // second most expensive
-        if (tradeAndChangeState) timeThis("AI.trainSettler") { trainSettler(civView) }
         // I'm not sure what will happen if we *don't* vote when we can, so automate vote even when forced automation
         timeThis("AI.tryVoteForDiplomaticVictory") { tryVoteForDiplomaticVictory(civView) }
         timeThis("AI.automateLeague") { LeagueAutomation.automateLeague(civInfo) } // the World Congress of Brave New World, also for skipped turns
@@ -149,8 +142,8 @@ object NextTurnAutomation {
             val demandingCiv = civInfo.gameInfo.getCivilization(popupAlert.value)
             if (demandingCiv.isDefeated()) return
             val diploManager = civInfo.getDiplomacyManager(demandingCiv)!!
-            if (Automation.threatAssessment(civView, GameView(civInfo.gameInfo, civInfo).getForeignCivView(demandingCiv)) >= ThreatLevel.High
-                || diploManager.isRelationshipLevelGT(RelationshipLevel.Ally))
+            PromiseAi.onDemandAsked(demandingCiv, civInfo, demand)
+            if (PromiseAi.isDemandAcceptable(civInfo, demandingCiv, demand))
                 diploManager.agreeToDemand(demand)
             else diploManager.refuseDemand(demand)
             return
@@ -163,7 +156,7 @@ object NextTurnAutomation {
         if (requestingCiv.isDefeated()) return
         val diploManager = civInfo.getDiplomacyManager(requestingCiv)!!
         if (civInfo.diplomacyFunctions.canSignDeclarationOfFriendshipWith(requestingCiv)
-            && DiplomacyAutomation.wantsToSignDeclarationOfFrienship(civView, requestingCiv)) {
+            && DiplomacyAutomation.isDoFAcceptable(civInfo, requestingCiv)) {
             diploManager.signDeclarationOfFriendship()
             requestingCiv.addNotification("We have signed a Declaration of Friendship with [${civView.civName}]!", NotificationCategory.Diplomacy, NotificationIcon.Diplomacy, civView.civName)
         } else {
@@ -172,240 +165,11 @@ object NextTurnAutomation {
         }
     }
 
-    @Readonly
-    internal fun valueCityStateAlliance(civView: CivView, cityState: Civilization, includeQuests: Boolean = false): Int {
-        val civInfo = civView.getCiv()
-        if (!cityState.isCityState) return 0
-        var value = 0
-
-        val bonuses = CityStateFunctions.getCityStateBonuses(cityState.cityStateType, RelationshipLevel.Ally).toList()
-        
-        // Optimized version of canProvideStat so we don't need to fetch bonuses multiple times
-        @Readonly fun canProvideStat(stat: Stat) = bonuses.any { it.stats[stat] > 0 }
-        
-        if (canProvideStat(Stat.Culture)) {
-            value += civView.getPersonalityValue(PersonalityValue.Culture).toInt() - 5
-        }
-        if (canProvideStat(Stat.Faith)) {
-            value += civView.getPersonalityValue(PersonalityValue.Faith).toInt() - 5
-        }
-        if (canProvideStat(Stat.Production)) {
-            value += civView.getPersonalityValue(PersonalityValue.Production).toInt() - 5
-        }
-        if (canProvideStat(Stat.Science)) {
-            // In case someone mods this in
-            value += civView.getPersonalityValue(PersonalityValue.Science).toInt() - 5
-        }
-        if (canProvideStat(Stat.Happiness)) {
-            if (civView.getHappiness() < 10)
-                value += 10 - civView.getHappiness()
-            value += civView.getPersonalityValue(PersonalityValue.Happiness).toInt() - 5
-        }
-        if (canProvideStat(Stat.Food)) {
-            value += 5
-            value += civView.getPersonalityValue(PersonalityValue.Food).toInt() - 5
-        }
-
-        if (!cityState.isAlive() || cityState.cities.isEmpty() || civView.cities().isEmpty())
-            return value
-
-        // The more we have invested into the city-state the more the alliance is worth
-        val ourInfluence = if (civInfo.knows(cityState))
-            cityState.getDiplomacyManager(civInfo)!!.getInfluence().toInt()
-        else 0
-        value += minOf(10, ourInfluence / 10) // don't let this spiral out of control
-
-        if (ourInfluence < 30) {
-            // Consider bullying for cash
-            value -= 5
-        }
-
-        if (cityState.allyCiv != null && cityState.allyCiv != civInfo) {
-            // easier not to compete if a third civ has this locked down
-            val thirdCivInfluence = cityState.getDiplomacyManager(cityState.allyCiv!!)!!.getInfluence().toInt()
-            value -= (thirdCivInfluence - 30) / 10
-        }
-
-        // Bonus for luxury resources we can get from them
-        value += cityState.detailedCivResources.count {
-            it.resource.resourceType == ResourceType.Luxury
-            && it.resource !in civInfo.detailedCivResources.map { supply -> supply.resource }
-        }
-
-        if (includeQuests) {
-            // Investing is better if there is an investment bonus quest active.
-            value += (cityState.questManager.getInvestmentMultiplier(civInfo) * 10).toInt() - 10
-        }
-
-        return value
-    }
-
-    private fun protectCityStates(civView: CivView) {
-        val civInfo = civView.getCiv()
-        for (state in civInfo.getKnownCivs().filter { !it.isDefeated() && it.isCityState }) {
-            if (state.cityStateFunctions.otherCivCanPledgeProtection(civInfo))
-                state.cityStateFunctions.addProtectorCiv(civInfo) 
-            //Always pledge to protect, as it makes it harder for others to demand tribute, and grants +10 resting Influence
-        }
-    }
-
-    private fun bullyCityStates(civView: CivView) {
-        val civInfo = civView.getCiv()
-        for (state in civInfo.getKnownCivs().filter { !it.isDefeated() && it.isCityState }.toList()) {
-            val diplomacyManager = state.getDiplomacyManager(civInfo)!!
-            if (!diplomacyManager.isRelationshipLevelLT(RelationshipLevel.Friend)) continue
-            if (diplomacyManager.diplomaticStatus != DiplomaticStatus.Peace) continue
-            if (valueCityStateAlliance(civView, state) > 0) continue
-            if (state.cityStateFunctions.getTributeWillingness(civInfo) < 0) continue
-            if (state.cityStateFunctions.getTributeWillingness(civInfo, demandingWorker = true) > 0)
-                state.cityStateFunctions.tributeWorker(civInfo)
-            else
-                state.cityStateFunctions.tributeGold(civInfo)
-        }
-    }
-
-    private fun chooseTechToResearch(civView: CivView) {
-        val civInfo = civView.getCiv()
-        val rng = civInfo.state.stateBasedRandom("NextTurnAutomation.chooseTechToResearch")
-
-        @Readonly
-        fun getGroupedResearchableTechs(): List<List<Technology>> {
-            val researchableTechs = civInfo.gameInfo.ruleset.technologies.values
-                .asSequence()
-                .filter { civInfo.tech.canBeResearched(it.name) }
-                .groupBy { it.cost }
-            return researchableTechs.toSortedMap().values.toList()
-        }
-
-        val stateForConditionals = civInfo.state
-        while (civInfo.tech.freeTechs > 0) {
-            val costs = getGroupedResearchableTechs()
-            if (costs.isEmpty()) return
-            
-            val mostExpensiveTechs = costs.lastOrNull{ 
-                // Ignore rows where all techs have 0 weight
-                it.any { it.getWeightForAiDecision(stateForConditionals) > 0 }
-            } ?: costs.last()
-            val chosenTech = mostExpensiveTechs.randomWeighted(rng) { it.getWeightForAiDecision(stateForConditionals) }
-            civInfo.tech.getFreeTechnology(chosenTech.name)
-        }
-        if (civInfo.tech.techsToResearch.isEmpty()) {
-            val costs = getGroupedResearchableTechs()
-            if (costs.isEmpty()) return
-
-            val cheapestTechs = costs.firstOrNull{
-                // Ignore rows where all techs have 0 weight
-                it.any { it.getWeightForAiDecision(stateForConditionals) > 0 } }?: costs.first()
-            //Do not consider advanced techs if only one tech left in cheapest group
-            val techToResearch: Technology =
-                if (cheapestTechs.size == 1 || costs.size == 1) {
-                    cheapestTechs.randomWeighted(rng) { it.getWeightForAiDecision(stateForConditionals) }
-                } else {
-                    //Choose randomly between cheapest and second cheapest group
-                    val techsAdvanced = costs[1]
-                    (cheapestTechs + techsAdvanced).randomWeighted(rng) { it.getWeightForAiDecision(stateForConditionals) }
-                }
-
-            civInfo.tech.techsToResearch.add(techToResearch.name)
-        }
-    }
-
+    /** CvPlayer::doTurn: an AI without an ideology chooses one when it is time (CvPolicyAI::DoChooseIdeology), then CvPlayerPolicies::DoPolicyAI */
     private fun adoptPolicy(civView: CivView) {
         val civInfo = civView.getCiv()
-        val rng = civInfo.state.stateBasedRandom("NextTurnAutomation.adoptPolicy")
-        val seeksCulturalVictory = civInfo.ai.isGoingForCultureVictory()
-        /*
-        # Branch-based policy-to-adopt decision
-        Basically the AI prioritizes finishing incomplete branches before moving on, \
-        unless a new branch with higher priority is adoptable.
-
-        - If incomplete branches have higher priorities than any newly adoptable branch,
-            - Candidates are the unfinished branches.
-        - Else if newly adoptable branches have higher priorities than any incomplete branch,
-            - Candidates are the new branches.
-        - Choose a random candidate closest to completion.
-        - Pick a random child policy of a chosen branch and adopt it.
-        */
-        // An ideology is chosen before anything is bought (CvPlayer::doTurn), and the free tenets go to tenets (they can buy nothing else)
-        PolicyAutomation.considerIdeologySwitch(civInfo)
-        PolicyAutomation.chooseIdeology(civInfo, rng)?.let { civInfo.policies.adopt(it) }
-        while (civInfo.policies.freeTenets > 0) {
-            val tenet = PolicyAutomation.chooseTenet(civInfo, rng) ?: break
-            civInfo.policies.adopt(tenet)
-        }
-
-        while (civView.canAdoptPolicy()) {
-            // Choosing an ideology costs nothing and is done above, so it is not what makes a policy adoptable here
-            val incompleteBranches: Set<PolicyBranch> = civInfo.policies.incompleteBranches
-            val adoptableBranches: Set<PolicyBranch> = civInfo.policies.adoptableBranches.filterNot { it.isIdeology }.toSet()
-            if (civInfo.policies.freePolicies == 0 && civInfo.policies.storedCulture < civInfo.policies.getCultureNeededForNextPolicy()) return
-
-            // Skip the whole thing if all branches are completed
-            if (incompleteBranches.isEmpty() && adoptableBranches.isEmpty()) return
-
-            val priorityMap: Map<PolicyBranch, Int> = civInfo.policies.priorityMap
-            var maxIncompletePriority: Int? =
-                civInfo.policies.getMaxPriority(incompleteBranches)
-            var maxAdoptablePriority: Int? = civInfo.policies.getMaxPriority(adoptableBranches)
-
-            // This here is a (probably dirty) code to bypass NoSuchElementException error
-            //  when one of the priority variables is null
-            if (maxIncompletePriority == null) maxIncompletePriority =
-                maxAdoptablePriority!! - 1
-            if (maxAdoptablePriority == null) maxAdoptablePriority =
-                maxIncompletePriority - 1
-
-            // Candidate branches to adopt
-            val candidates: Set<PolicyBranch> =
-                // If incomplete branches have higher priorities than any newly adoptable branch,
-                if (maxAdoptablePriority <= maxIncompletePriority) {
-                    // Prioritize finishing one of the unfinished branches
-                    incompleteBranches.filter { priorityMap[it] == maxIncompletePriority }.toSet()
-                }
-                // If newly adoptable branches have higher priorities than any incomplete branch,
-                else {
-                    // Prioritize adopting one of the new branches
-                    adoptableBranches.filter { priorityMap[it] == maxAdoptablePriority }.toSet()
-                }
-
-            // branchCompletionMap but keys are only candidates
-            val candidateCompletionMap: Map<PolicyBranch, Int> =
-                civInfo.policies.branchCompletionMap.filterKeys { key -> key in candidates }
-
-            // Choose the branch with the LEAST REMAINING policies, not the MOST ADOPTED ones
-            val targetBranch = candidateCompletionMap.asIterable()
-                .groupBy { it.key.policies.size - it.value }
-                .minByOrNull { it.key }!!.value.random(rng).key
-
-            val policyToAdopt: Policy =
-                if (civInfo.policies.isAdoptable(targetBranch)) targetBranch
-                else targetBranch.policies.filter { civInfo.policies.isAdoptable(it) }
-                    .randomWeighted(rng) { policy ->
-                        val weight = policy.getWeightForAiDecision(civInfo.state)
-                        if (seeksCulturalVictory && (
-                            policy.hasUnique(UniqueType.TourismTowardsPercent, civInfo.state)
-                                || policy.hasUnique(UniqueType.GreatWorksTourismPercent, civInfo.state)
-                                || policy.hasUnique(UniqueType.LandmarksTourismPercent, civInfo.state)
-                                || policy.hasUnique(UniqueType.FlatTourism, civInfo.state)
-                            )) weight * 3f else weight
-                    }
-
-            if (!civInfo.policies.canAdopt(policyToAdopt)) return
-            civInfo.policies.adopt(policyToAdopt)
-        }
-    }
-
-    fun chooseGreatPerson(civView: CivView) {
-        val civInfo = civView.getCiv()
-        val greatPeople = civInfo.greatPeople.getFreeGreatPersonOptions()
-        if (greatPeople.isEmpty()) return
-        val rng = civInfo.state.stateBasedRandom("NextTurnAutomation.chooseGreatPerson")
-        var greatPerson = greatPeople.random(rng)
-        val scienceGP = greatPeople.firstOrNull { it.uniques.contains("Great Person - [Science]") }
-        if (scienceGP != null)  greatPerson = scienceGP
-        // Humans would pick a prophet or engineer, but it'd require more sophistication on part of the AI - a scientist is the safest option for now
-
-        civInfo.greatPeople.chooseFreeGreatPerson(greatPerson.name)
+        PolicyAutomation.chooseIdeology(civInfo)?.let { civInfo.policies.adopt(it) }
+        PolicyAutomation.doPolicyAi(civInfo)
     }
 
     /** If we are able to build a spaceship but have already spent our resources, try disbanding
@@ -574,6 +338,10 @@ object NextTurnAutomation {
         }
     }
     
+    /**
+     *  Brings an escort to the settlers whose operation wants one (a CvAIOperationFoundCity, see [SettlerAutomation.wantsEscort]):
+     *  Unciv's stand-in for the operation's CvAIOperation::GrabUnitsFromTheReserves. Quick-colonize settlers travel alone.
+     */
     @VisibleForTesting
     fun automateSettlerEscorting(civView: CivView){
         val civInfo = civView.getCiv()
@@ -583,15 +351,15 @@ object NextTurnAutomation {
                 it.civ == civInfo
                     && it.type.isLandUnit() // a ship can reach a port, but the escort it swaps with cannot follow it to sea
                     && it.health >= 100
-                    // only draft a unit from the core of the empire, or it'll interfere with other anti-barb activities
-                    && (it.currentTile.aerialDistanceTo(capitalTile) < tile.aerialDistanceTo(capitalTile))
+                    // only draft a unit from the core of the empire (at most as far from the capital as the settler), or it'll interfere with other anti-barb activities
+                    && (it.currentTile.aerialDistanceTo(capitalTile) <= tile.aerialDistanceTo(capitalTile))
                     && it.movement.canReach(tile) 
             }
             .sortedBy { it.currentTile.aerialDistanceTo(tile) }
             .maxByOrNull { it.baseUnit.strength } // could be more sophisticated based on promotions, movement speed etc.
         
         val settlersToAccompany = civInfo.units.getCivUnits()
-            .filter { it.isCivilian() && it.hasUnique(UniqueType.FoundCity) }
+            .filter { it.isCivilian() && it.hasUnique(UniqueType.FoundCity) && SettlerAutomation.wantsEscort(it) }
         
         for (settler in settlersToAccompany) {
             val escortUnit = bestUnitInRange(settler.currentTile, 3) ?: continue
@@ -629,91 +397,13 @@ object NextTurnAutomation {
         for (city in civView.cities()) UnitAutomation.tryBombardEnemy(city)
     }
 
-    private fun shouldAnnexCity(civView: CivView, city: City): Boolean {
-        val civInfo = civView.getCiv()
-        return city.isPuppet
-            && city.population.population > 9
-            && !city.isInResistance()
-            && !civView.hasUnique(UniqueType.MayNotAnnexCities)
-            && civView.getHappiness() >= 5 // live happiness - statsForNextTurn is stale mid-turn, so a multi-city conquest wave would otherwise annex several puppets against a pre-conquest reading
-            && civInfo.stats.statsForNextTurn.happiness > city.population.population * 2 - 8 // don't go below -10 happiness due to annexing
-    }
-
     fun automateCities(civView: CivView) {
         val civInfo = civView.getCiv()
-        val ownMilitaryStrength = civInfo.getStatForRanking(RankingType.Force)
-        val sumOfEnemiesMilitaryStrength =
-                civInfo.gameInfo.civilizations
-                    .filter { it != civInfo && !it.isBarbarian && civInfo.isAtWarWith(it) }
-                    .sumOf { it.getStatForRanking(RankingType.Force) }
-        val civHasSignificantlyWeakerMilitaryThanEnemies =
-                ownMilitaryStrength < sumOfEnemiesMilitaryStrength * 0.66f
         for (city in civInfo.cities) {
-            if (shouldAnnexCity(civView, city)) city.annexCity()
 
-            // Don't pull a city off a spaceship part it's already building for the military push (only if actually attacked)
-            val onSpaceshipPart = city.cityConstructions.getCurrentConstruction().name in civInfo.gameInfo.spaceResources
-            if (city.health < city.getMaxHealth() || (civHasSignificantlyWeakerMilitaryThanEnemies && !onSpaceshipPart)) {
-                Automation.tryTrainMilitaryUnit(city) // need defenses if city is under attack
-                if (city.cityConstructions.constructionQueue.isNotEmpty())
-                    continue // found a unit to build so move on
-            }
 
             city.cityConstructions.chooseNextConstruction()
         }
-    }
-
-    private fun trainSettler(civView: CivView) {
-        val civInfo = civView.getCiv()
-        val personality = civInfo.getPersonality()
-        if (civView.isCityState) return
-        if (civInfo.isOneCityChallenger()) return
-        if (civView.cities().isEmpty()) return
-        if (civView.getHappiness() <= civView.cities().size) return
-        if (CivilianUnitAutomation.isLateGame(civView)){
-            // all suitable land may be occupied already
-            // 10 tiles away and 6 "options" are heuristics based on nothing, feel free to change 
-            var unoccupiedNearishTiles = 0
-            for (city in civInfo.cities)
-                city.getCenterTile().forEachTileInDistance(10) {
-                    if (it.owningCity == null && it.neighbors.all { neighbor -> neighbor.owningCity == null }) unoccupiedNearishTiles++
-                }
-            if (unoccupiedNearishTiles < 6) return
-        } 
-
-        // This is a tough one - if we don't ignore conditionals we could have units that can found only on certain tiles that are ignored
-        // If we DO ignore conditionals we could get a unit that can only found if there's a certain tech, or something
-        // Allow up to 2 settlers in flight (built or in production) so early expansion isn't serialized to
-        // one settler at a time - the stock happiness/military guards below still bound how many we build.
-        val maxSettlersInFlight = 2
-        val settlersInFlight = civInfo.units.getCivUnits().count { it.hasUnique(UniqueType.FoundCity, GameContext.IgnoreConditionals) } +
-            civInfo.cities.count {
-                val currentConstruction = it.cityConstructions.getCurrentConstruction()
-                currentConstruction is BaseUnit && currentConstruction.isCityFounder()
-            }
-        if (settlersInFlight >= maxSettlersInFlight) return
-        val settlerUnits = civView.ruleset.units.values
-                .filter { it.isCityFounder() && it.isBuildable(civInfo) &&
-                    personality.getMatchingUniques(UniqueType.WillNotBuild, civInfo.state)
-                        .none { unique -> it.matchesFilter(unique.params[0], civInfo.state) } }
-        if (settlerUnits.isEmpty()) return
-
-        // The "defend them first" gate permanently latches peaceful, happy civs at ~4 cities. Bypass it when
-        // we clearly have room to expand safely: at peace, ample happiness, still early, and in a game with
-        // other major civs whose presence deters an opportunistic attack (this is a bad idea in a 1v1 duel).
-        val hasSlackToExpandSafely = !civView.isAtWar() && civView.getHappiness() >= 8 && civInfo.gameInfo.turns < 150
-            && civInfo.gameInfo.civilizations.count { it.isMajorCiv && it.isAlive() } >= 3
-        if (civView.getUnits().count { it.isMilitary() } < civView.cities().size && !hasSlackToExpandSafely)
-            return // We need someone to defend them first
-
-        val bestCity = civInfo.cities
-            .filterNot { it.isPuppet || it.population.population < 3 }
-            // don't re-target a city that is already producing a settler (reachable now that 2 may be in flight)
-            .filterNot { (it.cityConstructions.getCurrentConstruction() as? BaseUnit)?.isCityFounder() == true }
-            .maxByOrNull { it.cityStats.currentCityStats.production }
-            ?: return
-        if (bestCity.cityConstructions.getBuiltBuildings().count() > 1) // 2 buildings or more, otherwise focus on self first
-            bestCity.cityConstructions.setCurrentConstruction(settlerUnits.minByOrNull { it.cost }!!.name)
     }
 
     // Technically, this function should also check for civs that have liberated one or more cities
@@ -767,23 +457,12 @@ object NextTurnAutomation {
             diplomacyManager.hasFlag(demand.agreedToDemand) -> {
                 offendingCiv.popupAlerts.add(PopupAlert(demand.violationDiscoveredAlert, civView.civID))
                 diplomacyManager.setFlag(demand.willIgnoreViolation, if (demand == Demand.DoNotDigInOurLands) 1 else 100, demand != Demand.DoNotDigInOurLands)
-                if (demand == Demand.DoNotDigInOurLands)
-                    diplomacyManager.setModifier(demand.betrayedPromiseDiplomacyModifier, -30f)
-                else diplomacyManager.addDiminishingModifier(demand.betrayedPromiseDiplomacyModifier, -20f)
-                if (demand == Demand.DoNotAttackUs) {
-                    // relationship penalty with all common known civs, similar to DoF backstabbing
-                    // TODO: apply WarmongerHatred personality trait here?
-                    for (thirdPartyCiv in diplomacyManager.getCommonKnownCivs()) {
-                        thirdPartyCiv.getDiplomacyManager(offendingCiv)!!
-                            .addDiminishingModifier(DiplomaticModifiers.BetrayedPromiseToNotAttackOtherCiv, -10f)
-                    }
-                }
+                PromiseAi.onDemandBroken(civInfo, offendingCiv, demand)
                 diplomacyManager.removeFlag(demand.agreedToDemand)
             }
             // violation before promise
             else -> {
-                if (demand == Demand.DoNotDigInOurLands || demand == Demand.DoNotAttackUs ||
-                    Automation.threatAssessment(civView, GameView(civInfo.gameInfo, civInfo).getForeignCivView(offendingCiv)) < ThreatLevel.High)
+                if (PromiseAi.wantsPromiseFrom(civInfo, offendingCiv, demand))
                     offendingCiv.popupAlerts.add(PopupAlert(demand.demandAlert, civView.civID))
             }
         }

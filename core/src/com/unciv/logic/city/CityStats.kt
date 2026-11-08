@@ -80,6 +80,11 @@ class StatTreeNode {
  * so its field in [City] is @Transient and no such annotation is needed here.
  */
 class CityStats(val city: City) {
+    companion object {
+        /** The [finalStatList] entry of the production that a settler-like construction makes of the excess food */
+        const val EXCESS_FOOD_TO_PRODUCTION = "Excess food to production"
+    }
+
     //region Fields, Transient
 
     var baseStatTree = StatTreeNode()
@@ -95,27 +100,45 @@ class CityStats(val city: City) {
 
     var currentCityStats: Stats = Stats()  // This is so we won't have to calculate this multiple times - takes a lot of time, especially on phones
 
+    /** Food produced minus food eaten, before growth modifiers and food-to-production conversion: the original's
+     *  `getYieldRateTimes100(YIELD_FOOD) - foodConsumption() * 100` (in whole food), read by the citizen governor ([com.unciv.logic.automation.city.CitizenAutomation]) */
+    var excessFood = 0f
+        private set
+
     //endregion
     //region Pure Functions
 
     @Readonly
     private fun getStatsFromTradeRoute(): Stats {
-        val stats = Stats()
         val capitalForTradeRoutePurposes = city.civ.getCapital()!!
-        if (city != capitalForTradeRoutePurposes && city.isConnectedToCapital()) {
-            stats.gold = capitalForTradeRoutePurposes.population.population * 0.15f + city.population.population * 1.1f - 1 // Calculated by http://civilization.wikia.com/wiki/Trade_route_(Civ5)
-            city.forEachMatchingUnique(UniqueType.StatsFromTradeRoute) { unique ->
-                stats.add(unique.stats)
-            }
-            val percentageStats = Stats()
-            city.forEachMatchingUnique(UniqueType.StatPercentFromTradeRoutes) { unique ->
-                percentageStats[Stat.valueOf(unique.params[1])] += unique.params[0].toFloat()
-            }
-            for ((stat) in stats) {
-                stats[stat] *= percentageStats[stat].toPercent()
-            }
+        if (city != capitalForTradeRoutePurposes && city.isConnectedToCapital()) return getTradeRouteStats(capitalForTradeRoutePurposes)
+        return Stats()
+    }
+
+    /** The stats of this city's connection to [capital], whether or not it is connected */
+    @Readonly
+    private fun getTradeRouteStats(capital: City): Stats {
+        val stats = Stats()
+        stats.gold = capital.population.population * 0.15f + city.population.population * 1.1f - 1 // Calculated by http://civilization.wikia.com/wiki/Trade_route_(Civ5)
+        city.forEachMatchingUnique(UniqueType.StatsFromTradeRoute) { unique ->
+            stats.add(unique.stats)
+        }
+        val percentageStats = Stats()
+        city.forEachMatchingUnique(UniqueType.StatPercentFromTradeRoutes) { unique ->
+            percentageStats[Stat.valueOf(unique.params[1])] += unique.params[0].toFloat()
+        }
+        for ((stat) in stats) {
+            stats[stat] *= percentageStats[stat].toPercent()
         }
         return stats
+    }
+
+    /** The gold this city's connection to the capital yields or would yield (CvTreasury::GetCityConnectionRouteGoldTimes100 / 100); 0 for the capital */
+    @Readonly
+    fun getTradeRouteGold(): Float {
+        val capital = city.civ.getCapital() ?: return 0f
+        if (city == capital) return 0f
+        return getTradeRouteStats(capital).gold
     }
 
     @Readonly
@@ -598,6 +621,7 @@ class CityStats(val city: City) {
         newFinalStatList["Population"]!!.food -= foodEaten
 
         var totalFood = newFinalStatList.values.map { it.food }.sum()
+        excessFood = totalFood
 
         // Apply growth modifier only when positive food
         if (totalFood > 0 && calculateGrowthModifiers) {
@@ -621,7 +645,7 @@ class CityStats(val city: City) {
         newFinalStatList["Maintenance"] = Stats(gold = -buildingsMaintenance.toInt().toFloat())
 
         if (canConvertFoodToProduction(totalFood, currentConstruction)) {
-            newFinalStatList["Excess food to production"] =
+            newFinalStatList[EXCESS_FOOD_TO_PRODUCTION] =
                 Stats(production = getProductionFromExcessiveFood(totalFood), food = -totalFood)
         }
 

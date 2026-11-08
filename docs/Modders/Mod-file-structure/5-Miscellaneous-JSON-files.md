@@ -290,8 +290,6 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | baseTurnsUntilRevolt                     | Int    | 4                             | [^Q]  |
 | cityStateElectionTurns                   | Int    | 15                            | [^R]  |
 | maxImprovementTechErasForward            | Int    | None                          | [^S]  |
-| goldGiftMultiplier                       | Float  | 1                             | [^T]  |
-| goldGiftTradeMultiplier                  | Float  | 0.8                           | [^U]  |
 | scoreFromGreatWorks                      | Int    | 0                             | Score for each Great Work. Brave New World uses 4 |
 | greatWorkBaseCulture                     | Int    | 2                             | Culture each Great Work gives its city, before bonuses (see the unique `[stats] from each Great Work`) |
 | greatWorkBaseTourism                     | Int    | 2                             | Tourism each Great Work gives its city, before bonuses |
@@ -340,7 +338,6 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | leagueProjectTier1Threshold              | Float  | 0.5                           | Contribution tier 1 of a World Congress project begins at this multiple of a civilization's share of the project cost |
 | leagueProjectTier2Threshold              | Float  | 1                             | The same for tier 2. Tier 3 goes to the highest contributor, who must have at least this much |
 | leagueProjectProgressWarningPercent      | Int    | 33                            | Percent of its cost at which the civilizations are told how far a project is |
-| goldGiftDegradationMultiplier            | Float  | 1.0                           | [^V]  |
 
 Legend:
 
@@ -380,9 +377,6 @@ Legend:
 - [^Q]: The number of turns before a revolt is spawned
 - [^R]: The number of turns between city-state elections
 - [^S]: If set, the Improvement picker will silently skip improvements whose tech requirement is more advanced than your current Era + this value. Example: With a 0, Trade posts will not show until the Medieval Era, with a 1 they will already show in the CLassical Era.
-- [^T]: The multiplier of the gold value of a one-sided trade to be stored as gifts.
-- [^U]: The multiplier of the gold value of a regular trade to be stored as gifts. Set to 0 to disable gold gifting in two-sided trades.
-- [^V]: Modifies how quickly the GaveUsGifts dimplomacy modifier runs out. A higher value makes it run out quicker. Normally the gifts reduced by ~2.5% per turn depending on the diplomatic relations with the default value.
 - [^W]: Number of air units that can be stationed in a city, not including carried/transported air units.
 
 #### UnitUpgradeCost
@@ -426,7 +420,8 @@ no economic/military/city strategies, and item flavors derived from each object'
 | minorCivFlavors     | List   | `name` (a city-state nation), `flavors`                                                                                |
 | itemFlavors         | List   | `kind` (Building, Unit, Technology, Policy, Process, Project, Resource, Improvement), `name`, `flavors`                 |
 | unitAiTypes         | List   | `name` (a unit), `defaultUnitAi`, `unitAiTypes`                                                                        |
-| handicaps           | List   | `name` (a difficulty), `values` (the AI columns of the original's handicaps)                                           |
+| handicaps           | List   | `name` (a difficulty), `values` (the AI columns of the original's handicaps, and PolicyNumOptionsConsidered, TechNumOptionsConsidered, CityProductionNumOptionsConsidered) |
+| policyBranches      | List   | `name` (a policy branch), `aiDelayNoReligion`, `aiDelayNoCulture`, `aiDelayNoScience`, `aiDelayNoCityStates` (the branch is worthless to the AI in such a game), `firstAdopterFreePolicies`, `secondAdopterFreePolicies` (free tenets the AI expects from an ideology) |
 
 Flavor objects map flavor names to integers. The flavors are, in the original's order: Offense, Defense, CityDefense, MilitaryTraining, Recon,
 Ranged, Mobile, Naval, NavalRecon, NavalGrowth, NavalTileImprovement, Air, Expansion, Growth, TileImprovement, Infrastructure, Production,

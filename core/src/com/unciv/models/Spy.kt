@@ -1,11 +1,11 @@
 package com.unciv.models
 
+import com.unciv.logic.automation.diplomacy.DiplomacyEvents
 import com.unciv.Constants
 import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.*
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
-import com.unciv.logic.civilization.diplomacy.DiplomaticModifiers
 import com.unciv.logic.civilization.managers.EspionageManager
 import com.unciv.logic.civilization.managers.InfluenceLevel
 import com.unciv.logic.map.HexCoord
@@ -56,6 +56,8 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
     var turnsRemainingForAction = 0
         private set
     private var progressTowardsStealingTech = 0
+    /** AI: the spy should reconsider its post at the next espionage AI turn (CvEspionageSpy::m_bEvaluateReassignment), set after a theft or a coup */
+    var evaluateReassignment = false
 
     @Transient
     lateinit var civInfo: Civilization
@@ -79,6 +81,7 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
         toReturn.action = action
         toReturn.turnsRemainingForAction = turnsRemainingForAction
         toReturn.progressTowardsStealingTech = progressTowardsStealingTech
+        toReturn.evaluateReassignment = evaluateReassignment
         return toReturn
     }
 
@@ -114,8 +117,11 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
                     setAction(SpyAction.RiggingElections, (getCity().civ.flagsCountdown[CivFlags.TurnsTillCityStateElection.name] ?: 1) - 1)
                 else if (city.civ == civInfo)
                     setAction(SpyAction.CounterIntelligence, 10)
-                else
+                else {
+                    // CvPlayerEspionage::ProcessSpy: the potential seen when surveillance is established is remembered for the AI
+                    espionageManager.lastBasePotential[city.id] = espionageManager.getBaseStealRateTimes100(city)
                     startStealingTech()
+                }
             }
             SpyAction.Surveillance -> {
                 if (!getCity().civ.isMajorCiv) return
@@ -189,12 +195,8 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
      */
     private fun incrementTechStealingProgress(): Int {
         assert(canStealTech() == CanStealTech.Yes)
-        
-        var progressThisTurn = getCity().cityStats.currentCityStats.science
-        // 25% spy bonus for each level
-        val rankTechStealModifier = getEffectiveRank() * civInfo.gameInfo.ruleset.modOptions.constants.spyRankStealPercentBonus
-        progressThisTurn *= (rankTechStealModifier + 75f) / 100f
-        progressThisTurn *= getEfficiencyModifier().toFloat()
+
+        val progressThisTurn = getStealProgressPerTurn()
         progressTowardsStealingTech += progressThisTurn.toInt()
         
         val stealableTechs = espionageManager.getTechsToSteal(getCity().civ)
@@ -207,6 +209,17 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
 
         if (remainingCost <= 0) return 0
         return ceil(remainingCost / progressThisTurn).toInt()
+    }
+
+    /** The science this spy steals per turn in its city: the city's science with the rank bonus and the efficiency modifiers */
+    @Readonly
+    fun getStealProgressPerTurn(): Float {
+        var progressThisTurn = getCity().cityStats.currentCityStats.science
+        // 25% spy bonus for each level
+        val rankTechStealModifier = getEffectiveRank() * civInfo.gameInfo.ruleset.modOptions.constants.spyRankStealPercentBonus
+        progressThisTurn *= (rankTechStealModifier + 75f) / 100f
+        progressThisTurn *= getEfficiencyModifier().toFloat()
+        return progressThisTurn
     }
 
 
@@ -225,8 +238,10 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
         val otherCiv = city.civ
         val randomSeed = randomSeed()
 
-        val stolenTech = espionageManager.getTechsToSteal(getCity().civ)
-            .randomOrNull(Random(randomSeed)) // Could be improved to for example steal the most expensive tech or the tech that has the least progress as of yet
+        val stealable = espionageManager.getTechsToSteal(getCity().civ)
+        // CvEspionageAI::StealTechnology: the AI takes the first stealable technology in the order of the technologies
+        val stolenTech = if (civInfo.isAI()) civInfo.gameInfo.ruleset.technologies.keys.firstOrNull { it in stealable }
+            else stealable.randomOrNull(Random(randomSeed))
 
         // Lower is better
         val defendingSpy = city.civ.espionageManager.getSpyAssignedToCity(city)
@@ -257,6 +272,9 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
             civInfo.tech.addTechnology(stolenTech)
             addNotification("Your spy [$name] stole the Technology [$stolenTech] from [$city]!")
             levelUpSpy()
+            otherCiv.espionageManager.timesCityRobbed.merge(city.id, 1, Int::plus)
+            // CvPlayerEspionage::ProcessSpy flags the spy for reassignment after a completed theft
+            evaluateReassignment = true
         }
 
         if (spyResult >= 200) {
@@ -267,12 +285,15 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
             demandToNotBeSpiedOn(otherCiv)
         } else startStealingTech()  // reset progress
 
-        if (spyResult >= 100) demandToNotBeSpiedOn(otherCiv)
+        if (spyResult >= 100) {
+            demandToNotBeSpiedOn(otherCiv)
+            // CvPlayerEspionage::ProcessSpyStealing: an identified or killed thief is remembered (CvDiplomacyAI::ChangeNumTimesRobbedBy)
+            DiplomacyEvents.onRobbed(otherCiv, civInfo)
+        }
     }
     
     private fun demandToNotBeSpiedOn(otherCiv: Civilization) {
         val otherCivDiplomacyManager = otherCiv.getDiplomacyManager(civInfo)!!
-        otherCivDiplomacyManager.addModifier(DiplomaticModifiers.SpiedOnUs, -15f)
         otherCivDiplomacyManager.setFlag(DiplomacyFlags.DiscoveredSpiesInOurCities, 30, true)
     }
 
@@ -307,7 +328,7 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
                 cityState.getDiplomacyManagerOrMeet(allyCiv).reduceInfluence(20f)
                 allyCiv.addNotification("A spy from [${civInfo.civName}] successfully staged a coup in our former ally [${cityState.civName}]!", getCity().location,
                         NotificationCategory.Espionage, civInfo.civName,  NotificationIcon.Spy, cityState.civName)
-                allyCiv.getDiplomacyManagerOrMeet(civInfo).addModifier(DiplomaticModifiers.SpiedOnUs, -15f)
+                allyCiv.getDiplomacyManagerOrMeet(civInfo)
             }
             for (civ in cityState.getKnownCivsWithSpectators()) {
                 if (civ == allyCiv || civ == civInfo) continue
@@ -325,7 +346,7 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
             cityState.getDiplomacyManager(civInfo)!!.addInfluence(-20f)
             allyCiv?.addNotification("A spy from [${civInfo.civName}] failed to stage a coup in our ally [${cityState.civName}] and was killed!", getCity().location,
                     NotificationCategory.Espionage, civInfo.civName,  NotificationIcon.Spy, cityState.civName)
-            allyCiv?.getDiplomacyManagerOrMeet(civInfo)?.addModifier(DiplomaticModifiers.SpiedOnUs, -10f)
+            allyCiv?.getDiplomacyManagerOrMeet(civInfo)
 
             civInfo.addNotification("Our spy [$name] failed to stage a coup in [${cityState.civName}] and was killed!", getCity().location,
                     NotificationCategory.Espionage, civInfo.civName,  NotificationIcon.Spy, cityState.civName)
@@ -377,30 +398,10 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
     }
 
     @Readonly
-    private fun canDismissAgreementToNotSendSpies(city: City): Boolean {
-        val otherCivDiplomacyManager = city.civ.getDiplomacyManager(civInfo) ?: return false
-        val otherCiv = otherCivDiplomacyManager.civInfo
-        
-        val techSize = civInfo.gameInfo.ruleset.technologies.values.size.toFloat()
-        val ourResearchTechSize = civInfo.tech.techsResearched.size.toFloat()
-        val otherCivResearchTechSize =  otherCiv.tech.techsResearched.size.toFloat()
-        
-        val ourTechResearchLevel = (ourResearchTechSize/techSize)*100f
-        val otherCivTechResearchLevel = (otherCivResearchTechSize/techSize)*100f
-        return otherCivDiplomacyManager.hasFlag(DiplomacyFlags.AgreedToNotSendSpies) &&
-                /*
-                * if there is equal or more than 10% difference in tech, 
-                * compare to the other civ in tech we the Ai will bypass the agreement
-                * */
-                otherCivTechResearchLevel <= ourTechResearchLevel + 10f
-    }
-
-    @Readonly
     fun canMoveTo(city: City, asDiplomat: Boolean = false): Boolean {
         if (asDiplomat && (!city.civ.isMajorCiv || city.civ == civInfo || !city.isCapital()
                 || civInfo.isAtWarWith(city.civ))) return false
         if (!asDiplomat && getCityOrNull() == city) return true
-        if (!asDiplomat && canDismissAgreementToNotSendSpies(city)) return false
         if (!city.getCenterTile().isExplored(civInfo)) return false
         return espionageManager.getSpyAssignedToCity(city).let { it == null || it == this }
     }
