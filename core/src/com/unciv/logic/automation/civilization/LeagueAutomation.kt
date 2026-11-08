@@ -1,9 +1,9 @@
 package com.unciv.logic.automation.civilization
 
+import com.unciv.logic.automation.diplomacy.AiThreat
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
 import com.unciv.logic.civilization.diplomacy.DiplomacyManager
-import com.unciv.logic.civilization.diplomacy.DiplomaticModifiers
 import com.unciv.logic.civilization.diplomacy.RelationshipLevel
 import com.unciv.logic.league.ActiveResolution
 import com.unciv.logic.league.League
@@ -192,7 +192,7 @@ enum class LeagueAlignment { WAR, ENEMY, HATRED, RIVAL, NEUTRAL, FRIEND, CONFIDA
  *   (CvTechAI::GetTechRatio, position among the living major civilizations, ties by civilization order).
  * - Opinion: [DiplomacyManager.relationshipIgnoreAfraid]; "opinion above neutral" is Favorable or better, "at most enemy" Enemy or Unforgivable,
  *   "below neutral" Competitor or worse. Approach "hostile or worse" is a denunciation or an Enemy level, approach "afraid or friendly" has no equivalent.
- * - Warmonger threat at least severe: the [DiplomaticModifiers.WarMongerer] modifier of the target at most [SEVERE_WARMONGER]. Humans keep none.
+ * - Warmonger threat at least severe: CvDiplomacyAI::GetWarmongerThreat, [com.unciv.logic.automation.diplomacy.DiplomacyAi.warmongerThreat].
  * - Trade connections: routes between the two civilizations in either direction. Morocco's trait (incoming route yield): [UniqueType.TradeRouteGoldForOrigin],
  *   Venice's (more routes): a positive [UniqueType.TradeRouteSlotsPercent]. Possible routes: [com.unciv.logic.civilization.managers.TradeRouteManager.getNumSlots].
  * - Gross gold and unit maintenance: the gold entries of the stat map of the next turn, "Unit upkeep" being the maintenance.
@@ -212,8 +212,6 @@ enum class LeagueAlignment { WAR, ENEMY, HATRED, RIVAL, NEUTRAL, FRIEND, CONFIDA
  */
 class LeagueEvaluator(private val civ: Civilization, private val league: League) {
     companion object {
-        /** The [DiplomaticModifiers.WarMongerer] value from which the warmonger threat counts as THREAT_SEVERE */
-        const val SEVERE_WARMONGER = -20f
         const val LANDMARK = "Landmark"
         const val GREAT_MERCHANT = "Great Merchant"
         /** The resolutions that start an international project, with the "culture" or "science" strategy that profits (CvVotingClasses.cpp:8866-8898) */
@@ -513,7 +511,7 @@ class LeagueEvaluator(private val civ: Civilization, private val league: League)
         val diplomacy = civ.getDiplomacyManager(target)
         var score = when {
             civ.isAtWarWith(target) -> 70
-            (diplomacy?.getModifier(DiplomaticModifiers.WarMongerer) ?: 0f) <= SEVERE_WARMONGER -> 40
+            civ.ai.diplomacy.warmongerThreat(target) >= AiThreat.Severe -> 40
             diplomacy != null && (diplomacy.relationshipIgnoreAfraid() < RelationshipLevel.Neutral
                 || diplomacy.relationshipIgnoreAfraid() <= RelationshipLevel.Enemy
                 || diplomacy.hasFlag(DiplomacyFlags.Denunciation)) -> 20

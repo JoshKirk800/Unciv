@@ -3,6 +3,8 @@ package com.unciv.logic.automation.strategy
 import com.unciv.Constants
 import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.automation.Timers.Companion.timeThis
+import com.unciv.logic.automation.diplomacy.DiplomacyAi
+import com.unciv.logic.automation.diplomacy.DiplomacyTurn
 import com.unciv.logic.civilization.Civilization
 import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.ai.AiRuleset
@@ -98,6 +100,12 @@ class CivAi : IsPartOfGameInfoSerialization {
     var unitAiOverrides = HashMap<String, String>()
     /** Deal and city-state AI memory: deal statements sent, expired deals to renew, tributes taken from us (see [DealsAiState]) */
     var deals = com.unciv.logic.automation.civilization.DealsAiState()
+    /** CvDiplomacyAI war state memory (turns at war, war states, target values, military strength comparison), see [WarStateAi] */
+    var warStates = WarStateMemory()
+    /** CvCitySpecializationAI::m_iWonderCityID: the [com.unciv.logic.city.City.id] of the city chosen to build wonders, null if none */
+    var wonderCityId: String? = null
+    /** CvDiplomacyAI state towards other players (opinions, approaches, war goals, disputes, memories), see [DiplomacyAi] */
+    var diplomacy = DiplomacyAi()
     //endregion
 
     //region Transients
@@ -135,11 +143,15 @@ class CivAi : IsPartOfGameInfoSerialization {
         toReturn.purchaseSavings = purchaseSavings.clone()
         toReturn.unitAiOverrides.putAll(unitAiOverrides)
         toReturn.deals = deals.clone()
+        toReturn.warStates = warStates.clone()
+        toReturn.wonderCityId = wonderCityId
+        toReturn.diplomacy = diplomacy.clone()
         return toReturn
     }
 
     fun setTransients(civ: Civilization) {
         this.civ = civ
+        diplomacy.civ = civ
         personalityVector = null
         activeFlavorVector = null
         strategyVersion++
@@ -360,7 +372,9 @@ class CivAi : IsPartOfGameInfoSerialization {
 
     /**
      *  The strategic AI turn of this civilization, in CvPlayer::doTurn / doTurnPostDiplomacy order:
-     *  DoUpdateCramped, CvGrandStrategyAI::DoTurn (majors), then CvEconomicAI and CvMilitaryAI strategy loops, then each city's
+     *  DoUpdateCramped, CvGrandStrategyAI::DoTurn (majors), the war states of CvDiplomacyAI::DoTurn (majors, [WarStateAi.doTurn]),
+     *  the rest of CvDiplomacyAI::DoTurn (majors, [DiplomacyTurn.doTurn]),
+     *  then CvEconomicAI and CvMilitaryAI strategy loops, then each city's
      *  CvCityStrategyAI::DoTurn (in CvCity::doTurn). Runs for every living civilization except barbarians and spectators, human or AI,
      *  as in the original. City specialization (CvCitySpecializationAI::DoTurn) is not ported yet: [CityAi.specialization] stays unset.
      */
@@ -369,6 +383,8 @@ class CivAi : IsPartOfGameInfoSerialization {
         ensureInitialized()
         timeThis("AI.Cramped") { updateCramped() }
         if (civ.isMajorCiv) timeThis("AI.GrandStrategy") { GrandStrategyAi.doTurn(civ) }
+        if (civ.isMajorCiv) timeThis("AI.WarStates") { WarStateAi.doTurn(civ) }
+        if (civ.isMajorCiv) timeThis("AI.Diplomacy") { DiplomacyTurn.doTurn(civ) }
         timeThis("AI.EconomicStrategies") {
             if (runStrategyLoop(rules.economicStrategies, economicStrategies, civ, checkFirstTurn = true) { StrategyTests.test(civ, it) })
                 onStrategiesChanged()

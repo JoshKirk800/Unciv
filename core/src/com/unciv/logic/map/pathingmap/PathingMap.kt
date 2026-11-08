@@ -2,7 +2,6 @@ package com.unciv.logic.map.pathingmap
 
 import androidx.collection.MutableIntList
 import com.unciv.logic.automation.Timers.Companion.timeThis
-import com.unciv.logic.automation.civilization.MotivationToAttackAutomation
 import com.unciv.logic.automation.civilization.UseGoldAutomation
 import com.unciv.logic.automation.unit.RoadBetweenCitiesAutomation
 import com.unciv.logic.battle.TargetHelper
@@ -57,11 +56,7 @@ import kotlin.collections.get
  * - createCityExpansionPathing
  *   - Useful for [UseGoldAutomation.maybeBuyCityTiles]
  * - Multiple start points.
- *   - Today, [MotivationToAttackAutomation.getAttackPathsModifier] does a separate BFS from each
- *     city. Merging them would give a performance boost.
  * - Multiple target points.
- *   - Today, [MotivationToAttackAutomation.getAttackPathsModifier] does a separate BFS to each
- *     city. Merging them would give a performance boost.
  *   - [RoadBetweenCitiesAutomation.getRoadToConnectCityToCapital] could just path from the capital
  *     to each city, and tiles already connected would simply have a "cost" of zero.
  * - Add `getAttackableEnemies`.
