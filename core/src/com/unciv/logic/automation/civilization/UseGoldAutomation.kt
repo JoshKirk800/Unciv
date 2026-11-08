@@ -150,9 +150,11 @@ object UseGoldAutomation {
     fun buyPlotScore(city: City): Pair<Int, Tile>? {
         var bestScore = -1
         var bestTile: Tile? = null
+        var scoring: PlotScoring? = null
         for (tile in city.tilesInRange) {
             if (!city.expansion.canBuyTile(tile)) continue
-            val score = individualPlotScore(city, tile)
+            val plotScoring = scoring ?: PlotScoring(city).also { scoring = it }
+            val score = plotScoring.score(tile)
             if (score > bestScore) {
                 bestScore = score
                 bestTile = tile
@@ -167,50 +169,66 @@ object UseGoldAutomation {
      *  whose nearest city on the tile's landmass is within 10 tiles, (10 - distance) x 6 / 4 / 2 (fierce / strong / weak);
      *  all x base tile cost / this tile's cost.
      */
-    fun individualPlotScore(city: City, tile: Tile): Int {
+    fun individualPlotScore(city: City, tile: Tile): Int = PlotScoring(city).score(tile)
+
+    /** What [individualPlotScore] needs of a city, computed once for all its tiles */
+    private class PlotScoring(val city: City) {
         val civ = city.civ
         val rules = civ.gameInfo.ruleset.ai
-        var value = 0
-        val resource = tile.tileResource
-        if (tile.resource != null && civ.canSeeResource(resource)) {
-            when (resource.resourceType) {
-                ResourceType.Strategic -> value += rules.define(AiDefine.AI_PLOT_VALUE_STRATEGIC_RESOURCE)
-                ResourceType.Luxury -> {
-                    var luxuryValue = rules.define(AiDefine.AI_PLOT_VALUE_LUXURY_RESOURCE)
-                    if (civ.getResourceAmount(resource) == 0) luxuryValue *= 2
-                    value += luxuryValue
-                }
-                else -> {}
+        val baseCost = baseTileCost(city)
+        /** Multiplier per yield, by index in [YIELDS] */
+        val yieldMultipliers = IntArray(YIELDS.size).also { multipliers ->
+            val specializationYield = city.ai.specializationDef()?.yieldType
+            for ((index, stat) in YIELDS.withIndex()) {
+                var multiplier = if (stat.name == specializationYield) rules.define(AiDefine.AI_PLOT_VALUE_SPECIALIZATION_MULTIPLIER)
+                    else rules.define(AiDefine.AI_PLOT_VALUE_YIELD_MULTIPLIER)
+                if (CityStrategyAi.isYieldDeficient(city, stat)) multiplier *= rules.define(AiDefine.AI_PLOT_VALUE_DEFICIENT_YIELD_MULTIPLIER)
+                multipliers[index] = multiplier
             }
         }
-
-        val specializationYield = city.ai.specializationDef()?.yieldType
-        val natureYields = tile.stats.getTileStats(null, civ)
-        for (stat in YIELDS) {
-            val yield = natureYields[stat].toInt()
-            var yieldValue = yield * if (stat.name == specializationYield) rules.define(AiDefine.AI_PLOT_VALUE_SPECIALIZATION_MULTIPLIER)
-                else rules.define(AiDefine.AI_PLOT_VALUE_YIELD_MULTIPLIER)
-            if (CityStrategyAi.isYieldDeficient(city, stat)) yieldValue *= rules.define(AiDefine.AI_PLOT_VALUE_DEFICIENT_YIELD_MULTIPLIER)
-            value += yieldValue
-        }
-
-        for (other in civ.gameInfo.civilizations) {
-            if (other == civ || !other.isMajorCiv || !other.isAlive()) continue
-            val disputeMultiplier = when (civ.ai.diplomacy.landDisputeLevel(other)) {
+        /** The majors we have a land dispute with: their dispute multiplier and cities */
+        val disputes = civ.gameInfo.civilizations.mapNotNull { other ->
+            if (other == civ || !other.isMajorCiv || !other.isAlive()) return@mapNotNull null
+            val multiplier = when (civ.ai.diplomacy.landDisputeLevel(other)) {
                 DisputeLevel.Fierce -> rules.define(AiDefine.AI_PLOT_VALUE_FIERCE_DISPUTE)
                 DisputeLevel.Strong -> rules.define(AiDefine.AI_PLOT_VALUE_STRONG_DISPUTE)
                 DisputeLevel.Weak -> rules.define(AiDefine.AI_PLOT_VALUE_WEAK_DISPUTE)
-                DisputeLevel.None -> continue
+                DisputeLevel.None -> return@mapNotNull null
             }
-            val nearest = other.cities.asSequence()
-                .filter { it.getCenterTile().getContinent() == tile.getContinent() }
-                .minOfOrNull { it.getCenterTile().aerialDistanceTo(tile) } ?: continue
-            if (nearest < 10) value += (10 - nearest) * disputeMultiplier
+            multiplier to other.cities
         }
 
-        val cost = city.expansion.getGoldCostOfTile(tile)
-        if (cost == 0) return 0
-        return value * baseTileCost(city) / cost
+        fun score(tile: Tile): Int {
+            var value = 0
+            val resource = tile.tileResource
+            if (tile.resource != null && civ.canSeeResource(resource)) {
+                when (resource.resourceType) {
+                    ResourceType.Strategic -> value += rules.define(AiDefine.AI_PLOT_VALUE_STRATEGIC_RESOURCE)
+                    ResourceType.Luxury -> {
+                        var luxuryValue = rules.define(AiDefine.AI_PLOT_VALUE_LUXURY_RESOURCE)
+                        if (civ.getResourceAmount(resource) == 0) luxuryValue *= 2
+                        value += luxuryValue
+                    }
+                    else -> {}
+                }
+            }
+            val natureYields = tile.stats.getTileStats(null, civ)
+            for ((index, stat) in YIELDS.withIndex()) value += natureYields[stat].toInt() * yieldMultipliers[index]
+
+            for ((multiplier, cities) in disputes) {
+                var nearest = Int.MAX_VALUE
+                for (other in cities) {
+                    val center = other.getCenterTile()
+                    if (center.getContinent() != tile.getContinent()) continue
+                    nearest = minOf(nearest, center.aerialDistanceTo(tile))
+                }
+                if (nearest < 10) value += (10 - nearest) * multiplier
+            }
+
+            val cost = city.expansion.getGoldCostOfTile(tile)
+            if (cost == 0) return 0
+            return value * baseCost / cost
+        }
     }
 
     /** The original's yields (YieldTypes): Unciv stats without happiness */

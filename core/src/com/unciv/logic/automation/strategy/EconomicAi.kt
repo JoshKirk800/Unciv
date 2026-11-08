@@ -41,10 +41,9 @@ class EconomicAi : IsPartOfGameInfoSerialization {
         return toReturn
     }
 
-    /** What CvEconomicAI::DoTurn does before its strategy loop: DoReconState, DoAntiquitySites */
+    /** What CvEconomicAI::DoTurn does before its strategy loop: DoReconState and DoAntiquitySites, in one pass over the map */
     fun doTurnBeforeStrategies(civ: Civilization) {
         doReconState(civ)
-        doAntiquitySites(civ)
     }
 
     /** What CvEconomicAI::DoTurn does after its strategy loop for AI players: DoPlotPurchases, DisbandExtraWorkers */
@@ -54,7 +53,7 @@ class EconomicAi : IsPartOfGameInfoSerialization {
     }
 
     /**
-     *  CvEconomicAI::DoReconState. Over the tiles the civilization has explored, counts revealed land and revealed coastal water (deep water
+     *  CvEconomicAI::DoReconState (and DoAntiquitySites, counted in the same pass). Over the tiles the civilization has explored, counts revealed land and revealed coastal water (deep water
      *  too once embarked units may enter the ocean), and the revealed tiles with an unrevealed neighbor (the first such neighbor decides
      *  whether it counts as land or as water fog). The land state compares [reconWeight] of the land counts and the land explorers
      *  (UNITAI_EXPLORE, being trained included) with 110 - 10 x RECON flavor (at most 100); the naval state, with a coastal city, does
@@ -65,8 +64,13 @@ class EconomicAi : IsPartOfGameInfoSerialization {
         if (civ.isCityState) {
             reconState = ReconState.Enough
             navalReconState = ReconState.Enough
+            doAntiquitySites(civ)
             return
         }
+        val constants = civ.gameInfo.ruleset.modOptions.constants
+        val siteResource = constants.archaeologySiteResource
+        val hiddenSiteResource = constants.archaeologyHiddenSiteResource
+        var antiquitySites = 0
         val rules = civ.gameInfo.ruleset.ai
         val deepWaterToo = civ.tech.embarkedUnitsCanEnterOcean
         UnitAiTypes.pruneOverrides(civ)
@@ -76,6 +80,9 @@ class EconomicAi : IsPartOfGameInfoSerialization {
         var coastalWithAdjacentFog = 1
         for (tile in civ.gameInfo.tileMap.values) {
             if (!civ.hasExplored(tile)) continue
+            val resource = tile.resource
+            if (resource != null && (resource == siteResource || resource == hiddenSiteResource) && civ.canSeeResource(tile.tileResource))
+                antiquitySites++
             if (!tile.isWater) landRevealed++
             else if (!tile.isOcean || deepWaterToo) coastalRevealed++
             for (neighbor in tile.neighbors) {
@@ -90,6 +97,8 @@ class EconomicAi : IsPartOfGameInfoSerialization {
                 }
             }
         }
+
+        visibleAntiquitySites = antiquitySites
 
         val landExplorers = UnitAiTypes.numUnitsWithUnitAi(civ, UnitAiType.EXPLORE, includeBeingTrained = true, includeWater = false)
         val landWeight = reconWeight(civ, landWithAdjacentFog, landRevealed, landExplorers)
@@ -121,7 +130,7 @@ class EconomicAi : IsPartOfGameInfoSerialization {
         }
     }
 
-    /** CvEconomicAI::DoAntiquitySites: antiquity sites (hidden ones included) on tiles the civilization has revealed */
+    /** CvEconomicAI::DoAntiquitySites: antiquity sites (hidden ones included) on tiles the civilization has revealed ([doReconState] counts them for majors) */
     fun doAntiquitySites(civ: Civilization) {
         visibleAntiquitySites = ArchaeologyFunctions.getVisibleSites(civ).size
     }
@@ -133,8 +142,7 @@ class EconomicAi : IsPartOfGameInfoSerialization {
      */
     fun disbandExtraWorkers(civ: Civilization) {
         val inDeficit = civ.ai.isEconomicStrategyActive(LOSING_MONEY)
-        val averageGoldPerUnit = civ.stats.getUnitMaintenance() / maxOf(1, civ.units.getCivUnitsSize())
-        if (!inDeficit && averageGoldPerUnit <= 4) return
+        if (!inDeficit && civ.stats.getUnitMaintenance() / maxOf(1, civ.units.getCivUnitsSize()) <= 4) return
 
         val numWorkers = UnitAiTypes.numUnitsWithUnitAi(civ, UnitAiType.WORKER, includeBeingTrained = true, includeWater = false)
         val numCities = civ.cities.size
