@@ -121,13 +121,14 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
         val candidates = ArrayList<Buildable>()
 
         for (building in ruleset.buildings.values) {
-            if (!isAllowed(building) || !building.isBuildable(cityConstructions)) continue
-            val turns = turnsLeft(building, production)
             if (ProductionAi.isProject(rules, building)) {
-                if (!city.isPuppet) candidates.add(Buildable(building, withAiChoiceWeight(building, ProductionAi.projectWeight(city, building)), turns))
+                if (city.isPuppet || !isAllowed(building) || !building.isBuildable(cityConstructions)) continue
+                candidates.add(Buildable(building, withAiChoiceWeight(building, ProductionAi.projectWeight(city, building)), turnsLeft(building, production)))
                 continue
             }
             var weight = ProductionAi.buildingWeight(city, building)
+            // Only weights above 0 are candidates, and the adjustments below never raise a weight from 0: skip the costly buildable test
+            if (weight <= 0 || !isAllowed(building) || !building.isBuildable(cityConstructions)) continue
             if (WonderProductionAi.isDiplomaticVoting(building) && !WonderProductionAi.isWorthBuildingUnitedNations(civInfo)) weight = 0
             if (city.isPuppet) {
                 if (building.isAnyWonder()) weight = 0
@@ -136,15 +137,15 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
                 if (building.getResourceRequirementsPerTurn(city.state).isNotEmpty()) weight = 0
             }
             weight = withAiChoiceWeight(building, weight)
-            if (weight > 0) candidates.add(Buildable(building, weight, turns))
+            if (weight > 0) candidates.add(Buildable(building, weight, turnsLeft(building, production)))
         }
 
         if (!city.isPuppet) {
             val enoughSettlers = civInfo.ai.isEconomicStrategyActive("ECONOMICAISTRATEGY_ENOUGH_EXPANSION")
             var goodSettleAreas = -1
             for (unit in ruleset.units.values) {
-                if (!isAllowed(unit) || !unit.isBuildable(cityConstructions)) continue
                 var weight = ProductionAi.unitWeight(city, unit)
+                if (weight <= 0 || !isAllowed(unit) || !unit.isBuildable(cityConstructions)) continue
                 val unitAi = UnitAiTypes.defaultOf(unit, rules)
                 if (unitAi == UnitAiType.SETTLE) {
                     if (enoughSettlers) weight = 0

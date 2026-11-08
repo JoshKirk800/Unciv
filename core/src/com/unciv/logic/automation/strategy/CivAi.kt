@@ -383,6 +383,7 @@ class CivAi : IsPartOfGameInfoSerialization {
         }
         timeThis("AI.CitySpecialization") { CitySpecializationAi.doTurn(civ) }
         timeThis("AI.CityStrategies") {
+            CityStrategyAi.clearTurnCache(civ)
             for (city in civ.cities) city.ai.doTurn()
         }
     }

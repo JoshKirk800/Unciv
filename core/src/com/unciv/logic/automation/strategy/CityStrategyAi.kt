@@ -11,6 +11,7 @@ import com.unciv.models.ruleset.ai.Flavor
 import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.models.stats.Stat
+import com.unciv.models.stats.Stats
 import java.util.WeakHashMap
 import kotlin.math.floor
 
@@ -28,15 +29,65 @@ object CityStrategyAi {
 
     //region Helpers
 
-    /** CvCityStrategyAI::GetYieldAverage: the average yield of the tiles the city works (its center included) */
-    private fun yieldAverage(city: City, stat: Stat): Double {
+    /**
+     *  Per civilization and turn: the counts and lists the tests of all its cities share (CvPlayer::GetNumUnitsWithUnitAI,
+     *  countCitiesFeatureSurrounded, ...), and each city's deficient yield. Rebuilt on a new turn and by [clearTurnCache].
+     */
+    private class TurnCache(val turn: Int) {
+        var landWorkers = -1
+        var seaWorkers = -1
+        var landSettlers = -1
+        var allSettlers = -1
+        var featureSurrounded = -1
+        var enemyNavalTiles: List<Tile>? = null
+        val deficientYields = HashMap<String, Stat?>()
+    }
+    private val turnCaches = WeakHashMap<Civilization, TurnCache>()
+
+    private fun turnCache(civ: Civilization): TurnCache = synchronized(turnCaches) {
+        val turn = civ.gameInfo.turns
+        turnCaches[civ]?.takeIf { it.turn == turn } ?: TurnCache(turn).also { turnCaches[civ] = it }
+    }
+
+    /** Forgets the shared values of [civ] - at the start of its city strategy turn, as units and cities may have changed since */
+    internal fun clearTurnCache(civ: Civilization) {
+        synchronized(turnCaches) { turnCaches.remove(civ) }
+    }
+
+    private fun numLandWorkers(civ: Civilization): Int = turnCache(civ).run {
+        if (landWorkers < 0) landWorkers = UnitAiTypes.numUnitsWithUnitAi(civ, UnitAiType.WORKER, includeBeingTrained = true, includeWater = false)
+        landWorkers
+    }
+    private fun numSeaWorkers(civ: Civilization): Int = turnCache(civ).run {
+        if (seaWorkers < 0) seaWorkers = UnitAiTypes.numUnitsWithUnitAi(civ, UnitAiType.WORKER_SEA, includeBeingTrained = true, includeWater = true)
+        seaWorkers
+    }
+    private fun numSettlers(civ: Civilization, includeWater: Boolean): Int = turnCache(civ).run {
+        if (includeWater) {
+            if (allSettlers < 0) allSettlers = UnitAiTypes.numUnitsWithUnitAi(civ, UnitAiType.SETTLE, includeBeingTrained = true, includeWater = true)
+            allSettlers
+        } else {
+            if (landSettlers < 0) landSettlers = UnitAiTypes.numUnitsWithUnitAi(civ, UnitAiType.SETTLE, includeBeingTrained = true, includeWater = false)
+            landSettlers
+        }
+    }
+
+    /** CvCityStrategyAI::GetYieldAverage for every yield at once: the yields of the tiles the city works (its center included) and their count */
+    private fun workedTileYields(city: City): Pair<Stats, Int> {
+        val sum = Stats()
         var tiles = 0
-        var amount = 0
         for (tile in city.getWorkedTiles() + sequenceOf(city.getCenterTile())) {
             tiles++
-            amount += tile.stats.getTileStats(city, city.civ)[stat].toInt()
+            val stats = tile.stats.getTileStats(city, city.civ)
+            for ((stat, value) in stats) sum[stat] += value.toInt().toFloat()
         }
-        return if (tiles == 0) 0.0 else amount.toDouble() / tiles
+        return Pair(sum, tiles)
+    }
+
+    private fun isDeficient(rules: AiRuleset, stat: Stat, yields: Pair<Stats, Int>): Boolean {
+        val desired = deficientYieldValue(rules, stat) ?: return false
+        val average = if (yields.second == 0) 0.0 else yields.first[stat].toDouble() / yields.second
+        return roundTimes100(average) < roundTimes100(desired.toDouble())
     }
 
     /** CvCityStrategyAI::GetDeficientYieldValue: the desired average yield, null for the yields the original never finds deficient */
@@ -51,16 +102,26 @@ object CityStrategyAi {
     private fun roundTimes100(value: Double): Int = floor(value * 100 + 0.5).toInt()
 
     /** CvCityStrategyAI::IsYieldDeficient: the city's average worked-tile [stat] is below the desired value (compared ×100, rounded) */
-    fun isYieldDeficient(city: City, stat: Stat): Boolean {
-        val desired = deficientYieldValue(city.civ.gameInfo.ruleset.ai, stat) ?: return false
-        return roundTimes100(yieldAverage(city, stat)) < roundTimes100(desired.toDouble())
-    }
+    fun isYieldDeficient(city: City, stat: Stat): Boolean = isDeficient(city.civ.gameInfo.ruleset.ai, stat, workedTileYields(city))
 
     /** CvCityStrategyAI::GetDeficientYield: food first, then production, then the other yields in order; null if none */
     fun deficientYield(city: City): Stat? {
-        if (isYieldDeficient(city, Stat.Food)) return Stat.Food
-        if (isYieldDeficient(city, Stat.Production)) return Stat.Production
-        return Stat.entries.firstOrNull { isYieldDeficient(city, it) }
+        val rules = city.civ.gameInfo.ruleset.ai
+        val yields = workedTileYields(city)
+        if (isDeficient(rules, Stat.Food, yields)) return Stat.Food
+        if (isDeficient(rules, Stat.Production, yields)) return Stat.Production
+        return Stat.entries.firstOrNull { isDeficient(rules, it, yields) }
+    }
+
+    /** [deficientYield], once per city and turn for its two strategies */
+    private fun deficientYieldThisTurn(city: City): Stat? {
+        val cache = turnCache(city.civ)
+        synchronized(cache) {
+            if (city.id in cache.deficientYields) return cache.deficientYields[city.id]
+        }
+        val result = deficientYield(city)
+        synchronized(cache) { cache.deficientYields[city.id] = result }
+        return result
     }
 
     /** The stats of the city's buildings (the "Buildings" branch of its base stats) */
@@ -101,19 +162,31 @@ object CityStrategyAi {
         return experience
     }
 
+    private val removableFeatures = WeakHashMap<AiRuleset, Set<String>>()
+
     /** CvCity::IsFeatureSurrounded (DoUpdateFeatureSurrounded): at least half of the 25 places of the 5×5 square around the city - the
      *  original counts the square, though only the 19 tiles within 2 can hold a feature - have a removable feature */
-    private fun isFeatureSurrounded(city: City): Boolean {
+    private fun isFeatureSurrounded(city: City, removable: Set<String>): Boolean {
         var featured = 0
         city.getCenterTile().forEachTileInDistance(2) { tile ->
-            if (tile.terrainFeatureObjects.any { feature -> "${Constants.remove}${feature.name}" in tile.ruleset.tileImprovements })
-                featured++
+            if (tile.terrainFeatures.any { it in removable }) featured++
         }
         return featured >= 25 / 2
     }
 
-    /** CvPlayer::countCitiesFeatureSurrounded */
-    private fun countCitiesFeatureSurrounded(civ: Civilization): Int = civ.cities.count { isFeatureSurrounded(it) }
+    /** CvPlayer::countCitiesFeatureSurrounded, once per turn */
+    private fun countCitiesFeatureSurrounded(civ: Civilization): Int = turnCache(civ).run {
+        if (featureSurrounded < 0) {
+            val ruleset = civ.gameInfo.ruleset
+            val removable = synchronized(removableFeatures) {
+                removableFeatures.getOrPut(ruleset.ai) {
+                    ruleset.terrains.keys.filterTo(HashSet()) { "${Constants.remove}$it" in ruleset.tileImprovements }
+                }
+            }
+            featureSurrounded = civ.cities.count { isFeatureSurrounded(it, removable) }
+        }
+        featureSurrounded
+    }
 
     /** Tiles within 2 of the city owned by its owner */
     private fun countOwnedTilesWithin2(city: City, predicate: (Tile) -> Boolean): Int {
@@ -156,7 +229,7 @@ object CityStrategyAi {
     fun needTileImprovers(city: City, weightThreshold: Int): Boolean {
         val civ = city.civ
         val numCities = civ.cities.size
-        val numWorkers = UnitAiTypes.numUnitsWithUnitAi(civ, UnitAiType.WORKER, includeBeingTrained = true, includeWater = false)
+        val numWorkers = numLandWorkers(civ)
         if (civ.isCityState) {
             if (numWorkers >= numCities) return false
         } else {
@@ -176,7 +249,7 @@ object CityStrategyAi {
     fun wantTileImprovers(city: City, perCityThreshold: Int): Boolean {
         val civ = city.civ
         if (!civ.isCityState && WarStateAi.stateAllWars(civ) == StateAllWars.Losing) return false
-        val numWorkers = UnitAiTypes.numUnitsWithUnitAi(civ, UnitAiType.WORKER, includeBeingTrained = true, includeWater = false)
+        val numWorkers = numLandWorkers(civ)
         if (numWorkers >= civ.cities.size * 3 / 2 + 1) return false
         if (city.population.population < civ.gameInfo.ruleset.ai.define(AiDefine.AI_CITYSTRATEGY_WANT_TILE_IMPROVERS_MINIMUM_SIZE)) return false
         if (numWorkers < 1) return true
@@ -201,7 +274,7 @@ object CityStrategyAi {
         val manyUnimproved = 2 * (numResources - numImproved) > numResources
         var multiplier = civ.cities.size + countCitiesFeatureSurrounded(civ)
         if (manyUnimproved) multiplier += 1
-        multiplier += UnitAiTypes.numUnitsWithUnitAi(civ, UnitAiType.SETTLE, includeBeingTrained = true, includeWater = false)
+        multiplier += numSettlers(civ, includeWater = false)
         if (numWorkers * 100 < perCityThreshold * multiplier)
             return civ.stats.statsForNextTurn.gold > -10
         return false
@@ -210,7 +283,7 @@ object CityStrategyAi {
     fun enoughTileImprovers(city: City, perCityThreshold: Int): Boolean {
         val civ = city.civ
         if (city.ai.isCityStrategyActive(NEED_TILE_IMPROVERS)) return false
-        val numBuilders = UnitAiTypes.numUnitsWithUnitAi(civ, UnitAiType.WORKER, includeBeingTrained = true, includeWater = false)
+        val numBuilders = numLandWorkers(civ)
         if (civ.isCityState && numBuilders >= civ.cities.size) return true
         val moddedNumCities = civ.cities.size + countCitiesFeatureSurrounded(civ)
         return numBuilders * 100 >= perCityThreshold * moddedNumCities
@@ -233,14 +306,14 @@ object CityStrategyAi {
         var unimproved = 0
         for (tile in city.tilesInRange)
             if (tile.isWater && tile.getCity() == city && tile.resource != null && tile.improvement == null) unimproved++
-        return unimproved > UnitAiTypes.numUnitsWithUnitAi(city.civ, UnitAiType.WORKER_SEA, includeBeingTrained = true, includeWater = true)
+        return unimproved > numSeaWorkers(city.civ)
     }
 
     fun isCapitalNeedSettler(city: City, weightThreshold: Int): Boolean {
         if (!city.isCapital()) return false
         val civ = city.civ
         if (civ.isCityState) return false
-        val citiesPlusSettlers = civ.cities.size + UnitAiTypes.numUnitsWithUnitAi(civ, UnitAiType.SETTLE, includeBeingTrained = true, includeWater = true)
+        val citiesPlusSettlers = civ.cities.size + numSettlers(civ, includeWater = true)
         if (citiesPlusSettlers >= 3) return false
         val turn = civ.gameInfo.turns
         if (turn > 50 && city.ai.isCityStrategyActive(CAPITAL_UNDER_THREAT)) return false
@@ -278,12 +351,11 @@ object CityStrategyAi {
     fun isUnderBlockade(city: City): Boolean {
         val civ = city.civ
         val center = city.getCenterTile()
-        val enemyTiles = ArrayList<Tile>()
-        for (enemy in civ.getCivsAtWarWith())
-            for (unit in enemy.units.getCivUnits()) {
-                val tile = unit.currentTile
-                if (tile.isWater && unit.isMilitary() && tile.aerialDistanceTo(center) <= 5) enemyTiles.add(tile)
-            }
+        val cache = turnCache(civ)
+        val allEnemyTiles = cache.enemyNavalTiles ?: civ.getCivsAtWarWith().flatMap { enemy ->
+            enemy.units.getCivUnits().filter { it.isMilitary() && it.currentTile.isWater }.map { it.currentTile }.toList()
+        }.also { cache.enemyNavalTiles = it }
+        val enemyTiles = allEnemyTiles.filter { it.aerialDistanceTo(center) <= 5 }
         if (enemyTiles.isEmpty()) return false
         return city.tilesInRange.any { tile ->
             tile != center && tile.isWater && enemyTiles.any { it.aerialDistanceTo(tile) <= 2 }
@@ -366,8 +438,8 @@ object CityStrategyAi {
         }
         tests.registerCity(NEED_NAVAL_TILE_IMPROVEMENT) { city, _ -> needNavalTileImprovement(city) }
         tests.registerCity("AICITYSTRATEGY_ENOUGH_NAVAL_TILE_IMPROVEMENT") { city, _ -> !city.ai.isCityStrategyActive(NEED_NAVAL_TILE_IMPROVEMENT) }
-        tests.registerCity("AICITYSTRATEGY_NEED_IMPROVEMENT_FOOD") { city, _ -> deficientYield(city) == Stat.Food }
-        tests.registerCity("AICITYSTRATEGY_NEED_IMPROVEMENT_PRODUCTION") { city, _ -> deficientYield(city) == Stat.Production }
+        tests.registerCity("AICITYSTRATEGY_NEED_IMPROVEMENT_FOOD") { city, _ -> deficientYieldThisTurn(city) == Stat.Food }
+        tests.registerCity("AICITYSTRATEGY_NEED_IMPROVEMENT_PRODUCTION") { city, _ -> deficientYieldThisTurn(city) == Stat.Production }
         tests.registerCity("AICITYSTRATEGY_HAVE_TRAINING_FACILITY") { city, _ -> landFreeExperience(city) > 0 }
         tests.registerCity("AICITYSTRATEGY_CAPITAL_NEED_SETTLER") { city, def ->
             isCapitalNeedSettler(city, def.weightThreshold + city.civ.ai.weightThresholdModifier(def))
