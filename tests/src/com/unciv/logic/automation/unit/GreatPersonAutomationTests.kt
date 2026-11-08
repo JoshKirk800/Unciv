@@ -111,7 +111,7 @@ class GreatPersonAutomationTests {
     fun `a bulbing scientist is spent on the current research`() {
         civ.tech.techsToResearch.add("Pottery")
         val scientist = greatPerson("Great Scientist")
-        assertTrue(GreatPersonAutomation.automate(scientist) { false })
+        assertTrue(GreatPersonAutomation.automate(scientist))
         assertFalse("consumed", scientist in civ.units.getCivUnits())
         assertTrue("no academy built", city.getTiles().none { it.improvement == "Academy" })
     }
@@ -431,7 +431,7 @@ class GreatPersonAutomationTests {
         for (neighbor in target.neighbors) game.setTileTerrain(neighbor.position, "Ocean") // no embarking without Optics
         val musician = greatPerson("Great Musician")
         musician.greatPersonTarget = target.position
-        assertTrue(GreatPersonAutomation.automate(musician) { false })
+        assertTrue(GreatPersonAutomation.automate(musician))
         assertNull("no reachable tour target: the operation ends", musician.greatPersonTarget)
         assertEquals(city.getCenterTile(), musician.currentTile)
     }

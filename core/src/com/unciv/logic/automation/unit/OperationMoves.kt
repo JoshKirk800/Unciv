@@ -104,13 +104,12 @@ object OperationMoves {
 
         // Moving to the target
         if (civilian.getTile() == target) return // CheckOnTarget founds the city
-        val view = GameView(civ.gameInfo, civ).getMapUnitView(civilian)
-        if (CivilianUnitAutomation.tryRunAwayIfNeccessary(view, cache)) { cache.processedUnits.add(civilian); return }
+        if (civilian.getTile().militaryUnit?.civ != civ && CivilianSafety.fleeIfThreatened(civilian)) { cache.processedUnits.add(civilian); return }
         val path = civilian.movement.getShortestPath(target)
         if (path.isEmpty()) { retargetAndFinish(civ, operation, army, civilian, escort); return }
         val next = path.first()
         if (escort == null) {
-            civilian.movement.headTowards(target)
+            CivilianSafety.headTowardsAvoidingDanger(civilian, target)
             cache.processedUnits.add(civilian)
             return
         }

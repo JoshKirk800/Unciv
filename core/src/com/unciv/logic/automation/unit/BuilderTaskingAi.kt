@@ -207,12 +207,12 @@ class BuilderTaskingAi(val civ: Civilization) {
      *  plots outside our territory, the first one in weight order that [unit] can reach. Null if there is none.
      *  The "already building" bail-out of the original is the caller's ([WorkerAutomation.automateWorkerAction]).
      */
-    fun evaluateBuilder(unit: MapUnit, isDangerous: (Tile) -> Boolean): BuilderDirective? = timeThis("AI.EvaluateBuilder") {
+    fun evaluateBuilder(unit: MapUnit): BuilderDirective? = timeThis("AI.EvaluateBuilder") {
         if (civ.cities.size != numCities) update()
         val builds = BuilderBuilds(unit)
         val directives = ArrayList<BuilderDirective>()
         for (city in civ.cities) for (tile in city.getTiles()) {
-            if (!shouldBuilderConsiderPlot(unit, tile, isDangerous)) continue
+            if (!shouldBuilderConsiderPlot(unit, tile)) continue
             val turnsAway = findTurnsAway(unit, tile)
             if (turnsAway < 0) continue
             addRouteDirectives(unit, builds, tile, turnsAway, directives)
@@ -222,7 +222,7 @@ class BuilderTaskingAi(val civ: Civilization) {
             addScrubFalloutDirectives(unit, builds, tile, turnsAway, directives)
         }
         for (tile in nonTerritoryPlots) {
-            if (!shouldBuilderConsiderPlot(unit, tile, isDangerous)) continue
+            if (!shouldBuilderConsiderPlot(unit, tile)) continue
             val turnsAway = findTurnsAway(unit, tile)
             if (turnsAway < 0) continue
             addRouteDirectives(unit, builds, tile, turnsAway, directives)
@@ -239,9 +239,9 @@ class BuilderTaskingAi(val civ: Civilization) {
 
     /**
      *  CvBuilderTaskingAI::ShouldBuilderConsiderPlot: not impassable, not owned by another major, in the builder's domain, on its landmass
-     *  unless it can embark, not targeted by another builder, not dangerous, and with no other civilian of ours on it.
+     *  unless it can embark, not targeted by another builder, without plot danger, and with no other civilian of ours on it.
      */
-    private fun shouldBuilderConsiderPlot(unit: MapUnit, tile: Tile, isDangerous: (Tile) -> Boolean): Boolean {
+    private fun shouldBuilderConsiderPlot(unit: MapUnit, tile: Tile): Boolean {
         if (tile.isImpassible() || tile.getBaseTerrain().impassable) return false
         val owner = tile.getOwner()
         if (owner != null && owner != civ && !owner.isCityState) return false
@@ -253,7 +253,7 @@ class BuilderTaskingAi(val civ: Civilization) {
         if (!atPlot && tile in claimedTiles) return false
         val otherCivilian = tile.civilianUnit
         if (!atPlot && otherCivilian != null) return false  // another builder works here, or the plot is full (PLOT_UNIT_LIMIT)
-        if (isDangerous(tile)) return false
+        if (civ.ai.plotDanger.get(tile) > 0) return false
         return true
     }
 

@@ -14,7 +14,6 @@ import com.unciv.models.UnitActionType
 import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.view.MapUnitView
-import com.unciv.view.TileView
 
 /**
  *  Where and when AI settlers go: CvHomelandAI::PlotFirstTurnSettlerMoves and the launch of the found-city operations of
@@ -25,7 +24,7 @@ import com.unciv.view.TileView
  */
 object SettlerAutomation {
 
-    fun automateSettler(unitView: MapUnitView, dangerousTiles: HashSet<TileView>, cache: AutomationCache) = timeThis("AI.Settler") {
+    fun automateSettler(unitView: MapUnitView, cache: AutomationCache) = timeThis("AI.Settler") {
         val unit = unitView.getUnit()
         val civ = unit.civ
 

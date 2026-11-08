@@ -124,33 +124,6 @@ object ThreatManager {
     }
 
     /**
-     * Returns all enemy military units on tiles
-     */
-    @Readonly
-    fun getEnemyUnitsOnTiles(civ: CivView, tilesWithEnemyUnitsInDistance: List<TileView>): List<ForeignMapUnitView> =
-        tilesWithEnemyUnitsInDistance.flatMap { enemyTile -> enemyTile.getVisibleUnits()
-            .filter { it.isMilitary() && civ.isAtWarWith(it.civ()) } }
-
-    @Readonly
-    fun getDangerousTiles(cache: AutomationCache, unitView: MapUnitView, distance: Int = 3): HashSet<TileView> {
-        val civ = unitView.civ()
-        val tilesWithEnemyUnits = getTilesWithEnemyUnitsInDistance(civ, cache, unitView.getTile(), distance)
-        val nearbyRangedEnemyUnits = getEnemyUnitsOnTiles(civ, tilesWithEnemyUnits)
-
-        val tilesInRangeOfAttack = nearbyRangedEnemyUnits
-            .flatMap { it.getTile().getExploredTilesInDistance(it.getRange()) }
-
-        val tilesWithinBombardmentRange = tilesWithEnemyUnits
-            .filter { it.isCityCenter() && it.getCity()!!.owningCiv().isAtWarWith(civ) }
-            .flatMap { it.getExploredTilesInDistance(it.getCity()!!.getBombardRange()) }
-
-        val tilesWithTerrainDamage = unitView.getTile().getExploredTilesInDistance(distance)
-            .filter { unitView.getDamageFromTerrain(it) > 0 }
-
-        return (tilesInRangeOfAttack + tilesWithinBombardmentRange + tilesWithTerrainDamage).toHashSet()
-    }
-
-    /**
      * Returns true if the tile has a visible enemy, otherwise returns false.
      */
     @Readonly

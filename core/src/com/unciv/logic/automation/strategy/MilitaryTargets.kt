@@ -306,20 +306,4 @@ object MilitaryTargets {
         }
         return best
     }
-
-    /**
-     *  CvMilitaryAI::GetMostThreatenedCity(order): the city with the highest threat value (the danger of its tile, CvCity::getThreatValue)
-     *  times its population, x AI_MILITARY_CITY_THREAT_WEIGHT_CAPITAL % for the capital; null if no city has a threat. [order] 0 = the
-     *  most threatened, 1 the second most, ...
-     */
-    fun mostThreatenedCity(civ: Civilization, order: Int = 0): City? {
-        val rules = civ.gameInfo.ruleset.ai
-        val danger = civ.ai.plotDanger
-        val ranked = civ.cities.map { city ->
-            var threat = danger.cityThreat(city) * city.population.population
-            if (city.isCapital()) threat = threat * rules.define(AiDefine.AI_MILITARY_CITY_THREAT_WEIGHT_CAPITAL) / 100
-            city to threat
-        }.filter { it.second > 0 }.sortedByDescending { it.second }
-        return ranked.getOrNull(order)?.first
-    }
 }

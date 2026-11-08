@@ -12,6 +12,7 @@ import com.unciv.logic.map.tile.Tile
 import com.unciv.models.UnitActionType
 import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.ai.DiplomacyPersonality
+import com.unciv.logic.automation.unit.tactical.CityThreat
 import com.unciv.logic.automation.unit.tactical.TacticalTargetType
 import com.unciv.view.GameView
 import kotlin.math.max
@@ -226,7 +227,7 @@ object AiOperationLogic {
 
     /** CvAIOperationCityCloseDefense/RapidResponse::FindBestTarget: the most threatened city, else our city nearest the enemy capital */
     private fun findDefenseTarget(civ: Civilization, operation: AiOperation): Tile? {
-        MilitaryTargets.mostThreatenedCity(civ)?.let { return it.getCenterTile() }
+        CityThreat.mostThreatenedCity(civ)?.let { return it.getCenterTile() }
         val enemy = enemy(civ, operation) ?: return null
         val enemyCapital = enemy.getCapital() ?: return null
         return civ.cities.minByOrNull { it.getCenterTile().aerialDistanceTo(enemyCapital.getCenterTile()) }?.getCenterTile()

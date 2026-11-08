@@ -196,7 +196,7 @@ class BuilderTaskingAiTest {
         val (capital, other) = twoCities(10)
         val worker = capital.getCenterTile().civilianUnit!!
         val ai = BuilderTaskingAi(civ)
-        val directive = ai.evaluateBuilder(worker) { false }
+        val directive = ai.evaluateBuilder(worker)
         assertNotNull(directive)
         directive!!
         assertEquals(BuilderDirective.Type.BuildRoute, directive.type)

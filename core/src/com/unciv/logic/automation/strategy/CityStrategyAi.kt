@@ -12,6 +12,7 @@ import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.models.stats.Stat
 import com.unciv.models.stats.Stats
+import com.unciv.logic.automation.unit.tactical.CityThreat
 import java.util.WeakHashMap
 import kotlin.math.floor
 
@@ -19,8 +20,8 @@ import kotlin.math.floor
  *  The city strategy tests (CvCityStrategyAI.cpp: CityStrategyAIHelpers::IsTestCityStrategy_*) and the helpers of CvCityStrategyAI that
  *  other ports read (IsYieldDeficient). ReweightByTurnsLeft is [WonderProductionAi.reweightByTurnsLeft], GetNumUnitsWithUnitAI [UnitAiTypes].
  *
- *  Not registered here: the trade and espionage city strategies (registered by their own port) and AICITYSTRATEGY_CAPITAL_UNDER_THREAT,
- *  which reads CvCity::getThreatValue - the CvDangerPlots danger map of the unit-level AI, which is not ported - so it is never active.
+ *  Not registered here: the trade and espionage city strategies (registered by their own port). AICITYSTRATEGY_CAPITAL_UNDER_THREAT
+ *  reads CvCity::getThreatValue, the danger map's [com.unciv.logic.automation.unit.PlotDanger.cityThreat] ([CityThreat]).
  */
 object CityStrategyAi {
     private const val NEED_TILE_IMPROVERS = "AICITYSTRATEGY_NEED_TILE_IMPROVERS"
@@ -464,5 +465,6 @@ object CityStrategyAi {
         tests.registerCity("AICITYSTRATEGY_NEED_CULTURE_BUILDING") { city, _ -> needCultureBuilding(city) }
         tests.registerCity("AICITYSTRATEGY_NEED_TOURISM_BUILDING") { city, _ -> needTourismBuilding(city) }
         tests.registerCity("AICITYSTRATEGY_GOOD_AIRLIFT_CITY") { city, _ -> isGoodAirliftCity(city) }
+        tests.registerCity(CAPITAL_UNDER_THREAT) { city, _ -> CityThreat.isCapitalUnderThreat(city) }
     }
 }
