@@ -240,8 +240,9 @@ class ReligionManager : IsPartOfGameInfoSerialization {
         }
     }
 
+    /** The most religions this game can have (the original's CvWorldInfo::getMaxActiveReligions) */
     @Readonly
-    private fun maxNumberOfReligions(): Int {
+    fun maxNumberOfReligions(): Int {
         val gameInfo = civInfo.gameInfo
         val ruleset = gameInfo.ruleset
         val multiplier = ruleset.modOptions.constants.religionLimitMultiplier

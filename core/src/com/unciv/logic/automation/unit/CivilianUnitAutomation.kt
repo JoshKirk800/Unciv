@@ -73,24 +73,15 @@ object CivilianUnitAutomation {
             return
         }
 
-        if (unit.hasUnique(UniqueType.MayFoundReligion)
-            && mapUnit.civ.religionManager.religionState < ReligionState.Religion
-            && mapUnit.civ.religionManager.mayFoundReligionAtAll()
-        )
-            return ReligiousUnitAutomation.foundReligion(unit)
-        
-        if (unit.hasUnique(UniqueType.MayFoundReligion) && unit.civ().isCityState){
-            // We have literally nothing to do with this unit, at least stop costing money
-            unit.tryDisband()
-            return 
+        if (unit.hasUnique(UniqueType.MayFoundReligion) || unit.hasUnique(UniqueType.MayEnhanceReligion)) {
+            if (unit.civ().isCityState) {
+                // We have literally nothing to do with this unit, at least stop costing money
+                unit.tryDisband()
+                return
+            }
+            // false: the directive is to build the Holy Site, which the improvement placer below does
+            if (ReligiousUnitAutomation.automateGreatProphet(unit)) return
         }
-            
-
-        if (unit.hasUnique(UniqueType.MayEnhanceReligion)
-            && mapUnit.civ.religionManager.religionState < ReligionState.EnhancedReligion
-            && mapUnit.civ.religionManager.mayEnhanceReligionAtAll()
-        )
-            return ReligiousUnitAutomation.enhanceReligion(unit)
 
         // We try to add any unit in the capital we can, though that might not always be desirable
         // For now its a simple option to allow AI to win a science victory again
@@ -105,7 +96,8 @@ object CivilianUnitAutomation {
         if (unit.hasCitadelPlacementUnique() && SpecificUnitAutomation.automateCitadelPlacer(unit))
             return
 
-        if (mapUnit.civ.religionManager.maySpreadReligionAtAll(mapUnit))
+        // A Great Prophet here has the directive to build the Holy Site, not to spread
+        if (!mapUnit.baseUnit.isGreatPerson && mapUnit.civ.religionManager.maySpreadReligionAtAll(mapUnit))
             return ReligiousUnitAutomation.automateMissionary(unit)
 
         if (unit.hasUnique(UniqueType.PreventSpreadingReligion) || unit.hasUnique(UniqueType.CanRemoveHeresy))
