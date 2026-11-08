@@ -236,6 +236,18 @@ class EconomicMilitaryAiTests {
     }
 
     @Test
+    fun `an army being built for a sneak or city-state attack turns war mobilization on for good`() {
+        val civ = neutralCiv()
+        game.addCiv()
+        val threshold = militaryDef(EconomicMilitaryStrategyTests.WAR_MOBILIZATION).weightThreshold
+        assertTrue(EconomicMilitaryStrategyTests.warMobilizationWeight(civ) < threshold)
+        civ.ai.military.requestArmy(bySea = false)
+        assertTrue(EconomicMilitaryStrategyTests.warMobilizationWeight(civ) >= threshold)
+        civ.ai.military.numLandAttacksRequested = 0
+        assertTrue("the original never clears the army type", EconomicMilitaryStrategyTests.warMobilizationWeight(civ) >= threshold)
+    }
+
+    @Test
     fun `barbarian camps near our cities make eradication worthwhile unless a war is being prepared`() {
         val civ = neutralCiv()
         civ.ai.setPersonalityFlavor(Flavor.Offense, 5)
