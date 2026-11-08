@@ -5,6 +5,7 @@ import com.unciv.Constants
 import com.unciv.UncivGame
 import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.MultiFilter
+import com.unciv.logic.automation.unit.GreatPeopleDirective
 import com.unciv.logic.automation.unit.UnitAutomation
 import com.unciv.logic.battle.BattleUnitCapture
 import com.unciv.logic.battle.MapUnitCombatant
@@ -93,6 +94,17 @@ class MapUnit : IsPartOfGameInfoSerialization {
 
     var religion: String? = null
     var religiousStrengthLost = 0
+
+    /** The game turn this unit was created (CvUnit::getGameTurnCreated); 0 for units of saves made before it was kept */
+    var turnCreated = 0
+
+    /** AI: where this Great Person's trade mission or concert tour goes once started (the target plot of the original's
+     *  MERCHANT_DELEGATION / CONCERT_TOUR operation), null if none */
+    var greatPersonTarget: HexCoord? = null
+
+    /** AI: this Great Person's directive of its last move (CvUnit::GetGreatPeopleDirective), read by the economic strategy tests */
+    @Transient
+    var greatPeopleDirective: GreatPeopleDirective? = null
 
     /** FIFO list of this unit's past positions. Should never exceed two items in length. New item added once at end of turn and once at start, to allow rare between-turn movements like melee withdrawal to be distinguished. Used in movement arrow overlay. */
     var movementMemories = ArrayList<UnitMovementMemory>()
@@ -241,6 +253,8 @@ class MapUnit : IsPartOfGameInfoSerialization {
         toReturn.abilityToTimesUsed = HashMap(abilityToTimesUsed)
         toReturn.religion = religion
         toReturn.religiousStrengthLost = religiousStrengthLost
+        toReturn.turnCreated = turnCreated
+        toReturn.greatPersonTarget = greatPersonTarget
         toReturn.movementMemories = movementMemories.copy()
         val newStatusMap = HashMap<String, UnitStatus>((statusMap.size * 4 + 2) / 3)
         for ((name, status) in statusMap) {

@@ -134,6 +134,7 @@ class BaseUnit : RulesetObject(), INonPerpetualConstruction {
         unit.civ = civInfo
         unit.owner = civInfo.civID
         unit.id = unitId ?: civInfo.gameInfo.getNextUnitId()
+        unit.turnCreated = civInfo.gameInfo.turns
 
         // must be after setting name & civInfo because it sets the baseUnit according to the name
         // and the civInfo is required for using `hasUnique` when determining its movement options

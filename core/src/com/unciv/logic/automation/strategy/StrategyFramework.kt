@@ -22,6 +22,7 @@ object StrategyTests {
 
     init {
         GrandStrategyAi.registerStrategyTests(this)
+        GreatPeopleStrategyTests.registerAll(this)
     }
 
     /** Registers the test of an economic or military strategy: returns whether [Civilization] should be using it */

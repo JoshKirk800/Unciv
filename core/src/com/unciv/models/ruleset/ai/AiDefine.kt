@@ -94,6 +94,7 @@ enum class AiDefine(val default: Float) {
     AI_PRODUCTION_WEIGHT_BASE_MOD(0.15f),
     AI_PRODUCTION_WEIGHT_MOD_PER_TURN_LEFT(0.015f),
 
-    // CvPlayerAI Great People directives (GreatPersonAi)
+    // CvPlayerAI Great People directives (GreatPersonAutomation)
     AI_HOMELAND_GREAT_PERSON_TURNS_TO_WAIT(10f),
+    AI_TACTICAL_RECRUIT_RANGE(8f),
 }

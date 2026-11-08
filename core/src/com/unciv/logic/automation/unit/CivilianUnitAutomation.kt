@@ -97,12 +97,14 @@ object CivilianUnitAutomation {
         if (unit.hasUnique(UniqueType.AddInCapital))
             return SpecificUnitAutomation.automateAddInCapital(unit)
 
-        //todo this now supports "Great General"-like mod units not combining 'aura' and citadel
-        // abilities, but not additional capabilities if automation finds no use for those two
-        if (unit.hasStrengthBonusInRadiusUnique()
+        // Great People but Prophets: the directives of CvPlayerAI and the moves of CvHomelandAI. A general near a visible enemy is the
+        // tactical AI's (CvTacticalAI::CommandeerUnits), for which following our troops stands in
+        val greatPersonRole = GreatPersonAutomation.roleOf(mapUnit.baseUnit, mapUnit.civ.gameInfo.ruleset)
+        if (greatPersonRole == GreatPersonRole.General && GreatPersonAutomation.isNearVisibleEnemy(mapUnit)
             && SpecificUnitAutomation.automateGreatGeneral(unit))
             return
-        if (unit.hasCitadelPlacementUnique() && SpecificUnitAutomation.automateCitadelPlacer(unit))
+        if (greatPersonRole != null && greatPersonRole != GreatPersonRole.Prophet
+            && GreatPersonAutomation.automate(mapUnit) { unit.getTile().getTileMap().getTile(it) in dangerousTiles })
             return
 
         if (mapUnit.civ.religionManager.maySpreadReligionAtAll(mapUnit))
@@ -110,46 +112,6 @@ object CivilianUnitAutomation {
 
         if (unit.hasUnique(UniqueType.PreventSpreadingReligion) || unit.hasUnique(UniqueType.CanRemoveHeresy))
             return ReligiousUnitAutomation.automateInquisitor(unit)
-
-        if (mapUnit.hasUnique(UniqueType.OneTimeCreateGreatWork) && GreatWorkAutomation.automate(mapUnit))
-            return
-        if (mapUnit.hasUnique(UniqueType.OneTimeConcertTour) && ConcertTourAutomation.automate(mapUnit))
-            return
-
-        val isLateGame = isLateGame(unit.civ())
-        // Great scientist -> Hurry research if late game
-        // Great writer -> Hurry policy  if late game
-        if (isLateGame) {
-            val hurriedResearch = unit.tryInvokeUnitAction(UnitActionType.HurryResearch)
-            if (hurriedResearch) return
-
-            val hurriedPolicy = unit.tryInvokeUnitAction(UnitActionType.HurryPolicy)
-            if (hurriedPolicy) return
-            //TODO: save up great scientists/writers for late game (8 turns after research labs/broadcast towers resp.)
-        }
-
-        // Great merchant -> Conduct trade mission if late game and if not at war.
-        // TODO: This could be more complex to walk to the city state that is most beneficial to
-        //  also have more influence.
-        if (unit.hasUnique(UniqueType.CanTradeWithCityStateForGoldAndInfluence)
-            // There's a risk our merchant gets intercepted and killed by the enemy during war.
-            // If such happens, it is a failure of our military unit movement to protect our merchant.
-            // Barbs might also be a problem, but hopefully by the time we have a great merchant, they're under control.
-            && isLateGame
-        ) {
-            val tradeMissionCanBeConductedEventually =
-                SpecificUnitAutomation.conductTradeMission(unit)
-            if (tradeMissionCanBeConductedEventually)
-                return
-        }
-
-        // Great engineer -> Try to speed up wonder construction
-        if (unit.hasUnique(UniqueType.CanSpeedupConstruction)
-                || unit.hasUnique(UniqueType.CanSpeedupWonderConstruction)) {
-            val wonderCanBeSpedUpEventually = SpecificUnitAutomation.speedupWonderConstruction(mapUnit)
-            if (wonderCanBeSpedUpEventually)
-                return
-        }
 
         if (unit.hasUnique(UniqueType.GainFreeBuildings)) {
             val unique = mapUnit.getMatchingUniques(UniqueType.GainFreeBuildings).first()
@@ -174,10 +136,6 @@ object CivilianUnitAutomation {
             }
             return
         }
-
-        // TODO: The AI tends to have a lot of great generals. Maybe there should be a cutoff
-        //  (depending on number of cities) and after that they should just be used to start golden
-        //  ages?
 
         if (SpecificUnitAutomation.automateImprovementPlacer(mapUnit)) return
         
