@@ -101,70 +101,77 @@ object DisputeAi {
         }
     }
 
-    /** CvDiplomacyAI::DoUpdateOnePlayerMilitaryAggressivePosture: their visible combat units on our home front (10 each, 5 in their own land) */
+    /** CvDiplomacyAI::DoUpdateMilitaryAggressivePostures for every player in [others] */
     fun updateMilitaryPostures(civ: Civilization, others: List<Civilization>, rules: AiRuleset) {
+        for (other in others) updateMilitaryPosture(civ, other, rules)
+    }
+
+    /**
+     *  CvDiplomacyAI::DoUpdateOnePlayerMilitaryAggressivePosture: their visible combat units (CvUnit::IsCombatUnit: a melee strength, so no aircraft)
+     *  on our home front, 10 each and 5 in their own land. The original's test for units near someone they are at war with ends in a
+     *  `continue` of the innermost loop, so it excludes nothing: those units count too.
+     */
+    fun updateMilitaryPosture(civ: Civilization, other: Civilization, rules: AiRuleset) {
         val range = rules.define(AiDefine.AI_DIPLO_PLOT_RANGE_FROM_CITY_HOME_FRONT)
-        for (other in others) {
-            val memory = civ.ai.diplomacy.memoryOf(other)
-            memory.lastTurnMilitaryPosture = memory.militaryPosture
-            val theirEnemies = other.getCivsAtWarWith().filter { it != civ && it.isAlive() }
-            var value = 0
-            for (unit in other.units.getCivUnits()) {
-                if (!unit.isMilitary()) continue
-                val tile = unit.getTile()
-                if (!tile.isVisible(civ) || !WarStateAi.isHomeFrontFor(tile, civ, range)) continue
-                // Near someone they are at war with: not aimed at us
-                if (theirEnemies.any { WarStateAi.isHomeFrontFor(tile, it, range) }) continue
-                value += if (tile.getOwner() == other) 5 else 10
-            }
-            memory.militaryPosture = when {
-                value >= rules.define(AiDefine.MILITARY_AGGRESSIVE_POSTURE_THRESHOLD_INCREDIBLE) -> AggressivePosture.Incredible
-                value >= rules.define(AiDefine.MILITARY_AGGRESSIVE_POSTURE_THRESHOLD_HIGH) -> AggressivePosture.High
-                value >= rules.define(AiDefine.MILITARY_AGGRESSIVE_POSTURE_THRESHOLD_MEDIUM) -> AggressivePosture.Medium
-                value >= rules.define(AiDefine.MILITARY_AGGRESSIVE_POSTURE_THRESHOLD_LOW) -> AggressivePosture.Low
-                else -> AggressivePosture.None
-            }
+        val memory = civ.ai.diplomacy.memoryOf(other)
+        memory.lastTurnMilitaryPosture = memory.militaryPosture
+        var value = 0
+        for (unit in other.units.getCivUnits()) {
+            if (!unit.isMilitary() || unit.baseUnit.isAirUnit()) continue
+            val tile = unit.getTile()
+            if (!tile.isVisible(civ) || !WarStateAi.isHomeFrontFor(tile, civ, range)) continue
+            value += if (tile.getOwner() == other) 5 else 10
         }
+        memory.militaryPosture = when {
+            value >= rules.define(AiDefine.MILITARY_AGGRESSIVE_POSTURE_THRESHOLD_INCREDIBLE) -> AggressivePosture.Incredible
+            value >= rules.define(AiDefine.MILITARY_AGGRESSIVE_POSTURE_THRESHOLD_HIGH) -> AggressivePosture.High
+            value >= rules.define(AiDefine.MILITARY_AGGRESSIVE_POSTURE_THRESHOLD_MEDIUM) -> AggressivePosture.Medium
+            value >= rules.define(AiDefine.MILITARY_AGGRESSIVE_POSTURE_THRESHOLD_LOW) -> AggressivePosture.Low
+            else -> AggressivePosture.None
+        }
+    }
+
+    /** CvDiplomacyAI::DoUpdateExpansionAggressivePostures for every player in [others] */
+    fun updateExpansionPostures(civ: Civilization, others: List<Civilization>, rules: AiRuleset) {
+        for (other in others) updateExpansionPosture(civ, other, rules)
     }
 
     /**
      *  CvDiplomacyAI::DoUpdateOnePlayerExpansionAggressivePosture: their most aggressive self-founded city (not the capital) by its
      *  distance to our capital; several cities tied at Medium or High bump the level by one.
      */
-    fun updateExpansionPostures(civ: Civilization, others: List<Civilization>, rules: AiRuleset) {
+    fun updateExpansionPosture(civ: Civilization, other: Civilization, rules: AiRuleset) {
         val ourCapital = civ.getCapital(firstCityIfNoCapital = false)?.getCenterTile() ?: return
-        for (other in others) {
-            // Irrelevant if we can't declare war on them
-            if (!civ.isAtWarWith(other) && civ.getDiplomacyManager(other)?.canDeclareWar() != true) continue
-            val theirCapital = other.getCapital(firstCityIfNoCapital = false)?.getCenterTile() ?: continue
-            val capitalsDistance = theirCapital.aerialDistanceTo(ourCapital)
-            var most = AggressivePosture.None
-            var numMost = 0
-            for (city in other.cities) {
-                if (city.isCapital() || city.foundingCivObject != other) continue
-                val tile = city.getCenterTile()
-                val toUs = ourCapital.aerialDistanceTo(tile)
-                val toTheirCapital = theirCapital.aerialDistanceTo(tile)
-                var posture = when {
-                    toUs <= rules.define(AiDefine.EXPANSION_CAPITAL_DISTANCE_AGGRESSIVE_POSTURE_HIGH) -> AggressivePosture.High
-                    toUs <= rules.define(AiDefine.EXPANSION_CAPITAL_DISTANCE_AGGRESSIVE_POSTURE_MEDIUM) -> AggressivePosture.Medium
-                    toUs <= rules.define(AiDefine.EXPANSION_CAPITAL_DISTANCE_AGGRESSIVE_POSTURE_LOW) -> AggressivePosture.Low
-                    else -> AggressivePosture.None
-                }
-                // Closer to our capital than to theirs: at least medium
-                if (posture == AggressivePosture.Low && toUs < toTheirCapital) posture = AggressivePosture.Medium
-                // Farther from their capital than our capitals are apart: incredible
-                if (posture >= AggressivePosture.Medium && capitalsDistance < toTheirCapital) posture = AggressivePosture.Incredible
-                if (posture == most) numMost++
-                else if (posture > most) {
-                    most = posture
-                    numMost = 0
-                }
-                if (most == AggressivePosture.Incredible) break
+        // Irrelevant if we can't declare war on them
+        if (!civ.isAtWarWith(other) && civ.getDiplomacyManager(other)?.canDeclareWar() != true) return
+        val theirCapital = other.getCapital(firstCityIfNoCapital = false)?.getCenterTile() ?: return
+        val capitalsDistance = theirCapital.aerialDistanceTo(ourCapital)
+        var most = AggressivePosture.None
+        var numMost = 0
+        for (city in other.cities) {
+            if (city.isCapital() || city.foundingCivObject != other) continue
+            val tile = city.getCenterTile()
+            val toUs = ourCapital.aerialDistanceTo(tile)
+            val toTheirCapital = theirCapital.aerialDistanceTo(tile)
+            var posture = when {
+                toUs <= rules.define(AiDefine.EXPANSION_CAPITAL_DISTANCE_AGGRESSIVE_POSTURE_HIGH) -> AggressivePosture.High
+                toUs <= rules.define(AiDefine.EXPANSION_CAPITAL_DISTANCE_AGGRESSIVE_POSTURE_MEDIUM) -> AggressivePosture.Medium
+                toUs <= rules.define(AiDefine.EXPANSION_CAPITAL_DISTANCE_AGGRESSIVE_POSTURE_LOW) -> AggressivePosture.Low
+                else -> AggressivePosture.None
             }
-            if (numMost > 1 && most > AggressivePosture.Low && most < AggressivePosture.Incredible) most = AggressivePosture.entries[most.ordinal + 1]
-            civ.ai.diplomacy.memoryOf(other).expansionPosture = most
+            // Closer to our capital than to theirs: at least medium
+            if (posture == AggressivePosture.Low && toUs < toTheirCapital) posture = AggressivePosture.Medium
+            // Farther from their capital than our capitals are apart: incredible
+            if (posture >= AggressivePosture.Medium && capitalsDistance < toTheirCapital) posture = AggressivePosture.Incredible
+            if (posture == most) numMost++
+            else if (posture > most) {
+                most = posture
+                numMost = 0
+            }
+            if (most == AggressivePosture.Incredible) break
         }
+        if (numMost > 1 && most > AggressivePosture.Low && most < AggressivePosture.Incredible) most = AggressivePosture.entries[most.ordinal + 1]
+        civ.ai.diplomacy.memoryOf(other).expansionPosture = most
     }
 
     /** CvDiplomacyAI::DoUpdatePlotBuyingAggressivePosture: tiles they bought within 3 tiles of our cities */

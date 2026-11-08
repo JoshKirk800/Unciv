@@ -16,13 +16,20 @@ object DiplomacyEvents {
 
     //region Contact
 
-    /** CvDiplomacyAI::DoFirstContact / DoFirstContactInitRelationship: [civ] met [other] */
+    /**
+     *  CvDiplomacyAI::DoFirstContact / DoFirstContactInitRelationship: [civ] met [other]. Strengths, aggressive postures and the target value
+     *  are assessed first, so the opinion and the first approach are chosen with them known.
+     */
     fun onMeet(civ: Civilization, other: Civilization) {
         if (!civ.isMajorCiv || other.isSpectator) return
         val memory = civ.ai.diplomacy.memoryOf(other)
         memory.turnMet = civ.gameInfo.turns
         if (!other.isMajorCiv || other.cities.isEmpty() || civ.cities.isEmpty()) return
         val rules = civ.gameInfo.ruleset.ai
+        WarStateAi.updateOnContact(civ, other)
+        DiplomacyTurn.updateEconomicStrength(civ, other, WarStateAi.economicMight(civ), rules)
+        DisputeAi.updateMilitaryPosture(civ, other, rules)
+        DisputeAi.updateExpansionPosture(civ, other, rules)
         OpinionAi.updateOpinion(civ, other, rules)
         ApproachAi.initApproach(civ, other, rules)
     }
@@ -131,7 +138,7 @@ object DiplomacyEvents {
         if (value <= 0) return
         for (third in loser.gameInfo.civilizations) {
             if (!third.isMajorCiv || third == winner || third == loser || !WarStateAi.isPlayerValid(loser, third)) continue
-            if (loser.isAtWarWith(third)) third.ai.diplomacy.memoryOf(winner).commonFoeValue += value
+            if (loser.isAtWarWith(third)) third.ai.diplomacy.changeCommonFoeValue(winner, value)
         }
     }
 

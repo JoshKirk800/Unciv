@@ -27,6 +27,8 @@ import com.unciv.logic.trade.TradeLogic
 import com.unciv.logic.trade.TradeOffer
 import com.unciv.logic.trade.TradeOfferType
 import com.unciv.logic.trade.TradeRequest
+import com.unciv.logic.trade.Trade
+import com.unciv.logic.trade.TradeEvaluation
 import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.ai.AiRuleset
 import com.unciv.models.ruleset.ai.DiplomacyPersonality
@@ -395,25 +397,48 @@ object DiplomacyAutomation {
         }
     }
 
-    /** CvDiplomacyAI::DoMakeDemand with CvDealAI::IsMakeDemand: tribute in gold (at most 200 + 150 × their era); AIs always give in */
+    /**
+     *  CvDiplomacyAI::DoMakeDemand with CvDealAI::IsMakeDemand: tribute in gold (at most 200 + 150 × their era), a demand only if the gold
+     *  can be traded at all: CvDeal::IsPossibleToTradeItem allows lump gold only between civilizations with a mutual Declaration of
+     *  Friendship ([TradeEvaluation.hasMutualDeclarationOfFriendship]), so no demand is made on anyone the AI is not friends with.
+     *  An AI always gives in (CvDiplomacyAI::DoSendStatementToPlayer); a human gets a trade request that is a demand
+     *  ([TradeRequest.isDemand]) and answers it on the trade popup, a refusal ending in [onHumanRefusedDemand]. Nothing is stood down here:
+     *  the Demand statement makes the target unattractive for 40 turns, so the next [updateDemands] ends the process
+     *  (DoCancelHaltDemandProcess) and with it the show of force; without a demand the process runs while the approach stays hostile.
+     */
     private fun doMakeDemand(civ: Civilization, other: Civilization, rules: AiRuleset): Boolean {
         val ai = civ.ai.diplomacy
         if (ai.demandTarget != other.civID || !ai.demandReady) return false
-        if (other.isHuman()) return false  // the tribute demand to humans has no Unciv counterpart
+        if (!TradeEvaluation.hasMutualDeclarationOfFriendship(civ, other)) return false
         val gold = minOf(other.gold, 200 + other.getEraNumber() * 150)
         if (gold <= 0) return false
         if (turnsSinceStatement(civ, ai.memoryOf(other), DiploStatement.Demand) < 40) return false
+        val tribute = TradeOffer(Constants.flatGold, TradeOfferType.Gold, gold, civ.gameInfo.speed)
+        if (other.isHuman()) {
+            if (other.tradeRequests.any { it.requestingCiv == civ.civID }) return false
+            sendStatement(civ, other, DiploStatement.Demand)
+            val trade = Trade()
+            trade.ourOffers.add(tribute)
+            other.tradeRequests.add(TradeRequest(civ.civID, trade, isDemand = true))
+            return true
+        }
         sendStatement(civ, other, DiploStatement.Demand)
         val tradeLogic = TradeLogic(other, civ)
-        tradeLogic.currentTrade.ourOffers.add(TradeOffer(Constants.flatGold, TradeOfferType.Gold, gold, civ.gameInfo.speed))
+        tradeLogic.currentTrade.ourOffers.add(tribute)
         tradeLogic.acceptTrade()
-        // CvDiplomacyAI::DoDemandMade: the victim remembers (the original's "too soon" timer only matters for demands humans make)
-        other.ai.diplomacy.memoryOf(civ).demandCounter = 0
-        // The demand is done: stand down
-        ai.memoryOf(other).warGoal = null
-        ai.demandTarget = null
-        ai.demandReady = false
         return true
+    }
+
+    /**
+     *  CvDiplomacyAI::DoFromUIDiploEvent(FROM_UI_DIPLO_EVENT_DEMAND_HUMAN_REFUSAL): [human] refused the tribute [civ] demanded. With a chance
+     *  of one in two [civ] declares war and requests a basic attack on them, willing to build 3 of its units.
+     */
+    fun onHumanRefusedDemand(civ: Civilization, human: Civilization) {
+        timeThis("AI.DemandRefusal") {
+            if (civ.ai.random("DiplomacyAI.DemandRefusal").nextInt(100) >= 50) return@timeThis
+            WarAi.declareWar(civ, human)
+            MilitaryOperations.requestBasicAttack(civ, human, 3)
+        }
     }
 
     /** CvDiplomacyAI::DoRequest / IsMakeRequest: a friend we show friendship to may be asked for a luxury or gold; AIs always give in */

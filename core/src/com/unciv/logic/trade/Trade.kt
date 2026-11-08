@@ -2,6 +2,7 @@ package com.unciv.logic.trade
 
 import com.unciv.Constants
 import com.unciv.logic.IsPartOfGameInfoSerialization
+import com.unciv.logic.automation.civilization.DiplomacyAutomation
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
 import com.unciv.models.ruleset.nation.PersonalityValue
@@ -78,6 +79,8 @@ class TradeRequest : IsPartOfGameInfoSerialization {
             requestingCivDiploManager.otherCivDiplomacy().setFlag(DiplomacyFlags.DeclinedJoinWarOffer, if (decliningCiv.isAI()) 5 else 10)
 
         if (trade.isPeaceTreaty()) requestingCivDiploManager.setFlag(DiplomacyFlags.DeclinedPeace, 3)
+
+        if (isDemand) DiplomacyAutomation.onHumanRefusedDemand(requestingCivInfo, decliningCiv)
     }
     
     lateinit var requestingCiv: String
@@ -85,10 +88,14 @@ class TradeRequest : IsPartOfGameInfoSerialization {
     /** Their offers are what they offer us, and our offers are what they want in return */
     lateinit var trade: Trade
 
+    /** CvDeal::GetDemandingPlayer: the requester demands what is in [trade] (CvDiplomacyAI::DoMakeDemand), declining it risks war */
+    var isDemand = false
+
     constructor()  // for json serialization
 
-    constructor(requestingCiv: String, trade: Trade) {
+    constructor(requestingCiv: String, trade: Trade, isDemand: Boolean = false) {
         this.requestingCiv = requestingCiv
         this.trade = trade
+        this.isDemand = isDemand
     }
 }
