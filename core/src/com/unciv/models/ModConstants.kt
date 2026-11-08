@@ -222,6 +222,11 @@ class ModConstants {
     // Influence with a city-state when we build a Landmark on its land
     var landmarkInfluenceWithCityStates = 50
 
+    // Great People from points (CvCityCitizens::GetSpecialistUpgradeThreshold, GREAT_PERSON_THRESHOLD_BASE and _INCREASE in GlobalDefines.xml):
+    // a city needs base + increase × (Great People of the group gained so far) points, scaled by game speed and starting era
+    var greatPersonThresholdBase = 100
+    var greatPersonThresholdIncrease = 100
+
     // UI: If set >= 0, ImprovementPicker will silently skip improvements whose tech requirement is more advanced than your current Era + this
     var maxImprovementTechErasForward = -1
 

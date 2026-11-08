@@ -99,6 +99,29 @@ object BackwardCompatibility {
             for (key in civ.greatPeople.greatPersonPointsCounter.keys.toList())
                 if (!ruleset.units.containsKey(key))
                     civ.greatPeople.greatPersonPointsCounter.remove(key)
+            for (city in civ.cities)
+                for (key in city.greatPersonProgress.keys.toList())
+                    if (!ruleset.units.containsKey(key))
+                        city.greatPersonProgress.remove(key)
+        }
+    }
+
+    /**
+     * Games saved before Great Person points were kept per city had the points of the whole civilization and, per group, a threshold that
+     * started at 100 and doubled with each Great Person. The number of doublings is the number gained; the points go to the capital.
+     */
+    fun GameInfo.migrateGreatPersonPointsToCities() {
+        for (civ in civilizations) civ.greatPeople.run {
+            for ((pool, threshold) in pointsForNextGreatPersonCounter) {
+                var gained = 0
+                var base = threshold
+                while (base > 100) { base /= 2; gained++ }
+                if (gained > greatPeopleCreated[pool]) greatPeopleCreated[pool] = gained
+            }
+            pointsForNextGreatPersonCounter.clear()
+            val city = civ.getCapital() ?: civ.cities.firstOrNull()
+            if (city != null) city.greatPersonProgress.add(greatPersonPointsCounter)
+            greatPersonPointsCounter.clear()
         }
     }
 

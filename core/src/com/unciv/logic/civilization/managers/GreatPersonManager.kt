@@ -10,23 +10,31 @@ import com.unciv.models.ruleset.unit.BaseUnit
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.ui.components.MayaCalendar
 import yairm210.purity.annotations.Readonly
+import kotlin.math.roundToInt
 
 
 // todo: Great Admiral?
-// todo: Free GP from policies and wonders should increase threshold according to the wiki
-// todo: GP from Maya long count should increase threshold as well - implement together
 
+/**
+ * Great People of a civilization. Great Person points are kept per city ([com.unciv.logic.city.City.greatPersonProgress]), as in the original game
+ * (CvCityCitizens::DoSpecialists): a city's points for a Great Person never mix with those of another city, and a Great Person is born in
+ * the city whose points reach the threshold. Great Generals and Admirals come from combat points, kept here per civilization.
+ */
 class GreatPersonManager : IsPartOfGameInfoSerialization {
 
     @Transient
     lateinit var civInfo: Civilization
 
-    /** Base points, without speed modifier */
-    var pointsForNextGreatPersonCounter = Counter<String>()  // Initial values assigned in getPointsRequiredForGreatPerson as needed
+    /**
+     * How many Great People of each group (the [UniqueType.GPPointPool] parameter, "" without one) this civilization has gained: born from
+     * points, chosen as a free Great Person, or given by a building or policy. The next one of the group needs more points for each.
+     * Great People bought with faith, Prophets, and the Great People of combat are not counted (CvCityCitizens::DoSpawnGreatPerson).
+     */
+    var greatPeopleCreated = Counter<String>()
+
     var pointsForNextGreatGeneral = 200
     var pointsForNextGreatGeneralCounter = Counter<String>() // Initial values assigned when needed
 
-    var greatPersonPointsCounter = Counter<String>()
     var greatGeneralPointsCounter = Counter<String>()
     var greatGeneralPoints = 0
     var freeGreatPeople = 0
@@ -35,9 +43,17 @@ class GreatPersonManager : IsPartOfGameInfoSerialization {
     /** Remaining candidates for maya ability - whenever empty refilled from all GP, starts out empty */
     var longCountGPPool = HashSet<String>()
 
+    /** Only in games saved before Great Person points were kept per city (base threshold per group, doubled per Great Person);
+     *  read and emptied by [com.unciv.logic.BackwardCompatibility.migrateGreatPersonPointsToCities] */
+    var pointsForNextGreatPersonCounter = Counter<String>()
+    /** Only in games saved before Great Person points were kept per city (points of the whole civilization);
+     *  read and emptied by [com.unciv.logic.BackwardCompatibility.migrateGreatPersonPointsToCities] */
+    var greatPersonPointsCounter = Counter<String>()
+
     fun clone(): GreatPersonManager {
         val toReturn = GreatPersonManager()
         toReturn.freeGreatPeople = freeGreatPeople
+        toReturn.greatPeopleCreated = greatPeopleCreated.clone()
         toReturn.greatPersonPointsCounter = greatPersonPointsCounter.clone()
         toReturn.pointsForNextGreatPersonCounter = pointsForNextGreatPersonCounter.clone()
         toReturn.pointsForNextGreatGeneralCounter = pointsForNextGreatGeneralCounter.clone()
@@ -50,21 +66,26 @@ class GreatPersonManager : IsPartOfGameInfoSerialization {
     }
 
     @Readonly
-    private fun getPoolKey(greatPerson: String) = civInfo.getEquivalentUnit(greatPerson)
+    fun getPoolKey(greatPerson: String) = civInfo.getEquivalentUnit(greatPerson)
         .getMatchingUniques(UniqueType.GPPointPool)
         // An empty string is used to indicate the Unique wasn't found
         .firstOrNull()?.params?.get(0) ?: ""
-    
-    @Readonly @Suppress("purity") 
+
+    /**
+     * The points a city needs for [greatPerson] (CvCityCitizens::GetSpecialistUpgradeThreshold): base + increase × the Great People of its
+     * group gained so far ([greatPeopleCreated]), scaled by the game speed and then by the starting era, rounding down each time.
+     */
+    @Readonly
     fun getPointsRequiredForGreatPerson(greatPerson: String): Int {
-        val key = getPoolKey(greatPerson)
-        if (pointsForNextGreatPersonCounter[key] == 0) {
-            pointsForNextGreatPersonCounter[key] = 100
-        }
-        return (pointsForNextGreatPersonCounter[key] * civInfo.gameInfo.speed.modifier * civInfo.gameInfo.getStartingEra().greatPeoplePercent / 100f).toInt()
+        val gameInfo = civInfo.gameInfo
+        val constants = gameInfo.ruleset.modOptions.constants
+        val base = constants.greatPersonThresholdBase + constants.greatPersonThresholdIncrease * greatPeopleCreated[getPoolKey(greatPerson)]
+        val speedPercent = (gameInfo.speed.modifier * 100).roundToInt()
+        return base * speedPercent / 100 * gameInfo.getStartingEra().greatPeoplePercent / 100
     }
 
-    fun getNewGreatPerson(): String? {
+    /** A Great General or Admiral whose combat points are reached, if any; takes the points and raises the next threshold */
+    fun getNewGreatGeneral(): String? {
         for ((unit, value) in greatGeneralPointsCounter){
             if (pointsForNextGreatGeneralCounter[unit] == 0) {
                 pointsForNextGreatGeneralCounter[unit] = 200
@@ -76,20 +97,51 @@ class GreatPersonManager : IsPartOfGameInfoSerialization {
                 return unit
             }
         }
-
-        for ((greatPerson, value) in greatPersonPointsCounter) {
-            val requiredPoints = getPointsRequiredForGreatPerson(greatPerson)
-            if (value >= requiredPoints) {
-                greatPersonPointsCounter.add(greatPerson, -requiredPoints)
-                pointsForNextGreatPersonCounter[getPoolKey(greatPerson)] *= 2
-                return greatPerson
-            }
-        }
         return null
     }
 
+    /** Adds each city's Great Person points of this turn to its progress (CvCityCitizens::DoSpecialists); only for major civilizations */
     fun addGreatPersonPoints() {
-        greatPersonPointsCounter.add(getGreatPersonPointsForNextTurn())
+        for (city in civInfo.cities) city.greatPersonProgress.add(city.getGreatPersonPoints())
+    }
+
+    /**
+     * Each city whose progress toward a Great Person reaches the threshold gets that Great Person, and its progress toward it starts again
+     * from nothing: points beyond the threshold are lost (CvCityCitizens::DoSpecialists). The threshold is taken again for each, so a
+     * second Great Person of a group in the same turn needs more points.
+     */
+    fun spawnGreatPeopleFromPoints() {
+        if (!civInfo.isMajorCiv) return
+        val ruleset = civInfo.gameInfo.ruleset
+        for (city in civInfo.cities.toList()) {
+            for (greatPerson in city.greatPersonProgress.keys.toList()) {
+                if (city.greatPersonProgress[greatPerson] < getPointsRequiredForGreatPerson(greatPerson)) continue
+                city.greatPersonProgress.remove(greatPerson)
+                val unit = ruleset.units[greatPerson] ?: continue
+                if (civInfo.units.addUnit(unit, city) != null) countGreatPersonGained(unit)
+            }
+        }
+    }
+
+    /**
+     * A Great Person gained from points, as a free choice, or from a building or policy raises what the next one of its group needs
+     * (CvCityCitizens::DoSpawnGreatPerson, CvCity::processBuilding, CvPlayer free units). Prophets and the Great People of combat have
+     * counts of their own, and those bought with faith count for nothing.
+     */
+    fun countGreatPersonGained(unit: BaseUnit) {
+        if (!unit.isGreatPerson || unit.hasUnique(UniqueType.MayFoundReligion)) return
+        if (civInfo.gameInfo.ruleset.greatGeneralUnits.any { it.name == unit.name }) return
+        greatPeopleCreated.add(getPoolKey(unit.name), 1)
+    }
+
+    /** For each Great Person someone has points toward: the name of the city closest to getting one, and its points */
+    @Readonly
+    fun getLeadingCities(): Map<String, Pair<String, Int>> {
+        val leading = LinkedHashMap<String, Pair<String, Int>>()
+        for (city in civInfo.cities)
+            for ((greatPerson, points) in city.greatPersonProgress)
+                if (points > (leading[greatPerson]?.second ?: -1)) leading[greatPerson] = city.name to points
+        return leading
     }
 
     fun triggerMayanGreatPerson() {
@@ -143,9 +195,11 @@ class GreatPersonManager : IsPartOfGameInfoSerialization {
             mayaLimitedFreeGP--
             longCountGPPool.remove(choice.name)
         }
+        countGreatPersonGained(choice)
         return unit
     }
 
+    /** The Great Person points all cities get this turn, for display */
     @Readonly
     fun getGreatPersonPointsForNextTurn(): Counter<String> {
         val greatPersonPoints = Counter<String>()

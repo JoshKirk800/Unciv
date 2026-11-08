@@ -209,6 +209,7 @@ object UniqueTriggerActivation {
 
                         else -> return false
                     }
+                    civInfo.greatPeople.countGreatPersonGained(civUnit)
                     val notificationText = getNotificationText(
                         notification, triggerNotificationText,
                         "Gained [1] [${civUnit.name}] unit(s)"
@@ -262,6 +263,7 @@ object UniqueTriggerActivation {
                         if (placedUnit != null) placedUnits += placedUnit
                     }
                     if (placedUnits.isEmpty()) return false
+                    repeat(placedUnits.size) { civInfo.greatPeople.countGreatPersonGained(civUnit) }
 
                     val notificationText = getNotificationText(
                         notification, triggerNotificationText,

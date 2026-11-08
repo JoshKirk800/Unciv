@@ -79,9 +79,9 @@ class StartingEraPercentTests {
 
         civ.greatPeople.greatGeneralPointsCounter["Great General"] = 190
         startIn("Ancient era")
-        assertNull("200 needed", civ.greatPeople.getNewGreatPerson())
+        assertNull("200 needed", civ.greatPeople.getNewGreatGeneral())
         startIn("Renaissance era")
-        assertEquals("180 needed", "Great General", civ.greatPeople.getNewGreatPerson())
+        assertEquals("180 needed", "Great General", civ.greatPeople.getNewGreatGeneral())
     }
 
     @Test

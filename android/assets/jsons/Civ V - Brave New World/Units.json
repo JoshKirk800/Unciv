@@ -1798,7 +1798,7 @@
 		"unitType": "Civilian",
 		"uniques": [
             "Empire enters a [8]-turn Golden Age <by consuming this unit>",
-            "Is part of Great Person group [Great Person]",
+            "Is part of Great Person group [Artist]",
             "[This Unit] gets a name from the [Artist] group",
             "Great Person - [Culture]", "Unbuildable", "Uncapturable", "Create a Great Work <by consuming this unit>"],
 		"movement": 2
@@ -1806,13 +1806,13 @@
 	{
 		"name": "Great Writer",
 		"unitType": "Civilian",
-		"uniques": ["Can generate a large amount of culture", "Is part of Great Person group [Great Person]", "Great Person - [Culture]", "Unbuildable", "Uncapturable", "Create a Great Work <by consuming this unit>", "[This Unit] gets a name from the [Writer] group"],
+		"uniques": ["Can generate a large amount of culture", "Is part of Great Person group [Writer]", "Great Person - [Culture]", "Unbuildable", "Uncapturable", "Create a Great Work <by consuming this unit>", "[This Unit] gets a name from the [Writer] group"],
 		"movement": 2
 	},
 	{
 		"name": "Great Musician",
 		"unitType": "Civilian",
-		"uniques": ["Create a Great Work <by consuming this unit>", "[This Unit] gets a name from the [Musician] group", "Is part of Great Person group [Great Person]", "Great Person - [Culture]", "Unbuildable", "Uncapturable", "Perform a concert tour: [10] times our Tourism towards the civilization whose territory we are in, [20]% of that towards each other civilization we have met <by consuming this unit>"],
+		"uniques": ["Create a Great Work <by consuming this unit>", "[This Unit] gets a name from the [Musician] group", "Is part of Great Person group [Musician]", "Great Person - [Culture]", "Unbuildable", "Uncapturable", "Perform a concert tour: [10] times our Tourism towards the civilization whose territory we are in, [20]% of that towards each other civilization we have met <by consuming this unit>"],
 		"movement": 2
 	},
 	{
