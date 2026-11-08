@@ -5,6 +5,7 @@ import com.unciv.Constants
 import com.unciv.UncivGame
 import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.MultiFilter
+import com.unciv.logic.automation.unit.SettlerOperation
 import com.unciv.logic.automation.unit.UnitAutomation
 import com.unciv.logic.battle.BattleUnitCapture
 import com.unciv.logic.battle.MapUnitCombatant
@@ -78,6 +79,9 @@ class MapUnit : IsPartOfGameInfoSerialization {
     // Temp disable, since this data broke saves
     @Transient
     var automatedRoadConnectionPath: List<HexCoord>? = null
+
+    /** The AI's settler operation this unit runs (CvAIOperationFoundCity / CvAIOperationQuickColonize), null when it has none */
+    var settlerOperation: SettlerOperation? = null
 
     var attacksThisTurn = 0
     var promotions = UnitPromotions()
@@ -234,6 +238,7 @@ class MapUnit : IsPartOfGameInfoSerialization {
         toReturn.escorting = escorting
         toReturn.automatedRoadConnectionDestination = automatedRoadConnectionDestination
         toReturn.automatedRoadConnectionPath = automatedRoadConnectionPath
+        toReturn.settlerOperation = settlerOperation?.clone()
         toReturn.attacksThisTurn = attacksThisTurn
         toReturn.turnsFortified = turnsFortified
         toReturn.promotions = promotions.clone(toReturn)
