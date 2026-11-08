@@ -102,7 +102,6 @@ Each nation has the following structure:
 | style                   | String                                                              | none     | Modifier appended to pixel unit image names                                                                                                     |
 | cityStateType           | String                                                              | none     | Distinguishes major civilizations from city states (must be in [CityStateTypes.json](#citystatetypesjson))                                      |
 | startBias               | List of strings                                                     | empty    | Zero or more of: [terrainFilter](../Unique-parameters.md#terrainfilter) or "Avoid [terrainFilter]". Also merged with `Start bias [terrainFilter]` uniques on the nation and (for city-states) on their CityStateType. [^S] |
-| preferredVictoryType    | String                                                              | Neutral  | The victory type major civilizations will pursue (need not be specified in [VictoryTypes.json](5-Miscellaneous-JSON-files.md#victorytypesjson)) |
 | personality             | String                                                              | none     | The name of the personality specified in [Personalities.json](#personalitiesjson) [^P]                                                          |
 | favoredReligion         | String                                                              | none     | The religion major civilization will choose if available when founding a religion. Must be in [Religions.json](#religionsjson)                  |
 | startIntroPart1         | String                                                              | none     | Introductory blurb shown to Player on game start... [^V]                                                                                        |
@@ -158,15 +157,19 @@ Each personality has the following structure:
 | Attribute                                                                                                                           | Type   | Default  | Notes                                                                                                                                           |
 |-------------------------------------------------------------------------------------------------------------------------------------|--------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------|
 | name                                                                                                                                | String | Required |                                                                                                                                                 |
-| preferredVictoryType                                                                                                                | String | Neutral  | The victory type major civilizations will pursue (need not be specified in [VictoryTypes.json](5-Miscellaneous-JSON-files.md#victorytypesjson)) |
+| preferredVictoryType                                                                                                                | String | Neutral  | Shown in the Civilopedia only. What the AI pursues is its grand strategy, chosen each turn from the data in [AI.json](5-Miscellaneous-JSON-files.md#aijson) |
 | [`<stats>`](3-Map-related-JSON-files.md#general-stat), [`<behaviors>`](2-Civilization-related-JSON-files.md#personality-behaviours) | Float  | 5        | Amount of focus on the stat the computer player will have. Typically ranges from 0 (no focus) to 10 (double focus)                              |
 | priorities                                                                                                                          | Object | none     | Priorities for each policy branch [^B]                                                                                                          |
 | uniques                                                                                                                             | List   | empty    | List of [unique abilities](../uniques.md) this personality has                                                                                  |
+| flavors                                                                                                                             | Object | none     | The leader's AI flavors (the original's Leader_Flavors, 0-20) by flavor name (`Offense`, `Defense`, `CityDefense`, ... `Airlift`, see [AI.json](5-Miscellaneous-JSON-files.md#aijson)). Missing flavors are 5. Randomized by ±2 once per game |
+| diplomacyPersonality                                                                                                                | Object | none     | The leader's diplomacy personality (the original's Leaders columns: VictoryCompetitiveness, WonderCompetitiveness, MinorCivCompetitiveness, Boldness, DiploBalance, WarmongerHate, DenounceWillingness, DoFWillingness, Loyalty, Neediness, Forgiveness, Chattiness, Meanness). Missing values are 5 |
+| majorCivApproachBiases                                                                                                              | Object | none     | Biases towards the approaches War, Hostile, Deceptive, Guarded, Afraid, Friendly, Neutral to major civilizations. Missing values are 5 |
+| minorCivApproachBiases                                                                                                              | Object | none     | Biases towards the approaches Ignore, Friendly, Protective, Conquest, Bully to city-states. Missing values are 5 |
 | civilopediaText                                                                                                                     | List   | empty    | See [civilopediaText chapter](5-Miscellaneous-JSON-files.md#civilopedia-text)                                                                   |
 
 [^B]: Similar to [policy priorites](#branch-priorities) The "priorities" object defines the priority
 major civilizations' AI give to a policy branch. The AI chooses the policy branch with the highest
-number for their preferred victory type. If two or more candidate branches have the same priority,
+number for the victory of its active grand strategy. If two or more candidate branches have the same priority,
 the AI chooses a random branch among the candidates.
 
 The object maps policy branches to priority values for the major civilization using the policy
@@ -273,12 +276,13 @@ Each policy branch has the following structure:
 ### Branch priorities
 
 The "priorities" object defines the priority major civilizations' AI give to a policy branch. The AI
-chooses the policy branch with the highest sum of the peferred victory type listed here and the
-number listed in the personality's priority. If two or more candidate branches have the same
-priority, the AI chooses a random branch among the candidates.
+chooses the policy branch with the highest sum of the priority listed here for the victory type of its
+active grand strategy ("Neutral" before it has chosen one) and the number listed in the personality's
+priority. If two or more candidate branches have the same priority, the AI chooses a random branch
+among the candidates.
 
 The object maps victory types to priority values for the major civilization using strings and
-integers. If the preferred victory type is not specified, the default priority value is set to 0.
+integers. If that victory type is not specified, the default priority value is set to 0.
 
 The code below is an example of a valid "priorities" definition.
 

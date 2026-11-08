@@ -3,6 +3,10 @@ package com.unciv.models.ruleset.nation
 import com.unciv.Constants
 import com.unciv.models.ruleset.Ruleset
 import com.unciv.models.ruleset.RulesetObject
+import com.unciv.models.ruleset.ai.DiplomacyPersonality
+import com.unciv.models.ruleset.ai.Flavor
+import com.unciv.models.ruleset.ai.MajorCivApproach
+import com.unciv.models.ruleset.ai.MinorCivApproach
 import com.unciv.models.ruleset.unique.UniqueTarget
 import com.unciv.models.stats.Stat
 import com.unciv.models.stats.Stats
@@ -18,7 +22,8 @@ import yairm210.purity.annotations.Readonly
  *  * Linked to a Nation via [Nation.personality]
  *  * Contains biases for stats ([production]..[faith]) and others ([military]..[denounceWillingness])
  *  * These biases can be indexed with a [PersonalityValue] as key, [get]/[set]
- *  * Defines [preferredVictoryType]
+ *  * Defines [preferredVictoryType] - shown in the Civilopedia only; the AI pursues its grand strategy (`civ.ai`)
+ *  * Defines the AI personality of the original game: [flavors], [diplomacyPersonality], [majorCivApproachBiases], [minorCivApproachBiases]
  *  * Defines Policy preferences in [priorities]
  *  * Can have [civilopediaText], but not [uniques] (effect not implemented, guarded by `RulesetValidator`)
  *  * API: [scaledFocus], [inverseScaledFocus], [inverseModifierFocus], [scaleStats]
@@ -44,6 +49,17 @@ class Personality : RulesetObject() {
     var priorities = LinkedHashMap<String, Int>()
     var preferredVictoryType: String = Constants.neutralVictoryType
     var isNeutralPersonality: Boolean = false
+
+    /** The leader's AI flavors by [Flavor] name (the original's Leader_Flavors, 0-20). A flavor without a value is the
+     *  `DEFAULT_FLAVOR_VALUE` define (5), as the original does for flavors its XML leaves unset. */
+    var flavors = LinkedHashMap<String, Int>()
+    /** The leader's diplomacy personality by [DiplomacyPersonality] name (the personality columns of the original's Leaders table).
+     *  Missing values are `DEFAULT_FLAVOR_VALUE` (5), what the original gives a human player. */
+    var diplomacyPersonality = LinkedHashMap<String, Int>()
+    /** Leader_MajorCivApproachBiases by [MajorCivApproach] name; missing values are `DEFAULT_FLAVOR_VALUE` (5) */
+    var majorCivApproachBiases = LinkedHashMap<String, Int>()
+    /** Leader_MinorCivApproachBiases by [MinorCivApproach] name; missing values are `DEFAULT_FLAVOR_VALUE` (5) */
+    var minorCivApproachBiases = LinkedHashMap<String, Int>()
 
     @Pure
     private fun nameToVariable(value: PersonalityValue) = value.getProperty(this)

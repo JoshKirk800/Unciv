@@ -125,6 +125,7 @@ open class RulesetValidator protected constructor(
         addEventErrors(lines)
         addCityStateTypeErrors(lines)
         addResolutionErrors(lines)
+        addAiErrors(lines)
 
         checkFreeBuildingPossibleRecursions(lines)
         addTranslationNameCollisionWarnings(lines)
@@ -373,6 +374,11 @@ open class RulesetValidator protected constructor(
 
         if (!badInner && !badOuter)
             checkContrasts(nation.getInnerColor(), nation.getOuterColor(), nation, lines)
+    }
+
+    /** AI.json and the AI fields of personalities: unknown flavor/yield/approach names */
+    protected open fun addAiErrors(lines: RulesetErrorList) {
+        AiRulesetValidator(ruleset).addNameErrors(lines)
     }
 
     protected open fun addPersonalityErrors(lines: RulesetErrorList) {

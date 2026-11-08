@@ -9,6 +9,7 @@ import com.unciv.logic.BackwardCompatibility.updateDeprecations
 import com.unciv.logic.GameInfo
 import com.unciv.logic.map.tile.RoadStatus
 import com.unciv.models.metadata.BaseRuleset
+import com.unciv.models.ruleset.ai.AiRuleset
 import com.unciv.models.ruleset.nation.CityStateType
 import com.unciv.models.ruleset.nation.Difficulty
 import com.unciv.models.ruleset.nation.Nation
@@ -102,7 +103,9 @@ enum class RulesetFile(
     Speeds("Speeds.json", { speeds.values.asSequence() }),
     Difficulties("Difficulties.json", getINamed = { difficulties.values.asSequence() }),
     Quests("Quests.json", getINamed = { quests.values.asSequence() }),
-    Ruins("Ruins.json", { ruinRewards.values.asSequence() });
+    Ruins("Ruins.json", { ruinRewards.values.asSequence() }),
+    /** The AI data of the original game, see [AiRuleset] - no translatable names, no uniques */
+    AI("AI.json");
 }
 
 class Ruleset {
@@ -159,6 +162,8 @@ class Ruleset {
     val personalities = LinkedHashMap<String, Personality>()
     val events = LinkedHashMap<String, Event>()
     var modOptions = ModOptions()
+    /** AI.json - see [AiRuleset]. Loaded files are merged into this instance, so it always belongs to this Ruleset. */
+    val ai = AiRuleset().also { it.ruleset = this }
     //endregion
 
     //region cache fields
@@ -296,6 +301,7 @@ class Ruleset {
 
         modOptions.uniques.addAll(ruleset.modOptions.uniques)
         modOptions.constants.merge(ruleset.modOptions.constants)
+        ai.add(ruleset.ai)
 
         mods += ruleset.mods
     }
@@ -525,6 +531,7 @@ class Ruleset {
         cityStateTypes.clear()
         personalities.clear()
         events.clear()
+        ai.clear()
     }
 
     @Readonly
@@ -712,6 +719,10 @@ class Ruleset {
         if (eventsFile.exists()) {
             events += createHashmap(json().fromJsonFile(Array<Event>::class.java, eventsFile))
         }
+
+        val aiFile = RulesetFile.AI.file()
+        if (aiFile.exists())
+            ai.add(json().fromJsonFile(AiRuleset::class.java, aiFile))
 
         // Tutorials exist per builtin ruleset or mod, but there's also a global file that should always be loaded in a game.
         // Note we can't rely on UncivGame.Current here, so we do the same thing getBuiltinRulesetFileHandle in RulesetCache does.

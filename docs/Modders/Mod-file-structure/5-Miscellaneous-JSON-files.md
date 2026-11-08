@@ -404,6 +404,36 @@ The formula for the gold cost of a unit upgrade is (rounded down to a multiple o
         ) ^ `exponent`
 With `civModifier` being the multiplicative aggregate of ["\[relativeAmount\]% Gold cost of upgrading"](../uniques.md#global-uniques) uniques that apply.
 
+## AI.json
+
+[link to original](https://github.com/yairm210/Unciv/tree/master/android/assets/jsons/Civ%20V%20-%20Brave%20New%20World/AI.json)
+
+The data the computer players' strategic AI reads: the AI tables of the original game (Civilization V's XML), generated from it.
+It is one object with these attributes; every list entry is identified by its `name` (item flavors by `kind` and `name`).
+When an extension mod has an AI.json, its defines and entries replace those of the base with the same name, and new ones are added.
+A ruleset without the file gets defaults: the define values of Brave New World, the four grand strategies without flavors,
+no economic/military/city strategies, and item flavors derived from each object's stats and type.
+
+| Attribute           | Type   | Notes                                                                                                                 |
+|---------------------|--------|-----------------------------------------------------------------------------------------------------------------------|
+| defines             | Object | Global defines of the original by name (`AI_GS_RAND_ROLL`, `DEFAULT_FLAVOR_VALUE`, ...)                                |
+| postDefines         | Object | Names of objects the original refers to through post-defines                                                          |
+| grandStrategies     | List   | `name`, `victoryType` (the victory it pursues), `flavors`, `flavorMods`, `yields`                                       |
+| economicStrategies  | List   | `name`, `noMinorCivs`, `checkTriggerTurnCount`, `minimumNumTurnsExecuted`, `firstTurnExecuted`, `weightThreshold`, `techPrereq`, `techObsolete`, `advisor`, `advisorCounsel`, `advisorCounselImportance`, `playerFlavors`, `cityFlavors`, `personalityFlavorThresholdMods` |
+| militaryStrategies  | List   | As economic strategies, plus `onlyMinorCivs`, `updateCitySpecializations`                                              |
+| cityStrategies      | List   | As economic strategies without `firstTurnExecuted` and player/city flavors, plus `permanent` and `flavors`             |
+| citySpecializations | List   | `name`, `yieldType`, `subtype`, `isDefault`, `isWonder`, `mustBeCoastal`, `isOperationUnitProvider`, `flavors`, `targetYields` |
+| minorCivFlavors     | List   | `name` (a city-state nation), `flavors`                                                                                |
+| itemFlavors         | List   | `kind` (Building, Unit, Technology, Policy, Process, Project, Resource, Improvement), `name`, `flavors`                 |
+| unitAiTypes         | List   | `name` (a unit), `defaultUnitAi`, `unitAiTypes`                                                                        |
+| handicaps           | List   | `name` (a difficulty), `values` (the AI columns of the original's handicaps)                                           |
+
+Flavor objects map flavor names to integers. The flavors are, in the original's order: Offense, Defense, CityDefense, MilitaryTraining, Recon,
+Ranged, Mobile, Naval, NavalRecon, NavalGrowth, NavalTileImprovement, Air, Expansion, Growth, TileImprovement, Infrastructure, Production,
+Gold, Science, Culture, Happiness, GreatPeople, Wonder, Religion, Diplomacy, Spaceship, WaterConnection, Nuke, Antiair, UseNuke, Espionage,
+AirCarrier, I_LandTradeRoute, I_SeaTradeRoute, Archaeology, I_TradeOrigin, I_TradeDestination, Airlift.
+A strategy is only ever active if the game has a test for it (strategies are referred to by their original names, e.g. `ECONOMICAISTRATEGY_GS_CULTURE`).
+
 ## GlobalUniques.json
 
 [link to original](https://github.com/yairm210/Unciv/tree/master/android/assets/jsons/GlobalUniques.json)

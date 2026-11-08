@@ -313,7 +313,7 @@ object NextTurnAutomation {
     private fun adoptPolicy(civView: CivView) {
         val civInfo = civView.getCiv()
         val rng = civInfo.state.stateBasedRandom("NextTurnAutomation.adoptPolicy")
-        val seeksCulturalVictory = "Cultural" in civInfo.getPreferredVictoryTypes()
+        val seeksCulturalVictory = civInfo.ai.isGoingForCultureVictory()
         /*
         # Branch-based policy-to-adopt decision
         Basically the AI prioritizes finishing incomplete branches before moving on, \

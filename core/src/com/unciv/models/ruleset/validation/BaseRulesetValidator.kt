@@ -74,6 +74,11 @@ internal class BaseRulesetValidator(
         checkUniqueToMisspelling(building, building.uniqueTo, lines)
     }
 
+    override fun addAiErrors(lines: RulesetErrorList) {
+        super.addAiErrors(lines)
+        AiRulesetValidator(ruleset).addObjectNameErrors(lines)
+    }
+
     override fun addDifficultyErrors(lines: RulesetErrorList) {
         super.addDifficultyErrors(lines)
 
@@ -161,8 +166,6 @@ internal class BaseRulesetValidator(
 
     override fun checkNation(nation: Nation, lines: RulesetErrorList) {
         super.checkNation(nation, lines)
-        if (nation.preferredVictoryType != Constants.neutralVictoryType && nation.preferredVictoryType !in ruleset.victories)
-            lines.add("${nation.name}'s preferredVictoryType is ${nation.preferredVictoryType} which does not exist!", sourceObject = nation)
         if (nation.cityStateType != null && nation.cityStateType !in ruleset.cityStateTypes)
             lines.add("${nation.name} is of city-state type ${nation.cityStateType} which does not exist!", sourceObject = nation)
         if (nation.favoredReligion != null && nation.favoredReligion !in ruleset.religions)

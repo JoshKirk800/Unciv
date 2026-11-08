@@ -1,6 +1,5 @@
 package com.unciv.logic.automation.civilization
 
-import com.unciv.Constants
 import com.unciv.logic.civilization.CivFlags
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
@@ -13,8 +12,8 @@ import kotlin.random.Random
 
 /**
  * What the AI chooses of the policies that belong to ideologies (CvPolicyAI::DoChooseIdeology and ChooseNextPolicy for tenets).
- * Unciv has no grand strategy AI and no "approach" to other civilizations, so the victory types the civilization prefers and the relations
- * it has take their places, see [chooseIdeology].
+ * Unciv has no "approach" to other civilizations, so the relations it has take its place; the victory it wants is its active grand strategy
+ * (all of them while it has none yet), see [chooseIdeology].
  */
 object PolicyAutomation {
     // The numbers of AI/GlobalAIDefines.xml IDEOLOGY_SCORE_*
@@ -28,11 +27,6 @@ object PolicyAutomation {
     private const val FREEDOM = "Freedom"
     private const val ORDER = "Order"
     private const val AUTOCRACY = "Autocracy"
-
-    private const val CONQUEST = "Domination"
-    private const val DIPLOMACY = "Diplomatic"
-    private const val SCIENCE = "Scientific"
-    private const val CULTURE = "Cultural"
 
     /** The ideology that [civ] chooses, if one can be chosen now and it has not got one. */
     fun chooseIdeology(civ: Civilization, random: Random): PolicyBranch? {
@@ -50,11 +44,13 @@ object PolicyAutomation {
         return options.first { scores[it] == best } // in the order of the ruleset, which for Brave New World is the order of the original
     }
 
-    /** What the civilization wants to win by, in the order of conquest, diplomacy, science, culture */
+    /** What the civilization wants to win by, in the order of conquest, diplomacy, science, culture: its active grand strategy, or all before it has one */
     private fun getWants(civ: Civilization): List<Float> {
-        val preferred = civ.getPreferredVictoryTypes()
-        fun want(type: String) = if (type in preferred || Constants.neutralVictoryType in preferred) 100f else 0f
-        return listOf(want(CONQUEST), want(DIPLOMACY), want(SCIENCE), want(CULTURE))
+        val ai = civ.ai
+        val undecided = ai.grandStrategy == null
+        fun want(goingFor: Boolean) = if (goingFor || undecided) 100f else 0f
+        return listOf(want(ai.isGoingForWorldConquest()), want(ai.isGoingForDiploVictory()),
+            want(ai.isGoingForSpaceshipVictory()), want(ai.isGoingForCultureVictory()))
     }
 
     /** A clear preference for one way to win (a lead of more than a quarter, IDEOLOGY_PERCENT_CLEAR_VICTORY_PREF) rules out the ideology that does not suit it:

@@ -1,5 +1,6 @@
 package com.unciv.logic.civilization.managers
 
+import com.unciv.Constants
 import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.CivFlags
@@ -56,8 +57,10 @@ class PolicyManager : IsPartOfGameInfoSerialization {
     val priorityMap: Map<PolicyBranch, Int>
         get() {
             val value = HashMap<PolicyBranch, Int>()
+            // The victory of the active grand strategy; "Neutral" before the AI has chosen one
+            val victoryType = civInfo.ai.grandStrategyDef()?.victoryType ?: Constants.neutralVictoryType
             for (branch in branches) {
-                val victoryPriority = civInfo.getPreferredVictoryTypes().sumOf { branch.priorities[it] ?: 0}
+                val victoryPriority = branch.priorities[victoryType] ?: 0
                 val personalityPriority = civInfo.getPersonality().priorities[branch.name] ?: 0
                 val branchPriority = (victoryPriority + personalityPriority) * 
                         branch.getWeightForAiDecision(civInfo.state)

@@ -2,6 +2,7 @@ package com.unciv.logic
 
 import com.unciv.Constants
 import com.unciv.UncivGame
+import com.unciv.logic.automation.strategy.FlavorManager
 import com.unciv.logic.civilization.AlertType
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.PlayerType
@@ -143,6 +144,11 @@ class GameStarter private constructor(
 
         runAndMeasure("Starting stats") {
             addCivStats()
+        }
+
+        runAndMeasure("AI personalities") {
+            // CvFlavorManager::Init, AdjustWeightsForMap (CvGame::setInitialItems) and CvDiplomacyAI::DoInitializePersonality
+            FlavorManager.initializeNewGame(gameInfo)
         }
 
         // remove starting locations once we're done
