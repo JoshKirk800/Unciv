@@ -42,6 +42,7 @@ class AiRuleset {
 
     @Transient private var itemFlavorIndex: HashMap<String, ItemFlavors>? = null
     @Transient private var minorCivFlavorIndex: HashMap<String, NamedFlavors>? = null
+    @Transient private var unitAiTypesIndex: HashMap<String, UnitAiTypesDef>? = null
     @Transient private val flavorCache = HashMap<String, IntArray>()
 
     companion object {
@@ -111,6 +112,7 @@ class AiRuleset {
     private fun clearCaches() {
         itemFlavorIndex = null
         minorCivFlavorIndex = null
+        unitAiTypesIndex = null
         flavorCache.clear()
     }
     //endregion
@@ -144,6 +146,12 @@ class AiRuleset {
     fun getItemFlavors(kind: String, name: String): ItemFlavors? {
         val index = itemFlavorIndex ?: itemFlavors.associateByTo(HashMap()) { it.kind + "/" + it.name }.also { itemFlavorIndex = it }
         return index["$kind/$name"]
+    }
+
+    /** The Unit_AITypes entry of a unit by Unciv unit name, null if it has none */
+    fun unitAiTypesOf(unitName: String): UnitAiTypesDef? {
+        val index = unitAiTypesIndex ?: unitAiTypes.associateByTo(HashMap()) { it.name }.also { unitAiTypesIndex = it }
+        return index[unitName]
     }
     //endregion
 
