@@ -234,8 +234,12 @@ class AiOperations : IsPartOfGameInfoSerialization {
         return operation.type.tacticalMayInterrupt
     }
 
-    /** CvUnit::GetDeployFromOperationTurn, -1 if never */
-    fun deployFromOperationTurn(unitId: Int) = deployFromOperationTurns[unitId] ?: -1
+    /** CvUnit::GetDeployFromOperationTurn, -100 (the original's initial value) if never */
+    fun deployFromOperationTurn(unitId: Int) = deployFromOperationTurns[unitId] ?: NEVER_DEPLOYED
+
+    companion object {
+        const val NEVER_DEPLOYED = -100
+    }
 
     /** CvPlayer::IsCityAlreadyTargeted: an operation heading for [city] that is less than [percentToTarget] of the way (for [mixedLandNaval] or land ones) */
     fun isCityAlreadyTargeted(city: City, naval: Boolean?, percentToTarget: Int, ignoreOperationId: Int = -1): Boolean {
