@@ -1,5 +1,6 @@
 package com.unciv.logic.automation.unit.tactical
 
+import com.unciv.Constants
 import com.unciv.logic.automation.civilization.AutomationCache
 import com.unciv.logic.battle.Battle
 import com.unciv.logic.battle.BattleDamage
@@ -425,6 +426,15 @@ class TacticalAttackTests {
         assertTrue("every tile the enemy could come through is held by a unit that was sent there", open.all { tile ->
             tile.militaryUnit in spearmen && tile.militaryUnit in ctx.cache.processedUnits
         })
+    }
+
+    @Test
+    fun `a mountain between hides the target from one side only, also when asked again`() {
+        game.setTileTerrain(tile(1).position, Constants.mountain)
+        val ctx = context()
+        assertFalse(ctx.hasLineOfSight(tile(0), tile(2)))
+        assertTrue("as far away on the other side, nothing between", ctx.hasLineOfSight(tile(4), tile(2)))
+        assertFalse(ctx.hasLineOfSight(tile(0), tile(2)))
     }
 
     @Test
