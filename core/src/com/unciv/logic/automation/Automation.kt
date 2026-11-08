@@ -2,64 +2,25 @@ package com.unciv.logic.automation
 
 import com.unciv.view.GameView
 import com.unciv.view.CivView
-import com.unciv.view.ForeignCivView
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.city.City
 import com.unciv.logic.city.CityFocus
 import com.unciv.logic.city.CityStats
 import com.unciv.logic.civilization.Civilization
-import com.unciv.logic.map.TileMap
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.ruleset.Building
 import com.unciv.models.ruleset.INonPerpetualConstruction
 import com.unciv.models.ruleset.PerpetualConstruction
-import com.unciv.models.ruleset.tile.ResourceType
 import com.unciv.models.ruleset.tile.TileImprovement
 import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unique.Unique
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.models.ruleset.unit.BaseUnit
 import com.unciv.models.stats.Stats
-import com.unciv.ui.screens.victoryscreen.RankingType
 import yairm210.purity.annotations.Readonly
 
 
 object Automation {
-
-    /** Determines whether [civInfo] should be allocating military to fending off barbarians */
-    fun afraidOfBarbarians(civView: CivView): Boolean {
-        val civInfo = civView.getCiv()
-        if (civInfo.isCityState || civInfo.isBarbarian)
-            return false
-
-        if (civInfo.gameInfo.gameParameters.noBarbarians)
-            return false // If there are no barbarians we are not afraid
-
-        val speed = civInfo.gameInfo.speed
-        if (civInfo.gameInfo.turns > 200 * speed.barbarianModifier)
-            return false // Very late in the game we are not afraid
-
-        var multiplier = if (civInfo.gameInfo.gameParameters.ragingBarbarians) 1.3f
-        else 1f // We're slightly more afraid of raging barbs
-
-        // Past the early game we are less afraid
-        if (civInfo.gameInfo.turns > 120 * speed.barbarianModifier * multiplier)
-            multiplier /= 2
-
-        // If we have no cities or a lot of units we are not afraid
-        if (civInfo.cities.isEmpty() || civInfo.units.getCivUnits().count() >= 4 * multiplier)
-            return false
-
-        // If we have vision of our entire starting continent (ish) we are not afraid
-        civInfo.gameInfo.tileMap.assignContinents(TileMap.AssignContinentsMode.Ensure)
-        val startingContinent = civInfo.getCapital()!!.getCenterTile().getContinent()
-        val startingContinentSize = civInfo.gameInfo.tileMap.continentSizes[startingContinent]
-        if (startingContinentSize != null && startingContinentSize < civInfo.viewableTiles.size * multiplier)
-            return false
-
-        // Otherwise we're afraid
-        return true
-    }
 
     /** Determines whether the AI should be willing to spend strategic resources to build
      *  [construction] for [civInfo], assumes that we are actually able to do so. */
@@ -134,20 +95,6 @@ object Automation {
     }
 
     @Readonly
-    fun threatAssessment(assessorView: CivView, assessedView: ForeignCivView): ThreatLevel {
-        val assessor = assessorView.getCiv()
-        val assessed = assessedView.getCiv()
-        val powerLevelComparison =
-            assessed.getStatForRanking(RankingType.Force) / assessor.getStatForRanking(RankingType.Force).toFloat()
-        return when {
-            powerLevelComparison > 2 -> ThreatLevel.VeryHigh
-            powerLevelComparison > 1.5f -> ThreatLevel.High
-            powerLevelComparison < 0.5f -> ThreatLevel.VeryLow
-            powerLevelComparison < (1 / 1.5f) -> ThreatLevel.Low
-            else -> ThreatLevel.Medium
-        }
-    }
-    @Readonly
     private fun improvementIsRemovable(city: City, tile: Tile): Boolean {
         val gameContext = GameContext(city.civ, city, tile = tile)
         val improvement = tile.tileImprovement ?: return false
@@ -172,26 +119,6 @@ object Automation {
         }
     }
 
-    // Ranks a tile for any purpose except the expansion algorithm of cities
-    @Readonly
-    internal fun rankTile(tile: Tile?, civView: CivView): Float {
-        val civInfo = civView.getCiv()
-        if (tile == null) return 0f
-        val tileOwner = tile.getOwner()
-        if (tileOwner != null && tileOwner != civInfo) return 0f // Already belongs to another civilization, useless to us
-        val stats = tile.stats.getTileStats(null, civInfo)
-        var rank = rankStatsValue(stats, civView)
-        if (tile.improvement == null) rank += 0.5f // improvement potential!
-        if (tile.isPillaged()) rank += 0.6f
-        val resource = tile.tileResource
-        if (civInfo.canSeeResource(resource)) {
-            if (resource.resourceType != ResourceType.Bonus) rank += 1f // for usage
-            if (tile.improvement == null) rank += 1f // improvement potential - resources give lots when improved!
-            if (tile.isPillaged()) rank += 1.1f // even better, repair is faster
-        }
-        return rank
-    }
-
     @Readonly
     fun rankStatsValue(stats: Stats, civView: CivView): Float {
         val civInfo = civView.getCiv()
@@ -213,12 +140,4 @@ object Automation {
         rank += stats.faith
         return rank
     }
-}
-
-enum class ThreatLevel {
-    VeryLow,
-    Low,
-    Medium,
-    High,
-    VeryHigh
 }

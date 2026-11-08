@@ -10,11 +10,8 @@ import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.mapunit.actions.UnitActionsFromUniques
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.UnitActionType
-import com.unciv.models.ruleset.tile.ResourceType
 import com.unciv.models.ruleset.unique.GameContext
-import com.unciv.view.CivView
 import com.unciv.view.MapUnitView
-import com.unciv.view.TileView
 import com.unciv.view.shortDisplayName
 import yairm210.purity.annotations.Readonly
 
@@ -135,34 +132,5 @@ class WorkerAutomation(val civInfo: Civilization, val cachedForTurn: Int) {
     companion object {
         /** Stands for the original's plot danger, which outweighs the territory bonus but not a city's defense */
         private const val DANGER_PENALTY = 1000
-
-        // Static methods so they can be reused in ConstructionAutomation
-        /** Checks whether [tile] is water and has a resource [civ] can improve
-         *
-         *  Does check whether a matching improvement can currently be built (e.g. Oil before Refrigeration).
-         *  Can return `true` if there is an improvement that does not match the resource (for future modding abilities).
-         *  Does not check tile ownership - callers need to ensure this explicitly.
-         */
-        @Readonly
-        fun hasWorkableSeaResource(tile: TileView, civ: CivView): Boolean {
-            val resource = tile.getViewableResource(civ)
-            return when {
-                resource == null || !tile.isWater -> false
-                tile.improvement != null && resource.isImprovedBy(tile.improvement!!) -> false
-                else -> resource.getImprovements().any {
-                    tile.canBuildImprovement(tile.getRuleset().tileImprovements[it]!!)
-                }
-            }
-        }
-
-        /** Test whether improving the resource on [tile] benefits [civ] (yields or strategic or luxury)
-         *
-         *  Only tests resource type and city range, not any improvement requirements.
-         *  @throws NullPointerException on tiles without a resource
-         */
-        @Readonly
-        fun isNotBonusResourceOrWorkable(tile: TileView, civ: CivView): Boolean =
-            tile.getViewableResource(civ)!!.resourceType != ResourceType.Bonus
-                || civ.cities().any { it.isInRange(tile) }
     }
 }

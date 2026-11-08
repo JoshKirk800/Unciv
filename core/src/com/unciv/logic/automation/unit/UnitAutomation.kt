@@ -257,17 +257,6 @@ object UnitAutomation {
         return true
     }
 
-    fun tryEnterOwnClosestCity(unitView: MapUnitView): Boolean {
-        val closestCity = unitView.civ().cities()
-            .asSequence()
-            .sortedBy { it.getCenterTile().aerialDistanceTo(unitView.getTile()) }
-            .firstOrNull { unitView.canReach(it.getCenterTile()) }
-          ?: return false // Panic!
-
-        unitView.tryHeadTowards(closestCity.getCenterTile())
-        return true
-    }
-
     fun tryBombardEnemy(city: CityView): Boolean {
         if (!city.canBombard()) return false
         val cityCombatant = city.asCombatant()
