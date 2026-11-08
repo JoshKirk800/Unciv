@@ -126,6 +126,13 @@ object GreatPersonAutomation {
         return if (path.isEmpty()) Int.MAX_VALUE else path.size - 1
     }
 
+    /** MISSION_MOVE_TO: a step along the path to [tile]. Without a path the mission fails and the unit stays; returns whether it moved on. */
+    private fun moveTo(unit: MapUnit, tile: Tile): Boolean {
+        if (!unit.movement.canReach(tile)) return false
+        unit.movement.headTowards(tile)
+        return true
+    }
+
     private fun isDamaged(city: City) = city.health < city.getMaxHealth()
     //endregion
 
@@ -470,7 +477,7 @@ object GreatPersonAutomation {
             }
         }
         if (best == null) return
-        unit.movement.headTowards(best)
+        moveTo(unit, best)
         if (bestTurns == 0 && unit.currentTile == best) createGreatWork(unit)
     }
 
@@ -553,7 +560,7 @@ object GreatPersonAutomation {
                 val turnsToTarget = turnsToReach(unit, specializationCity.getCenterTile())
                 if (turnsToTarget < Int.MAX_VALUE && turnsToTarget * 3 < turnsRemaining) {
                     if (unit.currentTile == specializationCity.getCenterTile()) hurry(unit)
-                    else unit.movement.headTowards(specializationCity.getCenterTile())
+                    else moveTo(unit, specializationCity.getCenterTile())
                     return
                 }
             }
@@ -565,7 +572,7 @@ object GreatPersonAutomation {
                 add(0, wonder.name)
             }
             if (city.cityConstructions.turnsToConstruction(wonder.name) > 1) hurry(unit)
-        } else unit.movement.headTowards(city.getCenterTile())
+        } else moveTo(unit, city.getCenterTile())
     }
 
     private fun hurry(unit: MapUnit) {
@@ -590,11 +597,11 @@ object GreatPersonAutomation {
      */
     private fun continueOperation(unit: MapUnit, role: GreatPersonRole, isDangerous: (Tile) -> Boolean): Boolean {
         val target = unit.greatPersonTarget?.let { unit.civ.gameInfo.tileMap[it] } ?: return false
-        if (unit.currentTile != target) {
-            unit.movement.headTowards(target)
+        // The operation's army cannot reach its target any more: retarget, as when it cannot act there
+        if (unit.currentTile != target && moveTo(unit, target)) {
             if (unit.currentTile != target || !unit.hasMovement()) return true
         }
-        if (performAtTarget(unit, role)) return true
+        if (unit.currentTile == target && performAtTarget(unit, role)) return true
         // Can no longer act here: retarget (RetargetCivilian)
         val newTarget = if (role == GreatPersonRole.Merchant) findBestMerchantTargetPlot(unit) else findBestMusicianTargetPlot(unit)
         unit.greatPersonTarget = newTarget?.position
@@ -629,7 +636,7 @@ object GreatPersonAutomation {
             val target = findBestArtistTargetPlot(unit)
             if (target != null) {
                 if (unit.currentTile == target) buildCitadel(unit)
-                else unit.movement.headTowards(target)
+                else moveTo(unit, target)
                 return true
             }
         }
@@ -651,7 +658,7 @@ object GreatPersonAutomation {
                 best = tile
             }
         }
-        if (best != null) unit.movement.headTowards(best)
+        if (best != null) moveTo(unit, best)
         return true
     }
 
@@ -692,7 +699,7 @@ object GreatPersonAutomation {
                 best = city
             }
         }
-        if (best != null && unit.currentTile != best.getCenterTile()) unit.movement.headTowards(best.getCenterTile())
+        if (best != null && unit.currentTile != best.getCenterTile()) moveTo(unit, best.getCenterTile())
         return true
     }
 
