@@ -34,7 +34,7 @@ class CivInfoStatsForNextTurn(val civInfo: Civilization) {
     var statsForNextTurn = Stats()
 
     @Readonly
-    private fun getUnitMaintenance(): Int {
+    internal fun getUnitMaintenance(): Int {
         val baseUnitCost = 0.5f
         var freeUnits = 3
         civInfo.forEachMatchingUnique(UniqueType.FreeUnits, civInfo.state) { unique ->

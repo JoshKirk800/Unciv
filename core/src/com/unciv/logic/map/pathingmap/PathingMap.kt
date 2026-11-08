@@ -3,7 +3,6 @@ package com.unciv.logic.map.pathingmap
 import androidx.collection.MutableIntList
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.civilization.MotivationToAttackAutomation
-import com.unciv.logic.automation.civilization.UseGoldAutomation
 import com.unciv.logic.automation.unit.RoadBetweenCitiesAutomation
 import com.unciv.logic.battle.TargetHelper
 import com.unciv.logic.civilization.Civilization
@@ -54,8 +53,6 @@ import kotlin.collections.get
  * - Use [toDebugString] in a quick-watch
  *
  * Future plans:
- * - createCityExpansionPathing
- *   - Useful for [UseGoldAutomation.maybeBuyCityTiles]
  * - Multiple start points.
  *   - Today, [MotivationToAttackAutomation.getAttackPathsModifier] does a separate BFS from each
  *     city. Merging them would give a performance boost.

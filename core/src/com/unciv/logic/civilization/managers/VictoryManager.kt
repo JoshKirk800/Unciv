@@ -56,7 +56,7 @@ class VictoryManager : IsPartOfGameInfoSerialization {
             }.firstOrNull() ?: (null to null)
 
     @Readonly
-    private fun votesNeededForDiplomaticVictory(): Int {
+    internal fun votesNeededForDiplomaticVictory(): Int {
         // The original counts "teams ever alive", which excludes Observer and Barbarians.
         // The "ever alive" part sounds unfair - could make a Vote unwinnable?
 

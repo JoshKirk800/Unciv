@@ -17,6 +17,10 @@ class CityAi : IsPartOfGameInfoSerialization {
     var cityStrategies = LinkedHashMap<String, Int>()
     /** The city specialization (CITYSPECIALIZATION_* name), set by the city specialization port; null = none */
     var specialization: String? = null
+    /** CvCityStrategyAI::m_eDefaultSpecialization: the owner's next desired specialization when the city was founded or acquired */
+    var defaultSpecialization: String? = null
+    /** Whether [defaultSpecialization] has been set since the city was founded or acquired (null is a valid default) */
+    var defaultSpecializationAssigned = false
 
     @Transient lateinit var city: City
     @Transient private var flavorVector: IntArray? = null
@@ -27,6 +31,8 @@ class CityAi : IsPartOfGameInfoSerialization {
         val toReturn = CityAi()
         toReturn.cityStrategies.putAll(cityStrategies)
         toReturn.specialization = specialization
+        toReturn.defaultSpecialization = defaultSpecialization
+        toReturn.defaultSpecializationAssigned = defaultSpecializationAssigned
         return toReturn
     }
 
@@ -39,6 +45,8 @@ class CityAi : IsPartOfGameInfoSerialization {
     fun reset() {
         cityStrategies.clear()
         specialization = null
+        defaultSpecialization = null
+        defaultSpecializationAssigned = false
         flavorVector = null
     }
 

@@ -3,6 +3,7 @@ package com.unciv.logic.automation.strategy
 import com.unciv.Constants
 import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.automation.Timers.Companion.timeThis
+import com.unciv.logic.automation.diplomacy.DiplomacyAi
 import com.unciv.logic.civilization.Civilization
 import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.ai.AiRuleset
@@ -92,6 +93,26 @@ class CivAi : IsPartOfGameInfoSerialization {
     var isCramped = false
     /** Aggression of other majors this player has seen, by civID */
     var aggressionMemory = HashMap<String, AggressionMemory>()
+    /** CvCitySpecializationAI state, see [CitySpecializationAi] */
+    var citySpecialization = CitySpecializationState()
+    /** CvDiplomacyAI::m_paeMinorCivApproach: our approach to each city-state by civID, missing = [MinorCivApproach.Ignore] */
+    var minorCivApproaches = HashMap<String, MinorCivApproach>()
+    /** CvDiplomacyAI war state memory (turns at war, war states, target values, military strength comparison), see [WarStateAi] */
+    var warStates = WarStateMemory()
+    /** CvCitySpecializationAI::m_iWonderCityID: the [com.unciv.logic.city.City.id] of the city chosen to build wonders, null if none */
+    var wonderCityId: String? = null
+    /** CvEconomicAI's gold reservations (StartSaveForPurchase ...) */
+    var purchaseSavings = PurchaseSavings()
+    /** CvUnit::AI_setUnitAIType reassignments: unit id -> UNITAI_* name, see [UnitAiTypes] */
+    var unitAiOverrides = HashMap<String, String>()
+    /** CvEconomicAI state beyond the strategies, see [EconomicAi] */
+    var economic = EconomicAi()
+    /** CvMilitaryAI state beyond the strategies, see [MilitaryAi] */
+    var military = MilitaryAi()
+    /** CvDiplomacyAI state towards other players (opinions, approaches, war goals, disputes, memories), see [DiplomacyAi] */
+    var diplomacy = DiplomacyAi()
+    /** CvMinorCivAI::m_eStatus of a city-state, updated each turn by [MinorCivStatusAi.status] */
+    var minorCivStatus = MinorCivStatus.Normal
     //endregion
 
     //region Transients
@@ -125,11 +146,22 @@ class CivAi : IsPartOfGameInfoSerialization {
         toReturn.militaryStrategies.putAll(militaryStrategies)
         toReturn.isCramped = isCramped
         for ((civId, memory) in aggressionMemory) toReturn.aggressionMemory[civId] = memory.clone()
+        toReturn.citySpecialization = citySpecialization.clone()
+        toReturn.minorCivApproaches.putAll(minorCivApproaches)
+        toReturn.warStates = warStates.clone()
+        toReturn.wonderCityId = wonderCityId
+        toReturn.purchaseSavings = purchaseSavings.clone()
+        toReturn.unitAiOverrides.putAll(unitAiOverrides)
+        toReturn.economic = economic.clone()
+        toReturn.military = military.clone()
+        toReturn.diplomacy = diplomacy.clone()
+        toReturn.minorCivStatus = minorCivStatus
         return toReturn
     }
 
     fun setTransients(civ: Civilization) {
         this.civ = civ
+        diplomacy.civ = civ
         personalityVector = null
         activeFlavorVector = null
         strategyVersion++
@@ -350,23 +382,31 @@ class CivAi : IsPartOfGameInfoSerialization {
 
     /**
      *  The strategic AI turn of this civilization, in CvPlayer::doTurn / doTurnPostDiplomacy order:
-     *  DoUpdateCramped, CvGrandStrategyAI::DoTurn (majors), then CvEconomicAI and CvMilitaryAI strategy loops, then each city's
-     *  CvCityStrategyAI::DoTurn (in CvCity::doTurn). Runs for every living civilization except barbarians and spectators, human or AI,
-     *  as in the original. City specialization (CvCitySpecializationAI::DoTurn) is not ported yet: [CityAi.specialization] stays unset.
+     *  DoUpdateCramped, CvGrandStrategyAI::DoTurn (majors), the war states of CvDiplomacyAI::DoTurn (majors, [WarStateAi.doTurn]),
+     *  then CvEconomicAI::DoTurn (recon state and antiquity sites, the strategy loop, then for AI players plot purchases and worker
+     *  disbanding - [EconomicAi]), CvMilitaryAI::DoTurn (base data and defense states, the strategy loop, then for AI players offensive
+     *  purchases and obsolete unit disbanding - [MilitaryAi]), then each city's CvCityStrategyAI::DoTurn (in CvCity::doTurn).
+     *  Runs for every living civilization except barbarians and spectators, human or AI, as in the original.
      */
     fun doTurn() {
         if (civ.isBarbarian || civ.isSpectator || civ.isDefeated()) return
         ensureInitialized()
         timeThis("AI.Cramped") { updateCramped() }
         if (civ.isMajorCiv) timeThis("AI.GrandStrategy") { GrandStrategyAi.doTurn(civ) }
+        if (civ.isMajorCiv) timeThis("AI.WarStates") { WarStateAi.doTurn(civ) }
+        if (civ.isCityState) minorCivStatus = MinorCivStatusAi.status(civ)
         timeThis("AI.EconomicStrategies") {
+            economic.doTurnBeforeStrategies(civ)
             if (runStrategyLoop(rules.economicStrategies, economicStrategies, civ, checkFirstTurn = true) { StrategyTests.test(civ, it) })
                 onStrategiesChanged()
         }
+        if (!civ.isHuman()) timeThis("AI.EconomicDoTurn") { economic.doTurnAfterStrategies(civ) }
         timeThis("AI.MilitaryStrategies") {
+            military.doTurnBeforeStrategies(civ)
             if (runStrategyLoop(rules.militaryStrategies, militaryStrategies, civ, checkFirstTurn = true) { StrategyTests.test(civ, it) })
                 onStrategiesChanged()
         }
+        if (!civ.isHuman()) timeThis("AI.MilitaryDoTurn") { military.doTurnAfterStrategies(civ) }
         timeThis("AI.CityStrategies") {
             for (city in civ.cities) city.ai.doTurn()
         }

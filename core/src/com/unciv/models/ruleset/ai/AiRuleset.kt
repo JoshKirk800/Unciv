@@ -36,12 +36,17 @@ class AiRuleset {
     var itemFlavors = ArrayList<ItemFlavors>()
     var unitAiTypes = ArrayList<UnitAiTypesDef>()
     var handicaps = ArrayList<HandicapDef>()
+    /** Nation names of CvCivilizationInfo::isCoastalCiv (Civilization_Start_Along_Ocean), read by CvCitySiteEvaluator::PlotFoundValue */
+    var coastalCivilizations = ArrayList<String>()
+    /** CvFeatureInfo::getStartingLocationWeight by terrain feature name (non-zero ones), read by CvCitySiteEvaluator::ComputeStrategicValue */
+    var featureStartingLocationWeights = LinkedHashMap<String, Int>()
 
     /** The ruleset this belongs to - needed to derive flavors of objects without a table entry */
     @Transient lateinit var ruleset: Ruleset
 
     @Transient private var itemFlavorIndex: HashMap<String, ItemFlavors>? = null
     @Transient private var minorCivFlavorIndex: HashMap<String, NamedFlavors>? = null
+    @Transient private var unitAiTypesIndex: HashMap<String, UnitAiTypesDef>? = null
     @Transient private val flavorCache = HashMap<String, IntArray>()
 
     companion object {
@@ -79,6 +84,8 @@ class AiRuleset {
         mergeByName(minorCivFlavors, other.minorCivFlavors)
         mergeByName(unitAiTypes, other.unitAiTypes)
         mergeByName(handicaps, other.handicaps)
+        for (name in other.coastalCivilizations) if (name !in coastalCivilizations) coastalCivilizations.add(name)
+        featureStartingLocationWeights.putAll(other.featureStartingLocationWeights)
         for (entry in other.itemFlavors) {
             val index = itemFlavors.indexOfFirst { it.kind == entry.kind && it.name == entry.name }
             if (index >= 0) itemFlavors[index] = entry else itemFlavors.add(entry)
@@ -98,6 +105,8 @@ class AiRuleset {
         itemFlavors.clear()
         unitAiTypes.clear()
         handicaps.clear()
+        coastalCivilizations.clear()
+        featureStartingLocationWeights.clear()
         clearCaches()
     }
 
@@ -111,6 +120,7 @@ class AiRuleset {
     private fun clearCaches() {
         itemFlavorIndex = null
         minorCivFlavorIndex = null
+        unitAiTypesIndex = null
         flavorCache.clear()
     }
     //endregion
@@ -144,6 +154,12 @@ class AiRuleset {
     fun getItemFlavors(kind: String, name: String): ItemFlavors? {
         val index = itemFlavorIndex ?: itemFlavors.associateByTo(HashMap()) { it.kind + "/" + it.name }.also { itemFlavorIndex = it }
         return index["$kind/$name"]
+    }
+
+    /** The Unit_AITypes entry of a unit by Unciv unit name, null if it has none */
+    fun unitAiTypesOf(unitName: String): UnitAiTypesDef? {
+        val index = unitAiTypesIndex ?: unitAiTypes.associateByTo(HashMap()) { it.name }.also { unitAiTypesIndex = it }
+        return index[unitName]
     }
     //endregion
 
