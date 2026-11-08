@@ -10,6 +10,7 @@ import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.Proximity
 import com.unciv.logic.civilization.diplomacy.DiplomaticStatus
 import com.unciv.logic.map.HexCoord
+import com.unciv.logic.map.TileMap
 import com.unciv.models.metadata.BaseRuleset
 import com.unciv.models.ruleset.ai.DiplomacyPersonality
 import com.unciv.models.ruleset.ai.Flavor
@@ -21,6 +22,7 @@ import com.unciv.testing.GdxTestRunner
 import com.unciv.testing.TestGame
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -448,6 +450,28 @@ class EconomicMilitaryAiTests {
         assertEquals(strong, CityConquestAutomation.considerAnnex(civ))
         assertFalse(strong.isPuppet)
         assertTrue(weak.isPuppet)
+    }
+    //endregion
+
+    //region Strategy tests
+
+    @Test
+    fun `found city counts only loose settlers, not those an operation already moves`() {
+        game.makeHexagonalMap(12, Constants.grassland)
+        val civ = neutralCiv()
+        game.tileMap.assignContinents(TileMap.AssignContinentsMode.Reassign)
+        civ.ai.setPersonalityFlavor(Flavor.Growth, 5)
+        civ.ai.setPersonalityFlavor(Flavor.Expansion, 3)
+        civ.viewableTiles = game.tileMap.values.toSet()
+        for (tile in game.tileMap.values) tile.setExplored(civ, true)
+        game.addCity(civ, tile(0, 0))
+        assertFalse(EconomicMilitaryStrategyTests.foundCity(civ))
+        val settler = game.addUnit("Settler", civ, tile(2, 0))
+        assertTrue(EconomicMilitaryStrategyTests.foundCity(civ))
+        val operation = AiOperationLogic.addSettlerOperation(civ, AiOperationType.FOUND_CITY, settler, -1)
+        assertNotNull(civ.ai.operations.armyOf(settler))
+        assertFalse("aborted: ${operation.abortReason}", operation.state == OperationState.ABORTED)
+        assertFalse(EconomicMilitaryStrategyTests.foundCity(civ))
     }
     //endregion
 }
