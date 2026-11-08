@@ -3,6 +3,7 @@ package com.unciv.logic.automation.strategy
 import com.unciv.Constants
 import com.unciv.logic.automation.WaterBodies
 import com.unciv.logic.city.City
+import com.unciv.logic.city.GreatPersonPointsBreakdown
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.ruleset.Building
@@ -336,13 +337,27 @@ object CityStrategyAi {
         return (citiesPlusSettlers == 1 && turn * 4 > weightThreshold) || (citiesPlusSettlers == 2 && turn * 2 > weightThreshold)
     }
 
+    /**
+     *  CvCity::GetJONSCulturePerTurnFromBuildings and GetFaithPerTurnFromBuildings: what the city's buildings give by themselves, with their
+     *  unconditional stats (the tech-enhanced yields). Beliefs and policies that add culture or faith per building are separate sums
+     *  there (FromReligion, FromPolicies), so the stat tree's "Buildings" branch, which holds them, is not read.
+     */
+    private fun ownYieldFromBuildings(city: City, stat: Stat): Int {
+        var total = 0f
+        for (building in city.cityConstructions.getBuiltBuildings()) {
+            total += building[stat]
+            building.forEachMatchingUnique(UniqueType.Stats, city.state) { total += it.stats[stat] }
+        }
+        return total.toInt()
+    }
+
     fun isFirstCultureBuilding(city: City): Boolean {
-        val culture = baseYieldFromBuildings(city, Stat.Culture)
+        val culture = ownYieldFromBuildings(city, Stat.Culture)
         return culture <= 0 || (city.isCapital() && culture <= 1)
     }
 
     fun isFirstCultureBuildingEmergency(city: City): Boolean =
-        city.population.population >= 5 && baseYieldFromBuildings(city, Stat.Culture) <= 0
+        city.population.population >= 5 && ownYieldFromBuildings(city, Stat.Culture) <= 0
 
     fun isFirstScienceBuilding(city: City): Boolean =
         city.population.population >= 4 && yieldPerPopTimes100(city, Stat.Science) == 0
@@ -355,14 +370,13 @@ object CityStrategyAi {
 
     /** Religion personality above 6, or above 4 once the civilization has a pantheon; the city has 2+ citizens and no faith from buildings */
     fun isFirstFaithBuilding(city: City): Boolean {
-        if (baseYieldFromBuildings(city, Stat.Faith) > 0) return false
+        if (ownYieldFromBuildings(city, Stat.Faith) > 0) return false
         if (city.population.population < 2) return false
         val religionFlavor = city.civ.ai.personality(Flavor.Religion)
         return (religionFlavor > 4 && city.civ.religionManager.religion != null) || religionFlavor > 6
     }
 
-    /** CvCityCitizens::IsAnyPlotBlockaded: a water tile of the city with a military unit of an enemy on water within 2 tiles
-     *  (the original also requires the same water area, which Unciv does not track; only water tiles can share it with water) */
+    /** CvCityCitizens::IsAnyPlotBlockaded: a water tile of the city with a military unit of an enemy within 2 tiles on the same body of water */
     fun isUnderBlockade(city: City): Boolean {
         val civ = city.civ
         val center = city.getCenterTile()
@@ -372,8 +386,10 @@ object CityStrategyAi {
         }.also { cache.enemyNavalTiles = it }
         val enemyTiles = allEnemyTiles.filter { it.aerialDistanceTo(center) <= 5 }
         if (enemyTiles.isEmpty()) return false
+        val bodies = WaterBodies.of(civ)
         return city.tilesInRange.any { tile ->
-            tile != center && tile.isWater && enemyTiles.any { it.aerialDistanceTo(tile) <= 2 }
+            tile != center && tile.isWater &&
+                enemyTiles.any { it.aerialDistanceTo(tile) <= 2 && bodies.bodyOf(it) == bodies.bodyOf(tile) }
         }
     }
 
@@ -384,8 +400,9 @@ object CityStrategyAi {
     fun isJungleCity(city: City): Boolean = countOwnedTilesWithin2(city) { Constants.jungle in it.terrainFeatures } > 1
     fun isMountainCity(city: City): Boolean = city.getCenterTile().neighbors.any { it.baseTerrain == Constants.mountain }
 
-    /** CityStrategyAIHelpers::IsTestCityStrategy_GoodGPCity: 8+ Great Person points per turn from specialists and buildings with their modifiers */
-    fun isGoodGreatPersonCity(city: City): Boolean = city.getGreatPersonPoints().sumValues() >= 8
+    /** CityStrategyAIHelpers::IsTestCityStrategy_GoodGPCity: 8+ Great Person points per turn from specialists and buildings with their modifiers, not rounded per kind */
+    fun isGoodGreatPersonCity(city: City): Boolean =
+        GreatPersonPointsBreakdown(city).sumFixedPoint().sumValues() >= 8 * GreatPersonPointsBreakdown.fixedPointFactor
 
     /**
      *  CvCityCulture::GetSlotTypeFirstAvailableCultureBuilding: the slot type of the cheapest building with Great Work slots, not a world wonder,
@@ -412,16 +429,10 @@ object CityStrategyAi {
         return numAvailableGreatWorkSlots(city.civ, slotType) <= 2
     }
 
-    /** Culture of the world wonders, worked natural wonders and worked improvements plus the base tourism of the city above 10 */
+    /** CityStrategyAIHelpers::IsTestCityStrategy_NeedTourismBuilding: culture of the world wonders, worked natural wonders and worked improvements plus the base tourism of the city above 10 */
     fun needTourismBuilding(city: City): Boolean {
-        var value = 0
-        val buildingStats = city.cityStats.baseStatTree.children["Buildings"]
-        for (building in city.cityConstructions.getBuiltBuildings())
-            if (building.isWonder) value += buildingStats?.children?.get(building.name)?.totalStats?.culture?.toInt() ?: 0
-        for (tile in city.getWorkedTiles())
-            if (tile.isNaturalWonder() || tile.improvement != null) value += tile.stats.getTileStats(city, city.civ).culture.toInt()
-        value += city.civ.culture.getCityTourism(city)
-        return value > 10
+        val culture = city.civ.culture
+        return culture.getCultureOfWonders(city) + culture.getCultureOfWorkedTiles(city) + culture.getCityTourism(city) > 10
     }
 
     /** The capital, a city on another landmass than the capital, or one more than 20 tiles away from it */
