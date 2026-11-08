@@ -95,6 +95,11 @@ class CityStats(val city: City) {
 
     var currentCityStats: Stats = Stats()  // This is so we won't have to calculate this multiple times - takes a lot of time, especially on phones
 
+    /** Food produced minus food eaten, before growth modifiers and food-to-production conversion: the original's
+     *  `getYieldRateTimes100(YIELD_FOOD) - foodConsumption() * 100` (in whole food), read by the citizen governor ([com.unciv.logic.automation.city.CitizenAutomation]) */
+    var excessFood = 0f
+        private set
+
     //endregion
     //region Pure Functions
 
@@ -598,6 +603,7 @@ class CityStats(val city: City) {
         newFinalStatList["Population"]!!.food -= foodEaten
 
         var totalFood = newFinalStatList.values.map { it.food }.sum()
+        excessFood = totalFood
 
         // Apply growth modifier only when positive food
         if (totalFood > 0 && calculateGrowthModifiers) {

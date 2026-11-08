@@ -1,21 +1,19 @@
 package com.unciv.logic.city
 
 import com.unciv.logic.IsPartOfGameInfoSerialization
-import com.unciv.logic.automation.Automation
-import com.unciv.logic.city.managers.CityPopulationManager
+import com.unciv.logic.automation.city.CitizenAutomation
 import com.unciv.models.stats.Stat
 import com.unciv.ui.components.input.KeyboardBinding
 import com.unciv.ui.screens.cityscreen.CitizenManagementTable
 import yairm210.purity.annotations.Pure
 
 /**
- *  Controls automatic worker-to-tile assignment
+ *  Controls automatic worker-to-tile assignment: the original's CityAIFocusTypes
  *  @param  label Display label, formatted for tr()
  *  @param  tableEnabled Whether to show or hide in CityScreen's [CitizenManagementTable]
- *  @param  stat Which stat the default [getStatMultiplier] emphasizes - unused if that is overridden w/o calling super
+ *  @param  stat Which stat the focus emphasizes
  *  @param  binding Bindable keyboard key in UI - this is an override, by default matching enum names in [KeyboardBinding] are assigned automatically
- *  @see    CityPopulationManager.autoAssignPopulation
- *  @see    Automation.rankStatsForCityWork
+ *  @see    CitizenAutomation.Valuation for what each focus weighs
  *  Order matters for building the [CitizenManagementTable]
  */
 enum class CityFocus(
@@ -25,13 +23,9 @@ enum class CityFocus(
     binding: KeyboardBinding? = null
 ) : IsPartOfGameInfoSerialization {
     // region Enum values
-    NoFocus("Default", true, null) {
-        override fun getStatMultiplier(stat: Stat) = 1f  // actually redundant, but that's two steps to see
-    },
+    NoFocus("Default", true, null),
     /** Never clears existing assignments, only assigns new population using default focus, implemented in [City.reassignPopulation] */
-    Manual("Manual", true, null) {
-        override fun getStatMultiplier(stat: Stat) = 1f
-    },
+    Manual("Manual", true, null),
     FoodFocus(Stat.Food),
     ProductionFocus(Stat.Production),
     GoldFocus(Stat.Gold),
@@ -39,20 +33,8 @@ enum class CityFocus(
     CultureFocus(Stat.Culture),
     HappinessFocus(Stat.Happiness, false),
     FaithFocus(Stat.Faith),
-    GoldGrowthFocus("${Stat.Gold.character} ${Stat.Food.character}", true) {
-        override fun getStatMultiplier(stat: Stat) = when (stat) {
-            Stat.Gold -> 2f
-            Stat.Food -> 1.5f
-            else -> 1f
-        }
-    },
-    ProductionGrowthFocus("${Stat.Production.character} ${Stat.Food.character}", true) {
-        override fun getStatMultiplier(stat: Stat) = when (stat) {
-            Stat.Production -> 2f
-            Stat.Food -> 1.5f
-            else -> 1f
-        }
-    },
+    GoldGrowthFocus("${Stat.Gold.character} ${Stat.Food.character}", true),
+    ProductionGrowthFocus("${Stat.Production.character} ${Stat.Food.character}", true),
     //GreatPersonFocus
 
     ;
@@ -65,23 +47,7 @@ enum class CityFocus(
         KeyboardBinding.entries.firstOrNull { it.name == name } ?:
         KeyboardBinding.None
 
-    @Pure
-    open fun getStatMultiplier(stat: Stat) = when (this.stat) {
-        stat -> 3.05f // on ties, prefer the Focus
-        else -> 1f
-    }
-
-    val statValuesForFocus: List<Stat> by lazy {
-        Stat.entries.filter { getStatMultiplier(it) != 1f }
-    }
-
     companion object {
         @Pure fun safeValueOf(stat: Stat): CityFocus = entries.firstOrNull { it.stat == stat } ?: NoFocus
-
-        // set used in Automation. All non-Food Focuses, so targets 0 Surplus Food
-        val zeroFoodFocuses = setOf(
-            CultureFocus, FaithFocus, GoldFocus,
-            HappinessFocus, ProductionFocus, ScienceFocus
-        )
     }
 }

@@ -50,4 +50,12 @@ enum class AiDefine(val default: Float) {
     // CvPlayer::DoUpdateCramped
     CRAMPED_RANGE_FROM_CITY(5f),
     CRAMPED_USABLE_PLOT_PERCENT(25f),
+
+    // CvCityCitizens::GetPlotValue / GetSpecialistValue
+    AI_CITIZEN_VALUE_FOOD(14f),
+    AI_CITIZEN_VALUE_PRODUCTION(12f),
+    AI_CITIZEN_VALUE_GOLD(8f),
+    AI_CITIZEN_VALUE_SCIENCE(7f),
+    AI_CITIZEN_VALUE_CULTURE(15f),
+    AI_CITIZEN_VALUE_FAITH(5f),
 }

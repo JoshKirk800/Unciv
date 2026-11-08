@@ -1,12 +1,11 @@
 package com.unciv.logic.city.managers
 
 import com.unciv.logic.IsPartOfGameInfoSerialization
-import com.unciv.logic.automation.Automation
+import com.unciv.logic.automation.city.CitizenAutomation
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.NotificationCategory
 import com.unciv.logic.civilization.NotificationIcon
-import com.unciv.logic.map.tile.Tile
 import com.unciv.models.Counter
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.ui.components.extensions.toPercent
@@ -157,59 +156,14 @@ class CityPopulationManager : IsPartOfGameInfoSerialization {
         addPopulation(-population + count)
     }
 
-    /** Only assigns free population */
+    /** Gives every unemployed citizen a job, one at a time (CvCityCitizens::DoAddBestCitizenFromUnassigned, see [CitizenAutomation.Governor]) */
     internal fun autoAssignPopulation(): Unit = timeThis("CityPopulationManager.autoAssignPopulation") {
         city.cityStats.update()  // calculate current stats with current assignments
         val freePopulation = getFreePopulation()
         if (freePopulation <= 0) return
 
-        val cityStats = city.cityStats.currentCityStats
-        city.currentGPPBonus = city.getGreatPersonPercentageBonus()  // pre-calculate for use in Automation.rankSpecialist
-        var specialistFoodBonus = 2f  // See CityStats.calcFoodEaten()
-        specialistFoodBonus = 2f - specialistFoodBonus
-
-        val tilesToEvaluate = city.getWorkableTiles()
-            .filterNot { it.isBlockaded() }.toList().asSequence()
-
-        // Calculate stats once - but the *ranking of those stats* is dynamic and depends on what the city needs
-        val tileStats = tilesToEvaluate
-            .filterNot { it.providesYield() }
-            .associateWith { it.stats.getTileStats(city, city.civ)}
-
-        val maxSpecialists = getMaxSpecialists().asSequence()
-
-        repeat(freePopulation) {
-            //evaluate tiles
-            val bestTileAndRank = tilesToEvaluate
-                .filterNot { it.providesYield() } // Changes with every tile assigned
-                .associateWith { Automation.rankStatsForCityWork(tileStats[it]!!, city, false) }
-                // We need to make sure that we work the same tiles as last turn on a tile
-                // so that our workers know to prioritize this tile and don't move to the other tile
-                // This was just the easiest way I could think of.
-                .maxWithOrNull( compareBy({ it.value }, { it.key.longitude }, { it.key.latitude }))
-            val bestTile = bestTileAndRank?.key
-            val valueBestTile = bestTileAndRank?.value ?: 0f
-
-            val bestJobAndRank = if (city.manualSpecialists) null
-                else maxSpecialists
-                    .filter { specialistAllocations[it.key] < it.value }
-                    .map { it.key }
-                    .associateWith { Automation.rankSpecialist(it, city) }
-                    .maxByOrNull { it.value }
-            val bestJob = bestJobAndRank?.key
-            val valueBestSpecialist = bestJobAndRank?.value ?: 0f
-
-            //assign population
-            if (valueBestTile > valueBestSpecialist) {
-                if (bestTile != null) {
-                    city.workTile(bestTile)
-                    cityStats.food += tileStats[bestTile]!!.food
-                }
-            } else if (bestJob != null) {
-                specialistAllocations.add(bestJob, 1)
-                cityStats.food += specialistFoodBonus
-            }
-        }
+        val governor = CitizenAutomation.Governor(city)
+        repeat(freePopulation) { governor.addBestCitizen() }
         city.cityStats.update()
     }
 
@@ -225,48 +179,11 @@ class CityPopulationManager : IsPartOfGameInfoSerialization {
             if (specialistAllocations[specialistName] > maxAmount)
                 specialistAllocations[specialistName] = maxAmount
 
-        
-
+        if (getFreePopulation() >= 0) return
+        // CvCity::setPopulation: CvCityCitizens::DoRemoveWorstCitizen for each citizen too many
+        val governor = CitizenAutomation.Governor(city)
         while (getFreePopulation() < 0) {
-            //evaluate tiles
-            val worstWorkedTile: Tile? = city.getWorkedTiles()
-                    .minByOrNull {
-                        Automation.rankTileForCityWork(it, city) +
-                            (if (it.isLocked()) 10 else 0)
-                    }
-            val valueWorstTile = if (worstWorkedTile == null) 0f
-            else Automation.rankTileForCityWork(worstWorkedTile, city)
-
-            //evaluate specialists
-            val worstAutoJob: String? = if (city.manualSpecialists) null else specialistAllocations.keys
-                    .minByOrNull { Automation.rankSpecialist(it, city) }
-            var valueWorstSpecialist = 0f
-            if (worstAutoJob != null)
-                valueWorstSpecialist = Automation.rankSpecialist(worstAutoJob, city)
-
-
-            // un-assign population
-            when {
-                worstAutoJob != null && worstWorkedTile != null -> {
-                    // choose between removing a specialist and removing a tile
-                    if (valueWorstTile < valueWorstSpecialist) {
-                        city.stopWorkingTile(worstWorkedTile)
-                    }
-                    else
-                        specialistAllocations.add(worstAutoJob, -1)
-                }
-                worstAutoJob != null -> specialistAllocations.add(worstAutoJob, -1)
-                worstWorkedTile != null -> city.stopWorkingTile(worstWorkedTile)
-                else -> {
-                    // It happens when "city.manualSpecialists == true"
-                    //  and population goes below the number of specialists, e.g. city is razing.
-                    // Let's give a chance to do the work automatically at least.
-                    val worstJob = specialistAllocations.keys.minByOrNull {
-                        Automation.rankSpecialist(it, city) }
-                        ?: break // sorry, we can do nothing about that
-                    specialistAllocations.add(worstJob, -1)
-                }
-            }
+            if (!governor.removeWorstCitizen()) break
         }
     }
 
