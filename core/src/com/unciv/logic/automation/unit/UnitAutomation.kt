@@ -1,6 +1,5 @@
 package com.unciv.logic.automation.unit
 
-import com.unciv.logic.automation.diplomacy.WarGoal
 import com.unciv.logic.automation.unit.tactical.TacticalAi
 import com.unciv.logic.automation.unit.tactical.TacticalSafety
 import com.unciv.view.hasMovement
@@ -19,8 +18,6 @@ import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.MapUnitAction
 import com.unciv.logic.civilization.NotificationCategory
-import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
-import com.unciv.logic.civilization.diplomacy.DiplomaticModifiers
 import com.unciv.logic.map.mapunit.UpgradeAvailability
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.UnitActionType
@@ -36,7 +33,6 @@ import com.unciv.view.ForeignCityView
 import com.unciv.view.isAtWar
 import com.unciv.view.stateBasedRandom
 import com.unciv.view.MapUnitView
-import com.unciv.view.ForeignCivView
 import com.unciv.view.CityView
 import com.unciv.view.MapUnitCombatantView
 import yairm210.purity.annotations.Readonly
@@ -97,15 +93,8 @@ object UnitAutomation {
             if (unit in cache.processedUnits) return
         }
 
-        // Settlers get their escort from their operation (OperationMoves); Great People are accompanied here
+        // Settlers get their escort from their operation (OperationalMoves); Great People are accompanied here
         if (tryAccompanyGreatPerson(unitView)) return
-
-
-        // Focus all units without a specific target on the enemy city closest to one of our cities
-        if (HeadTowardsEnemyCityAutomation.tryHeadTowardsEnemyCity(unitView)) return
-
-
-        if (tryPrepare(unitView)) return
 
         // What is left of the unit's turn is CvHomelandAI's: explore, garrison, sentry, patrol, ... (the civilization's whole military goes through
         // it in NextTurnAutomation.automateUnits; this is for a single automated unit)
@@ -251,47 +240,6 @@ object UnitAutomation {
         if (unitView.getTile() != tileToPillage) return false
 
         return unitView.tryInvokeUnitAction(UnitActionType.Pillage)
-    }
-
-    /**
-     * Tries to move the unit to the closest city that is close to a target civilization
-     */
-    private fun tryPrepare(unitView: MapUnitView): Boolean {
-        val civ = unitView.civ()
-
-        // Only our own side of the diplomacy is known to us - we can't see their flags,
-        //  but if they denounced us we'll have the resulting opinion modifier
-        @Readonly
-        fun hasPreparationFlag(targetCiv: ForeignCivView): Boolean {
-            val diploManager = civ.getDiplomacyManagerWith(targetCiv)!!
-            if (diploManager.hasFlag(DiplomacyFlags.Denunciation)
-                || diploManager.hasModifier(DiplomaticModifiers.Denunciation)) return true
-            // CvDiplomacyAI war goal PREPARE: we are mustering an attack on them
-            return civ.getCiv().ai.diplomacy.warGoal(targetCiv.getCiv()) == WarGoal.Prepare
-        }
-
-        // Prepare against the civs we're actually at war with - only if there are none, against the ones we might go to war with
-        val knownCivs = civ.getKnownCivs()
-        val hostileCivs = knownCivs.filter { civ.isAtWarWith(it) }.toSet()
-            .ifEmpty { knownCivs.filter { hasPreparationFlag(it) }.toSet() }
-        val closeCities = ThreatManager.getNeighboringCitiesOfOtherCivs(unitView.civ()).filter { it.second.owningCiv() in hostileCivs }
-        val closestDistance = closeCities.minOfOrNull { it.first.getCenterTile().aerialDistanceTo(it.second.getCenterTile()) }
-            ?: return false
-        val citiesToDefend = closeCities
-            .filter { it.first.getCenterTile().aerialDistanceTo(it.second.getCenterTile()) <= closestDistance + 2 }
-            .map { it.first }
-            .distinct() // Remove duplicate cities
-            .sortedBy { unitView.getTile().aerialDistanceTo(it.getCenterTile()) }
-
-        // Move to the closest city with a tile we can enter nearby
-        for (city in citiesToDefend) {
-            if (unitView.getTile().aerialDistanceTo(city.getCenterTile()) <= 2) return true
-            val tileToMoveTo = city.getCenterTile().getExploredTilesInDistance(2)
-                .firstOrNull { unitView.canMoveTo(it) && unitView.canReach(it) } ?: continue
-            unitView.tryHeadTowards(tileToMoveTo)
-            return true
-        }
-        return false
     }
 
     private fun tryAccompanyGreatPerson(unitView: MapUnitView): Boolean {

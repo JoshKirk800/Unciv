@@ -26,6 +26,17 @@ class TacticalContext(
     val state get() = civ.ai.tactical
     val turn get() = civ.gameInfo.turns
 
+    /** CvTacticalAI::m_ZoneTargets: the targets the move being run looks at (ExtractTargetsForZone: all of them, or those of one dominance zone) */
+    var currentTargets: List<TacticalTarget> = targets.all
+
+    /** CvTacticalAI::TurnOffMove: moves a posture disabled for the rest of the turn (TacticalMoveDef names) */
+    val disabledMoves = HashSet<String>()
+
+    /** ClearEnemiesNearArmy: [unit] joins this turn's tactical units (CvTacticalAI::m_CurrentTurnUnits) if it is not one yet */
+    fun addUnit(unit: MapUnit) {
+        if (unit !in units) units.add(unit)
+    }
+
     /** AI_TACTICAL_RECRUIT_RANGE: m_iRecruitRange, how far units are recruited for one move */
     val recruitRange = rules.define(AiDefine.AI_TACTICAL_RECRUIT_RANGE)
 

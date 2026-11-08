@@ -29,9 +29,11 @@ object TacticalMoves {
     /**
      *  CvTacticalAI::PlotCaptureCityMoves: against each enemy city, the units that can reach it count together; if what they do is at least half
      *  of the city's hit points (a risk: they need not survive), all attack, melee last, one of them taking the city.
+     *  @return whether an attack was set up
      */
-    fun plotCaptureCityMoves(ctx: TacticalContext) {
-        for (target in TacticalTargets.ofType(ctx.targets.all, TacticalTargetType.City)) {
+    fun plotCaptureCityMoves(ctx: TacticalContext): Boolean {
+        var attackMade = false
+        for (target in TacticalTargets.ofType(ctx.currentTargets, TacticalTargetType.City)) {
             if (!target.isAlive(ctx.civ)) continue
             val strikers = TacticalAttacks.findUnits(ctx, target.tile, 1, includeBlocked = true)
             if (strikers.isEmpty()) continue
@@ -41,10 +43,12 @@ object TacticalMoves {
             if (TacticalAttacks.computeTotalExpectedDamage(target, strikers) >= required / 2) { // risky
                 ctx.log { "attacking city of ${target.city.name} to capture, ${target.tile.position}" }
                 TacticalAttacks.executeAttack(ctx, target, strikers, emptyList(), inflictWhatWeTake = false, mustSurviveAttack = false)
+                attackMade = true
                 // Did it work? If so, don't need a temporary dominance zone if had one here
                 if (target.tile.getOwner() == ctx.civ) ctx.state.deleteTemporaryZone(target.tile)
             }
         }
+        return attackMade
     }
 
     /**
@@ -52,7 +56,7 @@ object TacticalMoves {
      *  eighth of its hit points ("don't want to hammer away to try and take down a city for more than 8 turns"), units that survive only.
      */
     fun plotDamageCityMoves(ctx: TacticalContext) {
-        for (target in TacticalTargets.ofType(ctx.targets.all, TacticalTargetType.City)) {
+        for (target in TacticalTargets.ofType(ctx.currentTargets, TacticalTargetType.City)) {
             if (!target.isAlive(ctx.civ)) continue
             val strikers = TacticalAttacks.findUnits(ctx, target.tile, 1, includeBlocked = true)
             if (strikers.isEmpty()) continue
@@ -72,7 +76,7 @@ object TacticalMoves {
      *  do as much as it takes, below that each has to, and they must survive.
      */
     fun plotDestroyUnitMoves(ctx: TacticalContext, type: TacticalTargetType, mustBeAbleToKill: Boolean, attackAtPoorOdds: Boolean = false) {
-        for (target in TacticalTargets.ofType(ctx.targets.all, type)) {
+        for (target in TacticalTargets.ofType(ctx.currentTargets, type)) {
             val defender = TacticalTargets.visibleEnemyDefender(ctx.civ, target.tile) ?: continue
             val strikers = TacticalAttacks.findUnits(ctx, target.tile, 1)
             val cities = TacticalAttacks.findCities(ctx, target.tile)
@@ -98,7 +102,7 @@ object TacticalMoves {
     fun plotSafeBombardMoves(ctx: TacticalContext) {
         for (type in listOf(TacticalTargetType.HighPriorityUnit, TacticalTargetType.MediumPriorityUnit, TacticalTargetType.LowPriorityUnit)) {
             // The original stops at the first target that is gone
-            for (target in TacticalTargets.ofType(ctx.targets.all, type)) {
+            for (target in TacticalTargets.ofType(ctx.currentTargets, type)) {
                 if (!target.isAlive(ctx.civ)) break
                 TacticalBombards.safeBombardTarget(ctx, target)
             }
@@ -113,7 +117,7 @@ object TacticalMoves {
      *  (ExecuteCivilianCapture: it moves there and is done for the turn).
      */
     fun plotCivilianAttackMoves(ctx: TacticalContext, type: TacticalTargetType) {
-        for (target in TacticalTargets.ofType(ctx.targets.all, type)) {
+        for (target in TacticalTargets.ofType(ctx.currentTargets, type)) {
             val victim = target.unit ?: continue
             if (victim.isDestroyed || victim.civ == ctx.civ || victim.getTile() != target.tile) continue
             val striker = TacticalAttacks.findUnits(ctx, target.tile, 1, targetUndefended = true).firstOrNull() ?: continue
@@ -124,7 +128,7 @@ object TacticalMoves {
 
     /** CvTacticalAI::PlotBarbarianCampMoves: a unit that can move onto an undefended barbarian camp does, and clears it */
     fun plotBarbarianCampMoves(ctx: TacticalContext) {
-        for (target in TacticalTargets.ofType(ctx.targets.all, TacticalTargetType.BarbarianCamp)) {
+        for (target in TacticalTargets.ofType(ctx.currentTargets, TacticalTargetType.BarbarianCamp)) {
             if (!target.tile.isBarbarianEncampment() || target.tile.militaryUnit != null) continue
             val striker = TacticalAttacks.findUnits(ctx, target.tile, 1, targetUndefended = true).firstOrNull() ?: continue
             ctx.log { "removing barbarian camp, ${target.tile.position}" }
@@ -140,7 +144,7 @@ object TacticalMoves {
      */
     fun plotPillageMoves(ctx: TacticalContext, type: TacticalTargetType, firstPass: Boolean) {
         val heal = ctx.rules.define(AiDefine.PILLAGE_HEAL_AMOUNT)
-        for (target in TacticalTargets.ofType(ctx.targets.all, type)) {
+        for (target in TacticalTargets.ofType(ctx.currentTargets, type)) {
             val tile = target.tile
             if (!tile.canPillageTile()) continue
             if (firstPass) {
@@ -163,7 +167,7 @@ object TacticalMoves {
 
     /** CvTacticalAI::PlotAncientRuinMoves: a unit that can attack (a fast one first) and is [turnsAway] turns from a ruin goes to pop it */
     fun plotAncientRuinMoves(ctx: TacticalContext, turnsAway: Int) {
-        for (target in TacticalTargets.ofType(ctx.targets.all, TacticalTargetType.AncientRuins)) {
+        for (target in TacticalTargets.ofType(ctx.currentTargets, TacticalTargetType.AncientRuins)) {
             val (high, regular) = findUnitsForThisMove(ctx, MoveKind.Ruins, target.tile, turnsAway)
             if (high.isEmpty() && regular.isEmpty()) continue
             ctx.log { "moving to goody hut, ${target.tile.position}, turns away $turnsAway" }
@@ -179,7 +183,7 @@ object TacticalMoves {
      *  [turnsAway] turns away goes in or, if it is there, fortifies; ranged units are preferred. [mustAllowRangedAttack]: only ranged units.
      */
     fun plotGarrisonMoves(ctx: TacticalContext, turnsAway: Int, mustAllowRangedAttack: Boolean = false) {
-        for (target in TacticalTargets.ofType(ctx.targets.all, TacticalTargetType.CityToDefend)) {
+        for (target in TacticalTargets.ofType(ctx.currentTargets, TacticalTargetType.CityToDefend)) {
             val city = target.city!!
             if (ctx.state.lastTurnGarrisonAssigned(city) >= ctx.turn) continue
             // Grab units that make sense for this move type
@@ -193,7 +197,7 @@ object TacticalMoves {
 
     /** CvTacticalAI::PlotBastionMoves: a unit that does not shoot goes to a defensible tile next to a threatened city, to hold it */
     fun plotBastionMoves(ctx: TacticalContext, turnsAway: Int) {
-        for (target in TacticalTargets.ofType(ctx.targets.all, TacticalTargetType.DefensiveBastion)) {
+        for (target in TacticalTargets.ofType(ctx.currentTargets, TacticalTargetType.DefensiveBastion)) {
             val (high, regular) = findUnitsForThisMove(ctx, MoveKind.Defender, target.tile, turnsAway)
             if (high.isEmpty() && regular.isEmpty()) continue
             ctx.log { "bastion ${target.tile.position}, priority ${target.aux}, turns away $turnsAway" }
@@ -203,7 +207,7 @@ object TacticalMoves {
 
     /** CvTacticalAI::PlotGuardImprovementMoves: a unit that does not shoot goes to stand on one of our improvements (it looks for units as for a bastion) */
     fun plotGuardImprovementMoves(ctx: TacticalContext, turnsAway: Int) {
-        for (target in TacticalTargets.ofType(ctx.targets.all, TacticalTargetType.ImprovementToDefend)) {
+        for (target in TacticalTargets.ofType(ctx.currentTargets, TacticalTargetType.ImprovementToDefend)) {
             val (high, regular) = findUnitsForThisMove(ctx, MoveKind.Defender, target.tile, turnsAway)
             if (high.isEmpty() && regular.isEmpty()) continue
             ctx.log { "guard improvement ${target.tile.position}, turns away $turnsAway" }
@@ -221,7 +225,7 @@ object TacticalMoves {
             TacticalTargetType.HighPriorityUnit, TacticalTargetType.MediumPriorityUnit, TacticalTargetType.LowPriorityUnit,
             TacticalTargetType.City, TacticalTargetType.Improvement
         )
-        val targets = ctx.targets.all.filter { it.type in wanted }
+        val targets = ctx.currentTargets.filter { it.type in wanted }
         for (unit in ctx.liveUnits()) {
             // Never use this (default) move for Great Admirals or Generals
             if (unit.baseUnit.isGreatPerson || !unit.baseUnit.isLandUnit || !unit.hasMovement()) continue

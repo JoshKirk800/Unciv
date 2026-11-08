@@ -151,7 +151,6 @@ object AirUnitAutomation {
                 .maxByOrNull { it.second }
             if (highestTileNukeValue != null && highestTileNukeValue.second > 0)
                 Battle.moveAndAttack(MapUnitCombatant(unit), highestTileNukeValue.first)
-            HeadTowardsEnemyCityAutomation.tryHeadTowardsEnemyCity(unitView)
         }
     }
 
