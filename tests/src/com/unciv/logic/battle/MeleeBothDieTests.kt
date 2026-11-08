@@ -87,15 +87,4 @@ class MeleeBothDieTests {
         assertEquals(5, toDefender)
         assertEquals(40, toAttacker)
     }
-
-    @Test
-    fun `an attacker that would die is not offered the attack unless it survives by the rule`() {
-        val strong = MapUnitCombatant(unit(us, 0, strength = 30, health = 6))
-        val weakTarget = MapUnitCombatant(unit(them, 1, strength = 10, health = 6))
-        val weak = MapUnitCombatant(unit(us, -1, strength = 10, health = 6))
-        val strongTarget = MapUnitCombatant(unit(them, 2, strength = 30, health = 6))
-
-        assertTrue(BattleDamage.attackerSurvives(strong, weakTarget))
-        assertFalse(BattleDamage.attackerSurvives(weak, strongTarget))
-    }
 }

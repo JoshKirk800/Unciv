@@ -44,7 +44,8 @@ object TacticalBombards {
         for (unit in ctx.liveUnits()) {
             if (unit in exclude) continue
             val base = unit.baseUnit
-            if (base.strength == 0 && base.rangedStrength == 0) continue
+            // Units with no combat strength of their own are not used: civilians, and aircraft (the original gives them ranged strength only)
+            if (base.isAirUnit() || base.strength == 0 && base.rangedStrength == 0) continue
             if (mustHaveHalfHp && unit.health < 50) continue
             if (mustBeRanged) {
                 if (tile.isWater && base.isLandUnit || !tile.isWater && !tile.isCityCenter() && base.isWaterUnit) continue

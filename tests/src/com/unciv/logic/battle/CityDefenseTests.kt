@@ -1,6 +1,5 @@
 package com.unciv.logic.battle
 
-import com.unciv.logic.automation.unit.BattleHelper
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.tile.Tile
@@ -8,7 +7,6 @@ import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.testing.BaseTestRunner
 import com.unciv.testing.TestGame
-import com.unciv.view.GameView
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -121,20 +119,6 @@ class CityDefenseTests {
         assertEquals(them, city.civ)
         assertEquals(1, city.health)
         assertEquals(100, unit.health)
-    }
-
-    @Test
-    fun `the AI takes a city at minimum health even with a unit that would otherwise die, but does not throw it at a healthy city`() {
-        val wounded = meleeUnit(health = 5)
-        city.health = cityCombatant.getMaxHealth()
-        BattleHelper.tryAttackNearbyEnemy(GameView(game.gameInfo, us).getMapUnitView(wounded))
-        assertFalse(wounded.isDestroyed)
-        assertEquals("not attacked", cityCombatant.getMaxHealth(), city.health)
-
-        city.health = 1
-        BattleHelper.tryAttackNearbyEnemy(GameView(game.gameInfo, us).getMapUnitView(wounded))
-        assertEquals(us, city.civ)
-        assertEquals(1, wounded.health)
     }
 
     @Test

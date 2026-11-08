@@ -41,8 +41,6 @@ import java.util.BitSet
  * teleportToClosestMoveableTile has something akin to pathing logic as well, iterating over nearby
  * tiles, and calling getPathBetweenTiles to see if the unit can reach them.
  *
- * [AirUnitAutomation.getAerialPathsToCities][com.unciv.logic.automation.unit.AirUnitAutomation] is the aerial equivalent of getMovementToTilesAtPosition.
- *
  * getPathBetweenTiles uses {@link com.unciv.logic.map.BFS} for single-turn pathing to a target.
  */
 class UnitMovement(val unit: MapUnit) {

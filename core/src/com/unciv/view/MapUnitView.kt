@@ -104,7 +104,6 @@ class MapUnitView internal constructor(
     @Readonly fun canSwapTo(tileView: TileView): Boolean = unit.movement.canUnitSwapTo(tileView.unwrap())
     // All "prepare and then choose tile" logic is actually UI stuff, and should be migrated out of logic layer
     @Readonly fun canMoveTo(tileView: TileView): Boolean = unit.movement.canMoveTo(tileView.unwrap())
-    @Readonly fun getDamageFromTerrain(tileView: TileView): Int = unit.getDamageFromTerrain(tileView.unwrap())
     // This reads as "logic leaking through to UI"
     @Readonly fun isUnknownTileWeShouldAssumeToBePassable(tileView: TileView): Boolean =
         unit.movement.isUnknownTileWeShouldAssumeToBePassable(tileView.unwrap())
