@@ -41,8 +41,6 @@ enum class AiOperationType(
     PILLAGE_ENEMY(OperationMoveType.EnemyTerritory),
     CITY_CLOSE_DEFENSE(OperationMoveType.None),
     RAPID_RESPONSE(OperationMoveType.None),
-    /** AI_OPERATION_COLONIZE: CvAINavalEscortedOperation, a settler with a land escort and naval escorts overseas */
-    NAVAL_COLONIZE(OperationMoveType.NavalEscort, mixedLandNaval = true),
     NAVAL_ATTACK(OperationMoveType.NavalEscort, mixedLandNaval = true),
     NAVAL_SNEAK_ATTACK(OperationMoveType.NavalEscort, mixedLandNaval = true),
     CITY_STATE_NAVAL_ATTACK(OperationMoveType.NavalEscort, mixedLandNaval = true),
@@ -62,8 +60,6 @@ enum class AiOperationType(
     val isNavalInvasion get() = this == NAVAL_ATTACK || this == NAVAL_SNEAK_ATTACK || this == CITY_STATE_NAVAL_ATTACK
     /** CvAINavalOperation and its subclasses: the operations of ships only */
     val isNavalFleet get() = allNaval
-    /** CvAINavalEscortedOperation and its subclasses (the colonization party and the invasions) */
-    val isNavalEscorted get() = this == NAVAL_COLONIZE || isNavalInvasion
 }
 
 /** AIOperationStates */

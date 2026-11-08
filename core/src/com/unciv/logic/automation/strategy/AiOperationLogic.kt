@@ -106,7 +106,6 @@ object AiOperationLogic {
             AiOperationType.RAPID_RESPONSE -> "MUFORMATION_RAPID_RESPONSE_FORCE"
             AiOperationType.NAVAL_ATTACK, AiOperationType.NAVAL_SNEAK_ATTACK -> "MUFORMATION_NAVAL_INVASION"
             AiOperationType.CITY_STATE_NAVAL_ATTACK -> "MUFORMATION_CITY_STATE_INVASION"
-            AiOperationType.NAVAL_COLONIZE -> "MUFORMATION_COLONIZATION_PARTY"
             AiOperationType.NAVAL_BOMBARDMENT -> "MUFORMATION_NAVAL_BOMBARDMENT"
             AiOperationType.NAVAL_SUPERIORITY -> "MUFORMATION_NAVAL_SQUADRON"
             AiOperationType.PURE_NAVAL_CITY_ATTACK -> "MUFORMATION_PURE_NAVAL_CITY_ATTACK"
@@ -176,7 +175,6 @@ object AiOperationLogic {
             type == AiOperationType.PURE_NAVAL_CITY_ATTACK -> NavalOperationLogic.initPureNavalAttack(civ, operation, target, muster)
             type == AiOperationType.NAVAL_BOMBARDMENT || type == AiOperationType.NAVAL_SUPERIORITY -> NavalOperationLogic.initFleet(civ, operation)
             type == AiOperationType.NUKE_ATTACK -> NavalOperationLogic.initNuke(civ, operation)
-            type == AiOperationType.NAVAL_COLONIZE -> error("A colonization party needs its settler: NavalOperationLogic.tryStartColonization")
             else -> initDefense(civ, operation)
         }
         if (operation.state != OperationState.ABORTED) logStart(civ, operation)
@@ -614,7 +612,6 @@ object AiOperationLogic {
         val type = operation.type
         return when {
             type.isNavalInvasion -> NavalOperationLogic.navalInvasionInPosition(civ, operation, army)
-            type == AiOperationType.NAVAL_COLONIZE -> NavalOperationLogic.colonizationInPosition(civ, operation, army)
             type == AiOperationType.NAVAL_BOMBARDMENT -> NavalOperationLogic.bombardmentInPosition(civ, operation, army)
             type == AiOperationType.NAVAL_SUPERIORITY -> NavalOperationLogic.superiorityInPosition(civ, operation, army)
             type == AiOperationType.PURE_NAVAL_CITY_ATTACK -> NavalOperationLogic.pureNavalAttackInPosition(civ, operation, army)
@@ -870,13 +867,12 @@ object AiOperationLogic {
         }
     }
 
-    /** CvAIOperation::UnitWasRemoved (and CvAIEscortedOperation's): recruiting wants the slot again; below half strength the operation aborts */
+    /**
+     *  CvAIOperation::UnitWasRemoved (and CvAIEscortedOperation's for the found-city operations): recruiting wants the slot again; below half
+     *  strength the operation aborts. The naval invasions use the root rule too: CvAIOperationNavalAttack::UnitWasRemoved calls
+     *  CvAIOperation's, not the CvAINavalEscortedOperation one that aborts on a lost slot 0.
+     */
     fun unitWasRemoved(operations: AiOperations, operation: AiOperation, army: AiArmy, slot: Int) {
-        if (operation.type == AiOperationType.NAVAL_COLONIZE) {
-            // Always abort if the settler is removed
-            if (slot == 0) abort(operation, OperationAbortReason.LOST_CIVILIAN)
-            return
-        }
         if (operation.type.isEscorted) {
             // Assumes the civilian is in the first slot of the formation
             if (slot == 0) abort(operation, OperationAbortReason.LOST_CIVILIAN) else operation.escorted = false

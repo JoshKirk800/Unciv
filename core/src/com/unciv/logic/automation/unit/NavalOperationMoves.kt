@@ -5,7 +5,6 @@ import com.unciv.logic.automation.civilization.AutomationCache
 import com.unciv.logic.automation.strategy.AiArmy
 import com.unciv.logic.automation.strategy.AiOperation
 import com.unciv.logic.automation.strategy.AiOperationLogic
-import com.unciv.logic.automation.strategy.AiOperationType
 import com.unciv.logic.automation.strategy.ArmySlot
 import com.unciv.logic.automation.strategy.ArmyState
 import com.unciv.logic.automation.strategy.NavalOperationLogic
@@ -14,14 +13,12 @@ import com.unciv.logic.automation.strategy.OperationMoveType
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.Tile
-import com.unciv.models.UnitActionType
-import com.unciv.view.GameView
 import kotlin.math.max
 import kotlin.math.min
 
 /**
- *  The movement of the naval armies of CvTacticalAI::PlotOperationalArmyMoves: PlotNavalEscortOperationMoves (colonization parties and
- *  invasions), PlotFreeformNavalOperationMoves (naval superiority) and - as the original's enemy territory type with ships - the
+ *  The movement of the naval armies of CvTacticalAI::PlotOperationalArmyMoves: PlotNavalEscortOperationMoves (invasions),
+ *  PlotFreeformNavalOperationMoves (naval superiority) and - as the original's enemy territory type with ships - the
  *  bombardment and the pure naval city attack ([OperationMoveType.NavalFleet]), with ExecuteNavalFormationMoves, ExecuteFleetMoveToTarget and
  *  the formation checkpoint of the moving army. The units of an army are marked processed ([AutomationCache.processedUnits]).
  *
@@ -33,8 +30,8 @@ import kotlin.math.min
  *  Deviations, with the reason: ScoreDeploymentPlots / AssignDeployingUnits / PerformChosenMoves are replaced by a greedy assignment of the
  *  water tiles within the gather range of the checkpoint (ships first, then the land units and admirals, each unit taking the nearest tile
  *  it can use; Unciv allows one military unit per tile, the original stacks escorts on their ships); the original's path flags
- *  (MOVE_UNITS_IGNORE_DANGER) have no counterpart; the colonization party's retarget on error uses the settler, an invasion that cannot get
- *  anywhere aborts with LOST_PATH (the original retargets a civilian that does not exist).
+ *  (MOVE_UNITS_IGNORE_DANGER) have no counterpart; an invasion that cannot get anywhere aborts with LOST_PATH (the original retargets a
+ *  civilian that does not exist).
  */
 object NavalOperationMoves {
 
@@ -52,18 +49,12 @@ object NavalOperationMoves {
 
     /** CvTacticalAI::PlotNavalEscortOperationMoves */
     private fun escortMoves(civ: Civilization, operation: AiOperation, army: AiArmy, cache: AutomationCache) {
-        val units = AiOperationLogic.armyUnits(civ, army)
-        val colonize = operation.type == AiOperationType.NAVAL_COLONIZE
-        val civilian = if (colonize) units.firstOrNull { it.first == 0 }?.second else null
-        val escort = units.firstOrNull { it.first == 1 }?.second?.takeIf { colonize && it.baseUnit.isLandUnit }
-        if (colonize && civilian == null) return
         val muster = AiOperationLogic.musterTile(civ, operation) ?: return
         AiOperationLogic.updateCheckpointTurns(civ, army, muster)
         when (army.state) {
             ArmyState.WAITING_FOR_UNITS_TO_REINFORCE -> recruitingMoves(civ, operation, army, muster, cache)
             ArmyState.WAITING_FOR_UNITS_TO_CATCH_UP -> fleetMoveToTarget(civ, operation, army, muster, cache)
-            ArmyState.MOVING_TO_DESTINATION ->
-                if (colonize) movingWithCivilian(civ, operation, army, civilian!!, escort, cache) else movingAsArmy(civ, operation, army, cache)
+            ArmyState.MOVING_TO_DESTINATION -> movingAsArmy(civ, operation, army, cache)
         }
     }
 
@@ -135,48 +126,6 @@ object NavalOperationMoves {
         }
     }
 
-    /** The colonization party sails: the settler founds its city at the goal, lands with its escort when both are one move away, else the formation advances */
-    private fun movingWithCivilian(civ: Civilization, operation: AiOperation, army: AiArmy, civilian: MapUnit, escort: MapUnit?, cache: AutomationCache) {
-        // Update army's current location
-        AiOperationLogic.centerOfMass(civ, army, sea = true)?.let { army.position = it.position }
-        val target = AiOperationLogic.targetTile(civ, operation) ?: return
-        val goal = AiOperationLogic.tileAt(civ, army.goalTile) ?: return
-
-        // Settler at the target?
-        if (!civilian.getTile().isWater && civilian.getTile() == goal) {
-            if (SettleAreas.canFound(civilian, civilian.getTile()) &&
-                GameView(civ.gameInfo, civ).getMapUnitView(civilian).tryInvokeUnitAction(UnitActionType.FoundCity)) {
-                AiDecisionLog.log(civ) { "city founded by colonization party at ${goal.position}" }
-                AiOperationLogic.abortOperation(operation, OperationAbortReason.SUCCESS)
-            }
-            return
-        }
-        // Is our settler and his escort both one move from the destination? If so, targeted moves to finish up
-        if (AiOperationLogic.turnsToReach(civilian, target) <= 1 && (escort == null || AiOperationLogic.turnsToReach(escort, target) <= 1)) {
-            moveTo(civilian, target, cache)
-            if (escort != null) moveTo(escort, target, cache)
-            // Move naval escorts in close
-            for ((index, unit) in AiOperationLogic.armyUnits(civ, army)) {
-                if (index < 2 || unit in cache.processedUnits) continue
-                val place = nearestWaterTile(unit, target)
-                if (place != null) moveTo(unit, place, cache) else cache.processedUnits.add(unit)
-            }
-            return
-        }
-        // Still further away, move as formation
-        val units = AiOperationLogic.armyUnits(civ, army).map { it.second }.filter { it !in cache.processedUnits }
-        val atSea = units.firstOrNull { it.baseUnit.isWaterUnit }
-        if (atSea == null) { retargetColonization(civ, operation, army, civilian, cache); return }
-        val destination = checkpointToward(civ, operation, atSea, goal)
-        if (destination == null) retargetColonization(civ, operation, army, civilian, cache)
-        else formationMoves(civ, operation, army, units, destination, cache)
-    }
-
-    private fun retargetColonization(civ: Civilization, operation: AiOperation, army: AiArmy, civilian: MapUnit, cache: AutomationCache) {
-        NavalOperationLogic.retargetCivilian(civ, operation, army, civilian)
-        finishAll(civ, army, cache)
-    }
-
     /**
      *  The army moves as a formation to the checkpoint on the sea route to a water tile next to the goal (the goal itself when it is water):
      *  the closest unit moves as far as the slowest one can. No such tile or route aborts the operation, LOST_PATH.
@@ -216,26 +165,6 @@ object NavalOperationMoves {
         army.position = checkpoint.position
         formationMoves(civ, operation, army, units, checkpoint, cache)
     }
-
-    /**
-     *  The colonization party's checkpoint: the water tile next to [goal] nearest by sea steps to [from] (the unit itself if it stands on one),
-     *  then as far along the route as 4 tiles. Null if there is none.
-     */
-    private fun checkpointToward(civ: Civilization, operation: AiOperation, from: MapUnit, goal: Tile): Tile? {
-        val steps = civ.ai.military.steps
-        val enemy = AiOperationLogic.enemy(civ, operation)
-        var best: Tile? = null
-        var bestDistance = Int.MAX_VALUE
-        for (adjacent in goal.neighbors) {
-            if (!adjacent.isWater) continue
-            if (from.getTile() == adjacent) return adjacent
-            val distance = steps.distance(civ, enemy, from.getTile(), adjacent, sea = true)
-            if (distance <= 0 || distance >= bestDistance) continue
-            bestDistance = distance
-            best = steps.xPlotsFromEnd(civ, enemy, from.getTile(), adjacent, distance - min(4, distance), sea = true)
-        }
-        return best
-    }
     //endregion
 
     //region ExecuteNavalFormationMoves
@@ -246,10 +175,6 @@ object NavalOperationMoves {
         if (unit.movement.getDistanceToTiles().containsKey(tile) && unit.movement.canMoveTo(tile)) unit.movement.moveToTile(tile)
         else if (unit.movement.canReach(tile)) unit.movement.tryHeadTowards(tile)
     }
-
-    /** MoveToEmptySpaceNearTarget for a ship: the nearest water tile next to [target] without a unit it can reach */
-    private fun nearestWaterTile(unit: MapUnit, target: Tile): Tile? =
-        target.neighbors.filter { it.isWater && it.militaryUnit == null && unit.movement.canReach(it) }.minByOrNull { unit.getTile().aerialDistanceTo(it) }
 
     /** The tiles a unit of the group may be put on around [center] within [range]: water (land for land units while the center is on land) that holds no foreign unit */
     private fun deploymentTiles(civ: Civilization, operation: AiOperation, army: AiArmy, center: Tile, range: Int, ownUnits: Set<MapUnit>): List<Tile> {
