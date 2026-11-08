@@ -47,6 +47,7 @@ class AiRuleset {
     @Transient private var itemFlavorIndex: HashMap<String, ItemFlavors>? = null
     @Transient private var minorCivFlavorIndex: HashMap<String, NamedFlavors>? = null
     @Transient private val flavorCache = HashMap<String, IntArray>()
+    @Transient private var unitAiTypesIndex: HashMap<String, UnitAiTypesDef>? = null
 
     companion object {
         const val KIND_BUILDING = "Building"
@@ -120,6 +121,7 @@ class AiRuleset {
         itemFlavorIndex = null
         minorCivFlavorIndex = null
         flavorCache.clear()
+        unitAiTypesIndex = null
     }
     //endregion
 
@@ -127,6 +129,7 @@ class AiRuleset {
 
     fun define(define: AiDefine): Int = (defines[define.name] ?: define.default).toInt()
     fun defineFloat(define: AiDefine): Float = defines[define.name] ?: define.default
+    fun handicapValue(difficulty: String, column: String): Int? = handicaps.firstOrNull { it.name == difficulty }?.values?.get(column)
 
     /** The four grand strategies of the original, without flavors, for a ruleset without AI.json */
     @delegate:Transient
@@ -152,6 +155,12 @@ class AiRuleset {
     fun getItemFlavors(kind: String, name: String): ItemFlavors? {
         val index = itemFlavorIndex ?: itemFlavors.associateByTo(HashMap()) { it.kind + "/" + it.name }.also { itemFlavorIndex = it }
         return index["$kind/$name"]
+    }
+
+    /** The Unit_AITypes entry of a unit by Unciv unit name, null if it has none */
+    fun unitAiTypesOf(unitName: String): UnitAiTypesDef? {
+        val index = unitAiTypesIndex ?: unitAiTypes.associateByTo(HashMap()) { it.name }.also { unitAiTypesIndex = it }
+        return index[unitName]
     }
     //endregion
 

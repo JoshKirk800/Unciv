@@ -96,6 +96,8 @@ class CivAi : IsPartOfGameInfoSerialization {
     var warStates = WarStateMemory()
     /** CvCitySpecializationAI::m_iWonderCityID: the [com.unciv.logic.city.City.id] of the city chosen to build wonders, null if none */
     var wonderCityId: String? = null
+    /** CvUnit::AI_setUnitAIType reassignments: unit id -> UNITAI_* name, see [UnitAiTypes] */
+    var unitAiOverrides = HashMap<String, String>()
     /** CvCitySpecializationAI state, see [CitySpecializationAi] */
     var citySpecialization = CitySpecializationState()
     //endregion
@@ -133,6 +135,7 @@ class CivAi : IsPartOfGameInfoSerialization {
         for ((civId, memory) in aggressionMemory) toReturn.aggressionMemory[civId] = memory.clone()
         toReturn.warStates = warStates.clone()
         toReturn.wonderCityId = wonderCityId
+        toReturn.unitAiOverrides.putAll(unitAiOverrides)
         toReturn.citySpecialization = citySpecialization.clone()
         return toReturn
     }
@@ -362,7 +365,7 @@ class CivAi : IsPartOfGameInfoSerialization {
      *  DoUpdateCramped, CvGrandStrategyAI::DoTurn (majors), the war states of CvDiplomacyAI::DoTurn (majors, [WarStateAi.doTurn]),
      *  then CvEconomicAI and CvMilitaryAI strategy loops, then each city's
      *  CvCityStrategyAI::DoTurn (in CvCity::doTurn). Runs for every living civilization except barbarians and spectators, human or AI,
-     *  as in the original. City specialization (CvCitySpecializationAI::DoTurn) is not ported yet: [CityAi.specialization] stays unset.
+     *  as in the original. CvCitySpecializationAI::DoTurn runs after the military strategies and before the cities, as in doTurnPostDiplomacy.
      */
     fun doTurn() {
         if (civ.isBarbarian || civ.isSpectator || civ.isDefeated()) return
@@ -378,6 +381,7 @@ class CivAi : IsPartOfGameInfoSerialization {
             if (runStrategyLoop(rules.militaryStrategies, militaryStrategies, civ, checkFirstTurn = true) { StrategyTests.test(civ, it) })
                 onStrategiesChanged()
         }
+        timeThis("AI.CitySpecialization") { CitySpecializationAi.doTurn(civ) }
         timeThis("AI.CityStrategies") {
             for (city in civ.cities) city.ai.doTurn()
         }

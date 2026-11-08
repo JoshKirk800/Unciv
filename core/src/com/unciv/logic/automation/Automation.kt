@@ -8,7 +8,6 @@ import com.unciv.logic.city.City
 import com.unciv.logic.city.CityFocus
 import com.unciv.logic.city.CityStats
 import com.unciv.logic.civilization.Civilization
-import com.unciv.logic.map.BFS
 import com.unciv.logic.map.TileMap
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.ruleset.Building
@@ -185,91 +184,6 @@ object Automation {
         return yieldStats.sum()
     }
 
-    fun tryTrainMilitaryUnit(city: City) {
-        if (city.isPuppet) return
-        if ((city.cityConstructions.getCurrentConstruction() as? BaseUnit)?.isMilitary == true)
-            return // already training a military unit
-        val chosenUnit = chooseMilitaryUnit(city, city.civ.gameInfo.ruleset.units.values.asSequence())
-        if (chosenUnit != null)
-            city.cityConstructions.setCurrentConstruction(chosenUnit.name)
-    }
-
-    @Readonly
-    fun chooseMilitaryUnit(city: City, availableUnits: Sequence<BaseUnit>): BaseUnit? {
-        val rng = city.state.stateBasedRandom("Automation.chooseMilitaryUnit")
-        val currentChoice = city.cityConstructions.getCurrentConstruction()
-        if (currentChoice is BaseUnit && !currentChoice.isCivilian()) return currentChoice
-
-        // if not coastal, removeShips == true so don't even consider ships
-        var removeShips = true
-        var isMissingNavalUnitsForCityDefence = false
-
-        @Readonly fun isNavalMeleeUnit(unit: BaseUnit) = unit.isMelee() && unit.type.isWaterUnit()
-        if (city.isCoastal()) {
-            // in the future this could be simplified by assigning every distinct non-lake body of
-            // water their own ID like a continent ID
-            val findWaterConnectedCitiesAndEnemies =
-                    BFS(city.getCenterTile()) { it.isWater && !it.isImpassible() || it.isCityCenter() }
-            findWaterConnectedCitiesAndEnemies.stepToEnd()
-
-            val numberOfOurConnectedCities = findWaterConnectedCitiesAndEnemies.getReachedTiles()
-                .count { it.isCityCenter() && it.getOwner() == city.civ }
-            val numberOfOurNavalMeleeUnits = findWaterConnectedCitiesAndEnemies.getReachedTiles()
-                .sumOf { it.getUnits().count { isNavalMeleeUnit(it.baseUnit) } }
-                
-            isMissingNavalUnitsForCityDefence = numberOfOurConnectedCities > numberOfOurNavalMeleeUnits
-
-            removeShips = findWaterConnectedCitiesAndEnemies.getReachedTiles().none {
-                        (it.isCityCenter() && it.getOwner() != city.civ)
-                                || (it.militaryUnit != null && it.militaryUnit!!.civ != city.civ)
-                    } // there is absolutely no reason for you to make water units on this body of water.
-        }
-
-        val militaryUnits = availableUnits
-            .filter { it.isMilitary }
-            .filterNot { removeShips && it.isWaterUnit }
-            .filter { allowSpendingResource(GameView(city.civ.gameInfo, city.civ).civView, it) }
-            .filterNot {
-                // units that can't attack may be very strong meatshields, but current AI
-                // has trouble using them properly, and this conveniently filters out aircraft carriers
-                // (they're kinda useless compared to investing in battleships or extended-range bombers,
-                // and are obsoleted at Stealth. Excluding units based on their carrying slots being
-                // not needed filters out nuclear submarines and missile cruisers, which is not correct)
-                it.hasUnique(UniqueType.CannotAttack)
-            }
-            // Only now do we filter out the constructable units because that's a heavier check
-            .filter { it.isBuildable(city.cityConstructions) }
-            .toList().asSequence()
-
-        val chosenUnit: BaseUnit
-        if (!city.civ.isAtWar()
-                && city.civ.cities.any { it.getCenterTile().militaryUnit == null }
-                && militaryUnits.any { it.isRanged() } // this is for city defence so get a ranged unit if we can
-        ) {
-            chosenUnit = militaryUnits
-                .filter { it.isRanged() }
-                .maxByOrNull { it.cost }!!
-        }
-        else if (isMissingNavalUnitsForCityDefence && militaryUnits.any { isNavalMeleeUnit(it) }) {
-            chosenUnit = militaryUnits
-                .filter { isNavalMeleeUnit(it) }
-                .maxBy { it.cost }
-        }
-        else { // randomize type of unit and take the strongest of its kind
-            val bestUnitsForType = hashMapOf<String, BaseUnit>()
-            for (unit in militaryUnits) {
-                if (bestUnitsForType[unit.unitType] == null
-                        || bestUnitsForType[unit.unitType]!!.getForceEvaluation() < unit.getForceEvaluation()) {
-                    bestUnitsForType[unit.unitType] = unit
-                }
-            }
-            // Check the maximum force evaluation for the shortlist so we can prune useless ones (ie scouts)
-            val bestForce = bestUnitsForType.maxOfOrNull { it.value.getForceEvaluation() } ?: return null
-            chosenUnit = bestUnitsForType.filterValues { it.uniqueTo != null || it.getForceEvaluation() > bestForce / 3 }.values.random(rng)
-        }
-        return chosenUnit
-    }
-
     /** Determines whether [civInfo] should be allocating military to fending off barbarians */
     fun afraidOfBarbarians(civView: CivView): Boolean {
         val civInfo = civView.getCiv()
@@ -304,17 +218,6 @@ object Automation {
         // Otherwise we're afraid
         return true
     }
-
-    /** Checks resource scarcity making a construction undesirable. */
-    @Readonly
-    fun allowAutomatedConstruction(
-        civView: CivView,
-        city: City,
-        construction: INonPerpetualConstruction
-    ): Boolean {
-        return allowSpendingResource(civView, construction, city)
-    }
-
 
     /** Determines whether the AI should be willing to spend strategic resources to build
      *  [construction] for [civInfo], assumes that we are actually able to do so. */
