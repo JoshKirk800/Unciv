@@ -164,7 +164,7 @@ object TacticalAttacks {
                 if (canMoveOnto(unit, tile, turns)) result.add(Striker(unit, strength / 2, health))
             } else if (!noRanged && !willPillage && ranged) {
                 // Want ranged units to attack first, so inflate this; they take no damage from bombarding, so they show as fully healthy
-                if (hasEnemy && attackOptions(unit, tile, true).isNotEmpty())
+                if (hasEnemy && isExpectedToDamageWithRangedAttack(unit, tile) && attackOptions(unit, tile, true).isNotEmpty())
                     result.add(Striker(unit, 100 * unit.baseUnit.rangedStrength, 100, unit.getTile()))
             } else if (hasEnemy && !willPillage) {
                 val option = attackOptions(unit, tile, false).let { bestOption(it, null) }
@@ -187,6 +187,17 @@ object TacticalAttacks {
     /** CvTacticalAI::FindCitiesWithinStrikingDistance: our cities that can shoot [tile] this turn */
     fun findCities(ctx: TacticalContext, tile: Tile): List<CityStriker> =
         ctx.civ.cities.filter { canRangeStrikeAt(it, tile) }.map { CityStriker(it) }
+
+    /**
+     *  CvTacticalAI::IsExpectedToDamageWithRangedAttack: [unit] shooting from where it stands is expected (the mean of the randomness) to
+     *  do damage to the city on [tile] or else to the defender there, the military unit that can defend. A tile with only a civilian or an
+     *  embarked unit has no defender, so no damage is expected and no ranged unit is used on it.
+     */
+    fun isExpectedToDamageWithRangedAttack(unit: MapUnit, tile: Tile): Boolean {
+        val defender: ICombatant = if (tile.isCityCenter()) CityCombatant(tile.getCity()!!)
+            else MapUnitCombatant(TacticalTargets.visibleEnemyDefender(unit.civ, tile) ?: return false)
+        return BattleDamage.calculateDamageToDefender(MapUnitCombatant(unit), defender, unit.getTile(), TacticalTargets.EXPECTED_RANDOMNESS) > 0
+    }
 
     //endregion
     //region Expected damage
