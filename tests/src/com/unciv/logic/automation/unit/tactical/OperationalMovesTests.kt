@@ -370,5 +370,24 @@ class OperationalMovesTests {
         assertTrue(settler in cache2.processedUnits && warrior in cache2.processedUnits)
     }
 
+    @Test
+    fun `a settler without escort keeps to its path when the enemy threatens it, as the original's AI path finder ignores danger`() {
+        fertileLand()
+        val settler = unit("Settler", -1, 0)
+        val operation = AiOperationLogic.addSettlerOperation(civ, AiOperationType.QUICK_COLONIZE, settler, -1)
+        assertEquals(OperationState.MOVING_TO_TARGET, operation.state)
+        val target = AiOperationLogic.targetTile(civ, operation)!!
+        val start = settler.getTile()
+        val endOfTurn = settler.movement.getShortestPath(target).first()
+        // an enemy next to where the settler ends its turn: that tile, and the settler's own, are in danger
+        game.addUnit("Warrior", enemy, endOfTurn.neighbors.first { it.militaryUnit == null && it.civilianUnit == null && !it.isCityCenter() && it != start })
+        civ.ai.invalidateTurnCaches()
+        assertTrue(civ.ai.plotDanger.get(endOfTurn) > 0)
+        val cache = AutomationCache()
+        OperationalMoves.moveOperation(civ, operation, cache)
+        assertEquals(endOfTurn, settler.getTile())
+        assertTrue(settler in cache.processedUnits)
+    }
+
     // endregion
 }

@@ -10,7 +10,6 @@ import com.unciv.testing.BaseTestRunner
 import com.unciv.testing.TestGame
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -315,19 +314,6 @@ class TacticalSafetyTests {
         defender.fortify()
         assertTrue(CivilianSafety.moveToSafety(worker))
         assertEquals(tile(-1), worker.getTile())
-    }
-
-    @Test
-    fun `a civilian does not walk into a tile with danger when it is walking somewhere`() {
-        val worker = game.addUnit("Worker", civ, tile(0))
-        game.addUnit("Horseman", enemy, tile(6))
-        danger()
-        // the end of its first turn towards (0, 8) is a tile in the horseman's reach
-        assertFalse(CivilianSafety.headTowardsAvoidingDanger(worker, tile(8)))
-        assertEquals(tile(0), worker.getTile())
-        // away from it nothing is in the way
-        assertTrue(CivilianSafety.headTowardsAvoidingDanger(worker, tile(-8)))
-        assertNotEquals(tile(0), worker.getTile())
     }
     // endregion
 }
