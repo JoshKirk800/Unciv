@@ -3,7 +3,6 @@ package com.unciv.logic.automation.unit.tactical
 import com.unciv.logic.automation.civilization.AutomationCache
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
-import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.models.metadata.BaseRuleset
 import com.unciv.models.stats.Stat
 import com.unciv.testing.BaseTestRunner
@@ -45,7 +44,7 @@ class TacticalAiTests {
 
     private fun run(cache: AutomationCache = AutomationCache()): AutomationCache {
         see()
-        TacticalAi.automate(civ, civ.units.getCivUnits().toList(), cache) { false }
+        TacticalAi.automate(civ, civ.units.getCivUnits().toList(), cache)
         return cache
     }
 
@@ -98,7 +97,7 @@ class TacticalAiTests {
     // region Safety and healing in the turn
 
     @Test
-    fun `a hurt unit under ranged fire flees and is marked processed, a healthy unit with nothing to do is left to the rest of the AI`() {
+    fun `a hurt unit under ranged fire flees and is marked processed, a healthy unit with nothing to attack closes on the enemy`() {
         val hurt = game.addUnit("Warrior", civ, tile(0))
         hurt.health = 60
         val healthy = game.addUnit("Warrior", civ, tile(6))
@@ -106,8 +105,8 @@ class TacticalAiTests {
         val cache = run()
         assertTrue(hurt in cache.processedUnits)
         assertNotEquals(tile(0), hurt.getTile())
-        assertFalse(healthy in cache.processedUnits)
-        assertTrue(healthy.currentMovement > 0f)
+        assertTrue("a healthy unit with no attack to make repositions next to the enemy (PlotRepositionMoves)", healthy in cache.processedUnits)
+        assertTrue(healthy.getTile().aerialDistanceTo(tile(2)) < 4)
     }
 
     @Test
@@ -119,18 +118,6 @@ class TacticalAiTests {
         assertTrue(hurt in cache.processedUnits)
         assertEquals(tile(0), hurt.getTile())
         assertTrue(hurt.isFortified())
-    }
-
-    @Test
-    fun `the unit AI's attack stage comes before withdrawing, fleeing and healing`() {
-        val hurt = game.addUnit("Warrior", civ, tile(0))
-        hurt.health = 60
-        game.addUnit("Warrior", enemy, tile(6))
-        see()
-        val attackers = ArrayList<MapUnit>()
-        TacticalAi.automate(civ, listOf(hurt), AutomationCache()) { attackers.add(it); true }
-        assertEquals(listOf(hurt), attackers)
-        assertFalse("it attacked, so it was not told to heal", hurt.isFortified())
     }
 
     // endregion
@@ -176,6 +163,9 @@ class TacticalAiTests {
         for (tile in around.take(enemies)) game.addUnit(unit, enemy, tile)
         return city
     }
+
+    private fun highPriorityTargets() =
+        TacticalTargets.find(civ, civ.ai.tactical.map, civ.ai.plotDanger).all.filter { it.type == TacticalTargetType.HighPriorityUnit }
 
     private fun setGold(amount: Int) = civ.addGold(amount - civ.gold)
 
@@ -243,7 +233,7 @@ class TacticalAiTests {
         val doomed = cityWithEnemiesAround(0, enemies = 18, unit = "Horseman")
         gold(5000)
         see()
-        assertTrue("the scenario has attackers that can take the city", CityAttackers.highPriorityUnits(civ).isNotEmpty())
+        assertTrue("the scenario has attackers that can take the city", highPriorityTargets().isNotEmpty())
         run()
         assertFalse(doomed.cityConstructions.isBuilt("Walls"))
         assertEquals(0, archers())
@@ -256,7 +246,7 @@ class TacticalAiTests {
         val capital = cityWithEnemiesAround(0, enemies = 18, unit = "Horseman")
         gold(5000)
         see()
-        assertTrue(CityAttackers.highPriorityUnits(civ).isNotEmpty())
+        assertTrue(highPriorityTargets().isNotEmpty())
         run()
         assertTrue(capital.cityConstructions.isBuilt("Walls"))
         assertEquals(1, archers())

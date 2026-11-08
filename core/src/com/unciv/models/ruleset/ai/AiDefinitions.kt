@@ -104,10 +104,12 @@ class ItemFlavors {
     var flavors = LinkedHashMap<String, Int>()
 }
 
-/** Unit_AITypes + Units.DefaultUnitAI, by Unciv unit name */
+/** Unit_AITypes + Units.DefaultUnitAI + Units.CivilianAttackPriority, by Unciv unit name */
 class UnitAiTypesDef : INamed {
     override var name = ""
     var defaultUnitAi: String? = null
+    /** CvUnitEntry::GetCivilianAttackPriority: `CIVILIAN_ATTACK_PRIORITY_HIGH`, `_HIGH_EARLY_GAME_ONLY` or `_LOW`, null for none */
+    var civilianAttackPriority: String? = null
     var unitAiTypes = ArrayList<String>()
 }
 
