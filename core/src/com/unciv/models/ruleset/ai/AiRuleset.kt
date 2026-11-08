@@ -36,6 +36,10 @@ class AiRuleset {
     var itemFlavors = ArrayList<ItemFlavors>()
     var unitAiTypes = ArrayList<UnitAiTypesDef>()
     var handicaps = ArrayList<HandicapDef>()
+    /** Nation names of CvCivilizationInfo::isCoastalCiv (Civilization_Start_Along_Ocean), read by CvCitySiteEvaluator::PlotFoundValue */
+    var coastalCivilizations = ArrayList<String>()
+    /** CvFeatureInfo::getStartingLocationWeight by terrain feature name (non-zero ones), read by CvCitySiteEvaluator::ComputeStrategicValue */
+    var featureStartingLocationWeights = LinkedHashMap<String, Int>()
 
     /** The ruleset this belongs to - needed to derive flavors of objects without a table entry */
     @Transient lateinit var ruleset: Ruleset
@@ -80,6 +84,8 @@ class AiRuleset {
         mergeByName(minorCivFlavors, other.minorCivFlavors)
         mergeByName(unitAiTypes, other.unitAiTypes)
         mergeByName(handicaps, other.handicaps)
+        for (name in other.coastalCivilizations) if (name !in coastalCivilizations) coastalCivilizations.add(name)
+        featureStartingLocationWeights.putAll(other.featureStartingLocationWeights)
         for (entry in other.itemFlavors) {
             val index = itemFlavors.indexOfFirst { it.kind == entry.kind && it.name == entry.name }
             if (index >= 0) itemFlavors[index] = entry else itemFlavors.add(entry)
@@ -99,6 +105,8 @@ class AiRuleset {
         itemFlavors.clear()
         unitAiTypes.clear()
         handicaps.clear()
+        coastalCivilizations.clear()
+        featureStartingLocationWeights.clear()
         clearCaches()
     }
 
