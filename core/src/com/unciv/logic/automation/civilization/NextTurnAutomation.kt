@@ -10,6 +10,7 @@ import com.unciv.UncivGame
 import com.unciv.logic.automation.Automation
 import com.unciv.logic.automation.diplomacy.PromiseAi
 import com.unciv.logic.automation.Timers.Companion.timeThis
+import com.unciv.logic.automation.unit.HomelandAi
 import com.unciv.logic.automation.unit.OperationMoves
 import com.unciv.logic.automation.unit.ArchaeologistAutomation
 import com.unciv.logic.automation.unit.EspionageAutomation
@@ -89,11 +90,10 @@ object NextTurnAutomation {
 
         timeThis("AI.chooseTechToResearch") { TechAutomation.chooseTechToResearch(civInfo) }
         if (tradeAndChangeState) timeThis("AI.considerAnnex") { CityConquestAutomation.considerAnnex(civInfo) }
-        if (tradeAndChangeState) timeThis("AI.upgradeUnits") { UseGoldAutomation.plotUpgradeMoves(civInfo) }
         val cache = AutomationCache()
         // CvPlayer::doTurnUnits' operational AI: the armies of the operations move before the other units
         OperationMoves.doTurn(civInfo, cache)
-        timeThis("AI.automateUnits") { automateUnits(civView, cache) }  // this is the most expensive part
+        timeThis("AI.automateUnits") { automateUnits(civView, cache, canUpgrade = tradeAndChangeState) }  // this is the most expensive part
 
         if (tradeAndChangeState && civInfo.isMajorCiv) {
             if (civView.isReligionEnabled()) {
@@ -215,7 +215,7 @@ object NextTurnAutomation {
     }
 
 
-    private fun automateUnits(civView: CivView, cache: AutomationCache) {
+    private fun automateUnits(civView: CivView, cache: AutomationCache, canUpgrade: Boolean) {
         val civInfo = civView.getCiv()
         val isAtWar = civView.isAtWar()
         // Instances present when the pass starts. addUnit/removeUnit replace UnitManager's list,
@@ -229,6 +229,7 @@ object NextTurnAutomation {
             if (!isStillOurUnit(unit, civView)) continue
             applyPromotions(unit)
         }
+        HomelandAi.continueMissions(unitsAtStart.map { it.getUnit() })
         // CvTacticalAI::Update runs before the homeland AI: the units near the enemy or in danger first (the attacks of units and cities
         // included), the rest of the unit AI skips them
         TacticalAi.automate(civInfo, unitsInPriorityOrder().map { it.getUnit() }, cache)
@@ -239,12 +240,17 @@ object NextTurnAutomation {
             UnitAutomation.automateUnitMoves(unit, cache)
         }
 
+        // CvHomelandAI::Update takes the military units that the tactical AI and the operations left, by the homeland move priorities
+        // (which include the upgrades); everyone else (civilians, aircraft) has the unit AI, first
+        val homelandUnits = HomelandAi.recruitUnits(civInfo, unitsAtStart.map { it.getUnit() }, cache).toSet()
         for (unit in unitsInPriorityOrder()) {
             // spaceship parts and settlers have already moved
             if (unit.hasUnique(UniqueType.SpaceshipPart) || unit.hasUnique(UniqueType.FoundCity)) continue
+            if (unit.getUnit() in homelandUnits) continue
             if (!isStillOurUnit(unit, civView)) continue
             UnitAutomation.automateUnitMoves(unit, cache)
         }
+        HomelandAi.doTurn(civInfo, homelandUnits, cache, canUpgrade)
     }
 
     /** False once an earlier action in this pass has captured or destroyed [unit]. */

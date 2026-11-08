@@ -71,7 +71,7 @@ object CivilianUnitAutomation {
 
         if (unit.hasUniqueToCreateWaterImprovements()) {
             if (!mapUnit.civ.getWorkerAutomation().automateWorkBoats(unit))
-                UnitAutomation.tryExplore(unit, cache)
+                HomelandAi.exploreUnit(mapUnit, cache)
             return
         }
 

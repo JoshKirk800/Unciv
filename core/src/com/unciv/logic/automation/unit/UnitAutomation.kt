@@ -29,7 +29,6 @@ import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.models.ruleset.unit.BaseUnit
 import com.unciv.logic.map.mapunit.actions.UnitActionsPillage
-import com.unciv.logic.map.mapunit.actions.UnitActionsExoticGoods
 import com.unciv.logic.map.mapunit.actions.UnitActionsUpgrade
 import kotlin.math.ceil
 import com.unciv.view.GameView
@@ -43,8 +42,6 @@ import com.unciv.view.MapUnitCombatantView
 import yairm210.purity.annotations.Readonly
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.civilization.NextTurnAutomation
-import com.unciv.logic.automation.strategy.UnitAiType
-import com.unciv.logic.automation.strategy.UnitAiTypes
 
 object UnitAutomation {
 
@@ -103,133 +100,19 @@ object UnitAutomation {
         // Settlers get their escort from their operation (OperationMoves); Great People are accompanied here
         if (tryAccompanyGreatPerson(unitView)) return
 
-        if (tryGoToRuin(unitView) && !unitView.hasMovement()) return
-
-        if (unitView.unitHealth < 50 && tryHealUnit(unitView, cache)) return // do nothing but heal
-
-        // CvHomelandAI::PlotExplorerMoves / PlotExplorerSeaMoves: AI units in the explore role (CvEconomicAI recon) explore first
-        if (unit.civ.isAI() && UnitAiTypes.current(unit).let { it == UnitAiType.EXPLORE || it == UnitAiType.EXPLORE_SEA }
-            && tryExplore(unitView, cache)) return
-
-        // If there are no enemies nearby and we can heal here, wait until we are at full health
-        if (unitView.unitHealth < 100 && canUnitHealInTurnsOnCurrentTile(unitView, cache, 2, 3)) return
 
         // Focus all units without a specific target on the enemy city closest to one of our cities
         if (HeadTowardsEnemyCityAutomation.tryHeadTowardsEnemyCity(unitView)) return
 
-        if (tryGarrisoningLandUnit(unitView)) return
-
-        if (unitView.unitHealth < 80 && tryHealUnit(unitView, cache)) return
-
-        if (unitView.unitHealth < 100 && tryHealUnit(unitView, cache)) return
 
         if (tryPrepare(unitView)) return
 
-        if (unit.civ.isAI() && unit.hasUnique(UniqueType.SellExoticGoods))
-            UnitActionsExoticGoods.tryAutoSell(unit)
-
-        // else, try to go to unreached tiles
-        if (tryExplore(unitView, cache)) return
-
-        if (tryFogBust(unitView)) return
-
-        // Idle CS units should wander so they don't obstruct players so much
-        if (unitView.civ().isCityState)
-            wander(unitView, stayInTerritory = true)
+        // What is left of the unit's turn is CvHomelandAI's: explore, garrison, sentry, patrol, ... (the civilization's whole military goes through
+        // it in NextTurnAutomation.automateUnits; this is for a single automated unit)
+        HomelandAi.automateUnit(unitView, cache)
     }
 
-    /** Number of tiles within [radius] of a tile on an unbounded hex map, including the tile itself */
-    @Readonly private fun tilesInHexRadius(radius: Int) = 1 + 3 * radius * (radius + 1)
-
-    @Readonly
-    private fun isGoodTileToExplore(unitView: MapUnitView, cache: AutomationCache, tile: TileView, unitVisibilityRange: Int): Boolean {
-        val civ = unitView.civ()
-        // These should be ordered by increasing computational cost
-        return tile.getOwner()?.isCityState != true
-                && (!civ.isCityState || tile.getExploredTilesAtDistance(1).any { it.getOwner() == civ }) // Don't want city-states exploring far outside their borders
-                && unitView.getDamageFromTerrain(tile) <= 0    // Don't take unnecessary damage
-                // Some tile in range is unexplored. Since we can't know what tiles exist that we don't know about, this is a guess.
-                //   On map edges this will be wrong... Units may "hug edges". In practice this is not a big deal. 
-                && tile.getExploredTilesInDistance(unitVisibilityRange).count() < tilesInHexRadius(unitVisibilityRange)
-                && ThreatManager.getDistanceToClosestEnemyUnit(civ, cache, tile, 3) > 3 // don't walk in range of enemy units
-                && unitView.canMoveTo(tile) // expensive, evaluate last
-                && unitView.canReach(tile) // expensive, evaluate last
-    }
-
-    internal fun tryExplore(unitView: MapUnitView, cache: AutomationCache): Boolean = timeThis("tryExplore") {
-        if (tryGoToRuin(unitView) && (!unitView.hasMovement() || unitView.isDestroyed())) return true
-
-        val unitVisibilityRange = unitView.getVisibilityRange()
-        val explorableTilesThisTurn =
-                unitView.getDistanceToTiles().keys.filter { isGoodTileToExplore(unitView, cache, it, unitVisibilityRange) }
-        if (explorableTilesThisTurn.any()) {
-            // Assign each tile a score for "explore value"
-            // This could be more elaborate: for example add a malus for distant tiles such as to move not too far away from capital (barb control)
-            // or bonus according to tile yields (likely candidates for city locations), but this comes at a cost of performance
-            val bestTile = explorableTilesThisTurn
-                .maxBy { it.tileHeight + it.estimateUnexploredTilesAtDistance(unitVisibilityRange) }
-            return unitView.tryHeadTowards(bestTile)
-        }
-
-        // Nothing immediate, lets look further. Number increases exponentially with distance - at 10 this took a looong time
-        for (tile in unitView.getTile().getExploredTilesInDistance(5))
-            if (isGoodTileToExplore(unitView, cache, tile, unitVisibilityRange))
-                return unitView.tryHeadTowards(tile)
-        return false
-    }
-
-    private fun tryGoToRuin(unitView: MapUnitView): Boolean {
-        if (!unitView.civ().isMajorCiv()) return false // barbs don't have anything to do in ruins
-
-        val tileWithRuin = unitView.getViewableTiles()
-            .firstOrNull {
-                it.getRuleset().tileImprovements[it.improvement]?.isAncientRuinsEquivalent() == true
-                    && unitView.canMoveTo(it) && unitView.canReach(it)
-            }
-            ?: return false
-        unitView.tryHeadTowards(tileWithRuin)
-        return true
-    }
-
-    // "Fog busting" is a strategy where you put your units slightly outside your borders to discourage barbarians from spawning
-    private fun tryFogBust(unitView: MapUnitView): Boolean {
-        if (!Automation.afraidOfBarbarians(unitView.civ())) return false // Not if we're not afraid
-
-        // If everything around this unit is visible, we can stop.
-        // Calculations below are quite expensive especially in the late game.
-        val unitTile = unitView.getTile()
-        val tilesInRange = unitTile.getExploredTilesInDistance(5).toList()
-        if (tilesInRange.size == tilesInHexRadius(5) && tilesInRange.all { it.isVisible() }) return false
-
-        val rng = unitView.stateBasedRandom("UnitAutomation.tryFogBust")
-        val reachableTilesThisTurn =
-                unitView.getDistanceToTiles().keys.filter { isGoodTileForFogBusting(unitView, it) }
-        if (reachableTilesThisTurn.any()) {
-            unitView.tryHeadTowards(reachableTilesThisTurn.random(rng)) // Just pick one
-            return true
-        }
-
-        // Nothing immediate, lets look further. Number increases exponentially with distance - at 10 this took a looong time
-        for (tile in unitTile.getExploredTilesInDistance(5))
-            if (isGoodTileForFogBusting(unitView, tile)) {
-                unitView.tryHeadTowards(tile)
-                return true
-            }
-        return false
-    }
-
-    @Readonly
-    private fun isGoodTileForFogBusting(unitView: MapUnitView, tile: TileView): Boolean {
-        val civ = unitView.civ()
-        return unitView.canMoveTo(tile)
-                && tile.getOwner() == null
-                && tile.getNeighbors().all { it.getOwner() == null }
-                && civ.hasExplored(tile)
-                && tile.getExploredTilesInDistance(2).any { it.getOwner() == civ }
-                && unitView.getDamageFromTerrain(tile) <= 0
-                && unitView.canReach(tile) // expensive, evaluate last
-    }
-
+    /** One random step to a tile next to the unit, for the barbarians' idle units and units that can heal nowhere (a major's idle units patrol, [HomelandAi]) */
     fun wander(unitView: MapUnitView, stayInTerritory: Boolean = false, tilesToAvoid: Set<TileView> = setOf()) {
         if (!unitView.hasMovement()) return // return in case we can't move anyways
         val unitTile = unitView.getTile()
@@ -449,49 +332,12 @@ object UnitAutomation {
         return true
     }
 
-    private fun tryGarrisoningLandUnit(unitView: MapUnitView): Boolean {
-        if (unitView.getBaseUnit().isWaterUnit) return false // Water units don't count for Garrison bonus
-        val citiesWithoutGarrison = unitView.civ().cities().filter {
-            val centerTile = it.getCenterTile()
-            centerTile.militaryUnit == null
-                    && unitView.canMoveTo(centerTile)
-        }
-
-        val unitTile = unitView.getTile()
-        val citiesToTry = if (!unitView.civ().isAtWar()) {
-            if (unitTile.isCityCenter()) return true // It's always good to have a unit in the city center, so if you haven't found anyone around to attack, forget it.
-            citiesWithoutGarrison.asSequence()
-        } else {
-            if (unitTile.isCityCenter() &&
-                    isCityThatNeedsDefendingInWartime(unitTile.getCity()!!)) return true
-            val citiesWithoutGarrisonThatNeedDefending = citiesWithoutGarrison.asSequence()
-                    .filter { isCityThatNeedsDefendingInWartime(it) }
-            if (citiesWithoutGarrisonThatNeedDefending.any()) citiesWithoutGarrisonThatNeedDefending
-            else citiesWithoutGarrison.asSequence()
-        }
-
-        val closestReachableCityNeedsDefending = citiesToTry
-            .sortedBy { it.getCenterTile().aerialDistanceTo(unitTile) }
-            .firstOrNull { unitView.canReach(it.getCenterTile()) }
-            ?: return false
-        unitView.tryHeadTowards(closestReachableCityNeedsDefending.getCenterTile())
-        return true
-    }
-    @Readonly
-    private fun isCityThatNeedsDefendingInWartime(city: ForeignCityView): Boolean {
-        if (city.getHealth() < city.getMaxHealth()) return true // this city is under attack!
-        for (enemyCivCity in city.owningCiv().getCivsAtWarWith().flatMap { it.cities() })
-            if (city.getCenterTile().aerialDistanceTo(enemyCivCity.getCenterTile()) <= 5) return true // this is an edge city that needs defending
-        return false
-    }
-
     /** This is what a unit with the 'explore' action does.
     It also explores, but also has other functions, like healing if necessary. */
     fun automatedExplore(unitView: MapUnitView, cache: AutomationCache = AutomationCache()) {
         val unit = unitView.getUnit()
-        if (tryGoToRuin(unitView) && (!unitView.hasMovement() || unit.isDestroyed)) return
         if (unitView.unitHealth < 80 && tryHealUnit(unitView, cache)) return
-        if (tryExplore(unitView, cache)) return
+        if (HomelandAi.exploreUnit(unit, cache)) return
         unit.civ.addNotification("${unit.shortDisplayName()} finished exploring.", MapUnitAction(unit), NotificationCategory.Units, unit.name, "OtherIcons/Sleep")
         unit.action = null
     }

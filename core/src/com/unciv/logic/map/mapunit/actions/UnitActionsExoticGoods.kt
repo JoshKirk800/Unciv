@@ -27,16 +27,22 @@ object UnitActionsExoticGoods {
             }.takeIf { isAvailable }))
     }
 
-    /** CvHomelandAI::ExecuteExplorerMoves sells only when at least halfway to the reward cap. */
-    fun tryAutoSell(unit: MapUnit) {
-        val capital = unit.civ.getCapital() ?: return
+    /** CvUnit::calculateExoticGoodsDistanceFactor: how far [tile] is from our capital as a share of the reward cap's distance (0 to 1; 0 without a capital) */
+    fun distanceFactor(unit: MapUnit, tile: Tile): Float {
+        val capital = unit.civ.getCapital() ?: return 0f
         val mapSize = unit.civ.gameInfo.tileMap.mapParameters.mapSize
         val threshold = ((mapSize.width + mapSize.height) / 2).coerceAtLeast(1)
-        if (2 * unit.getTile().aerialDistanceTo(capital.getCenterTile()) < threshold) return
+        return (tile.aerialDistanceTo(capital.getCenterTile()).toFloat() / threshold).coerceAtMost(1f)
+    }
+
+    /** CvHomelandAI::ExecuteExplorerMoves sells only when at least halfway to the reward cap. */
+    fun tryAutoSell(unit: MapUnit) {
+        if (distanceFactor(unit, unit.getTile()) < 0.5f) return
         getActions(unit, unit.getTile()).firstOrNull()?.action?.invoke()
     }
 
-    private fun canSell(unit: MapUnit, tile: Tile) = tile.neighbors.any { neighbor ->
+    /** CvUnit::canSellExoticGoods: [tile] is next to the territory of a civilization we are not at war with */
+    fun canSell(unit: MapUnit, tile: Tile) = tile.neighbors.any { neighbor ->
         val owner = neighbor.getOwner()
         owner != null && owner != unit.civ && !unit.civ.isAtWarWith(owner)
     }
