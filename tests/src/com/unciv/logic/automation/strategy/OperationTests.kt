@@ -11,6 +11,7 @@ import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.TileMap
 import com.unciv.models.metadata.BaseRuleset
 import com.unciv.models.ruleset.ai.DiplomacyPersonality
+import com.unciv.models.ruleset.PerpetualConstruction
 import com.unciv.models.ruleset.ai.Flavor
 import com.unciv.testing.GdxTestRunner
 import com.unciv.testing.TestGame
@@ -164,6 +165,41 @@ class OperationTests {
         assertEquals(ArmyState.WAITING_FOR_UNITS_TO_CATCH_UP, operation.firstArmy!!.state)
         // A unit trained for nothing is not part of any operation
         assertFalse(ops.finishedBuilding(unit("Warrior"), city))
+    }
+
+    @Test
+    fun `the final unit bought for an operation fills the last slot, not the one its city committed to`() {
+        civ.tech.addTechnology("Bronze Working")
+        val operation = closeDefense()
+        val offer = ops.nextUnitForOperationSlot(city)!!
+        // The city trains a spearman for its slot, the very unit the purchase for the other (COUNTER) slot recommends
+        val spearman = game.ruleset.units["Spearman"]!!
+        city.cityConstructions.setCurrentConstruction(spearman.name)
+        ops.commitToBuild(city, AiOperations.SlotOffer(offer.slot, spearman, UnitAiType.DEFENSE, true), 3)
+        val last = operation.slotsToBuild.single()
+        assertTrue(operation.hasOneMoreSlotToFill())
+        civ.addGold(1000)
+        assertTrue(AiOperationLogic.buyFinalUnit(civ, operation))
+        // CvMilitaryAI::BuyEmergencyUnit creates the unit without bUseToSatisfyOperation: the city still trains its own one
+        assertTrue(ops.isBuildingUnitForOperation(city))
+        assertTrue(operation.slotsToBuild.isEmpty())
+        assertEquals(-1, operation.firstArmy!!.slots[offer.slot.slotId].unitId)
+        assertTrue(operation.firstArmy!!.slots[last.slotId].unitId != -1)
+    }
+
+    @Test
+    fun `an idle city that chooses its production while the final unit is bought does not take the slot`() {
+        civ.tech.addTechnology("Bronze Working")
+        val other = game.addCity(civ, game.getTile(HexCoord(4, 0)))
+        val operation = closeDefense()
+        val offer = ops.nextUnitForOperationSlot(other)!!
+        other.cityConstructions.setCurrentConstruction("Warrior")
+        ops.commitToBuild(other, offer, 3)
+        city.cityConstructions.setCurrentConstruction(PerpetualConstruction.Idle.name)
+        civ.addGold(1000)
+        assertTrue(AiOperationLogic.buyFinalUnit(civ, operation))
+        assertTrue(operation.slotsToBuild.isEmpty())
+        assertFalse(ops.isBuildingUnitForOperation(city))
     }
     //endregion
 
