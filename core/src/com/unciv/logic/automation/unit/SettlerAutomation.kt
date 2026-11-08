@@ -6,6 +6,7 @@ import com.unciv.logic.automation.civilization.AutomationCache
 import com.unciv.logic.automation.strategy.AiOperation
 import com.unciv.logic.automation.strategy.AiOperationLogic
 import com.unciv.logic.automation.strategy.AiOperationType
+import com.unciv.logic.automation.strategy.NavalOperationLogic
 import com.unciv.logic.automation.strategy.OperationState
 import com.unciv.logic.automation.strategy.UnitAiType
 import com.unciv.logic.automation.strategy.UnitAiTypes
@@ -82,6 +83,11 @@ object SettlerAutomation {
         } else {
             area = areas.first
             wantEscort = true
+        }
+        // An escorted settler whose best site is overseas sails with a colonization party (CvAINavalEscortedOperation)
+        if (wantEscort && civ.tech.unitsCanEmbark && !unit.getTile().isWater) NavalOperationLogic.tryStartColonization(civ, unit)?.let { party ->
+            AiDecisionLog.log(civ) { "settler ${unit.id} at ${unit.getTile().position}: ${party.type} to ${party.targetTile} (${party.state})" }
+            return party
         }
         val operation = AiOperationLogic.addSettlerOperation(civ, if (wantEscort) AiOperationType.FOUND_CITY else AiOperationType.QUICK_COLONIZE, unit, area)
         AiDecisionLog.log(civ) {

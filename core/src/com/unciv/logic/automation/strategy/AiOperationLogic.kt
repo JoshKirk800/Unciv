@@ -23,11 +23,10 @@ import kotlin.math.max
  *  FindBestFitReserveUnit) and BuyFinalUnit. Operation and army data are in [AiOperations]; the units are moved by [com.unciv.logic.automation.unit.tactical.OperationalMoves].
  *
  *  Covered: CvAIOperationFoundCity, QuickColonize, BasicCityAttack, SneakCityAttack (and the Quick one), SmallCityAttack, CityStateAttack,
- *  DestroyBarbarianCamp, PillageEnemy, CityCloseDefense, RapidResponse, and the naval attacks as plain land attacks (see [AiOperationType]).
+ *  DestroyBarbarianCamp, PillageEnemy, CityCloseDefense, RapidResponse; the naval operations and the nuke attack are [NavalOperationLogic].
  *
  *  Deviations, with the reason: the step finder is [StepFinder]; "path length" of a unit's route (CvIgnoreUnitsPathFinder) is the unit's turns
- *  (`getShortestPath`), which respects units; the naval formation consistency flag (MultiUnitFormations.RequiresNavalUnitConsistency)
- *  is not in the ruleset data; the original's EnemyTerritoryOperation::Init overwrites its LOST_PATH abort when no deploy point is found
+ *  (`getShortestPath`), which respects units; the original's EnemyTerritoryOperation::Init overwrites its LOST_PATH abort when no deploy point is found
  *  (the abort is kept here); a barbarian camp with no land route from the start city is not a target (the original's step distance would be negative).
  */
 object AiOperationLogic {
@@ -41,7 +40,7 @@ object AiOperationLogic {
         return unit.movement.getShortestPath(tile).size.coerceAtLeast(1)
     }
 
-    private fun tileAt(civ: Civilization, coord: HexCoord?): Tile? = coord?.let { civ.gameInfo.tileMap.getOrNull(it.x, it.y) }
+    internal fun tileAt(civ: Civilization, coord: HexCoord?): Tile? = coord?.let { civ.gameInfo.tileMap.getOrNull(it.x, it.y) }
 
     fun targetTile(civ: Civilization, operation: AiOperation) = tileAt(civ, operation.targetTile)
     fun musterTile(civ: Civilization, operation: AiOperation) = tileAt(civ, operation.musterTile)
@@ -53,6 +52,24 @@ object AiOperationLogic {
         for ((index, slot) in army.slots.withIndex()) {
             if (slot.unitId == -1) continue
             civ.units.getUnitById(slot.unitId)?.let { result.add(index to it) }
+        }
+        return result
+    }
+
+    /** CvArmyAI::UpdateCheckpointTurns: when each unit that exists will be at the muster point */
+    fun updateCheckpointTurns(civ: Civilization, army: AiArmy, muster: Tile) {
+        for ((index, unit) in armyUnits(civ, army)) {
+            val turns = turnsToReach(unit, muster)
+            if (turns != Int.MAX_VALUE) civ.ai.operations.setEstimatedTurn(army, index, turns)
+        }
+    }
+
+    /** CvArmyAI::GetTurnAtNextCheckpoint: the latest expected arrival, [ArmySlot.UNKNOWN_TURN] if a slot has no estimate */
+    fun turnAtNextCheckpoint(army: AiArmy): Int {
+        var result = ArmySlot.NOT_INCLUDED
+        for (slot in army.slots) {
+            if (slot.estimatedTurn == ArmySlot.UNKNOWN_TURN) return ArmySlot.UNKNOWN_TURN
+            if (slot.estimatedTurn > result) result = slot.estimatedTurn
         }
         return result
     }
@@ -89,6 +106,11 @@ object AiOperationLogic {
             AiOperationType.RAPID_RESPONSE -> "MUFORMATION_RAPID_RESPONSE_FORCE"
             AiOperationType.NAVAL_ATTACK, AiOperationType.NAVAL_SNEAK_ATTACK -> "MUFORMATION_NAVAL_INVASION"
             AiOperationType.CITY_STATE_NAVAL_ATTACK -> "MUFORMATION_CITY_STATE_INVASION"
+            AiOperationType.NAVAL_COLONIZE -> "MUFORMATION_COLONIZATION_PARTY"
+            AiOperationType.NAVAL_BOMBARDMENT -> "MUFORMATION_NAVAL_BOMBARDMENT"
+            AiOperationType.NAVAL_SUPERIORITY -> "MUFORMATION_NAVAL_SQUADRON"
+            AiOperationType.PURE_NAVAL_CITY_ATTACK -> "MUFORMATION_PURE_NAVAL_CITY_ATTACK"
+            AiOperationType.NUKE_ATTACK -> "MUFORMATION_NUKE_ATTACK"
         }
         return if (civ.ai.operations.formationDef(name) != null) name else "MUFORMATION_BASIC_CITY_ATTACK_FORCE"
     }
@@ -98,6 +120,7 @@ object AiOperationLogic {
      *  biggest city on the landmass with the most of our and the enemy's cities together.
      */
     fun startCity(civ: Civilization, operation: AiOperation): City? {
+        if (operation.type.allNaval) return NavalOperationLogic.startCity(civ, operation) // CvAINavalOperation::GetOperationStartCity
         operation.startCityId?.let { id -> civ.cities.firstOrNull { it.id == id }?.let { return it } }
         civ.getCapital(firstCityIfNoCapital = false)?.let { return it }
         val enemy = enemy(civ, operation)
@@ -126,7 +149,10 @@ object AiOperationLogic {
         }
     }
 
-    private fun abort(operation: AiOperation, reason: OperationAbortReason) {
+    private fun abort(operation: AiOperation, reason: OperationAbortReason) = abortOperation(operation, reason)
+
+    /** CvAIOperation::SetToAbort */
+    fun abortOperation(operation: AiOperation, reason: OperationAbortReason) {
         operation.state = OperationState.ABORTED
         operation.abortReason = reason
     }
@@ -146,6 +172,11 @@ object AiOperationLogic {
         when {
             type.isCityAttack -> initCityAttack(civ, operation, target, muster)
             type == AiOperationType.DESTROY_BARBARIAN_CAMP || type == AiOperationType.PILLAGE_ENEMY -> initEnemyTerritory(civ, operation)
+            type.isNavalInvasion -> NavalOperationLogic.initNavalInvasion(civ, operation, target, muster)
+            type == AiOperationType.PURE_NAVAL_CITY_ATTACK -> NavalOperationLogic.initPureNavalAttack(civ, operation, target, muster)
+            type == AiOperationType.NAVAL_BOMBARDMENT || type == AiOperationType.NAVAL_SUPERIORITY -> NavalOperationLogic.initFleet(civ, operation)
+            type == AiOperationType.NUKE_ATTACK -> NavalOperationLogic.initNuke(civ, operation)
+            type == AiOperationType.NAVAL_COLONIZE -> error("A colonization party needs its settler: NavalOperationLogic.tryStartColonization")
             else -> initDefense(civ, operation)
         }
         if (operation.state != OperationState.ABORTED) logStart(civ, operation)
@@ -167,9 +198,8 @@ object AiOperationLogic {
         operation.musterTile = musterTile.position
         army.position = musterTile.position
         operation.area = musterTile.getContinent()
-        // A few plots shy of the target; a landing by sea has no land route, the army heads for the target itself
+        // A few plots shy of the target
         val deploy = civ.ai.military.steps.xPlotsFromEnd(civ, enemy(civ, operation), musterTile, targetTile, deployRange(civ, operation) / 2)
-            ?: if (operation.type.mixedLandNaval) targetTile else null
         if (deploy == null) { abort(operation, OperationAbortReason.LOST_PATH); return }
         army.goalTile = deploy.position
         startRecruiting(civ, operation, army, musterTile, targetTile)
@@ -435,17 +465,24 @@ object AiOperationLogic {
     private fun findBestFitReserveUnit(civ: Civilization, operation: AiOperation, army: AiArmy, slot: Int, muster: Tile?, target: Tile?): Boolean {
         val def = civ.ai.operations.slotDefs(army).getOrNull(slot) ?: return false
         val rules = civ.gameInfo.ruleset.ai
-        val goal = if (muster == null && target != null && operation.type.mixedLandNaval) target else target
+        // All naval operation targeting a city? Change target
+        val goal = if (target != null && !target.isWater && operation.type.allNaval) NavalOperationLogic.coastalPlotAdjacentToTarget(civ, target, army) else target
+        val naval = operation.type.mixedLandNaval || operation.type.allNaval
+        val deepWaterOnly = civ.tech.embarkedUnitsCanEnterOcean && civ.ai.operations.formationDef(army.formation)?.requiresNavalUnitConsistency == true
         for (aiName in listOf(def.primaryUnitAi, def.secondaryUnitAi)) {
             val type = UnitAiType.ofXmlName(aiName) ?: continue
             val candidates = civ.units.getCivUnits()
-                .filter { UnitAiTypes.canHave(it.baseUnit, type, rules) && isFreeForOperation(civ, it, operation.type.mixedLandNaval) }
+                .filter {
+                    UnitAiTypes.canHave(it.baseUnit, type, rules) && isFreeForOperation(civ, it, naval) &&
+                        !(deepWaterOnly && it.baseUnit.isWaterUnit && it.cache.cannotEnterOceanTiles)
+                }
                 .map { unit ->
                     var distance = when {
                         muster != null -> unit.getTile().aerialDistanceTo(muster)
                         goal != null -> unit.getTile().aerialDistanceTo(goal)
                         else -> Int.MAX_VALUE
                     }
+                    // Double the distance if this is a land unit on a different landmass (it's dangerous to go over water!)
                     if (muster != null && unit.baseUnit.isLandUnit && unit.getTile().getContinent() != muster.getContinent()) distance *= 2
                     unit to distance
                 }.sortedBy { it.second }.toList()
@@ -527,6 +564,7 @@ object AiOperationLogic {
                     else -> Unit
                 }
             }
+            OperationMoveType.NavalEscort, OperationMoveType.FreeformNaval, OperationMoveType.NavalFleet -> return NavalOperationLogic.checkOnTarget(civ, operation)
             OperationMoveType.None -> Unit
         }
         return false
@@ -543,8 +581,8 @@ object AiOperationLogic {
         else -> 4
     }
 
-    /** CvArmyAI::GetCenterOfMass: the average position of the army's units (nudged to land or sea if it falls elsewhere) */
-    fun centerOfMass(civ: Civilization, army: AiArmy): Tile? {
+    /** CvArmyAI::GetCenterOfMass: the average position of the army's units (nudged to land or sea - always sea for [sea] - if it falls elsewhere) */
+    fun centerOfMass(civ: Civilization, army: AiArmy, sea: Boolean = false): Tile? {
         val units = armyUnits(civ, army).map { it.second }
         if (units.isEmpty()) return null
         val map = civ.gameInfo.tileMap
@@ -562,7 +600,7 @@ object AiOperationLogic {
         val averageX = (sumX + units.size / 2) / units.size
         val averageY = (sumY + units.size / 2) / units.size
         val center = map.getOrNull(averageX, averageY) ?: return units[0].getTile()
-        val wantWater = units.all { it.baseUnit.isWaterUnit }
+        val wantWater = sea || units.all { it.baseUnit.isWaterUnit }
         if (center.isWater == wantWater) return center
         return center.neighbors.firstOrNull { it.isWater == wantWater } ?: units[0].getTile()
     }
@@ -575,6 +613,12 @@ object AiOperationLogic {
     fun armyInPosition(civ: Civilization, operation: AiOperation, army: AiArmy): Boolean {
         val type = operation.type
         return when {
+            type.isNavalInvasion -> NavalOperationLogic.navalInvasionInPosition(civ, operation, army)
+            type == AiOperationType.NAVAL_COLONIZE -> NavalOperationLogic.colonizationInPosition(civ, operation, army)
+            type == AiOperationType.NAVAL_BOMBARDMENT -> NavalOperationLogic.bombardmentInPosition(civ, operation, army)
+            type == AiOperationType.NAVAL_SUPERIORITY -> NavalOperationLogic.superiorityInPosition(civ, operation, army)
+            type == AiOperationType.PURE_NAVAL_CITY_ATTACK -> NavalOperationLogic.pureNavalAttackInPosition(civ, operation, army)
+            type == AiOperationType.NUKE_ATTACK -> NavalOperationLogic.nukeInPosition(civ, operation, army)
             type.isCityAttack -> cityAttackInPosition(civ, operation, army)
             type.isEscorted -> escortedInPosition(civ, operation, army)
             type == AiOperationType.DESTROY_BARBARIAN_CAMP -> campInPosition(civ, operation, army)
@@ -591,7 +635,7 @@ object AiOperationLogic {
         }
     }
 
-    private fun baseArmyInPosition(operation: AiOperation, army: AiArmy): Boolean {
+    internal fun baseArmyInPosition(operation: AiOperation, army: AiArmy): Boolean {
         when (operation.state) {
             OperationState.GATHERING_FORCES -> {
                 operation.state = OperationState.MOVING_TO_TARGET
@@ -761,6 +805,10 @@ object AiOperationLogic {
                 if (target == null || target.getCity() == null || target.getOwner()?.civID != operation.enemyCivId) return true
             }
             type == AiOperationType.DESTROY_BARBARIAN_CAMP -> return campShouldAbort(civ, operation)
+            type == AiOperationType.PURE_NAVAL_CITY_ATTACK -> {
+                // See if our target city is still owned by our enemy: success, the city was captured or destroyed
+                if (targetTile(civ, operation)?.getOwner()?.civID != operation.enemyCivId) return true
+            }
             type.isEscorted -> escortedShouldAbort(civ, operation)
         }
         return false
@@ -824,6 +872,11 @@ object AiOperationLogic {
 
     /** CvAIOperation::UnitWasRemoved (and CvAIEscortedOperation's): recruiting wants the slot again; below half strength the operation aborts */
     fun unitWasRemoved(operations: AiOperations, operation: AiOperation, army: AiArmy, slot: Int) {
+        if (operation.type == AiOperationType.NAVAL_COLONIZE) {
+            // Always abort if the settler is removed
+            if (slot == 0) abort(operation, OperationAbortReason.LOST_CIVILIAN)
+            return
+        }
         if (operation.type.isEscorted) {
             // Assumes the civilian is in the first slot of the formation
             if (slot == 0) abort(operation, OperationAbortReason.LOST_CIVILIAN) else operation.escorted = false
@@ -853,11 +906,12 @@ object AiOperationLogic {
         val muster = musterTile(civ, operation) ?: return 0
         val enemy = enemy(civ, operation)
         val steps = civ.ai.military.steps
+        val sea = operation.type.allNaval || operation.type.mixedLandNaval
         for (army in operation.armies) {
             val goal = tileAt(civ, army.goalTile) ?: continue
-            val com = centerOfMass(civ, army) ?: continue
-            val musterToTarget = steps.distance(civ, enemy, muster, goal)
-            val currentToTarget = steps.distance(civ, enemy, com, goal)
+            val com = centerOfMass(civ, army, sea) ?: continue
+            val musterToTarget = steps.distance(civ, enemy, muster, goal, sea)
+            val currentToTarget = steps.distance(civ, enemy, com, goal, sea)
             if (musterToTarget <= 0) return 0
             if (currentToTarget in 0..2) return 100
             if (currentToTarget < 0) continue

@@ -3,6 +3,7 @@ package com.unciv.logic.automation.unit.tactical
 import com.unciv.logic.automation.AiDecisionLog
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.civilization.AutomationCache
+import com.unciv.logic.automation.unit.AirMoves
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.Tile
@@ -18,10 +19,11 @@ import com.unciv.models.ruleset.ai.AiDefine
  *  repositioning. A unit a move commands is added to [AutomationCache.processedUnits]; the other units, tactical or not, go on to the rest of
  *  the unit AI.
  *
- *  Not ported (their rows of AI.json's `tacticalMoves` have no code behind them): air moves, trade moves, naval blockades, escorting embarked units.
+ *  Not ported (their rows of AI.json's `tacticalMoves` have no code behind them): trade moves and naval blockades.
  */
 object TacticalAi {
 
+    private const val AIR_COMBAT_READY_HEALTH = 50
     private const val EMERGENCY_PURCHASES = "TACTICAL_EMERGENCY_PURCHASES"
     private const val MOVE_OPERATIONS = "TACTICAL_MOVE_OPERATIONS"
     private const val POSTURE_WITHDRAW = "TACTICAL_POSTURE_WITHDRAW"
@@ -32,8 +34,9 @@ object TacticalAi {
      *  CvTacticalAI::CommandeerUnits: the units that are the tactical AI's this turn. Not units that cannot move, are processed or have no
      *  unit AI, or are not combat units or Great Generals. Of those: not the ones in an army tactical may not interrupt
      *  ([com.unciv.logic.automation.strategy.CivAi.canTacticalAiInterrupt]); the ones whose tile has danger, that have a visible enemy unit or
-     *  city within AI_TACTICAL_RECRUIT_RANGE, or that left an operation within AI_TACTICAL_MAP_TEMP_ZONE_TURNS turns. (Barbarians have their own AI, air
-     *  units and paratroopers are not handled here.)
+     *  city within AI_TACTICAL_RECRUIT_RANGE, or that left an operation within AI_TACTICAL_MAP_TEMP_ZONE_TURNS turns. Air units with more than
+     *  half their health that will not rebase ([AirMoves.willAirUnitRebase]) are all tactical. (Barbarians have their own AI, [com.unciv.logic.automation.civilization.BarbarianAutomation];
+     *  paratroopers are not handled here.)
      */
     fun commandeerUnits(civ: Civilization, units: List<MapUnit>, cache: AutomationCache): List<MapUnit> {
         val rules = civ.gameInfo.ruleset.ai
@@ -45,7 +48,11 @@ object TacticalAi {
         val result = ArrayList<MapUnit>()
         for (unit in units) {
             if (unit.isDestroyed || unit.civ != civ || unit in cache.processedUnits || !unit.hasMovement()) continue
-            if (unit.baseUnit.isAirUnit()) continue
+            // CommandeerUnits: air units that are combat ready (more than half health) and not about to rebase
+            if (unit.baseUnit.isAirUnit()) {
+                if (unit.health > AIR_COMBAT_READY_HEALTH && !AirMoves.willAirUnitRebase(unit)) result.add(unit)
+                continue
+            }
             if (!unit.isMilitary() && !unit.isGreatPersonOfType("War")) continue
             if (!civ.ai.canTacticalAiInterrupt(unit)) continue
             val tile = unit.getTile()
@@ -136,6 +143,9 @@ object TacticalAi {
             Step("TACTICAL_GUARD_IMPROVEMENT_ALREADY_THERE") { TacticalMoves.plotGuardImprovementMoves(ctx, 0) },
             Step("TACTICAL_GUARD_IMPROVEMENT_1_TURN") { TacticalMoves.plotGuardImprovementMoves(ctx, 1) },
             Step("TACTICAL_REPOSITION") { TacticalMoves.plotRepositionMoves(ctx) },
+            Step("TACTICAL_AIR_SWEEP") { AirMoves.plotAirSweepMoves(ctx) },
+            Step("TACTICAL_AIR_INTERCEPT") { AirMoves.plotAirInterceptMoves(ctx) },
+            Step("TACTICAL_ESCORT_EMBARKED_UNIT") { NavalMoves.plotEscortEmbarkedMoves(ctx) },
         )
         // CvTacticalAI::EstablishTacticalPriorities: every move with a priority of 0 or more, the highest first, stable in XML order
         val stepByName = steps.associateBy { it.name }

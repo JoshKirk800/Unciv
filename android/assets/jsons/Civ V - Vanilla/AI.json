@@ -6076,7 +6076,9 @@
         "AIAdvancedStartPercent": 100,
         "PolicyNumOptionsConsidered": 10,
         "TechNumOptionsConsidered": 10,
-        "CityProductionNumOptionsConsidered": 10
+        "CityProductionNumOptionsConsidered": 10,
+        "BarbarianLandTargetRange": 2,
+        "BarbarianSeaTargetRange": 4
       }
     },
     {
@@ -6106,7 +6108,9 @@
         "AIAdvancedStartPercent": 100,
         "PolicyNumOptionsConsidered": 4,
         "TechNumOptionsConsidered": 4,
-        "CityProductionNumOptionsConsidered": 4
+        "CityProductionNumOptionsConsidered": 4,
+        "BarbarianLandTargetRange": 3,
+        "BarbarianSeaTargetRange": 6
       }
     },
     {
@@ -6136,7 +6140,9 @@
         "AIAdvancedStartPercent": 100,
         "PolicyNumOptionsConsidered": 3,
         "TechNumOptionsConsidered": 3,
-        "CityProductionNumOptionsConsidered": 3
+        "CityProductionNumOptionsConsidered": 3,
+        "BarbarianLandTargetRange": 4,
+        "BarbarianSeaTargetRange": 8
       }
     },
     {
@@ -6166,7 +6172,9 @@
         "AIAdvancedStartPercent": 100,
         "PolicyNumOptionsConsidered": 2,
         "TechNumOptionsConsidered": 2,
-        "CityProductionNumOptionsConsidered": 2
+        "CityProductionNumOptionsConsidered": 2,
+        "BarbarianLandTargetRange": 5,
+        "BarbarianSeaTargetRange": 10
       }
     },
     {
@@ -6196,7 +6204,9 @@
         "AIAdvancedStartPercent": 120,
         "PolicyNumOptionsConsidered": 2,
         "TechNumOptionsConsidered": 2,
-        "CityProductionNumOptionsConsidered": 2
+        "CityProductionNumOptionsConsidered": 2,
+        "BarbarianLandTargetRange": 5,
+        "BarbarianSeaTargetRange": 12
       }
     },
     {
@@ -6226,7 +6236,9 @@
         "AIAdvancedStartPercent": 135,
         "PolicyNumOptionsConsidered": 2,
         "TechNumOptionsConsidered": 2,
-        "CityProductionNumOptionsConsidered": 2
+        "CityProductionNumOptionsConsidered": 2,
+        "BarbarianLandTargetRange": 6,
+        "BarbarianSeaTargetRange": 15
       }
     },
     {
@@ -6256,7 +6268,9 @@
         "AIAdvancedStartPercent": 150,
         "PolicyNumOptionsConsidered": 2,
         "TechNumOptionsConsidered": 2,
-        "CityProductionNumOptionsConsidered": 2
+        "CityProductionNumOptionsConsidered": 2,
+        "BarbarianLandTargetRange": 7,
+        "BarbarianSeaTargetRange": 18
       }
     },
     {
@@ -6286,7 +6300,9 @@
         "AIAdvancedStartPercent": 170,
         "PolicyNumOptionsConsidered": 2,
         "TechNumOptionsConsidered": 2,
-        "CityProductionNumOptionsConsidered": 2
+        "CityProductionNumOptionsConsidered": 2,
+        "BarbarianLandTargetRange": 8,
+        "BarbarianSeaTargetRange": 20
       }
     }
   ],

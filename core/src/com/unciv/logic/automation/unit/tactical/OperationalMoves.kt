@@ -71,7 +71,8 @@ object OperationalMoves {
     }
 
     /**
-     *  One operation's turn: its armies move ([moveSingleHex] or [moveEnemyTerritory] by its move type), then it is checked on its target. [ctx]
+     *  One operation's turn: its armies move ([moveSingleHex] or [moveEnemyTerritory] by its move type, naval move types by
+     *  [com.unciv.logic.automation.unit.NavalOperationMoves]), then it is checked on its target. [ctx]
      *  is the tactical turn's; one is made if it is not given and the operation needs one.
      */
     fun moveOperation(civ: Civilization, operation: AiOperation, cache: AutomationCache, ctx: TacticalContext? = null) {
@@ -80,6 +81,8 @@ object OperationalMoves {
         when (operation.type.moveType) {
             OperationMoveType.SingleHex -> moveSingleHex(ctx ?: lightContext(civ, cache), operation)
             OperationMoveType.EnemyTerritory -> moveEnemyTerritory(ctx ?: fullContext(civ, cache), operation)
+            OperationMoveType.NavalEscort, OperationMoveType.FreeformNaval, OperationMoveType.NavalFleet ->
+                com.unciv.logic.automation.unit.NavalOperationMoves.moveOperation(civ, operation, cache)
             OperationMoveType.None -> Unit
         }
         operation.lastTurnMoved = turn

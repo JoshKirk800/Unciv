@@ -87,12 +87,12 @@ class StepFinder {
     }
 
     /** GetStepDistanceBetweenPoints / DoesPathExist: the step length, -1 if none */
-    fun distance(civ: Civilization, enemy: Civilization?, from: Tile, to: Tile): Int =
-        if (search(civ, enemy, from, sea = false, maxSteps = Int.MAX_VALUE, stopAt = to)) dist[to.zeroBasedIndex] else -1
+    fun distance(civ: Civilization, enemy: Civilization?, from: Tile, to: Tile, sea: Boolean = false): Int =
+        if (search(civ, enemy, from, sea, maxSteps = Int.MAX_VALUE, stopAt = to)) dist[to.zeroBasedIndex] else -1
 
     /** GeneratePath: the tiles from [from] to [to] inclusive, null if none */
-    fun path(civ: Civilization, enemy: Civilization?, from: Tile, to: Tile): List<Tile>? {
-        if (!search(civ, enemy, from, sea = false, maxSteps = Int.MAX_VALUE, stopAt = to)) return null
+    fun path(civ: Civilization, enemy: Civilization?, from: Tile, to: Tile, sea: Boolean = false): List<Tile>? {
+        if (!search(civ, enemy, from, sea, maxSteps = Int.MAX_VALUE, stopAt = to)) return null
         val tiles = civ.gameInfo.tileMap.tileList
         val result = ArrayList<Tile>()
         var index = to.zeroBasedIndex
@@ -109,10 +109,10 @@ class StepFinder {
 
     /**
      *  GetXPlotsFromEnd: the tile [x] steps before the end of the path from [from] to [to] (the start if the path is shorter);
-     *  null if there is no path.
+     *  null if there is no path. With [sea] the path runs over explored water (the naval operations' steps).
      */
-    fun xPlotsFromEnd(civ: Civilization, enemy: Civilization?, from: Tile, to: Tile, x: Int): Tile? {
-        val path = path(civ, enemy, from, to) ?: return null
+    fun xPlotsFromEnd(civ: Civilization, enemy: Civilization?, from: Tile, to: Tile, x: Int, sea: Boolean = false): Tile? {
+        val path = path(civ, enemy, from, to, sea) ?: return null
         return path[max(0, path.size - 1 - x)]
     }
 }
@@ -161,8 +161,14 @@ object MilitaryTargets {
                 val candidate = MilitaryTarget(friendly, target)
                 candidate.musterNearbyUnitPower = ourPower.getValue(friendly)
                 candidate.targetNearbyUnitPower = theirPower.getValue(target)
-                shouldAttackBySea(civ, candidate, lengths[index])
-                if (!friendly.isCoastal() && candidate.attackBySea) continue
+                if (type == AiOperationType.PURE_NAVAL_CITY_ATTACK) {
+                    candidate.attackBySea = true
+                    if (friendly.isCoastal() && target.isCoastal())
+                        candidate.pathLength = friendly.getCenterTile().aerialDistanceTo(target.getCenterTile())
+                } else {
+                    shouldAttackBySea(civ, candidate, lengths[index])
+                    if (!friendly.isCoastal() && candidate.attackBySea) continue
+                }
                 if (candidate.pathLength > 0) preliminary.add(candidate to 10000 - candidate.pathLength)
             }
         }

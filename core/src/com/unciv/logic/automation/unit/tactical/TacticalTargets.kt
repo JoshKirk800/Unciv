@@ -62,8 +62,8 @@ class TacticalTarget(
  *  IdentifyPriorityTargets, IdentifyPriorityTargetsByType), sorted by [TacticalTarget.aux] (the most damaged unit, the most threatened city first).
  *
  *  Deviations: only tiles we see are looked at, as in the original; trade routes are not map units in Unciv, so there are no trade unit,
- *  trade plot or trade route targets; the barbarian passes (IdentifyPriorityBarbarianTargets, the release turn) are not here, barbarians keep
- *  their own AI; naval blockade points belong to the homeland AI; improvements that cannot be pillaged are not targets; a unit "reaches" the
+ *  trade plot or trade route targets; barbarians get IdentifyPriorityBarbarianTargets instead of IdentifyPriorityTargets and no analysis map
+ *  (their [map] is null); the barbarian release turn is not applied (Unciv's barbarian spawner has its own start); naval blockade points belong to the homeland AI; improvements that cannot be pillaged are not targets; a unit "reaches" the
  *  city it threatens if the city is within its base moves on its landmass (a ship needs a coastal city), as in [PlotDanger]; the fire support
  *  of the defending city's units is not subtracted from what an attacker does to it.
  */
@@ -102,12 +102,12 @@ class TacticalTargets private constructor(val all: List<TacticalTarget>) {
         }
 
         /** CvTacticalAI::FindTacticalTargets, then the priority identification */
-        fun find(civ: Civilization, map: TacticalMap, danger: PlotDanger): TacticalTargets = timeThis("AI.TacticalTargets") {
+        fun find(civ: Civilization, map: TacticalMap?, danger: PlotDanger): TacticalTargets = timeThis("AI.TacticalTargets") {
             val targets = ArrayList<TacticalTarget>()
             val visible = civ.viewableTiles
             for (tile in civ.gameInfo.tileMap.tileList) {
                 if (tile !in visible) continue
-                val zoneId = map.zoneOf(tile)?.id ?: -1
+                val zoneId = map?.zoneOf(tile)?.id ?: -1
                 val city = if (tile.isCityCenter()) tile.getCity() else null
                 if (city != null) {
                     if (city.civ == civ) targets.add(TacticalTarget(TacticalTargetType.CityToDefend, tile, zoneId, city = city, aux = danger.cityThreat(city)))
@@ -116,7 +116,7 @@ class TacticalTargets private constructor(val all: List<TacticalTarget>) {
                 }
                 targetOfTile(civ, map, danger, tile, zoneId)?.let { targets.add(it) }
             }
-            identifyPriorityTargets(civ, targets)
+            if (civ.isBarbarian) identifyPriorityBarbarianTargets(civ, targets) else identifyPriorityTargets(civ, targets)
             identifyPriorityTargetsByType(targets)
             // std::stable_sort by aux data, the highest first
             TacticalTargets(targets.sortedByDescending { it.aux })
@@ -124,7 +124,7 @@ class TacticalTargets private constructor(val all: List<TacticalTarget>) {
 
         /** The branches of FindTacticalTargets for a tile without a city, in the original's order: the first that applies makes the target */
         private fun targetOfTile(
-            civ: Civilization, map: TacticalMap, danger: PlotDanger, tile: Tile, zoneId: Int
+            civ: Civilization, map: TacticalMap?, danger: PlotDanger, tile: Tile, zoneId: Int
         ): TacticalTarget? {
             val owner = tile.getOwner()
             val ownerAtWar = owner != null && owner != civ && civ.isAtWarWith(owner)
@@ -156,7 +156,7 @@ class TacticalTargets private constructor(val all: List<TacticalTarget>) {
             // ... enemy civilian (or embarked) unit?
             civilianTarget(civ, tile, zoneId)?.let { return it }
             // ... defensive bastion?
-            if (owner == civ && map.defenseModifier(tile) > 0 && danger.get(tile) > 0) {
+            if (owner == civ && map != null && map.defenseModifier(tile) > 0 && danger.get(tile) > 0) {
                 val defenseCity = tile.neighbors.firstNotNullOfOrNull { n -> if (n.isCityCenter()) n.getCity()?.takeIf { it.civ == civ } else null }
                 if (defenseCity != null)
                     return TacticalTarget(TacticalTargetType.DefensiveBastion, tile, zoneId, aux = danger.cityThreat(defenseCity) + danger.get(tile))
@@ -243,6 +243,38 @@ class TacticalTargets private constructor(val all: List<TacticalTarget>) {
                     if (target.type != TacticalTargetType.HighPriorityUnit) target.type = TacticalTargetType.MediumPriorityUnit
             }
         }
+
+        /**
+         *  CvTacticalAI::IdentifyPriorityBarbarianTargets: every visible enemy unit that can hit a barbarian camp next turn (a ranged unit that
+         *  shoots further than it fights and has the camp in range, any other that can reach it in a turn) is a high priority target.
+         */
+        private fun identifyPriorityBarbarianTargets(civ: Civilization, targets: List<TacticalTarget>) {
+            val unitTargets = targets.filter { it.isUnitTarget }
+            if (unitTargets.isEmpty()) return
+            for (camp in civ.gameInfo.barbarians.getEncampmentTiles()) {
+                // a destroyed camp stays on the books for a while
+                if (!camp.isBarbarianEncampment()) continue
+                for (target in unitTargets) {
+                    // Skip if already a priority target (because was able to strike another camp)
+                    if (target.type == TacticalTargetType.HighPriorityUnit) continue
+                    if (threatensCamp(target.unit!!, camp)) target.type = TacticalTargetType.HighPriorityUnit
+                }
+            }
+        }
+
+        private fun threatensCamp(enemy: MapUnit, camp: Tile): Boolean {
+            val base = enemy.baseUnit
+            val distance = enemy.getTile().aerialDistanceTo(camp)
+            if (base.isRanged() && base.rangedStrength > base.strength) {
+                // Shoots further than it fights: only what it can shoot counts
+                return distance <= enemy.getRange()
+            }
+            // Cheap bound before the movement search: a unit moves up to its movement per turn (roads and rails are looked at for nearby units only)
+            if (distance > enemy.getMaxMovement() * MAX_ROAD_SPEEDUP + 1) return false
+            return enemy.movement.getDistanceToTiles().containsKey(camp)
+        }
+
+        private const val MAX_ROAD_SPEEDUP = 3
 
         /** What one enemy unit does to [city] next turn: shooting it if it is a ranged unit within range, else attacking it if it can get there */
         private fun expectedDamageToCity(enemy: MapUnit, city: CityCombatant): Int {

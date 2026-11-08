@@ -3,9 +3,12 @@ package com.unciv.logic.automation.strategy
 import com.unciv.logic.automation.diplomacy.AiThreat
 import com.unciv.logic.automation.diplomacy.WarAi
 import com.unciv.logic.city.City
+import com.unciv.logic.automation.unit.SettleAreas
 import com.unciv.logic.civilization.Civilization
 import com.unciv.models.ruleset.ai.AiDefine
+import com.unciv.models.ruleset.ai.Flavor
 import com.unciv.models.ruleset.ai.MultiUnitFormationDef
+import com.unciv.logic.automation.diplomacy.WarProjection
 
 /**
  *  The operation side of CvMilitaryAI: UpdateOperations (kill and launch rules), the Request* functions, IsAttackReady,
@@ -14,8 +17,8 @@ import com.unciv.models.ruleset.ai.MultiUnitFormationDef
  *  As in BNW's UpdateOperations, the launches are: barbarian camps (eradicate strategy), one basic city attack per war. Not launched,
  *  because the original has them commented out or never calls them: pillage raids (RequestPillageAttack has no caller), city close
  *  defense and rapid response (their launch is commented out in UpdateOperations, and their move type is never set, so the tactical AI
- *  would not move them); they exist as operations ([AiOperationLogic.addOperation]) with their kill rules. Not ported: nuke attacks
- *  (RequestNukeAttack), pure naval attacks, naval superiority and bombardment - the naval slice owns those.
+ *  would not move them); they exist as operations ([AiOperationLogic.addOperation]) with their kill rules. The naval and nuke operations
+ *  are [NavalOperationLogic]'s.
  *  MakeEmergencyPurchases itself only buys the last unit of operations; the defensive emergency purchases of the original are the tactical
  *  AI's (CvTacticalAI::PlotEmergencyPurchases).
  */
@@ -175,7 +178,86 @@ object MilitaryOperations {
         val fillable = numberOfFillableSlots(civ, formation, bySea)
         if (fillable.required - fillable.filled > numUnitsWillingToBuild || fillable.landReservesUsed > landReservesAvailable(civ)) return false
         val operation = AiOperationLogic.addOperation(civ, type, target.targetCity.civ, target.targetCity, target.musterCity)
+        if (!bySea && isOperationOk(operation) && target.targetCity.isCoastal()) {
+            // a coastal target also gets a naval superiority operation as escort, within the naval flavor's limit
+            val operations = civ.ai.operations
+            var maxOperations = civ.ai.personality(Flavor.Naval) / 2
+            if (SettleAreas.aiMapHint(civ.gameInfo) and 1 != 0) maxOperations *= 2
+            val running = operations.numOperationsOfType(AiOperationType.NAVAL_SUPERIORITY) + operations.numOperationsOfType(AiOperationType.NAVAL_BOMBARDMENT)
+            if (running <= maxOperations) AiOperationLogic.addOperation(civ, AiOperationType.NAVAL_SUPERIORITY)
+        }
         return isOperationOk(operation)
+    }
+
+    /**
+     *  CvMilitaryAI::RequestPureNavalAttack: a fleet takes a city of [enemy] by itself if all but [numUnitsWillingBuild] of the slots of
+     *  the pure naval formation are filled by ships at hand.
+     */
+    fun requestPureNavalAttack(civ: Civilization, enemy: Civilization, numUnitsWillingBuild: Int): Boolean {
+        val (target, _) = MilitaryTargets.findBestAttackTarget(civ, AiOperationType.PURE_NAVAL_CITY_ATTACK, enemy) ?: return false
+        val formation = civ.ai.operations.formationDef("MUFORMATION_PURE_NAVAL_CITY_ATTACK") ?: return false
+        val fillable = numberOfFillableSlots(civ, formation, true)
+        if (fillable.required - fillable.filled > numUnitsWillingBuild) return false
+        return isOperationOk(AiOperationLogic.addOperation(civ, AiOperationType.PURE_NAVAL_CITY_ATTACK, enemy, target.targetCity, target.musterCity))
+    }
+
+    /** CvMilitaryAI::RequestNukeAttack: with a nuke at hand, one that goes at [enemy]'s best city in its range */
+    fun requestNukeAttack(civ: Civilization, enemy: Civilization): Boolean {
+        if (civ.units.getCivUnits().none { it.isNuclearWeapon() }) return false
+        return isOperationOk(AiOperationLogic.addOperation(civ, AiOperationType.NUKE_ATTACK, enemy))
+    }
+
+    /**
+     *  The nuke trigger of UpdateOperations for an enemy at war with us (and we have nukes): nuke if they nuked us or we nuked them; else, if
+     *  the war projection is destruction (every turn) or got worse than last turn's known one, with two rolls of 0..9 below the FLAVOR_USE_NUKE of the
+     *  personality and grand strategy.
+     */
+    fun shouldLaunchNuke(civ: Civilization, other: Civilization): Boolean {
+        if (civ.units.getCivUnits().none { it.isNuclearWeapon() } || !civ.isAtWarWith(other)) return false
+        val diplomacy = civ.ai.diplomacy
+        // they nuked us, so we can nuke them; if we already nuked them, keep it up!
+        if (diplomacy.memoryOf(other).numTimesNuked > 0 || other.ai.diplomacy.memoryOf(civ).numTimesNuked > 0) return true
+        val memory = diplomacy.memoryOf(other)
+        val current = memory.warProjection
+        val last = memory.lastWarProjection
+        val roll = when {
+            current == WarProjection.Destruction -> true // roll every turn
+            current != null && current != WarProjection.Unknown && last != null && last != WarProjection.Unknown && current < last -> true
+            else -> false
+        }
+        if (!roll) return false
+        val flavor = civ.ai.personalityAndGrandStrategy(Flavor.UseNuke)
+        val random = civ.ai.random("Nuke" + other.civID)
+        return random.nextInt(10) < flavor && random.nextInt(10) < flavor
+    }
+
+    /**
+     *  The end of UpdateOperations: naval operations with no enemy in mind, their total (superiority plus bombardment) held to FLAVOR_NAVAL / 2
+     *  (twice that on a naval map). Naval superiority when a squadron's required slots are filled by ships at hand and a quick colonization
+     *  is under way or we are at war; naval bombardment when the barbarians are to be eradicated and none runs.
+     */
+    fun launchOpportunityNavalOperations(civ: Civilization) {
+        val operations = civ.ai.operations
+        var maxOperations = civ.ai.personality(Flavor.Naval) / 2
+        if (SettleAreas.aiMapHint(civ.gameInfo) and 1 != 0) maxOperations *= 2
+        val superiority = operations.numOperationsOfType(AiOperationType.NAVAL_SUPERIORITY)
+        val bombardment = operations.numOperationsOfType(AiOperationType.NAVAL_BOMBARDMENT)
+        if (superiority + bombardment > maxOperations) return
+        val squadron = operations.formationDef("MUFORMATION_NAVAL_SQUADRON")
+        if (squadron != null) {
+            val fillable = numberOfFillableSlots(civ, squadron, true)
+            // Not willing to build units to get this off the ground
+            if (fillable.filled >= fillable.required &&
+                (operations.firstOfType(AiOperationType.QUICK_COLONIZE) != null || civ.ai.isMilitaryStrategyActive(AT_WAR))) {
+                AiOperationLogic.addOperation(civ, AiOperationType.NAVAL_SUPERIORITY)
+                return
+            }
+        }
+        val bombard = operations.formationDef("MUFORMATION_NAVAL_BOMBARDMENT") ?: return
+        val fillable = numberOfFillableSlots(civ, bombard, true)
+        // If fighting off barbarians, start naval bombardment, but only if don't have one
+        if (fillable.filled >= fillable.required && bombardment == 0 && civ.ai.isMilitaryStrategyActive(ERADICATE_BARBARIANS))
+            AiOperationLogic.addOperation(civ, AiOperationType.NAVAL_BOMBARDMENT)
     }
 
     /** CvMilitaryAI::RequestPillageAttack (no caller in BNW's UpdateOperations) */
@@ -222,7 +304,9 @@ object MilitaryOperations {
      *  response when the total threat is at most one major's.
      *  Launches: a barbarian camp operation (eradicating barbarians, not at war, no critical defense, none running, willing to take the risk);
      *  at war and not losing all wars, one basic attack on a target chosen by score x target value among enemies of at most average
-     *  strength (or any with AI_MILITARY_IGNORE_BAD_ODDS) whose attack needs at most one unit to be built and fits the land reserves.
+     *  strength (or any with AI_MILITARY_IGNORE_BAD_ODDS) whose attack needs at most one unit to be built and fits the land reserves; nuke
+ *  attacks ([shouldLaunchNuke]); one pure naval city attack at a time per war ([requestPureNavalAttack]); naval superiority and bombardment
+ *  while there is room for them ([launchOpportunityNavalOperations]).
      */
     fun updateOperations(civ: Civilization) {
         val military = civ.ai.military
@@ -282,8 +366,18 @@ object MilitaryOperations {
             operations.firstOfType(AiOperationType.DESTROY_BARBARIAN_CAMP) == null && willingToAcceptRisk)
             AiOperationLogic.addOperation(civ, AiOperationType.DESTROY_BARBARIAN_CAMP)
 
-        // Operation vs. other civs: at war and not losing everywhere, one new attack on the best target
+        // Operation vs. other civs: at war, consider nukes
+        if (atWar) for (other in validMajors(civ)) if (shouldLaunchNuke(civ, other)) requestNukeAttack(civ, other)
+
+        // at war and not losing everywhere, one new attack on the best target
         if (atWar && WarStateAi.stateAllWars(civ) != StateAllWars.Losing) launchBasicAttack(civ)
+
+        // naval attack: naval operations as part of a war effort, but only one at a time
+        if (atWar) for (other in validMajors(civ)) {
+            if (WarStateAi.warState(civ, other) == null) continue
+            if (operations.firstOfType(AiOperationType.PURE_NAVAL_CITY_ATTACK) == null) requestPureNavalAttack(civ, other, 1)
+        }
+        launchOpportunityNavalOperations(civ)
     }
 
     /** The attack part of UpdateOperations: score the best target of each enemy, then choose by score x target value */

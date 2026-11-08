@@ -116,6 +116,7 @@ class FullGameSim {
     private var performance: SimPerformance? = null
     private var trace: GreatPeopleTrace? = null
     private var combatLosses: CombatLosses? = null
+    private var barbarianStats: BarbarianStats? = null
 
     private fun violation(turn: Int, text: String) {
         val key = text.substringBefore(':')
@@ -195,6 +196,7 @@ class FullGameSim {
         text.appendLine()
         trace?.let { text.append(it.report()).appendLine() }
         combatLosses?.let { text.append(it.report()).appendLine() }
+        barbarianStats?.let { text.append(it.report()).appendLine() }
         performance?.let { text.append(it.report()).appendLine() }
         text.appendLine("## Snapshots")
         text.append(out)
@@ -217,6 +219,7 @@ class FullGameSim {
         repeat(env("FULL_SIM_PERTURB_HASH", "0").toInt()) { System.identityHashCode(Any()) }
         val trace = GreatPeopleTrace(game).also { this.trace = it }
         val combatLosses = CombatLosses(game).also { this.combatLosses = it }
+        val barbarianStats = BarbarianStats(game).also { this.barbarianStats = it }
         val outPath = System.getenv("FULL_SIM_OUT")!!
         val spans = System.getenv("FULL_SIM_SPANS") != null
         val performance = SimPerformance(game, spans, File("$outPath.perf.csv"), if (spans) File("$outPath.spans.csv") else null)
@@ -264,6 +267,7 @@ class FullGameSim {
             checkInvariants(game, turn)
             trace.afterTurn()
             combatLosses.afterTurn()
+            barbarianStats.afterTurn()
             civTrace?.afterTurn(turn)
             val dump = dumpDir != null && (dumpAll || turn in dumpTurns)
             if (digestFile != null || dump) {

@@ -175,6 +175,8 @@ class FormationSlotDef {
 /** MultiUnitFormation_SlotEntries by formation type (CvMilitaryAI::IsAttackReady) */
 class MultiUnitFormationDef : INamed {
     override var name = ""
+    /** MultiUnitFormations.RequiresNavalUnitConsistency: with ocean-going ships available only those may fill the slots (naval and city-state invasions) */
+    var requiresNavalUnitConsistency = false
     var slots = ArrayList<FormationSlotDef>()
 }
 

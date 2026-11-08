@@ -9009,7 +9009,9 @@
         "AIFreeXPPercent": 0,
         "PolicyNumOptionsConsidered": 10,
         "TechNumOptionsConsidered": 10,
-        "CityProductionNumOptionsConsidered": 10
+        "CityProductionNumOptionsConsidered": 10,
+        "BarbarianLandTargetRange": 2,
+        "BarbarianSeaTargetRange": 4
       }
     },
     {
@@ -9041,7 +9043,9 @@
         "AIFreeXPPercent": 0,
         "PolicyNumOptionsConsidered": 4,
         "TechNumOptionsConsidered": 4,
-        "CityProductionNumOptionsConsidered": 4
+        "CityProductionNumOptionsConsidered": 4,
+        "BarbarianLandTargetRange": 3,
+        "BarbarianSeaTargetRange": 6
       }
     },
     {
@@ -9073,7 +9077,9 @@
         "AIFreeXPPercent": 0,
         "PolicyNumOptionsConsidered": 3,
         "TechNumOptionsConsidered": 3,
-        "CityProductionNumOptionsConsidered": 3
+        "CityProductionNumOptionsConsidered": 3,
+        "BarbarianLandTargetRange": 4,
+        "BarbarianSeaTargetRange": 8
       }
     },
     {
@@ -9105,7 +9111,9 @@
         "AIFreeXPPercent": 0,
         "PolicyNumOptionsConsidered": 2,
         "TechNumOptionsConsidered": 2,
-        "CityProductionNumOptionsConsidered": 2
+        "CityProductionNumOptionsConsidered": 2,
+        "BarbarianLandTargetRange": 5,
+        "BarbarianSeaTargetRange": 10
       }
     },
     {
@@ -9137,7 +9145,9 @@
         "AIFreeXPPercent": 0,
         "PolicyNumOptionsConsidered": 2,
         "TechNumOptionsConsidered": 2,
-        "CityProductionNumOptionsConsidered": 2
+        "CityProductionNumOptionsConsidered": 2,
+        "BarbarianLandTargetRange": 5,
+        "BarbarianSeaTargetRange": 12
       }
     },
     {
@@ -9169,7 +9179,9 @@
         "AIFreeXPPercent": 25,
         "PolicyNumOptionsConsidered": 2,
         "TechNumOptionsConsidered": 2,
-        "CityProductionNumOptionsConsidered": 2
+        "CityProductionNumOptionsConsidered": 2,
+        "BarbarianLandTargetRange": 6,
+        "BarbarianSeaTargetRange": 15
       }
     },
     {
@@ -9201,7 +9213,9 @@
         "AIFreeXPPercent": 50,
         "PolicyNumOptionsConsidered": 2,
         "TechNumOptionsConsidered": 2,
-        "CityProductionNumOptionsConsidered": 2
+        "CityProductionNumOptionsConsidered": 2,
+        "BarbarianLandTargetRange": 7,
+        "BarbarianSeaTargetRange": 18
       }
     },
     {
@@ -9233,7 +9247,9 @@
         "AIFreeXPPercent": 100,
         "PolicyNumOptionsConsidered": 2,
         "TechNumOptionsConsidered": 2,
-        "CityProductionNumOptionsConsidered": 2
+        "CityProductionNumOptionsConsidered": 2,
+        "BarbarianLandTargetRange": 8,
+        "BarbarianSeaTargetRange": 20
       }
     },
     {
@@ -9265,7 +9281,9 @@
         "AIFreeXPPercent": 0,
         "PolicyNumOptionsConsidered": 2,
         "TechNumOptionsConsidered": 2,
-        "CityProductionNumOptionsConsidered": 2
+        "CityProductionNumOptionsConsidered": 2,
+        "BarbarianLandTargetRange": 5,
+        "BarbarianSeaTargetRange": 10
       }
     }
   ],
@@ -10404,7 +10422,8 @@
           "required": false,
           "positionType": "MUPOSITION_BOMBARD"
         }
-      ]
+      ],
+      "requiresNavalUnitConsistency": true
     },
     {
       "name": "MUFORMATION_CITY_STATE_INVASION",
@@ -10445,7 +10464,8 @@
           "required": false,
           "positionType": "MUPOSITION_CIVILIAN_SUPPORT"
         }
-      ]
+      ],
+      "requiresNavalUnitConsistency": true
     },
     {
       "name": "MUFORMATION_NUKE_ATTACK",
