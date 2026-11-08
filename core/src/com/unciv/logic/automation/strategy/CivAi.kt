@@ -94,6 +94,8 @@ class CivAi : IsPartOfGameInfoSerialization {
     var aggressionMemory = HashMap<String, AggressionMemory>()
     /** CvCitySpecializationAI state, see [CitySpecializationAi] */
     var citySpecialization = CitySpecializationState()
+    /** CvDiplomacyAI::m_paeMinorCivApproach: our approach to each city-state by civID, missing = [MinorCivApproach.Ignore] */
+    var minorCivApproaches = HashMap<String, MinorCivApproach>()
     //endregion
 
     //region Transients
@@ -128,6 +130,7 @@ class CivAi : IsPartOfGameInfoSerialization {
         toReturn.isCramped = isCramped
         for ((civId, memory) in aggressionMemory) toReturn.aggressionMemory[civId] = memory.clone()
         toReturn.citySpecialization = citySpecialization.clone()
+        toReturn.minorCivApproaches.putAll(minorCivApproaches)
         return toReturn
     }
 
