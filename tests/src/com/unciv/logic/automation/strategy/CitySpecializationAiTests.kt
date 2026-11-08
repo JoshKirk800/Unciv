@@ -49,6 +49,10 @@ class CitySpecializationAiTests {
         weights = CitySpecializationAi.weightSpecializations(civ)
         assertEquals(3 * 20 + 50, yieldWeight(weights, 2))
         assertEquals(4 * 20 + 2 * 10 + 50, yieldWeight(weights, 3))
+        // + CvDiplomacyAI::GetTotalLandDisputeLevel × AI_CITY_SPECIALIZATION_GOLD_WEIGHT_LAND_DISPUTE (10)
+        civ.ai.diplomacy.lastTotalLandDisputeLevel = 7
+        weights = CitySpecializationAi.weightSpecializations(civ)
+        assertEquals(3 * 20 + 50 + 7 * 10, yieldWeight(weights, 2))
     }
 
     @Test

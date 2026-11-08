@@ -1,5 +1,8 @@
 package com.unciv.logic.automation.unit
 
+import com.unciv.logic.automation.diplomacy.DisputeLevel
+import com.unciv.logic.automation.diplomacy.WarFace
+import com.unciv.logic.automation.diplomacy.WarGoal
 import com.unciv.logic.automation.strategy.GrandStrategyAi
 import com.unciv.logic.automation.strategy.StateAllWars
 import com.unciv.logic.automation.strategy.WarState
@@ -14,6 +17,7 @@ import com.unciv.models.metadata.BaseRuleset
 import com.unciv.models.ruleset.GreatWorkSlotType
 import com.unciv.models.ruleset.ai.DiplomacyPersonality
 import com.unciv.models.ruleset.ai.Flavor
+import com.unciv.models.ruleset.ai.MajorCivApproach
 import com.unciv.models.ruleset.ai.MinorCivApproach
 import com.unciv.models.ruleset.unit.BaseUnit
 import com.unciv.testing.GdxTestRunner
@@ -212,6 +216,42 @@ class GreatPersonAutomationTests {
         assertNotNull(GreatPersonAutomation.findBestMerchantTargetPlot(merchant))
         civ.getDiplomacyManager(cityState)!!.declareWar()
         assertNull(GreatPersonAutomation.findBestMerchantTargetPlot(merchant))
+    }
+
+    @Test
+    fun `merchant skips city-states we plan a war against`() {
+        val merchant = greatPerson("Great Merchant")
+        val cityState = cityState()
+        civ.ai.diplomacy.memoryOf(cityState).warGoal = WarGoal.Prepare
+        assertNull(GreatPersonAutomation.findBestMerchantTargetPlot(merchant))
+        civ.ai.diplomacy.memoryOf(cityState).warGoal = null
+        assertNotNull(GreatPersonAutomation.findBestMerchantTargetPlot(merchant))
+    }
+    //endregion
+
+    //region General
+
+    @Test
+    fun `a citadel goes next to a major only when we show it hostility, or neutrality over a strong land dispute`() {
+        val other = neutralCiv()
+        game.addCity(other, tile(3, 0))
+        civ.diplomacyFunctions.makeCivilizationsMeet(other)
+        val general = greatPerson("Great General")
+        val memory = civ.ai.diplomacy.memoryOf(other)
+        fun target() = GreatPersonAutomation.findBestArtistTargetPlot(general)
+
+        memory.approach = MajorCivApproach.Neutral
+        assertNull("neutral, no dispute", target())
+        memory.landDispute = DisputeLevel.Strong
+        assertEquals(other, target()!!.neighbors.firstNotNullOf { it.getOwner()?.takeIf { owner -> owner != civ } })
+        memory.approach = MajorCivApproach.Friendly
+        assertNull("friendly despite the dispute", target())
+        memory.landDispute = DisputeLevel.None
+        memory.approach = MajorCivApproach.War
+        memory.warFace = WarFace.Hostile
+        assertNotNull("the war face shown is hostile", target())
+        memory.warFace = WarFace.Friendly
+        assertNull("the war face shown is friendly", target())
     }
     //endregion
 
