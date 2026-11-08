@@ -11,6 +11,7 @@ import com.unciv.models.ruleset.ai.AiRuleset
 import com.unciv.models.ruleset.ai.MajorCivApproach
 import com.unciv.models.ruleset.ai.MinorCivApproach
 import com.unciv.models.ruleset.unique.UniqueType
+import com.unciv.view.TileView
 import kotlin.math.ceil
 
 /**
@@ -64,6 +65,9 @@ class PlotDanger(private val civ: Civilization) {
         }
         return value
     }
+
+    /** [get] for view-based unit code */
+    fun get(tile: TileView): Int = get(civ.gameInfo.tileMap[tile.position()])
 
     /** CvDangerPlots::IsUnderImmediateThreat (CvPlayer::IsPlotUnderImmediateThreat): some source can reach the tile within one move */
     fun isUnderImmediateThreat(tile: Tile): Boolean = get(tile) and 1 != 0

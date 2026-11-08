@@ -13,6 +13,7 @@ import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.unit.SettlerAutomation
 import com.unciv.logic.automation.unit.ArchaeologistAutomation
 import com.unciv.logic.automation.unit.EspionageAutomation
+import com.unciv.logic.automation.unit.tactical.TacticalAi
 import com.unciv.logic.automation.unit.UnitAutomation
 import com.unciv.logic.battle.*
 import com.unciv.logic.city.City
@@ -235,6 +236,12 @@ object NextTurnAutomation {
         for (unit in unitsInPriorityOrder()) {
             if (!isStillOurUnit(unit, civView)) continue
             applyPromotions(unit)
+        }
+        // CvTacticalAI::Update runs before the homeland AI: the units near the enemy or in danger first, the rest of the unit AI skips them
+        val viewsOfUnits = unitsAtStart.associateBy { it.getUnit() }
+        TacticalAi.automate(civInfo, unitsInPriorityOrder().map { it.getUnit() }, cache) { unit ->
+            val view = viewsOfUnits[unit]
+            view != null && UnitAutomation.tryTacticalAttack(view, cache)
         }
         for (unit in unitsInPriorityOrder()) {
             // settlers need to move before automateSettlerEscorting(),

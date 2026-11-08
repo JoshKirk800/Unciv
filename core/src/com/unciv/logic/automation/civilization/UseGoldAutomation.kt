@@ -1,11 +1,13 @@
 package com.unciv.logic.automation.civilization
 
+import com.unciv.logic.automation.AiDecisionLog
 import com.unciv.logic.automation.diplomacy.DisputeLevel
 import com.unciv.logic.automation.strategy.CityStrategyAi
 import com.unciv.logic.automation.strategy.EconomicAi
 import com.unciv.logic.automation.strategy.ProductionAi
 import com.unciv.logic.automation.strategy.PurchaseType
 import com.unciv.logic.automation.strategy.UnitAiType
+import com.unciv.models.ruleset.Building
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.mapunit.MapUnit
@@ -256,6 +258,29 @@ object UseGoldAutomation {
         if (faithCost != null && constructions.isConstructionPurchaseAllowed(unitType, Stat.Faith, faithCost))
             return purchase(city, unitType, Stat.Faith)
         return null
+    }
+
+    /**
+     *  CvMilitaryAI::BuyEmergencyBuilding: buys every building [city] can build now that adds to its defense (the original's DefenseModifier,
+     *  the city strength a building gives: walls, castle, ...), each for gold if the purchase savings let its cost go at
+     *  AI_GOLD_PRIORITY_DEFENSIVE_BUILDING. Not in puppets (unless the civilization may buy there).
+     *  @return the buildings bought
+     */
+    fun buyEmergencyBuilding(civ: Civilization, city: City): List<Building> {
+        val bought = ArrayList<Building>()
+        val constructions = city.cityConstructions
+        val priority = civ.gameInfo.ruleset.ai.define(AiDefine.AI_GOLD_PRIORITY_DEFENSIVE_BUILDING)
+        for (building in civ.gameInfo.ruleset.buildings.values) {
+            if (building.cityStrength <= 0.0 || !building.isBuildable(constructions)) continue
+            val goldCost = building.getStatBuyCost(city, Stat.Gold) ?: continue
+            if (!constructions.isConstructionPurchaseAllowed(building, Stat.Gold, goldCost)) continue
+            if (!civ.ai.purchaseSavings.canWithdrawMoneyForPurchase(civ, PurchaseType.Building, goldCost, priority)) continue
+            if (constructions.purchaseConstruction(building, -1, true, Stat.Gold)) {
+                AiDecisionLog.log(civ) { "Emergency building bought: ${building.name} in ${city.name} for $goldCost" }
+                bought.add(building)
+            }
+        }
+        return bought
     }
 
     private fun purchase(city: City, unitType: BaseUnit, stat: Stat): MapUnit? {

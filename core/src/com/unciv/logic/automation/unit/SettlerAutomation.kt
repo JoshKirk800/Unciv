@@ -7,7 +7,6 @@ import com.unciv.logic.automation.civilization.AutomationCache
 import com.unciv.logic.automation.strategy.ProductionAi
 import com.unciv.logic.automation.strategy.UnitAiType
 import com.unciv.logic.automation.strategy.UnitAiTypes
-import com.unciv.logic.automation.unit.CivilianUnitAutomation.tryRunAwayIfNeccessary
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.HexCoord
@@ -77,7 +76,7 @@ object SettlerAutomation {
     /** Turns a FOUND_CITY settler waits for an escort before it goes alone (CvAIOperationFoundCity::ShouldAbort) */
     private const val ESCORT_WAIT_TURNS = 15
 
-    fun automateSettler(unitView: MapUnitView, dangerousTiles: HashSet<TileView>, cache: AutomationCache) = timeThis("AI.Settler") {
+    fun automateSettler(unitView: MapUnitView, cache: AutomationCache) = timeThis("AI.Settler") {
         val unit = unitView.getUnit()
         val civ = unit.civ
 
@@ -139,8 +138,9 @@ object SettlerAutomation {
         }
         // Waiting for the escort (AI_OPERATION_STATE_RECRUITING_UNITS): stay put until it joins
         if (operation.foundCity && operation.escorted && !hasEscort(unit)) return@timeThis
-        if (tryRunAwayIfNeccessary(unitView, cache)) return@timeThis
-        unit.movement.headTowards(target)
+        // CvHomelandAI::PlotMovesToSafety: a settler travelling alone flees from a plot with danger (one with an escort moves with it)
+        if (unit.getTile().militaryUnit?.civ != civ && CivilianSafety.fleeIfThreatened(unit)) return@timeThis
+        if (!CivilianSafety.headTowardsAvoidingDanger(unit, target)) return@timeThis
         if (unit.getTile() == target && unit.hasMovement()) unitView.tryInvokeUnitAction(UnitActionType.FoundCity)
     }
 

@@ -257,7 +257,7 @@ class SettleAreasTest {
         val settler = game.addUnit("Settler", civ, tile(-7, -3))
         // A quick colony of the island (no embarking yet) whose site was lost: the best site left is on the island too
         settler.settlerOperation = SettlerOperation().apply { foundCity = false; area = island; target = HexCoord(0, 0) }
-        SettlerAutomation.automateSettler(GameView(game.gameInfo, civ).getMapUnitView(settler), hashSetOf(), AutomationCache())
+        SettlerAutomation.automateSettler(GameView(game.gameInfo, civ).getMapUnitView(settler), AutomationCache())
         assertNull("AI_ABORT_LOST_PATH", settler.settlerOperation)
         assertEquals(tile(-7, -3), settler.getTile())
     }
