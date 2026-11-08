@@ -75,8 +75,9 @@ object UnitActionsReligion {
         ))
     }
 
+    /** The pressure a Spread Religion action of [unit] adds (the original's religious strength × RELIGION_MISSIONARY_PRESSURE_MULTIPLIER) */
     @Readonly
-    private fun getPressureAddedFromSpread(unit: MapUnit): Int {
+    internal fun getPressureAddedFromSpread(unit: MapUnit): Int {
         var pressureAdded = unit.baseUnit.religiousStrength.toFloat()
 
         unit.forEachMatchingUnique(UniqueType.SpreadReligionStrength, checkCivInfoUniques = true) { unique ->
