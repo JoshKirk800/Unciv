@@ -3,6 +3,7 @@ package com.unciv.logic.automation.unit
 import com.unciv.logic.automation.city.ConstructionAutomation
 import com.unciv.logic.automation.diplomacy.WarAi
 import com.unciv.logic.automation.strategy.ArmyType
+import com.unciv.logic.automation.strategy.CitySpecializationAi
 import com.unciv.logic.automation.strategy.ProductionAi
 import com.unciv.logic.automation.strategy.UnitAiType
 import com.unciv.logic.automation.strategy.UnitAiTypes
@@ -95,6 +96,22 @@ class SettlerEscortTests {
         assertNull(SettlerAutomation.settlerAwaitingEscort(other))
         city.cityConstructions.setCurrentConstruction("Monument")
         assertNotNull(SettlerAutomation.settlerAwaitingEscort(other))
+    }
+
+    @Test
+    fun `a new war has the cities choose again but not the one training the escort`() {
+        // CvCitySpecializationAI::DoTurn: AI_chooseProduction(true) for every city that is not IsBuildingUnitForOperation
+        civ.ai.setPersonalityFlavor(Flavor.Culture, 50)
+        val other = game.addCity(civ, game.tileMap[4, 0])
+        SettlerAutomation.commitEscort(settler, city, game.ruleset.units["Warrior"]!!, UnitAiType.DEFENSE)
+        city.cityConstructions.setCurrentConstruction("Warrior")
+        other.cityConstructions.setCurrentConstruction("Warrior")
+        game.gameInfo.turns = 100
+        civ.ai.citySpecialization.interruptWonders = true
+        civ.ai.citySpecialization.specializationsDirty = true
+        CitySpecializationAi.doTurn(civ)
+        assertEquals("Warrior", city.cityConstructions.currentConstructionName())
+        assertTrue(other.cityConstructions.currentConstructionName() != "Warrior")
     }
 
     @Test

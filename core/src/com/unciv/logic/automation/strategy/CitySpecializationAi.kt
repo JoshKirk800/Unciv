@@ -14,6 +14,7 @@ import com.unciv.models.ruleset.ai.MajorCivApproach
 import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.logic.automation.unit.CitySiteEvaluator
+import com.unciv.logic.automation.unit.SettlerAutomation
 import com.unciv.models.stats.Stat
 import com.unciv.models.stats.Stats
 
@@ -128,7 +129,8 @@ object CitySpecializationAi {
      *  CvCitySpecializationAI::DoTurn. Not for humans, city-states, before AI_CITY_SPECIALIZATION_EARLIEST_TURN or below 2 cities. Re-evaluates
      *  when dirty or while `last evaluation + AI_CITY_SPECIALIZATION_REEVALUATION_INTERVAL > turn` - which, the last evaluation being set to the
      *  current turn each time, holds on every turn once evaluated, as in the original. An evaluation chooses the next wonder, weights and
-     *  assigns the specializations, and after a new war or a lost city has every city choose its production again.
+     *  assigns the specializations, and after a new war or a lost city has every city but those training the escort of a settler's operation
+     *  (CvCity::IsBuildingUnitForOperation) choose its production again.
      *
      *  Also, as CvCity::init does for a new city, a city without a default specialization yet gets [CitySpecializationState.nextSpecializationDesired].
      *  The events that make the original's specializations dirty are detected here by comparing with the previous turn.
@@ -158,7 +160,8 @@ object CitySpecializationAi {
         state.lastTurnEvaluated = turn
 
         if (state.interruptWonders)
-            for (city in civ.cities) ConstructionAutomation(city.cityConstructions).chooseNextConstruction(interruptWonders = true)
+            for (city in civ.cities) if (!SettlerAutomation.isBuildingUnitForOperation(city))
+                ConstructionAutomation(city.cityConstructions).chooseNextConstruction(interruptWonders = true)
         state.interruptWonders = false
     }
 

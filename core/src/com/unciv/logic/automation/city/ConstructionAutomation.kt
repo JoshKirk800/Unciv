@@ -30,7 +30,6 @@ import com.unciv.models.ruleset.unit.BaseUnit
 import com.unciv.models.stats.Stat
 import com.unciv.ui.screens.cityscreen.CityScreen
 import java.util.WeakHashMap
-import kotlin.math.ceil
 
 /**
  *  The production choice of a city: CvCityAI::AI_chooseProduction and CvCityStrategyAI::ChooseProduction (CvCityStrategyAI.cpp).
@@ -111,9 +110,6 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
         return if (civInfo.ai.random("WonderRoll" + city.id).nextInt(11) <= flavor) nextWonder else null
     }
 
-    private fun turnsLeft(construction: INonPerpetualConstruction, productionPerTurn: Int): Int =
-        ceil(cityConstructions.getRemainingWork(construction.name).toDouble() / productionPerTurn).toInt().coerceAtLeast(1)
-
     private fun withAiChoiceWeight(construction: INonPerpetualConstruction, weight: Int): Int =
         if (weight <= 0) weight else (weight * construction.getWeightForAiDecision(GameContext(civInfo, city))).toInt()
 
@@ -127,21 +123,20 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
      *    weights above 0; projects ([ProductionAi.projectWeight], whatever their weight);
      *  - processes, not in puppets unless the owner may not annex (Venice), not for city-states, when the city's modified base production
      *    ×100 is at least 8 (the original compares the hundredths with 8), 1 turn each.
-     *  Turns left use the city's current production for every item (the original's per-item production difference also counts the item's
-     *  own production modifiers).
+     *  Turns left are those of CvCity::getProductionTurnsLeft ([ProductionAi.turnsLeft]): the production the city would make while building that
+     *  very item, with the item's own production modifiers, rounded as the game adds it each turn.
      */
     fun getBuildables(): List<Buildable> {
         val rules = civInfo.gameInfo.ruleset.ai
         val ruleset = civInfo.gameInfo.ruleset
-        val production = city.cityStats.currentCityStats.production.toInt().coerceAtLeast(1)
         val candidates = ArrayList<Buildable>()
-        addOperationUnit(candidates, production)
-        addArmyUnit(candidates, production)
+        addOperationUnit(candidates)
+        addArmyUnit(candidates)
 
         for (building in ruleset.buildings.values) {
             if (ProductionAi.isProject(rules, building)) {
                 if (city.isPuppet || !isAllowed(building) || !building.isBuildable(cityConstructions)) continue
-                candidates.add(Buildable(building, withAiChoiceWeight(building, ProductionAi.projectWeight(city, building)), turnsLeft(building, production)))
+                candidates.add(Buildable(building, withAiChoiceWeight(building, ProductionAi.projectWeight(city, building)), ProductionAi.turnsLeft(city, building)))
                 continue
             }
             var weight = ProductionAi.buildingWeight(city, building)
@@ -155,7 +150,7 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
                 if (building.getResourceRequirementsPerTurn(city.state).isNotEmpty()) weight = 0
             }
             weight = withAiChoiceWeight(building, weight)
-            if (weight > 0) candidates.add(Buildable(building, weight, turnsLeft(building, production)))
+            if (weight > 0) candidates.add(Buildable(building, weight, ProductionAi.turnsLeft(city, building)))
         }
 
         if (!city.isPuppet) {
@@ -175,7 +170,7 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
                 }
                 if (unit.isWaterUnit && unitAi != UnitAiType.WORKER_SEA && tooManyUnitsOnWaterBody()) weight = 0
                 weight = withAiChoiceWeight(unit, weight)
-                if (weight > 0) candidates.add(Buildable(unit, weight, turnsLeft(unit, production)))
+                if (weight > 0) candidates.add(Buildable(unit, weight, ProductionAi.turnsLeft(city, unit)))
             }
         }
 
@@ -195,7 +190,7 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
      *  personality and grand strategy + the times such a build was skipped over), x5 in an operation unit provider city, plus the weight
      *  the unit has on its own. Offering it counts as one more skip (BumpNumberOfTimesOpsBuildSkippedOver); choosing it resets the count.
      */
-    private fun addOperationUnit(candidates: MutableList<Buildable>, production: Int) {
+    private fun addOperationUnit(candidates: MutableList<Buildable>) {
         val settler = SettlerAutomation.settlerAwaitingEscort(city) ?: return
         val (unit, unitAi) = SettlerAutomation.escortUnitFor(city) ?: return
         if (!isAllowed(unit)) return
@@ -207,7 +202,7 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
         if (city.ai.specializationDef()?.isOperationUnitProvider == true) weight *= 5
         weight += ProductionAi.unitWeight(city, unit)
         if (weight <= 0) return
-        candidates.add(Buildable(unit, weight, turnsLeft(unit, production), settler, unitAi))
+        candidates.add(Buildable(unit, weight, ProductionAi.turnsLeft(city, unit), settler, unitAi))
         military.numberOfTimesOpsBuildSkippedOver++
     }
 
@@ -216,7 +211,7 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
      *  built, weighted AI_CITYSTRATEGY_ARMY_UNIT_BASE_WEIGHT + AI_CITYSTRATEGY_OPERATION_UNIT_FLAVOR_MULTIPLIER × OFFENSE (personality and
      *  grand strategy) × max(1, difficulty index - 5) plus the weight the unit has on its own.
      */
-    private fun addArmyUnit(candidates: MutableList<Buildable>, production: Int) {
+    private fun addArmyUnit(candidates: MutableList<Buildable>) {
         val unit = WarAi.unitForArmy(city) ?: return
         if (!isAllowed(unit)) return
         val rules = civInfo.gameInfo.ruleset.ai
@@ -225,7 +220,7 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
         weight += rules.define(AiDefine.AI_CITYSTRATEGY_OPERATION_UNIT_FLAVOR_MULTIPLIER) *
             civInfo.ai.personalityAndGrandStrategy(Flavor.Offense) * maxOf(1, difficultyIndex - 5)
         weight += ProductionAi.unitWeight(city, unit)
-        if (weight > 0) candidates.add(Buildable(unit, weight, turnsLeft(unit, production)))
+        if (weight > 0) candidates.add(Buildable(unit, weight, ProductionAi.turnsLeft(city, unit)))
     }
 
     /** CvCity::getBaseYieldRate(PRODUCTION) × 100 (with the yield per population) × the base production modifier / 100 */

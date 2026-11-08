@@ -153,6 +153,10 @@ object SettlerAutomation {
         return if (city.cityConstructions.currentConstructionName() == operation.escortUnit) city else null
     }
 
+    /** CvCity::IsBuildingUnitForOperation: [city] has committed to train the escort of a settler's operation and still does */
+    fun isBuildingUnitForOperation(city: City): Boolean =
+        city.civ.units.getCivUnits().any { settler -> settler.settlerOperation?.let { committedCity(city.civ, it) } == city }
+
     /**
      *  The settler whose operation CvCity::GetUnitForOperation would serve in [city]: CvPlayer::PeekAtNextUnitToBuildForOperationSlot(area of
      *  the city) - an escorted found-city operation still waiting for its escort (AI_OPERATION_STATE_RECRUITING_UNITS), mustering on the

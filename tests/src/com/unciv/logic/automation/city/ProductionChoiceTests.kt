@@ -149,6 +149,27 @@ class ProductionChoiceTests {
     }
 
     @Test
+    fun `turns left are those of the production the city makes building that very item, rounded as the game adds it`() {
+        civ.ai.setPersonalityFlavor(Flavor.Culture, 5)
+        // CvCity::getProductionTurnsLeft: the base production with the modifiers of that item - here +20% for everything and
+        // +100% more for wonders - and the production left over that, not the city's current production for every item
+        val workshop = game.createBuilding("[+20]% [Production]", "[+100]% Production when constructing [All] wonders [in this city]")
+            .apply { production = 4f }
+        city.cityConstructions.addBuilding(workshop.name)
+        city.cityStats.update()
+        val building = game.createBuilding().apply { cost = 60; culture = 1f }
+        val wonder = game.createWonder().apply { cost = 60; culture = 1f }
+
+        val base = city.cityStats.baseStatTree.totalStats.production
+        assertTrue("base production $base", base >= 4f && base * 1.2f % 1f > 0.5f) // truncating 4.8 to 4 would be wrong
+        fun turns(cost: Int, modifier: Float) = Math.ceil(cost / Math.round(base * modifier).toDouble()).toInt()
+
+        val candidates = ConstructionAutomation(city.cityConstructions).getBuildables().associateBy { it.construction.name }
+        assertEquals(turns(60, 1.2f), candidates[building.name]!!.turns)
+        assertEquals(turns(60, 2.2f), candidates[wonder.name]!!.turns)
+    }
+
+    @Test
     fun `puppets avoid wonders and double buildings without maintenance`() {
         civ.ai.setPersonalityFlavor(Flavor.Culture, 5)
         val other = game.addCiv()
