@@ -1,5 +1,6 @@
 package com.unciv.ui.screens.diplomacyscreen
 
+import com.unciv.logic.automation.diplomacy.DiplomacyTurn
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.scenes.scene2d.ui.Table
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton
@@ -142,9 +143,10 @@ class MajorCivDiplomacyTable(private val diplomacyScreen: DiplomacyScreen) {
         otherCiv: Civilization,
         diplomacyManager: DiplomacyManager
     ): TextButton {
-        val denounceButton = "Denounce ([30] turns)".toTextButton()
+        val duration = DiplomacyTurn.relationshipDuration(viewingCiv)
+        val denounceButton = "Denounce ([$duration] turns)".toTextButton()
         denounceButton.onClick {
-            ConfirmPopup(diplomacyScreen, "Denounce [${otherCiv.civName}]?", "Denounce ([30] turns)") {
+            ConfirmPopup(diplomacyScreen, "Denounce [${otherCiv.civName}]?", "Denounce ([$duration] turns)") {
                 diplomacyManager.denounce()
                 diplomacyScreen.updateLeftSideTable(otherCiv)
                 diplomacyScreen.setRightSideFlavorText(
@@ -163,7 +165,7 @@ class MajorCivDiplomacyTable(private val diplomacyScreen: DiplomacyScreen) {
 
     private fun getDeclareFriendshipButton(otherCiv: Civilization): TextButton {
         val declareFriendshipButton =
-            "Offer Declaration of Friendship ([30] turns)".toTextButton()
+            "Offer Declaration of Friendship ([${DiplomacyTurn.relationshipDuration(viewingCiv)}] turns)".toTextButton()
         declareFriendshipButton.onClick {
             otherCiv.popupAlerts.add(
                 PopupAlert(
@@ -217,11 +219,6 @@ class MajorCivDiplomacyTable(private val diplomacyScreen: DiplomacyScreen) {
         val diplomacyModifiersTable = Table()
         diplomacyModifiersTable.defaults().spaceBottom(4f)
         for (modifier in otherCivDiplomacyManager.diplomaticModifiers.entries.sortedByDescending { abs(it.value) }) {
-            // Angry about attacked CS and destroyed CS do not stack
-            if (modifier.key == DiplomaticModifiers.AttackedProtectedMinor.name
-                && otherCivDiplomacyManager.hasModifier(DiplomaticModifiers.DestroyedProtectedMinor))
-                continue
-
             val diplomaticModifier = DiplomaticModifiers.safeValueOf(modifier.key)
                 ?: continue // This modifier is from the future, you cannot understand it yet
             var text = diplomaticModifier.text.tr() + " "

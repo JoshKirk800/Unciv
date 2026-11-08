@@ -1,5 +1,7 @@
 package com.unciv.ui.screens.worldscreen
 
+import com.unciv.logic.automation.diplomacy.DiplomacyTurn
+import com.unciv.logic.automation.diplomacy.DiplomacyEvents
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane
 import com.badlogic.gdx.scenes.scene2d.ui.Table
@@ -315,7 +317,7 @@ class AlertPopup(
         addGoodSizedLabel(
                 if (otherciv.nation.declaringFriendship.isNotEmpty()) otherciv.nation.declaringFriendship else "My friend, shall we declare our friendship to the world?"
         ).row()
-        addCloseButton("Declare Friendship ([30] turns)", KeyboardBinding.Confirm) {
+        addCloseButton("Declare Friendship ([${DiplomacyTurn.relationshipDuration(viewingCiv)}] turns)", KeyboardBinding.Confirm) {
             playerDiploManager.signDeclarationOfFriendship()
         }.row()
         addCloseButton("We are not interested.", KeyboardBinding.Cancel) {
@@ -519,9 +521,9 @@ class AlertPopup(
             if (originalOwner.isCityState) {
                 originalOwner.getDiplomacyManagerOrMeet(captor).addInfluence(45f)
             } else if (originalOwner.isMajorCiv) {
-                // No extra bonus from doing it several times
                 originalOwner.getDiplomacyManagerOrMeet(captor)
-                    .setModifier(DiplomaticModifiers.ReturnedCapturedUnits, 20f)
+                // CvPlayer::DoCivilianReturnLogic: each returned civilian is remembered (CvDiplomacyAI::GetCiviliansReturnedToMeScore)
+                DiplomacyEvents.onCivilianReturned(originalOwner, captor)
             }
             val notificationSequence = sequence {
                 yield(LocationAction(tile.position))

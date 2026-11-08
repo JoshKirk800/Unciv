@@ -1,5 +1,6 @@
 package com.unciv.logic.automation.unit
 
+import com.unciv.logic.automation.diplomacy.WarGoal
 import com.unciv.view.hasMovement
 import com.unciv.view.isAirUnit
 import com.unciv.view.isCivilian
@@ -44,6 +45,8 @@ import com.unciv.view.MapUnitCombatantView
 import yairm210.purity.annotations.Readonly
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.civilization.NextTurnAutomation
+import com.unciv.logic.automation.strategy.UnitAiType
+import com.unciv.logic.automation.strategy.UnitAiTypes
 
 object UnitAutomation {
 
@@ -101,6 +104,10 @@ object UnitAutomation {
         if (tryGoToRuin(unitView) && !unitView.hasMovement()) return
 
         if (unitView.unitHealth < 50 && (tryRetreat(unitView, cache) || tryHealUnit(unitView, cache))) return // do nothing but heal
+
+        // CvHomelandAI::PlotExplorerMoves / PlotExplorerSeaMoves: AI units in the explore role (CvEconomicAI recon) explore first
+        if (unit.civ.isAI() && UnitAiTypes.current(unit).let { it == UnitAiType.EXPLORE || it == UnitAiType.EXPLORE_SEA }
+            && tryExplore(unitView, cache)) return
 
         // If there are no enemies nearby and we can heal here, wait until we are at full health
         if (unitView.unitHealth < 100 && canUnitHealInTurnsOnCurrentTile(unitView, cache, 2, 3)) return
@@ -515,8 +522,8 @@ object UnitAutomation {
             val diploManager = civ.getDiplomacyManagerWith(targetCiv)!!
             if (diploManager.hasFlag(DiplomacyFlags.Denunciation)
                 || diploManager.hasModifier(DiplomaticModifiers.Denunciation)) return true
-            if (diploManager.hasFlag(DiplomacyFlags.WaryOf) && diploManager.getFlag(DiplomacyFlags.WaryOf) < 0) return true
-            return false
+            // CvDiplomacyAI war goal PREPARE: we are mustering an attack on them
+            return civ.getCiv().ai.diplomacy.warGoal(targetCiv.getCiv()) == WarGoal.Prepare
         }
 
         // Prepare against the civs we're actually at war with - only if there are none, against the ones we might go to war with

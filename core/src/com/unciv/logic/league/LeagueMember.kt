@@ -20,6 +20,8 @@ class LeagueMember : IsPartOfGameInfoSerialization {
     var proposalsLeft = 0
     /** Civ id to recent Congress decisions affecting this member (CvDiplomacyAI congress memory). */
     var alignmentMemory = LinkedHashMap<String, LeagueAlignmentMemory>()
+    /** Votes this member promised in deals, cast when the session starts (CvLeagueAI::m_vVoteCommitmentList) */
+    var voteCommitments = ArrayList<VoteCommitment>()
 
     fun clone(): LeagueMember {
         val toReturn = LeagueMember()
@@ -29,6 +31,7 @@ class LeagueMember : IsPartOfGameInfoSerialization {
         toReturn.abstained = abstained
         toReturn.proposalsLeft = proposalsLeft
         for ((id, memory) in alignmentMemory) toReturn.alignmentMemory[id] = memory.clone()
+        voteCommitments.mapTo(toReturn.voteCommitments) { it.clone() }
         return toReturn
     }
 }
@@ -51,6 +54,28 @@ class LeagueAlignmentMemory : IsPartOfGameInfoSerialization {
         it.foiledProposalTurn = foiledProposalTurn
         it.supportedHostingTurn = supportedHostingTurn
     }
+}
+
+/**
+ * [votes] delegates promised to [toCiv] for [choice] ("Yes"/"No" or a civ id) on the proposal [proposalId] ([LeagueProposal.id]),
+ * an enactment if [enact], else a repeal (CvLeagueAI::VoteCommitment)
+ */
+class VoteCommitment() : IsPartOfGameInfoSerialization {
+    var toCiv = ""
+    var proposalId = 0
+    var choice = ""
+    var votes = 0
+    var enact = true
+
+    constructor(toCiv: String, proposalId: Int, choice: String, votes: Int, enact: Boolean) : this() {
+        this.toCiv = toCiv
+        this.proposalId = proposalId
+        this.choice = choice
+        this.votes = votes
+        this.enact = enact
+    }
+
+    fun clone() = VoteCommitment(toCiv, proposalId, choice, votes, enact)
 }
 
 /** Delegates that [voter] put on [choice]: "Yes"/"No" or the id of a civilization (`CvResolutionDecision::PlayerVote`) */

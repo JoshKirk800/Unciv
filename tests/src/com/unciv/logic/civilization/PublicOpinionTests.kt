@@ -1,13 +1,11 @@
 package com.unciv.logic.civilization
 
-import com.unciv.logic.automation.civilization.PolicyAutomation
 import com.unciv.logic.civilization.managers.InfluenceLevel
 import com.unciv.logic.civilization.managers.PublicOpinionType
 import com.unciv.models.metadata.BaseRuleset
 import com.unciv.testing.GdxTestRunner
 import com.unciv.testing.TestGame
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -211,33 +209,6 @@ class PublicOpinionTests {
         assertEquals(preferred, me.getIdeology())
         assertEquals(PublicOpinionType.Content, me.culture.publicOpinion.type)
         assertEquals(game.gameInfo.turns, me.culture.publicOpinion.turnIdeologySwitch)
-    }
-
-    private fun unhappyAi(): Civilization {
-        adopt(me, "Freedom")
-        me.cities.first().population.setPopulation(60)
-        influence(autocracyCiv, me, InfluenceLevel.Dominant)
-        updateOpinion()
-        assertEquals("1 per 3 inhabitants", 20, me.culture.publicOpinion.unhappiness)
-        return me
-    }
-
-    @Test
-    fun `an AI that is very unhappy about its public opinion changes to the preferred ideology`() {
-        unhappyAi().stats.happiness = -25
-        assertTrue(PolicyAutomation.considerIdeologySwitch(me))
-        assertEquals("Autocracy", me.getIdeology()!!.name)
-    }
-
-    @Test
-    fun `an AI that is not unhappy enough, or does not want that ideology, stays`() {
-        unhappyAi().stats.happiness = -19
-        assertFalse(PolicyAutomation.considerIdeologySwitch(me))
-        me.stats.happiness = -25
-        me.ai.grandStrategy = "AIGRANDSTRATEGY_SPACESHIP" // which does not go with Autocracy
-        game.gameInfo.gameParameters.victoryTypes = ArrayList(game.ruleset.victories.keys)
-        assertFalse(PolicyAutomation.considerIdeologySwitch(me))
-        assertEquals("Freedom", me.getIdeology()!!.name)
     }
 
     @Test

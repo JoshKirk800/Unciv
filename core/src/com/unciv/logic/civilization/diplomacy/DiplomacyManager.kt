@@ -8,8 +8,13 @@ import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.NotificationCategory
 import com.unciv.logic.civilization.NotificationIcon
 import com.unciv.logic.civilization.PopupAlert
+import com.unciv.logic.automation.diplomacy.CoopWarState
+import com.unciv.logic.automation.diplomacy.DiplomacyEvents
+import com.unciv.logic.automation.diplomacy.DiplomacyTurn
+import com.unciv.logic.automation.diplomacy.PromiseAi
+import com.unciv.logic.automation.diplomacy.WarFace
+import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.logic.trade.Trade
-import com.unciv.logic.trade.TradeEvaluation
 import com.unciv.logic.trade.TradeLogic
 import com.unciv.logic.trade.TradeOffer
 import com.unciv.logic.trade.TradeOfferType
@@ -27,7 +32,6 @@ import yairm210.purity.annotations.Pure
 import yairm210.purity.annotations.Readonly
 import kotlin.math.ceil
 import kotlin.math.max
-import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sign
 
@@ -93,10 +97,6 @@ enum class DiplomacyFlags {
     RecentlyWithdrewProtection,
     AngerFreeIntrusion,
 
-    RememberDestroyedProtectedMinor,
-    RememberAttackedProtectedMinor,
-    RememberBulliedProtectedMinor,
-    RememberSidedWithProtectedMinor,
 
     Denunciation,
     WaryOf,
@@ -105,62 +105,76 @@ enum class DiplomacyFlags {
     ResourceTradesCutShort,
 }
 
-enum class DiplomaticModifiers(val text: String) {
+/**
+ *  The opinion one major civilization holds of another, term by term: the opinion weights of CvDiplomacyAI::GetMajorCivOpinionWeight, sign
+ *  flipped (positive = good). [com.unciv.logic.automation.diplomacy.OpinionAi] rewrites every [isOpinionTerm] entry each turn from the AI's memory.
+ *  The three embassy entries are also the embassy state (who has an embassy where); their value is the embassy opinion term.
+ */
+enum class DiplomaticModifiers(val text: String, val isOpinionTerm: Boolean = true) {
     // Negative
-    DeclaredWarOnUs("You declared war on us!"),
+    LeaderPersonality("Our leader's temperament"),
+    LandDispute("You are taking land we want"),
+    WonderDispute("You have beaten us to Wonders"),
+    MinorCivDispute("You are allied with City-States we protect"),
     WarMongerer("Your warmongering ways are unacceptable to us."),
-    CapturedOurCities("You have captured our cities!"),
+    CapturedOurCities("You have captured our capital!"),
     DeclaredFriendshipWithOurEnemies("You have declared friendship with our enemies!"),
     BetrayedDeclarationOfFriendship("Your so-called 'friendship' is worth nothing."),
-    SignedDefensivePactWithOurEnemies("You have signed a defensive pact with our enemy!"),
-    BetrayedDefensivePact("Your so-called 'defensive pact' is worth nothing."),
     Denunciation("You have publicly denounced us!"),
+    WeDenouncedThem("We have publicly denounced you"),
     DenouncedOurAllies("You have denounced our allies"),
+    AskedUsNotToSettle("You asked us not to settle near you"),
+    AskedUsToStopSpying("You asked us to stop spying on you"),
     RefusedToNotSettleCitiesNearUs("You refused to stop settling cities near us"),
     RefusedToNotSpreadReligionToUs("You refused to stop spreading religion to us"),
     RefusedToNotSendingSpiesToUs("You refused to stop spying on us"),
-    RefusedToPromiseNotToAttackUs("You declared war on us after we questioned the positioning of your military."),
+    RefusedToPromiseNotToAttackUs("You refused to promise not to attack us"),
+    IgnoredBorderPromise("You refused to stop buying land near us"),
     BetrayedPromiseToNotSettleCitiesNearUs("You betrayed your promise to not settle cities near us"),
     BetrayedPromiseToNotSpreadReligionToUs("You betrayed your promise to not spread your religion to us"),
     BetrayedPromiseToNotSendingSpiesToUs("You betrayed your promise to stop spying on us"),
     BetrayedPromiseToNotDigInOurLands("You broke your promise to stop digging in our lands"),
     BetrayedPromiseToNotAttackUs("You betrayed your promise to not attack us!"),
     BetrayedPromiseToNotAttackOtherCiv("You were observed betraying your promise to not declare war!"),
-    
+    BrokenBorderPromise("You broke your promise to stop buying land near us"),
+    BrokenCoopWarPromise("You did not go to war as you promised"),
     UnacceptableDemands("Your arrogant demands are in bad taste"),
-    UsedNuclearWeapons("Your use of nuclear weapons is disgusting!"),
+    UsedNuclearWeapons("You have used nuclear weapons against us!"),
     StealingTerritory("You have stolen our lands!"),
+    ReligiousConversions("You have converted our cities to your religion"),
+    DifferentIdeology("Your ideology is a threat to our way of life"),
     DestroyedProtectedMinor("You destroyed City-States that were under our protection!"),
     AttackedProtectedMinor("You attacked City-States that were under our protection!"),
-    AttackedAlliedMinor("You attacked our allied City-States!"),
     BulliedProtectedMinor("You demanded tribute from City-States that were under our protection!"),
     SidedWithProtectedMinor("You sided with a City-State over us"),
-    SpiedOnUs("You spied on us!"),
-    StoleOurAlly("You took the alliance we had with a City-State"),
+    SpiedOnUs("You stole technology from us!"),
+    RecklessExpander("You are expanding recklessly"),
+    RefusedToHelpUs("You refused to help us"),
+    DislikedTheirProposal("We dislike your proposals in the World Congress"),
+    FoiledOurProposal("You foiled our proposal in the World Congress"),
 
     IgnoredRequestToStopDigging("You refused to stop digging in our lands"),
     // Positive
-    EstablishedEmbassy("We have an embassy in your capital"),
-    ReceivedEmbassy("You have an embassy in our capital"),
-    SharedEmbassies("We have shared embassies"),
-    YearsOfPeace("Years of peace have strengthened our relations."),
+    EstablishedEmbassy("We have an embassy in your capital", isOpinionTerm = false),
+    ReceivedEmbassy("You have an embassy in our capital", isOpinionTerm = false),
+    SharedEmbassies("We have shared embassies", isOpinionTerm = false),
+    NoLandDispute("We have no quarrel over land"),
     SharedEnemy("Our mutual military struggle brings us closer together."),
     LiberatedCity("We applaud your liberation of conquered cities!"),
+    ResurrectedUs("You brought us back to life!"),
     DeclarationOfFriendship("We have signed a public declaration of friendship"),
     DeclaredFriendshipWithOurAllies("You have declared friendship with our allies"),
-    DefensivePact("We have signed a promise to protect each other."),
-    SignedDefensivePactWithOurAllies("You have signed a defensive pact with our ally"),
     DenouncedOurEnemies("You have denounced our enemies"),
-    OpenBorders("Our open borders have brought us closer together."),
-    FulfilledPromiseToNotSettleCitiesNearUs("You fulfilled your promise to stop settling cities near us!"),
-    FulfilledPromiseToNotSpreadReligion("You fulfilled your promise to stop spreading religion to us!"),
-    FulfilledPromiseToNotSpy("You fulfilled your promise to stop spying on us!"),
-    FulfilledPromiseToNotAttackUs("You fulfilled your promise to not attack us!"),
-    GaveUsUnits("You gave us units!"),
-    GaveUsGifts("We appreciate your gifts"),
+    TradedWithUs("We have traded with you recently"),
+    HelpedUs("You gave us what we asked for"),
     BuiltLandmarksForUs("You built Landmarks in our lands"),
     ReturnedCapturedUnits("You returned captured units to us"),
-    BelieveSameReligion("We believe in the same religion");
+    WeAdoptedTheirReligion("We have adopted your religion"),
+    TheyAdoptedOurReligion("You have adopted our religion"),
+    SameIdeology("We share the same ideology"),
+    LikedTheirProposal("We like your proposals in the World Congress"),
+    SupportedOurProposal("You supported our proposal in the World Congress"),
+    SupportedOurHosting("You supported us as host of the World Congress");
 
     companion object{
         @Immutable private val valuesAsMap = entries.associateBy { it.name }
@@ -173,16 +187,6 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
     companion object {
         /** The value city-state influence can't go below */
         const val MINIMUM_INFLUENCE = -60f
-        /**
-         * Smoothing period used in denounce automation, before adjusting for game speed etc.
-         * Higher values make denunciations more likely.
-         */ 
-        const val EMA_PERIOD = 30f
-        /** In old savefiles, if we have already met a civ, but the smoothed opinion value has not been set, apply a very low initial value to prevent sudden mass denunciations */
-        const val OLD_SAVEFILE_INITIAL_SMOOTHED_OPINION = -250f
-
-        /** How upset should the AI be when they are denounced for the first time? */
-        const val INITIAL_OPINION_CHANGE_WHEN_DENOUNCED = -35f
     }
 
     @Transient
@@ -221,8 +225,7 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
      *  This is so sad Alexa play Despacito */
     internal var flagsCountdown = HashMap<String, Int>()
 
-    /** For AI. Positive is good relations, negative is bad.
-     * Baseline is 1 point for each turn of peace - so declaring a war upends 40 years of peace, and e.g. capturing a city can be another 30 or 40.
+    /** The opinion of the other civ, term by term (positive is good): see [DiplomaticModifiers].
      * As for why it's String and not DiplomaticModifier see FlagsCountdown comment */
     var diplomaticModifiers = HashMap<String, Float>()
     /** CvDiplomacyAI archaeology counters, from the landowner's perspective. */
@@ -238,41 +241,6 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
     /** Total of each turn Science during Research Agreement */
     internal var totalOfScienceDuringRA = 0
 
-    /**
-     * How quickly do we forget past relationships?
-     * 
-     * Used in AI denounce logic (values updated for all major civs, including humans, incase player resigns).
-     * 
-     * A period of 1 is equivalent to only remembering our opinion from the last turn - very sudden drop in opinion is required to denounce.
-     * 
-     * A period of >1 means we keep some memory of opinions from previous turns.
-     * 
-     * If the old average is 10, new value is 25, and period is 3, then the new average will be 15, because (25-10)/3 = +5
-     * 
-     * (ema = exponential moving average)
-     */
-    @Readonly
-    private fun smoothedOpinionEmaPeriod() = EMA_PERIOD * civInfo.gameInfo.speed.modifier // setting all this to 1 is useful for debugging
-
-    /** The smoothed opinion perpetually converges with the actual opinion, updated each turn */
-    var smoothedOpinionOfOtherCiv = OLD_SAVEFILE_INITIAL_SMOOTHED_OPINION
-        private set
-    
-    /** Needed as a cache because the opinion value is saved right before the automation logic runs - but we want to use the one from the previous turn */
-    private var cachedSmoothedOpinionOfOtherCiv = OLD_SAVEFILE_INITIAL_SMOOTHED_OPINION
-
-    /**
-     * Smoothing formula = (newValue + oldAverage * (period - 1)) / period
-     */
-    internal fun saveSmoothedOpinionOfOtherCiv() {
-        smoothedOpinionOfOtherCiv = cachedSmoothedOpinionOfOtherCiv
-        cachedSmoothedOpinionOfOtherCiv = (opinionOfOtherCiv() + smoothedOpinionOfOtherCiv * (smoothedOpinionEmaPeriod() - 1)) / smoothedOpinionEmaPeriod()
-    }
-    
-    /** How much has our opinion of the other civ changed recently? */
-    @Readonly
-    fun smoothedOpinionDelta() = opinionOfOtherCiv() - smoothedOpinionOfOtherCiv
-
     fun clone(): DiplomacyManager {
         val toReturn = DiplomacyManager()
         toReturn.otherCivName = otherCivName
@@ -284,8 +252,6 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
         toReturn.negativeArchaeologyPoints = negativeArchaeologyPoints
         toReturn.landmarksBuiltForUs = landmarksBuiltForUs
         toReturn.totalOfScienceDuringRA = totalOfScienceDuringRA
-        toReturn.smoothedOpinionOfOtherCiv = smoothedOpinionOfOtherCiv
-        toReturn.cachedSmoothedOpinionOfOtherCiv = cachedSmoothedOpinionOfOtherCiv
         return toReturn
     }
 
@@ -294,8 +260,6 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
         civInfo = civilization
         this.otherCivName = otherCivName
         updateHasOpenBorders()
-        smoothedOpinionOfOtherCiv = 0f
-        cachedSmoothedOpinionOfOtherCiv = 0f
     }
 
     constructor(civilization: Civilization, otherCiv: Civilization) : this() {
@@ -303,8 +267,6 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
         _otherCiv = otherCiv
         otherCivName = otherCiv.civID
         updateHasOpenBorders()
-        smoothedOpinionOfOtherCiv = 0f
-        cachedSmoothedOpinionOfOtherCiv = 0f
     }
 
     //region pure functions
@@ -321,15 +283,11 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
     /**
      * Reflects how we perceive the other civ, and affects willingness to trade, declare war, etc..
      * The other civ can view this number in the diplimacy screen.
+     * Between majors it is minus CvDiplomacyAI::GetMajorCivOpinionWeight, kept term by term in [diplomaticModifiers]
+     * by [com.unciv.logic.automation.diplomacy.OpinionAi].
      */
     @Readonly
-    fun opinionOfOtherCiv(): Float {
-        var modifierSum = diplomaticModifiers.values.sum()
-        // Angry about attacked CS and destroyed CS do not stack
-        if (hasModifier(DiplomaticModifiers.DestroyedProtectedMinor) && hasModifier(DiplomaticModifiers.AttackedProtectedMinor))
-            modifierSum -= getModifier(DiplomaticModifiers.AttackedProtectedMinor)
-        return modifierSum
-    }
+    fun opinionOfOtherCiv(): Float = diplomaticModifiers.values.sum()
 
     /** Related to [relationshipLevel], this compares with a specific outcome.
      *
@@ -414,30 +372,20 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
             else -> RelationshipLevel.Neutral
         }
 
-        // not entirely sure what to do between AI civs, because they probably have different views of each other,
-        // maybe we need to average their views of each other? That makes sense to me.
-
-        val opinion = opinionOfOtherCiv()
+        // CvDiplomacyAI::DoUpdateOnePlayerOpinion: the opinion is minus the opinion weight, the levels are the OPINION_THRESHOLD_* defines
+        val weight = -opinionOfOtherCiv()
+        val rules = civInfo.gameInfo.ruleset.ai
         return when {
-            opinion <= -80 -> RelationshipLevel.Unforgivable
-            opinion <= -40 || civInfo.isAtWarWith(otherCiv) -> RelationshipLevel.Enemy  /* During wartime, the estimation in which you are held may be enemy OR unforgivable */
-            opinion <= -15 -> RelationshipLevel.Competitor
-
-            opinion >= 80 -> RelationshipLevel.Ally
-            opinion >= 40 -> RelationshipLevel.Friend
-            opinion >= 15 -> RelationshipLevel.Favorable
-            else -> RelationshipLevel.Neutral
+            weight >= rules.define(AiDefine.OPINION_THRESHOLD_UNFORGIVABLE) -> RelationshipLevel.Unforgivable
+            weight >= rules.define(AiDefine.OPINION_THRESHOLD_ENEMY) -> RelationshipLevel.Enemy
+            weight >= rules.define(AiDefine.OPINION_THRESHOLD_COMPETITOR) -> RelationshipLevel.Competitor
+            weight >= rules.define(AiDefine.OPINION_THRESHOLD_FAVORABLE) -> RelationshipLevel.Neutral
+            weight >= rules.define(AiDefine.OPINION_THRESHOLD_FRIEND) -> RelationshipLevel.Favorable
+            weight >= rules.define(AiDefine.OPINION_THRESHOLD_ALLY) -> RelationshipLevel.Friend
+            else -> RelationshipLevel.Ally
         }
     }
 
-    @Readonly
-    private fun believesSameReligion(): Boolean {
-        // what is the majorityReligion of civInfo? If it is null, we immediately return false
-        val civMajorityReligion = civInfo.religionManager.getMajorityReligion() ?: return false
-        // if not yet returned false from previous line, return the Boolean isMajorityReligionForCiv
-        // true if majorityReligion of civInfo is also majorityReligion of otherCiv, false otherwise
-        return otherCiv.religionManager.isMajorityReligionForCiv(civMajorityReligion)
-    }
 
     /** Returns the number of turns to degrade from Ally or from Friend */
     @Readonly
@@ -645,6 +593,7 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
     fun makePeace() {
         makePeaceOneSide()
         otherCivDiplomacy().makePeaceOneSide()
+        DiplomacyEvents.onPeace(civInfo, otherCiv)
         if (otherCiv.isCityState) civInfo.cache.updateCivResources()
         if (civInfo.isCityState) otherCiv.cache.updateCivResources()
 
@@ -729,19 +678,17 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
         addModifier(newModifier, amount)
     }
 
+    /** CvDiplomacyAI::SetDoFAccepted for both: the friendship lasts GameSpeeds.RelationshipDuration turns (its opinion is [DiplomaticModifiers.DeclarationOfFriendship]) */
     fun signDeclarationOfFriendship() {
-        setModifier(DiplomaticModifiers.DeclarationOfFriendship, 35f)
-        otherCivDiplomacy().setModifier(DiplomaticModifiers.DeclarationOfFriendship, 35f)
-        // before adjusting with game speed - consider side effects
-        setFlag(DiplomacyFlags.DeclarationOfFriendship, 30)
-        otherCivDiplomacy().setFlag(DiplomacyFlags.DeclarationOfFriendship, 30)
+        val duration = DiplomacyTurn.relationshipDuration(civInfo)
+        setFlag(DiplomacyFlags.DeclarationOfFriendship, duration)
+        otherCivDiplomacy().setFlag(DiplomacyFlags.DeclarationOfFriendship, duration)
+        if (civInfo.isMajorCiv) civInfo.ai.diplomacy.memoryOf(otherCiv).doFCounter = 0
+        if (otherCiv.isMajorCiv) otherCiv.ai.diplomacy.memoryOf(civInfo).doFCounter = 0
 
         for (thirdCiv in getCommonKnownCivsWithSpectators()) {
             thirdCiv.addNotification("[${civInfo.civName}] and [${otherCiv.civName}] have signed a Declaration of Friendship!",
                 NotificationCategory.Diplomacy, civInfo.civName, NotificationIcon.Diplomacy, otherCiv.civName)
-            if (thirdCiv.isSpectator) continue
-            thirdCiv.getDiplomacyManager(civInfo)!!.setFriendshipBasedModifier()
-            thirdCiv.getDiplomacyManager(otherCiv)!!.setFriendshipBasedModifier()
         }
 
         // Ignore contitionals as triggerUnique will check again, and that would break
@@ -754,35 +701,7 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
         }
     }
 
-    internal fun setFriendshipBasedModifier() {
-        removeModifier(DiplomaticModifiers.DeclaredFriendshipWithOurAllies)
-        removeModifier(DiplomaticModifiers.DeclaredFriendshipWithOurEnemies)
-        val civsOtherCivHasDeclaredFriendshipWith = getCommonKnownCivs()
-            .filter { it.getDiplomacyManager(otherCiv)!!.hasFlag(DiplomacyFlags.DeclarationOfFriendship) }
-
-        for (thirdCiv in civsOtherCivHasDeclaredFriendshipWith) {
-            // What do we (A) think about the otherCiv() (B) being friends with the third Civ (C)?
-            val ourRelationshipWithThirdCiv = civInfo.getDiplomacyManager(thirdCiv)!!.relationshipIgnoreAfraid()
-
-            val modifierType = when (ourRelationshipWithThirdCiv) {
-                RelationshipLevel.Unforgivable, RelationshipLevel.Enemy -> DiplomaticModifiers.DeclaredFriendshipWithOurEnemies
-                else -> DiplomaticModifiers.DeclaredFriendshipWithOurAllies
-            }
-            val modifierValue = when (ourRelationshipWithThirdCiv) {
-                RelationshipLevel.Unforgivable -> -15f
-                RelationshipLevel.Enemy -> -5f
-                RelationshipLevel.Friend -> 5f
-                RelationshipLevel.Ally -> 15f
-                else -> 0f
-            }
-            addModifier(modifierType, modifierValue)
-        }
-    }
-
     fun signDefensivePact(duration: Int) {
-        //Note: These modifiers are additive to the friendship modifiers
-        setModifier(DiplomaticModifiers.DefensivePact, 10f)
-        otherCivDiplomacy().setModifier(DiplomaticModifiers.DefensivePact, 10f)
         setFlag(DiplomacyFlags.DefensivePact, duration)
         otherCivDiplomacy().setFlag(DiplomacyFlags.DefensivePact, duration)
         diplomaticStatus = DiplomaticStatus.DefensivePact
@@ -792,8 +711,6 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
         for (thirdCiv in getCommonKnownCivsWithSpectators()) {
             thirdCiv.addNotification("[${civInfo.civName}] and [${otherCiv.civName}] have signed a Defensive Pact!",
                 NotificationCategory.Diplomacy, civInfo.civName, NotificationIcon.Diplomacy, otherCiv.civName)
-            if (thirdCiv.isSpectator) return
-            thirdCiv.getDiplomacyManager(civInfo)!!.setDefensivePactBasedModifier()
         }
 
         // Ignore contitionals as triggerUnique will check again, and that would break
@@ -806,107 +723,44 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
         }
     }
 
-    internal fun setDefensivePactBasedModifier() {
-        removeModifier(DiplomaticModifiers.SignedDefensivePactWithOurAllies)
-        removeModifier(DiplomaticModifiers.SignedDefensivePactWithOurEnemies)
-
-        val civsTheyHavePactWith = getCommonKnownCivs()
-            .filter { otherCiv.getDiplomacyManager(it)!!.hasFlag(DiplomacyFlags.DefensivePact) }
-
-        for (thirdCiv in civsTheyHavePactWith) {
-            // what do we (A) think about the other civ (B) having a defensive pact with the third civ (C)?
-            val ourRelationshipWithThirdCiv = civInfo.getDiplomacyManager(thirdCiv)!!.relationshipIgnoreAfraid()
-            val modifierType = when (ourRelationshipWithThirdCiv) {
-                RelationshipLevel.Unforgivable, RelationshipLevel.Enemy -> DiplomaticModifiers.SignedDefensivePactWithOurEnemies
-                else -> DiplomaticModifiers.SignedDefensivePactWithOurAllies
-            }
-            val modifierValue = when (ourRelationshipWithThirdCiv) {
-                RelationshipLevel.Unforgivable -> -15f
-                RelationshipLevel.Enemy -> -10f
-                RelationshipLevel.Friend -> 2f
-                RelationshipLevel.Ally -> 5f
-                else -> 0f
-            }
-            addModifier(modifierType, modifierValue)
-        }
-    }
-
-    internal fun setReligionBasedModifier() {
-        if (otherCivDiplomacy().believesSameReligion())
-            // they share same majority religion
-            setModifier(DiplomaticModifiers.BelieveSameReligion, 5f)
-        else
-            // their majority religions differ or one or both don't have a majority religion at all
-            removeModifier(DiplomaticModifiers.BelieveSameReligion)
-    }
-
+    /**
+     * CvDiplomacyAI::DoDenouncePlayer: the denouncement lasts GameSpeeds.RelationshipDuration turns; both embassies close; a friendship ends
+     * and the former friend remembers the betrayal; a friendly war face drops; coop wars against third parties with them are off.
+     * The opinions follow from these (see [DiplomaticModifiers.Denunciation] and [DiplomaticModifiers.WeDenouncedThem]).
+     */
     fun denounce() {
-        activateDenounceEffects()
-        // legacy code for AI to counter-denounce
-        /*
-        if (otherCiv.isAI())
-            otherCivDiplomacy().activateDenounceEffects()
-        */
-    }
-    
-    
-    
-    private fun activateDenounceEffects() {
-        // This shows the relationship at the point of denouncing
-        Log.debug("%s (opinion: %.1f, smoothed opinion change: %.1f) decided to denounce %s because...", civInfo.civName, ::opinionOfOtherCiv, ::smoothedOpinionDelta, otherCivName)
-        for ((modifier, value) in diplomaticModifiers.entries)
-            Log.debug("- %s: %.1f", modifier, value)
-        
-        // the other civ's opinion of us will drop by 35 if we are the only civ to denounce them
-        // if they have already been denounced by many others, our denouncement will not surprise / anger them quite as much
-        // -35, -25, -18, -12, ...
-        val activeDenunciationsAgainstOtherCiv = otherCiv.getKnownCivs().count {
-            it.getDiplomacyManager(otherCiv)!!.hasFlag(DiplomacyFlags.Denunciation)
-        }
-        val otherCivOpinionChangeFromBeingDenounced = INITIAL_OPINION_CHANGE_WHEN_DENOUNCED * 2f.pow(-0.5f * activeDenunciationsAgainstOtherCiv)
-        Log.debug("%s is upset that %s denounced them: %.1f opinion", otherCivName, civInfo.civName, otherCivOpinionChangeFromBeingDenounced)
-        otherCivDiplomacy().addDiminishingModifier(DiplomaticModifiers.Denunciation, otherCivOpinionChangeFromBeingDenounced)
-        
-        // denouncements are active for 30 turns
-        // before adjusting with game speed - consider possible side effects of this
-        setFlag(DiplomacyFlags.Denunciation, 30)
-        
-        // the denounced civ will get a popup
-        otherCiv.popupAlerts.add(
-            PopupAlert(AlertType.Denounced, civInfo.civID)
-        )
-        // ...and a notification as a reminder for the rest of the turn
-        otherCiv.addNotification(
-            "[${civInfo.civName}] has denounced us!",
-            NotificationCategory.Diplomacy,
-            NotificationIcon.Diplomacy, civInfo.civName
-        )
-        
-        // Denounciation results in removal of embasies for both sides
+        setFlag(DiplomacyFlags.Denunciation, DiplomacyTurn.relationshipDuration(civInfo))
         civInfo.diplomacyFunctions.removeEmbassies(otherCiv)
-
-        // We, A, are denouncing B. What do other major civs (C,D, etc) think of this?
-        for (thirdCiv in getCommonKnownCivsWithSpectators()) {
-            thirdCiv.addNotification(
-                "[${civInfo.civName}] has denounced [${otherCiv.civName}]!",
-                NotificationCategory.Diplomacy,
-                civInfo.civName, NotificationIcon.Diplomacy, otherCiv.civName
-            )
-            
-            if (thirdCiv.isSpectator)
-                continue
-
-            // their diplomacy with us
-            val thirdCivDiplomacyWithUs = thirdCiv.getDiplomacyManager(civInfo)!!
-            // their relationship with the civ we are denouncing
-            val thirdCivRelationshipWithTarget = thirdCiv.getDiplomacyManager(otherCiv)!!.relationshipIgnoreAfraid()
-            when (thirdCivRelationshipWithTarget) {
-                RelationshipLevel.Unforgivable -> thirdCivDiplomacyWithUs.addModifier(DiplomaticModifiers.DenouncedOurEnemies, 15f)
-                RelationshipLevel.Enemy -> thirdCivDiplomacyWithUs.addModifier(DiplomaticModifiers.DenouncedOurEnemies, 5f)
-                RelationshipLevel.Friend -> thirdCivDiplomacyWithUs.addModifier(DiplomaticModifiers.DenouncedOurAllies, -5f)
-                RelationshipLevel.Ally -> thirdCivDiplomacyWithUs.addModifier(DiplomaticModifiers.DenouncedOurAllies, -15f)
-                else -> {}
+        if (civInfo.isMajorCiv && otherCiv.isMajorCiv) {
+            val memory = civInfo.ai.diplomacy.memoryOf(otherCiv)
+            val theirMemory = otherCiv.ai.diplomacy.memoryOf(civInfo)
+            memory.denouncedCounter = 0
+            memory.denouncementActive = true
+            if (hasFlag(DiplomacyFlags.DeclarationOfFriendship)) {
+                removeFlag(DiplomacyFlags.DeclarationOfFriendship)
+                otherCivDiplomacy().removeFlag(DiplomacyFlags.DeclarationOfFriendship)
+                memory.doFCounter = -666
+                theirMemory.doFCounter = -666
+                theirMemory.friendDenouncedUs = true
             }
+            if (memory.warFace == WarFace.Friendly) memory.warFace = WarFace.Neutral
+            for (entry in memory.coopWars.values) if (entry.state != null && entry.state!! >= CoopWarState.Soon) {
+                entry.state = null
+                entry.counter = -666
+            }
+            for (entry in theirMemory.coopWars.values) if (entry.state != null && entry.state!! >= CoopWarState.Soon) {
+                entry.state = null
+                entry.counter = -666
+            }
+        }
+
+        // the denounced civ will get a popup
+        otherCiv.popupAlerts.add(PopupAlert(AlertType.Denounced, civInfo.civID))
+        // ...and a notification as a reminder for the rest of the turn
+        otherCiv.addNotification("[${civInfo.civName}] has denounced us!", NotificationCategory.Diplomacy, NotificationIcon.Diplomacy, civInfo.civName)
+        for (thirdCiv in getCommonKnownCivsWithSpectators()) {
+            thirdCiv.addNotification("[${civInfo.civName}] has denounced [${otherCiv.civName}]!",
+                NotificationCategory.Diplomacy, civInfo.civName, NotificationIcon.Diplomacy, otherCiv.civName)
         }
     }
 
@@ -923,31 +777,25 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
         otherCivDiplomacy().setFlag(demand.agreedToDemand, if (demand == Demand.DoNotDigInOurLands) 1 else 100, demand != Demand.DoNotDigInOurLands)
         if (demand == Demand.DoNotDigInOurLands) otherCivDiplomacy().negativeArchaeologyPoints =
             (otherCivDiplomacy().negativeArchaeologyPoints - 10).coerceAtLeast(0)
-        else addModifier(DiplomaticModifiers.UnacceptableDemands, -10f)
+        PromiseAi.onDemandAgreed(otherCiv, civInfo, demand)
         if (demand == Demand.DontSpyOnUs && civInfo.isAI()) com.unciv.logic.automation.unit.EspionageAutomation.onAgreedToStopSpying(civInfo, otherCiv)
         val text = demand.agreedToDemandText.fillPlaceholders(civInfo.civName)
         otherCiv.addNotification(text, NotificationCategory.Diplomacy, NotificationIcon.Diplomacy, civInfo.civName)
         queueOtherCivPopupIfUnique(PopupAlert(AlertType.AcceptingDemand, civInfo.civID))
     }
-    
+
     fun refuseDemand(demand: Demand) {
-        if (demand != Demand.DoNotDigInOurLands) addModifier(DiplomaticModifiers.UnacceptableDemands, -20f)
         otherCivDiplomacy().setFlag(demand.willIgnoreViolation, if (demand == Demand.DoNotDigInOurLands) 1 else 100, demand != Demand.DoNotDigInOurLands)
+        PromiseAi.onDemandRefused(otherCiv, civInfo, demand)
         val text = demand.refusedDemandText.fillPlaceholders(civInfo.civName)
         otherCiv.addNotification(text, NotificationCategory.Diplomacy, NotificationIcon.Diplomacy, civInfo.civName)
         queueOtherCivPopupIfUnique(PopupAlert(AlertType.RejectingDemand, civInfo.civID))
-        if (demand == Demand.DoNotAttackUs)
-            // no modifier penalty for refusal, they respect our honesty
-            declareWar()
-        else if (demand == Demand.DoNotDigInOurLands)
-            otherCivDiplomacy().setModifier(demand.refusedDiplomaticModifier, -20f)
-        else
-            otherCivDiplomacy().addModifier(demand.refusedDiplomaticModifier, -15f)
+        if (demand == Demand.DoNotAttackUs) declareWar()
     }
 
+    /** We sided with our protected city-state against the other civ, who remembers (CvDiplomacyAI::GetAngryAboutSidedWithProtectedMinorScore) */
     fun sideWithCityState() {
-        otherCivDiplomacy().setModifier(DiplomaticModifiers.SidedWithProtectedMinor, -5f)
-        otherCivDiplomacy().setFlag(DiplomacyFlags.RememberSidedWithProtectedMinor, 25)
+        DiplomacyEvents.onSidedWithProtectedMinor(civInfo, otherCiv)
     }
 
     fun becomeWary() {
@@ -957,49 +805,5 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
                 "The resting point for Influence has decreased by [20] for [${civInfo.civName}].",
             NotificationCategory.Diplomacy, civInfo.civName)
     }
-
-    /**
-     * Resolves the otherCiv giving gifts to this civ with negative gold values.
-     * Prioritises reducing gifts given to the other civ before increasing our gift value.
-     * Does not take the gold from either civ's stockpile
-     * @param gold the amount of gold without inflation, can be negative
-     * @param isPureGift should be true if the gift was one-sided, or false if it wasn't
-     */
-    fun giftGold(gold: Int, isPureGift: Boolean) {
-        val currentGold = if (isPureGift)
-            (gold * civInfo.gameInfo.ruleset.modOptions.constants.goldGiftMultiplier).roundToInt()
-        else
-            (gold * civInfo.gameInfo.ruleset.modOptions.constants.goldGiftTradeMultiplier).roundToInt()
-
-        val otherGold = otherCivDiplomacy().getGoldGifts()
-        if (otherGold > currentGold) {
-            otherCivDiplomacy().recieveGoldGifts(-currentGold)
-        } else {
-            otherCivDiplomacy().removeModifier(DiplomaticModifiers.GaveUsGifts)
-            recieveGoldGifts(currentGold - otherGold)
-        }
-    }
-
-    /**
-     * Adds a gift from the other civilization of the value of [gold] that will deteriate over time.
-     * Does not take into account how much gold we have given to the other civ. Use [giftGold] for that.
-     * Does not take the gold from either civ's stockpile.
-     * @param gold the amount of gold without inflation, cannot be negative
-     */
-    fun recieveGoldGifts(gold: Int) {
-        val diplomaticValueOfTrade = (gold * TradeEvaluation().getGoldInflation(civInfo)) / (civInfo.gameInfo.speed.goldGiftModifier * 100)
-        addModifier(DiplomaticModifiers.GaveUsGifts, diplomaticValueOfTrade.toFloat())
-    }
-
-    /**
-     * @return the total value of the gold gifts the other civilization has given us
-     */
-    @Readonly
-    fun getGoldGifts(): Int {
-        // The inverse of howe we calculate GaveUsGifts in TradeLogic.acceptTrade gives us how much gold it is worth
-        val giftAmount = getModifier(DiplomaticModifiers.GaveUsGifts)
-        return ((giftAmount * civInfo.gameInfo.speed.goldGiftModifier * 100) / TradeEvaluation().getGoldInflation(civInfo)).toInt()
-    }
-
     //endregion
 }

@@ -7,6 +7,7 @@ import com.unciv.logic.city.City
 import com.unciv.logic.city.GreatWorkSlot
 import com.unciv.logic.civilization.AlertType
 import com.unciv.logic.civilization.Civilization
+import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.ArchaeologyChoice
 import com.unciv.logic.map.tile.ArchaeologyFunctions
@@ -15,6 +16,7 @@ import com.unciv.logic.map.tile.Tile
 import com.unciv.models.metadata.BaseRuleset
 import com.unciv.models.ruleset.ArtifactClasses
 import com.unciv.models.ruleset.GreatWorkType
+import com.unciv.models.ruleset.GreatWorkSlotType
 import com.unciv.models.ruleset.tile.TileImprovement
 import com.unciv.testing.GdxTestRunner
 import com.unciv.testing.TestGame
@@ -385,16 +387,50 @@ class ArchaeologyTests {
     }
 
     @Test
-    fun `the AI takes a writing if it has a slot, culture if not, and a Landmark when it has no room for artifacts`() {
+    fun `every AI choice looks at the Art slots, also for a writing`() {
         val writing = siteTile(hidden = true)
         recordOn(writing, ArtifactClasses.Writing, "Classical era", work = "Rosetta Stone")
         assertEquals(ArchaeologyChoice.CultureBoost, ArchaeologyFunctions.chooseForAi(civ, writing, 0, 0))
         addGallery("Has [1] [Literature] Great Work slots")
-        assertEquals(ArchaeologyChoice.Writing, ArchaeologyFunctions.chooseForAi(civ, writing, 0, 0))
+        assertEquals("a Literature slot alone: no Art slot means culture", ArchaeologyChoice.CultureBoost, ArchaeologyFunctions.chooseForAi(civ, writing, 0, 0))
+        addGallery("Has [1] [Art/Artifact] Great Work slots")
+        assertEquals("unowned land: the find is kept, in the Literature slot", ArchaeologyChoice.Writing, ArchaeologyFunctions.chooseForAi(civ, writing, 0, 0))
 
         val find = siteTile(1, -3)
         recordOn(find)
+        city.cityConstructions.removeBuilding(city.cityConstructions.getBuiltBuildings().first { it.greatWorkSlotTypes.contains(GreatWorkSlotType.ArtArtifact) })
         assertEquals("no room for artifacts", ArchaeologyChoice.Landmark, ArchaeologyFunctions.chooseForAi(civ, find, 0, 0))
+    }
+
+    @Test
+    fun `in own lands the work radius decides, then the era, then whether the others can fill the slots`() {
+        addGallery()
+        val inRadius = city.getCenterTile().neighbors.first { !city.isWorked(it) }
+        assertEquals(civ, inRadius.getOwner())
+        siteTile(inRadius.position.x, inRadius.position.y)
+        recordOn(inRadius, era = "Ancient era")
+        assertEquals("an unworked tile in the radius is a tile a city can work", ArchaeologyChoice.Landmark,
+            ArchaeologyFunctions.chooseForAi(civ, inRadius, 0, 0))
+        recordOn(inRadius, era = "Classical era", civ2 = null)
+        assertEquals("4 free slots, nothing else to fill them", ArchaeologyChoice.ArtifactOfFirst, ArchaeologyFunctions.chooseForAi(civ, inRadius, 3, 9))
+        assertEquals("4 free slots that 4 other archaeologists and sites fill", ArchaeologyChoice.Landmark, ArchaeologyFunctions.chooseForAi(civ, inRadius, 4, 4))
+
+        val outside = tileAt(0, -5)
+        game.addTileToCity(city, outside)
+        outside.setOwningCity(city)
+        siteTile(0, -5)
+        recordOn(outside, era = "Ancient era", civ2 = null)
+        assertEquals(civ, outside.getOwner())
+        assertEquals("own land beyond the work radius", ArchaeologyChoice.ArtifactOfFirst, ArchaeologyFunctions.chooseForAi(civ, outside, 0, 0))
+    }
+
+    @Test
+    fun `archaeologists in production count as other archaeologists`() {
+        game.addUnit("Archaeologist", civ, tileAt(0, -1))
+        val digger = game.addUnit("Archaeologist", civ, tileAt(1, -1))
+        assertEquals(1, ArchaeologyFunctions.countOtherArchaeologists(civ, digger))
+        city.cityConstructions.setCurrentConstruction("Archaeologist")
+        assertEquals(2, ArchaeologyFunctions.countOtherArchaeologists(civ, digger))
     }
 
     @Test
@@ -409,21 +445,78 @@ class ArchaeologyTests {
     //endregion
 
     //region Archaeologists
-    @Test
-    fun `the AI sends an archaeologist to the nearest site it can see and digs there`() {
-        val target = siteTile(0, -4)
-        recordOn(target)
+    private fun startDigging() {
         game.gameInfo.archaeologyTriggered = true
         civ.tech.addTechnology("Archaeology")
-        val unit = game.addUnit("Archaeologist", civ, tileAt(0, -1))
-        repeat(5) {
-            if (target.improvementInProgress == null) {
+    }
+
+    /** Moves each archaeologist with full movement, a new turn each time (the targets are chosen once per turn) */
+    private fun runTurns(turns: Int, vararg units: MapUnit) {
+        repeat(turns) {
+            game.gameInfo.turns++
+            civ.cache.updateViewableTiles()
+            for (unit in units) {
                 unit.currentMovement = unit.getMaxMovement().toFloat()
-                assertTrue(ArchaeologistAutomation.automate(unit))
+                ArchaeologistAutomation.automate(unit)
             }
         }
+    }
+
+    @Test
+    fun `the AI sends an archaeologist to the nearest site it can see and digs there`() {
+        val target = siteTile(0, -3)
+        recordOn(target)
+        startDigging()
+        val unit = game.addUnit("Archaeologist", civ, tileAt(0, -1))
+        runTurns(3, unit)
         assertEquals(target, unit.currentTile)
         assertEquals(dig.name, target.improvementInProgress)
+    }
+
+    @Test
+    fun `two archaeologists do not go to the same site`() {
+        val near = siteTile(0, -2)
+        val far = siteTile(1, -3)
+        recordOn(near)
+        recordOn(far)
+        startDigging()
+        val first = game.addUnit("Archaeologist", civ, tileAt(0, -1))
+        val second = game.addUnit("Archaeologist", civ, tileAt(1, -1))
+        runTurns(3, first, second)
+        assertEquals(setOf(near, far), setOf(first.currentTile, second.currentTile))
+        assertEquals(dig.name, near.improvementInProgress)
+        assertEquals(dig.name, far.improvementInProgress)
+    }
+
+    @Test
+    fun `no site in the lands of a civilization we promised not to dig in`() {
+        val promised = other.cities.first().getCenterTile().neighbors.first { it.getOwner() == other && it.isLand && !it.isImpassible() }
+        siteTile(promised.position.x, promised.position.y)
+        recordOn(promised)
+        startDigging()
+        civ.getDiplomacyManager(other)!!.hasOpenBorders = true
+        val unit = game.addUnit("Archaeologist", civ, promised)
+        other.getDiplomacyManager(civ)!!.setFlag(DiplomacyFlags.AgreedToNotDigInOurLands, 1)
+        civ.cache.updateViewableTiles()
+        assertFalse(ArchaeologistAutomation.automate(unit))
+        assertEquals(null, promised.improvementInProgress)
+        other.getDiplomacyManager(civ)!!.removeFlag(DiplomacyFlags.AgreedToNotDigInOurLands)
+        game.gameInfo.turns++
+        assertTrue(ArchaeologistAutomation.automate(unit))
+        assertEquals(dig.name, promised.improvementInProgress)
+    }
+
+    @Test
+    fun `archaeologists above half the sites plus one are disbanded one per turn`() {
+        siteTile(0, -3)
+        siteTile(2, -3)
+        startDigging()
+        for (x in 0..2) game.addUnit("Archaeologist", civ, tileAt(x - 1, -1))
+        // 2 sites: 2 * 0.5 + 1 = 2 < 3
+        ArchaeologistAutomation.disbandExtraArchaeologists(civ)
+        assertEquals(2, civ.units.getCivUnits().count { it.name == "Archaeologist" })
+        ArchaeologistAutomation.disbandExtraArchaeologists(civ)
+        assertEquals(2, civ.units.getCivUnits().count { it.name == "Archaeologist" })
     }
 
     @Test

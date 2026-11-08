@@ -1,5 +1,6 @@
 package com.unciv.logic.city
 
+import com.unciv.logic.automation.diplomacy.DiplomacyEvents
 import com.unciv.GUI
 import com.unciv.UncivGame
 import com.unciv.logic.automation.Timers.Companion.timeThis
@@ -497,6 +498,12 @@ class CityConstructions : IsPartOfGameInfoSerialization {
             if (construction is Building) {
                 // Production put into wonders gets refunded
                 if (construction.isWonder && workDone != 0) {
+                    // CvCity::doTurn: beaten to a world wonder: the diplomacy AI blames the major that has it
+                    if (rejectionReasons.any { it.type == RejectionReasonType.WonderAlreadyBuilt }) {
+                        val builder = city.civ.gameInfo.civilizations.firstOrNull { civ ->
+                            civ.isMajorCiv && civ.cities.any { it.cityConstructions.isBuilt(constructionName) } }
+                        if (builder != null) DiplomacyEvents.onWonderBeaten(city.civ, builder)
+                    }
                     city.civ.addGold(workDone)
                     city.civ.addNotification(
                         "Excess production for [$constructionName] converted to [$workDone] gold",

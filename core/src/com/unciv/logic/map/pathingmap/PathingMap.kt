@@ -2,9 +2,6 @@ package com.unciv.logic.map.pathingmap
 
 import androidx.collection.MutableIntList
 import com.unciv.logic.automation.Timers.Companion.timeThis
-import com.unciv.logic.automation.civilization.MotivationToAttackAutomation
-import com.unciv.logic.automation.civilization.UseGoldAutomation
-import com.unciv.logic.automation.unit.RoadBetweenCitiesAutomation
 import com.unciv.logic.battle.TargetHelper
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.diplomacy.RelationshipLevel
@@ -54,16 +51,10 @@ import kotlin.collections.get
  * - Use [toDebugString] in a quick-watch
  *
  * Future plans:
- * - createCityExpansionPathing
- *   - Useful for [UseGoldAutomation.maybeBuyCityTiles]
  * - Multiple start points.
- *   - Today, [MotivationToAttackAutomation.getAttackPathsModifier] does a separate BFS from each
- *     city. Merging them would give a performance boost.
  * - Multiple target points.
- *   - Today, [MotivationToAttackAutomation.getAttackPathsModifier] does a separate BFS to each
- *     city. Merging them would give a performance boost.
- *   - [RoadBetweenCitiesAutomation.getRoadToConnectCityToCapital] could just path from the capital
- *     to each city, and tiles already connected would simply have a "cost" of zero.
+ *   - [com.unciv.logic.automation.unit.BuilderTaskingAi] could path from the capital to each city at once,
+ *     with tiles already connected costing zero.
  * - Add `getAttackableEnemies`.
  *   - Right now [TargetHelper.getAttackableEnemies] is ridiculously inefficient. For each tile we can
  *     possibly attack from, for each tile in attack range, does it contain an enemy.  For long

@@ -1,11 +1,11 @@
 package com.unciv.models
 
+import com.unciv.logic.automation.diplomacy.DiplomacyEvents
 import com.unciv.Constants
 import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.*
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
-import com.unciv.logic.civilization.diplomacy.DiplomaticModifiers
 import com.unciv.logic.civilization.managers.EspionageManager
 import com.unciv.logic.civilization.managers.InfluenceLevel
 import com.unciv.logic.map.HexCoord
@@ -285,12 +285,15 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
             demandToNotBeSpiedOn(otherCiv)
         } else startStealingTech()  // reset progress
 
-        if (spyResult >= 100) demandToNotBeSpiedOn(otherCiv)
+        if (spyResult >= 100) {
+            demandToNotBeSpiedOn(otherCiv)
+            // CvPlayerEspionage::ProcessSpyStealing: an identified or killed thief is remembered (CvDiplomacyAI::ChangeNumTimesRobbedBy)
+            DiplomacyEvents.onRobbed(otherCiv, civInfo)
+        }
     }
     
     private fun demandToNotBeSpiedOn(otherCiv: Civilization) {
         val otherCivDiplomacyManager = otherCiv.getDiplomacyManager(civInfo)!!
-        otherCivDiplomacyManager.addModifier(DiplomaticModifiers.SpiedOnUs, -15f)
         otherCivDiplomacyManager.setFlag(DiplomacyFlags.DiscoveredSpiesInOurCities, 30, true)
     }
 
@@ -325,7 +328,7 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
                 cityState.getDiplomacyManagerOrMeet(allyCiv).reduceInfluence(20f)
                 allyCiv.addNotification("A spy from [${civInfo.civName}] successfully staged a coup in our former ally [${cityState.civName}]!", getCity().location,
                         NotificationCategory.Espionage, civInfo.civName,  NotificationIcon.Spy, cityState.civName)
-                allyCiv.getDiplomacyManagerOrMeet(civInfo).addModifier(DiplomaticModifiers.SpiedOnUs, -15f)
+                allyCiv.getDiplomacyManagerOrMeet(civInfo)
             }
             for (civ in cityState.getKnownCivsWithSpectators()) {
                 if (civ == allyCiv || civ == civInfo) continue
@@ -343,7 +346,7 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
             cityState.getDiplomacyManager(civInfo)!!.addInfluence(-20f)
             allyCiv?.addNotification("A spy from [${civInfo.civName}] failed to stage a coup in our ally [${cityState.civName}] and was killed!", getCity().location,
                     NotificationCategory.Espionage, civInfo.civName,  NotificationIcon.Spy, cityState.civName)
-            allyCiv?.getDiplomacyManagerOrMeet(civInfo)?.addModifier(DiplomaticModifiers.SpiedOnUs, -10f)
+            allyCiv?.getDiplomacyManagerOrMeet(civInfo)
 
             civInfo.addNotification("Our spy [$name] failed to stage a coup in [${cityState.civName}] and was killed!", getCity().location,
                     NotificationCategory.Espionage, civInfo.civName,  NotificationIcon.Spy, cityState.civName)

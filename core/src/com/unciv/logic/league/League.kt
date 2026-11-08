@@ -249,6 +249,8 @@ class League : IsPartOfGameInfoSerialization {
     companion object {
         const val YES = "Yes"
         const val NO = "No"
+        /** The technology after which diplomats give delegates (CvTeam::processTech, ExtraVotesPerDiplomat of BNW Technologies) */
+        const val GLOBALIZATION = "Globalization"
 
         /**
          * What `GameInfo.nextTurn` does once per game turn: founds the World Congress if there is none yet, else lets it take its turn.
@@ -351,6 +353,7 @@ class League : IsPartOfGameInfoSerialization {
         for (proposal in proposals) proposal.onHold = true
         addAutomaticProposal(hostElection)
         assignStartingVotes()
+        honorVoteCommitments()
         checkFinishSession()
     }
 
@@ -359,6 +362,7 @@ class League : IsPartOfGameInfoSerialization {
         if (members.values.any { it.proposalsLeft > 0 }) return
         inSession = true
         assignStartingVotes()
+        honorVoteCommitments()
         checkFinishSession()
     }
 
@@ -369,6 +373,14 @@ class League : IsPartOfGameInfoSerialization {
             member.delegatesLeft = if (civ == null) 0 else getDelegates(civ)
             member.delegatesAtStart = member.delegatesLeft
             member.abstained = 0
+        }
+    }
+
+    /** CvGameLeagues::DoPlayerTurn: in a session every member first casts the votes it committed in deals (CvLeagueAI::DoVoteCommitments) */
+    private fun honorVoteCommitments() {
+        for (id in members.keys.toList()) {
+            val civ = gameInfo.getCivilizationOrNull(id) ?: continue
+            LeagueAutomation.doVoteCommitments(civ, this)
         }
     }
 
@@ -455,6 +467,9 @@ class League : IsPartOfGameInfoSerialization {
     @Readonly
     private fun canEverVote(civ: Civilization) = civ.isMajorCiv && civ.isAlive()
 
+    /** CvLeague::GetCoreVotesForMember (CvVotingClasses.cpp:3194-3221): the delegates every civilization gets in the governing session */
+    fun getCoreVotes(civ: Civilization): Int = if (canEverVote(civ)) getSessionInfo().civDelegates else 0
+
     /**
      * The delegates [civ] has in a session with the parameters of [getSessionInfo] (CvLeague::CalculateStartingVotesForMember, CvVotingClasses.cpp:3223-3359):
      * delegates of the era, those of failed World Leader votes, the host's, those of allied city-states, [UniqueType.WorldCongressDelegates],
@@ -468,7 +483,7 @@ class League : IsPartOfGameInfoSerialization {
         total += session.cityStateDelegates * gameInfo.getAliveCityStates().count { it.allyCiv == civ }
         civ.forEachMatchingUnique(UniqueType.WorldCongressDelegates) { total += it.params[0].toInt() }
         // CvTeam::processTech applies Globalization's ExtraVotesPerDiplomat=1 (BNW Technologies/CIV5Technologies.xml).
-        if (civ.tech.isResearched("Globalization"))
+        if (civ.tech.isResearched(GLOBALIZATION))
             total += gameInfo.getAliveMajorCivs().count { civ.espionageManager.getActiveDiplomatFor(it) != null }
 
         for (active in activeResolutions) {

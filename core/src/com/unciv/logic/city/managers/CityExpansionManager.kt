@@ -1,5 +1,6 @@
 package com.unciv.logic.city.managers
 
+import com.unciv.logic.automation.diplomacy.DiplomacyEvents
 import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.LocationAction
@@ -82,6 +83,11 @@ class CityExpansionManager : IsPartOfGameInfoSerialization {
 
         city.civ.addGold(-goldCost)
         takeOwnership(tile)
+        // CvCity::BuyPlot: every foreign city within city radius of the tile notes it (AI_ChangeNumPlotsAcquiredByOtherPlayer)
+        for (nearbyTile in tile.getTilesInDistance(3)) {
+            val nearbyCity = nearbyTile.getCity() ?: continue
+            if (nearbyTile.isCityCenter() && nearbyCity.civ != city.civ) DiplomacyEvents.onPlotBoughtNear(nearbyCity.civ, city.civ, 1)
+        }
 
         // Reapply worked tiles optimization (aka CityFocus) - doing it here means AI profits too
         city.reassignPopulationDeferred()

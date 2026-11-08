@@ -1234,9 +1234,7 @@ enum class UniqueType(
         UniqueTarget.EventChoice,
         UniqueTarget.FollowerBelief,
         UniqueTarget.FounderBelief,
-        UniqueTarget.Policy,
         UniqueTarget.Promotion,
-        UniqueTarget.Tech,
         flags = UniqueFlag.setOfHiddenToUsers),
 
     UnitActionPriority("with [amount] priority",

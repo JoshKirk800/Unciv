@@ -75,6 +75,12 @@ class TechManager : IsPartOfGameInfoSerialization {
     /** In civ IV, you can auto-convert a certain percentage of gold in cities to science */
     var goldPercentConvertedToScience = 0.6f
 
+    /** CvTechAI::m_TechAIWeights by tech name: the AI weight of each tech, rebuilt by
+     *  [TechAutomation.updateFlavorWeights][com.unciv.logic.automation.civilization.TechAutomation.updateFlavorWeights] (CvPlayerTechs::FlavorUpdate) */
+    var aiTechWeights = HashMap<String, Int>()
+    /** The active economic and military strategies [aiTechWeights] were built with; null = never built (new game, old save) */
+    var aiTechWeightsStrategies: String? = null
+
     //region state-changing functions
     fun clone(): TechManager {
         val toReturn = TechManager()
@@ -88,6 +94,8 @@ class TechManager : IsPartOfGameInfoSerialization {
         toReturn.scienceFromResearchAgreements = scienceFromResearchAgreements
         toReturn.overflowScience = overflowScience
         toReturn.goldPercentConvertedToScience = goldPercentConvertedToScience
+        toReturn.aiTechWeights.putAll(aiTechWeights)
+        toReturn.aiTechWeightsStrategies = aiTechWeightsStrategies
         return toReturn
     }
 

@@ -14,6 +14,7 @@ import com.unciv.models.ruleset.unit.BaseUnit
 import com.unciv.models.stats.INamed
 import com.unciv.models.stats.Stat
 import com.unciv.models.stats.Stats
+import yairm210.purity.annotations.Readonly
 import kotlin.math.max
 
 /**
@@ -34,14 +35,26 @@ class AiRuleset {
     var citySpecializations = ArrayList<CitySpecializationDef>()
     var minorCivFlavors = ArrayList<NamedFlavors>()
     var itemFlavors = ArrayList<ItemFlavors>()
+    /** Technology_PrereqTechs in XML row order, by Unciv tech name - see [TechPrereqsDef] */
+    var techPrereqs = ArrayList<TechPrereqsDef>()
     var unitAiTypes = ArrayList<UnitAiTypesDef>()
     var handicaps = ArrayList<HandicapDef>()
+    /** Nation names of CvCivilizationInfo::isCoastalCiv (Civilization_Start_Along_Ocean), read by CvCitySiteEvaluator::PlotFoundValue */
+    var coastalCivilizations = ArrayList<String>()
+    /** CvFeatureInfo::getStartingLocationWeight by terrain feature name (non-zero ones), read by CvCitySiteEvaluator::ComputeStrategicValue */
+    var featureStartingLocationWeights = LinkedHashMap<String, Int>()
+    var policyBranches = ArrayList<PolicyBranchAiDef>()
+    var eraDiplomacy = ArrayList<EraDiplomacyDef>()
+    var gameSpeedDiplomacy = ArrayList<GameSpeedDiplomacyDef>()
+    var worldSizes = ArrayList<WorldSizeDef>()
+    var multiUnitFormations = ArrayList<MultiUnitFormationDef>()
 
     /** The ruleset this belongs to - needed to derive flavors of objects without a table entry */
     @Transient lateinit var ruleset: Ruleset
 
     @Transient private var itemFlavorIndex: HashMap<String, ItemFlavors>? = null
     @Transient private var minorCivFlavorIndex: HashMap<String, NamedFlavors>? = null
+    @Transient private var unitAiTypesIndex: HashMap<String, UnitAiTypesDef>? = null
     @Transient private val flavorCache = HashMap<String, IntArray>()
 
     companion object {
@@ -78,7 +91,15 @@ class AiRuleset {
         mergeByName(citySpecializations, other.citySpecializations)
         mergeByName(minorCivFlavors, other.minorCivFlavors)
         mergeByName(unitAiTypes, other.unitAiTypes)
+        mergeByName(techPrereqs, other.techPrereqs)
         mergeByName(handicaps, other.handicaps)
+        for (name in other.coastalCivilizations) if (name !in coastalCivilizations) coastalCivilizations.add(name)
+        featureStartingLocationWeights.putAll(other.featureStartingLocationWeights)
+        mergeByName(policyBranches, other.policyBranches)
+        mergeByName(eraDiplomacy, other.eraDiplomacy)
+        mergeByName(gameSpeedDiplomacy, other.gameSpeedDiplomacy)
+        mergeByName(worldSizes, other.worldSizes)
+        mergeByName(multiUnitFormations, other.multiUnitFormations)
         for (entry in other.itemFlavors) {
             val index = itemFlavors.indexOfFirst { it.kind == entry.kind && it.name == entry.name }
             if (index >= 0) itemFlavors[index] = entry else itemFlavors.add(entry)
@@ -96,8 +117,16 @@ class AiRuleset {
         citySpecializations.clear()
         minorCivFlavors.clear()
         itemFlavors.clear()
+        techPrereqs.clear()
         unitAiTypes.clear()
         handicaps.clear()
+        coastalCivilizations.clear()
+        featureStartingLocationWeights.clear()
+        policyBranches.clear()
+        eraDiplomacy.clear()
+        gameSpeedDiplomacy.clear()
+        worldSizes.clear()
+        multiUnitFormations.clear()
         clearCaches()
     }
 
@@ -111,14 +140,29 @@ class AiRuleset {
     private fun clearCaches() {
         itemFlavorIndex = null
         minorCivFlavorIndex = null
+        unitAiTypesIndex = null
         flavorCache.clear()
     }
     //endregion
 
     //region Lookups
 
-    fun define(define: AiDefine): Int = (defines[define.name] ?: define.default).toInt()
+    @Readonly fun define(define: AiDefine): Int = (defines[define.name] ?: define.default).toInt()
     fun defineFloat(define: AiDefine): Float = defines[define.name] ?: define.default
+    fun handicapValue(difficulty: String, column: String): Int? = handicaps.firstOrNull { it.name == difficulty }?.values?.get(column)
+
+    /** Diplomacy emphasis of an era; an era without an entry has none (the XML's default 0) */
+    fun eraDiplomacy(eraName: String): EraDiplomacyDef = eraDiplomacy.firstOrNull { it.name == eraName } ?: defaultEraDiplomacy
+
+    /** Relationship and opinion durations of a game speed; standard speed's for a speed without an entry */
+    fun gameSpeedDiplomacy(speedName: String): GameSpeedDiplomacyDef = gameSpeedDiplomacy.firstOrNull { it.name == speedName } ?: defaultGameSpeedDiplomacy
+
+    /** EstimatedNumCities of a map size; a standard map's for a size without an entry (custom sizes) */
+    fun worldSize(mapSizeName: String): WorldSizeDef = worldSizes.firstOrNull { it.name == mapSizeName } ?: defaultWorldSize
+
+    @Transient private val defaultEraDiplomacy = EraDiplomacyDef()
+    @Transient private val defaultGameSpeedDiplomacy = GameSpeedDiplomacyDef()
+    @Transient private val defaultWorldSize = WorldSizeDef()
 
     /** The four grand strategies of the original, without flavors, for a ruleset without AI.json */
     @delegate:Transient
@@ -145,6 +189,15 @@ class AiRuleset {
         val index = itemFlavorIndex ?: itemFlavors.associateByTo(HashMap()) { it.kind + "/" + it.name }.also { itemFlavorIndex = it }
         return index["$kind/$name"]
     }
+
+    /** The Unit_AITypes entry of a unit by Unciv unit name, null if it has none */
+    fun unitAiTypesOf(unitName: String): UnitAiTypesDef? {
+        val index = unitAiTypesIndex ?: unitAiTypes.associateByTo(HashMap()) { it.name }.also { unitAiTypesIndex = it }
+        return index[unitName]
+    }
+
+    /** The policy AI columns of a policy branch, null if the ruleset has no entry for it */
+    fun policyBranchOf(branchName: String): PolicyBranchAiDef? = policyBranches.firstOrNull { it.name == branchName }
     //endregion
 
     //region Item flavors

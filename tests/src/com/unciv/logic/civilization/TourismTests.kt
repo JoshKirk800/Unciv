@@ -1,6 +1,5 @@
 package com.unciv.logic.civilization
 
-import com.unciv.logic.automation.unit.ConcertTourAutomation
 import com.unciv.logic.city.City
 import com.unciv.logic.city.CityFlags
 import com.unciv.logic.city.GreatWorkSlot
@@ -412,21 +411,6 @@ class TourismTests {
         own.setOwningCity(cityA)
         assertNull(tourAction(musician(null, own)))
         assertNull(tourAction(musician(null, game.tileMap[0, -6])))
-    }
-
-    @Test
-    fun `the AI goes on tour where it is least influential, and plays when it is there`() {
-        civB.totalCultureForContests = 1000
-        val foreign = civB.cities.first().getCenterTile().neighbors.first()
-        val unit = musician(civB.cities.first(), foreign)
-        assertTrue(ConcertTourAutomation.automate(unit))
-        assertEquals(100, civA.culture.getInfluence(civB))
-        assertFalse(unit in civA.units.getCivUnits())
-
-        civA.culture.addInfluence(civB, 5000)
-        val foreign2 = civB.cities.first().getCenterTile().neighbors.elementAt(3)
-        val another = musician(civB.cities.first(), foreign2)
-        assertFalse("nothing to gain from a civilization that is already influenced", ConcertTourAutomation.automate(another))
     }
     //endregion
 

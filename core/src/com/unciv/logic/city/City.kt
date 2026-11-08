@@ -170,7 +170,6 @@ class City : IsPartOfGameInfoSerialization, INamed {
 
 
     var avoidGrowth: Boolean = false
-    @Transient var currentGPPBonus: Int = 0  // temporary variable saved for rankSpecialist()
 
     /** The very first found city is the _original_ capital,
      * while the _current_ capital can be any other city after the original one is captured.
@@ -305,7 +304,6 @@ class City : IsPartOfGameInfoSerialization, INamed {
     fun containsBuildingUnique(uniqueType: UniqueType, state: GameContext = this.state) =
         cityConstructions.builtBuildingUniqueMap.getMatchingUniques(uniqueType, state).any()
 
-    @Readonly fun getGreatPersonPercentageBonus() = GreatPersonPointsBreakdown.getGreatPersonPercentageBonus(this)
     @Readonly fun getGreatPersonPoints() = GreatPersonPointsBreakdown(this).sum()
 
     fun gainStockpiledResource(resource: TileResource, amount: Int) =
@@ -470,7 +468,8 @@ class City : IsPartOfGameInfoSerialization, INamed {
         } else if (cityAIFocus != CityFocus.Manual.name){
             workedTiles = lockedTiles
         }
-        if (!manualSpecialists)
+        // An AI city never has hand-placed specialists: its manualSpecialists only stops automatic assignment (CvCityCitizens::DoReallocateCitizens)
+        if (!manualSpecialists || !civ.isHuman())
             population.specialistAllocations.clear()
         shouldReassignPopulation = false
         population.autoAssignPopulation()

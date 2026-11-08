@@ -16,7 +16,8 @@ import com.unciv.models.ruleset.unique.UniqueType
  * What a Great Person was used for is seen from the turn it disappeared: a work whose creator is the unit's name is exact; an improvement
  * it can build that appeared on the civilization's tiles, or a golden age that started that turn, is inferred; anything else (bulb,
  * trade mission, hurry, concert tour, treatise, religion, death or capture) is "other". A unit born and used within one turn is never
- * seen alive: when it made a Great Work, the work shows it (counted apart); any other use of such a unit is not seen.
+ * seen alive: when it made a Great Work, the work shows it (counted apart); any other use is not seen, such units are only counted by
+ * Great Person group (the gains of the group that no unit seen alive accounts for).
  */
 internal class GreatPeopleTrace(private val game: GameInfo) {
     private class CivTrace {
@@ -36,6 +37,9 @@ internal class GreatPeopleTrace(private val game: GameInfo) {
         var previousUnits = HashMap<Int, MapUnit>()
         var previousImprovements = Counter<String>()
         var previousGoldenAgeTurns = 0
+        var previousCreated = Counter<String>()
+        /** Great People gained but never seen alive (born and used within one turn), by Great Person group */
+        val unseenByGroup = Counter<String>()
     }
 
     private val traces = LinkedHashMap<String, CivTrace>()
@@ -64,6 +68,7 @@ internal class GreatPeopleTrace(private val game: GameInfo) {
         trace.previousUnits = civ.units.getCivGreatPeople().associateByTo(HashMap()) { it.id }
         trace.previousImprovements = improvementsOf(civ)
         trace.previousGoldenAgeTurns = civ.goldenAges.turnsLeftForCurrentGoldenAge
+        trace.previousCreated = Counter(civ.greatPeople.greatPeopleCreated)
     }
 
     fun afterTurn() {
@@ -112,6 +117,9 @@ internal class GreatPeopleTrace(private val game: GameInfo) {
                 trace.outcomes.add("${unit.name}: $outcome", 1)
             }
             for ((_, type) in worksMade) trace.worksBySameTurnUnits.add(type, 1)
+            val unseen = Counter(civ.greatPeople.greatPeopleCreated).apply { remove(trace.previousCreated) }
+            for (unit in units) if (unit.id !in trace.previousUnits) unseen.add(civ.greatPeople.getPoolKey(unit.name), -1)
+            for ((group, count) in unseen) if (count > 0) trace.unseenByGroup.add(group, count)
             remember(civ, trace)
         }
     }
@@ -137,6 +145,9 @@ internal class GreatPeopleTrace(private val game: GameInfo) {
                 text.appendLine("  $name: born ${trace.born[name]}, alive ${alive[name] ?: 0}" +
                     (if (outcomes.isEmpty()) "" else "; used: $outcomes") + slotTurns)
             }
+            if (trace.unseenByGroup.isNotEmpty())
+                text.appendLine("  gained but used on the turn they were born (never seen alive), by group: " +
+                    trace.unseenByGroup.entries.sortedBy { it.key }.joinToString { "${it.key.ifEmpty { "(none)" }} ${it.value}" })
             if (trace.worksBySameTurnUnits.isNotEmpty())
                 text.appendLine("  Great Works by Great People used on the turn they were born: " +
                     trace.worksBySameTurnUnits.entries.sortedBy { it.key }.joinToString { "${it.key} ${it.value}" })
@@ -144,6 +155,8 @@ internal class GreatPeopleTrace(private val game: GameInfo) {
             text.appendLine("  slots filled now: " + GreatWorkSlotType.entries.joinToString { type ->
                 "${type.label} ${civ.cities.sumOf { it.greatWorks.getNumWorks(type) }}/${civ.cities.sumOf { city -> city.greatWorks.getSlots().count { it.getType() == type } }}"
             })
+            val themed = civ.cities.sumOf { city -> city.cityConstructions.getBuiltBuildings().count { city.greatWorks.getThemingBonus(it) > 0 } }
+            text.appendLine("  theming now: $themed themed buildings, +${civ.cities.sumOf { it.greatWorks.getTotalThemingBonus() }} culture")
         }
         return text.toString()
     }

@@ -24,7 +24,6 @@ import yairm210.purity.annotations.Readonly
  *  * These biases can be indexed with a [PersonalityValue] as key, [get]/[set]
  *  * Defines [preferredVictoryType] - shown in the Civilopedia only; the AI pursues its grand strategy (`civ.ai`)
  *  * Defines the AI personality of the original game: [flavors], [diplomacyPersonality], [majorCivApproachBiases], [minorCivApproachBiases]
- *  * Defines Policy preferences in [priorities]
  *  * Can have [civilopediaText], but not [uniques] (effect not implemented, guarded by `RulesetValidator`)
  *  * API: [scaledFocus], [inverseScaledFocus], [inverseModifierFocus], [scaleStats]
  */
@@ -46,7 +45,6 @@ class Personality : RulesetObject() {
     var expansion: Float = 5f
     var denounceWillingness: Float = 5f
 
-    var priorities = LinkedHashMap<String, Int>()
     var preferredVictoryType: String = Constants.neutralVictoryType
     var isNeutralPersonality: Boolean = false
 
@@ -95,16 +93,6 @@ class Personality : RulesetObject() {
     @Readonly
     fun modifierFocus(value: PersonalityValue, weight: Float): Float {
         return 1f + (scaledFocus(value) - 1) * weight
-    }
-
-    /**
-     * An inverted version of [modifierFocus], a personality value of 0 becomes a 10, 8 becomes a 2, etc.
-     * @param weight a value between 0 and 1 that determines how much the modifier deviates from 1
-     * @return a modifier between 0 and 2 centered around 1 based off of the personality value and the weight given
-     */
-    @Readonly
-    fun inverseModifierFocus(value: PersonalityValue, weight: Float): Float {
-        return 1f + (inverseScaledFocus(value) - 1) * weight
     }
 
     /**

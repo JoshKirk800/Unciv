@@ -1,10 +1,10 @@
 package com.unciv.logic.battle
 
+import com.unciv.logic.automation.diplomacy.DiplomacyEvents
 import com.unciv.models.metadata.GameSettings
-import com.unciv.view.GameView
 import com.unciv.Constants
 import com.unciv.UncivGame
-import com.unciv.logic.automation.civilization.NextTurnAutomation
+import com.unciv.logic.automation.civilization.CityConquestAutomation
 import com.unciv.logic.automation.strategy.GrandStrategyAi
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.*
@@ -204,6 +204,8 @@ object Battle {
         attackedTile: Tile
     ) {
         if (defender.isDefeated() && defender is MapUnitCombatant && !defender.unit.isCivilian()) {
+            // CvUnit::kill: the war damage the diplomacy AIs note
+            DiplomacyEvents.onUnitKilled(defender.getCivInfo(), attacker.getCivInfo(), defender.unit.baseUnit.getForceEvaluation())
             tryEarnFromKilling(attacker, defender)
             tryHealAfterKilling(attacker, defender)
 
@@ -211,6 +213,7 @@ object Battle {
             triggerDefeatUniques(defender, attacker, attackedTile)
 
         } else if (attacker.isDefeated() && attacker is MapUnitCombatant && !attacker.unit.isCivilian()) {
+            DiplomacyEvents.onUnitKilled(attacker.getCivInfo(), defender.getCivInfo(), attacker.unit.baseUnit.getForceEvaluation())
             tryEarnFromKilling(defender, attacker)
             tryHealAfterKilling(defender, attacker)
 
@@ -786,7 +789,7 @@ object Battle {
         } else if (attackerCiv.isHuman() && UncivGame.Current.worldScreen?.autoPlay?.isAutoPlayingAndFullAutoPlayAI() == false) {
             // we're not taking our former capital
             attackerCiv.popupAlerts.add(PopupAlert(AlertType.CityConquered, city.id))
-        } else automateCityConquer(attackerCiv, city)
+        } else CityConquestAutomation.conquerCity(attackerCiv, city)
 
         if (attackerCiv.isCurrentPlayer())
             UncivGame.Current.settings.addCompletedTutorialTask("Conquer a city")
@@ -796,31 +799,6 @@ object Battle {
             UniqueTriggerActivation.triggerUnique(unique, attacker.unit)
     }
 
-    /** Handle decision-making after city conquest, namely whether the AI should liberate, puppet,
-     * or raze a city */
-    private fun automateCityConquer(civInfo: Civilization, city: City) {
-        if (!city.hasDiplomaticMarriage()) {
-            val foundingCiv = city.foundingCivObject!!
-            var valueAlliance = NextTurnAutomation.valueCityStateAlliance(GameView(civInfo.gameInfo, civInfo).civView, foundingCiv)
-            if (civInfo.getHappiness() < 0)
-                valueAlliance -= civInfo.getHappiness() // put extra weight on liberating if unhappy
-            if (foundingCiv.isCityState && city.civ != civInfo && foundingCiv != civInfo
-                && !civInfo.isAtWarWith(foundingCiv)
-                && valueAlliance > 0) {
-                city.liberateCity(civInfo)
-                return
-            }
-        }
-
-        city.puppetCity(civInfo)
-        if ((city.population.population < 4 || civInfo.isCityState)
-            && city.foundingCivObject != civInfo && city.canBeDestroyed(justCaptured = true)) {
-            // raze if attacker is a city state
-            if (!civInfo.hasUnique(UniqueType.MayNotAnnexCities)) city.annexCity()
-            city.isBeingRazed = true
-        }
-    }
-    
     @Readonly
     fun getMapCombatantOfTile(tile: Tile): ICombatant? {
         if (tile.isCityCenter()) return CityCombatant(tile.getCity()!!)

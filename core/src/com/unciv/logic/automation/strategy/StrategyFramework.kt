@@ -22,6 +22,9 @@ object StrategyTests {
 
     init {
         GrandStrategyAi.registerStrategyTests(this)
+        EconomicMilitaryStrategyTests.registerAll(this)
+        CityStrategyAi.registerAll(this)
+        GreatPeopleStrategyTests.registerAll(this)
         EspionageTradeStrategyTests.registerAll(this)
     }
 

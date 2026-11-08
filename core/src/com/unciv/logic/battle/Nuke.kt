@@ -1,8 +1,8 @@
 package com.unciv.logic.battle
 
+import com.unciv.logic.automation.diplomacy.DiplomacyEvents
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.*
-import com.unciv.logic.civilization.diplomacy.DiplomaticModifiers
 import com.unciv.logic.civilization.diplomacy.DiplomaticStatus
 import com.unciv.logic.map.tile.RoadStatus
 import com.unciv.logic.map.tile.Tile
@@ -76,6 +76,14 @@ object Nuke {
 
         attacker.unit.attacksSinceTurnStart.add(targetTile.position)
 
+        // CvUnitCombat: each player whose units or cities the blast hits remembers being nuked (CvDiplomacyAI::ChangeNumTimesNuked)
+        val victims = HashSet<Civilization>()
+        for (tile in hitTiles) {
+            tile.getOwner()?.let { victims.add(it) }
+            for (unit in tile.getUnits()) victims.add(unit.civ)
+        }
+        for (victim in victims) DiplomacyEvents.onNuked(victim, attackingCiv)
+
         for (tile in hitTiles) {
             // Handle complicated effects
             doNukeExplosionForTile(attacker, tile, nukeStrength, targetTile == tile)
@@ -84,12 +92,6 @@ object Nuke {
 
         // Instead of postBattleAction() just destroy the unit, all other functions are not relevant
         if (attacker.unit.hasUnique(UniqueType.SelfDestructs)) attacker.unit.destroy()
-
-        // It's unclear whether using nukes results in a penalty with all civs, or only affected civs.
-        // For now I'll make it give a diplomatic penalty to all known civs, but some testing for this would be appreciated
-        for (civ in attackingCiv.getKnownCivs()) {
-            civ.getDiplomacyManager(attackingCiv)!!.setModifier(DiplomaticModifiers.UsedNuclearWeapons, -50f)
-        }
 
         if (!attacker.isDefeated()) {
             attacker.unit.attacksThisTurn += 1

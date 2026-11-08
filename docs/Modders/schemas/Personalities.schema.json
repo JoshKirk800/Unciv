@@ -141,10 +141,6 @@
         "minimum": 0,
         "default": 5
       },
-      "priorities": {
-        "$ref": "refs/Priorities.schema.json",
-        "description": "Priorities for each policy branch."
-      },
       "uniques": {
         "$ref": "refs/Uniques.schema.json"
       },
