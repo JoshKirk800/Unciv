@@ -84,11 +84,12 @@ object SettlerAutomation {
             area = areas.first
             wantEscort = true
         }
-        // An escorted settler whose best site is overseas sails with a colonization party (CvAINavalEscortedOperation)
-        if (wantEscort && civ.tech.unitsCanEmbark && !unit.getTile().isWater) NavalOperationLogic.tryStartColonization(civ, unit)?.let { party ->
-            AiDecisionLog.log(civ) { "settler ${unit.id} at ${unit.getTile().position}: ${party.type} to ${party.targetTile} (${party.state})" }
-            return party
-        }
+        // Off, as in BNW: nothing in the DLL calls addAIOperation(AI_OPERATION_COLONIZE), so its settlers never start a colonization party.
+        // (The DLL's FOUND_CITY drops the escort of a settler whose site is across water; that is not ported yet.) Kept for a later decision:
+        // if (wantEscort && civ.tech.unitsCanEmbark && !unit.getTile().isWater) NavalOperationLogic.tryStartColonization(civ, unit)?.let { party ->
+        //     AiDecisionLog.log(civ) { "settler ${unit.id} at ${unit.getTile().position}: ${party.type} to ${party.targetTile} (${party.state})" }
+        //     return party
+        // }
         val operation = AiOperationLogic.addSettlerOperation(civ, if (wantEscort) AiOperationType.FOUND_CITY else AiOperationType.QUICK_COLONIZE, unit, area)
         AiDecisionLog.log(civ) {
             "settler ${unit.id} at ${unit.getTile().position}: ${operation.type} to ${operation.targetTile} (area $area, " +
