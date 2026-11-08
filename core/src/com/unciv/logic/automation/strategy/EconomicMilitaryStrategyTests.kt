@@ -433,7 +433,8 @@ object EconomicMilitaryStrategyTests {
      *  IsTestStrategy_EradicateBarbarians. At war: the original's test `!GetStateAllWars() == STATE_ALL_WARS_WINNING` is true when the state
      *  is NEUTRAL, so it gives up then (winning or losing it goes on). Always when barbarians hold a settler or worker of ours. Weight =
      *  camps x 50 + visible barbarians x 25 against the weight threshold plus the personality modifier: at twice that with barbarians
-     *  visible, always; at once, unless preparing war on a major. (The barbarian-camp operation that keeps it on is not ported.)
+     *  visible, always; at once, unless preparing war on a major; below the threshold it stays on while a barbarian-camp operation is running
+     *  (so [MilitaryOperations.updateOperations], which kills that operation once the strategy is off, does not end it by its own check).
      */
     fun eradicateBarbarians(civ: Civilization, def: PlayerStrategyDef): Boolean {
         if (civ.ai.isMilitaryStrategyActive(MilitaryAi.AT_WAR) && WarStateAi.stateAllWars(civ) == StateAllWars.Neutral) return false
@@ -449,7 +450,7 @@ object EconomicMilitaryStrategyTests {
         if (weight >= threshold * 2 && military.visibleBarbarianCount > 0) return true
         if (weight >= threshold)
             return civ.gameInfo.civilizations.none { it != civ && it.isMajorCiv && civ.ai.diplomacy.warGoal(it) == WarGoal.Prepare }
-        return false
+        return civ.ai.operations.firstOfType(AiOperationType.DESTROY_BARBARIAN_CAMP) != null
     }
 
     /** IsTestStrategy_Need(Ranged|Mobile|Air)Units: units x 10 / max(1, melee + units) <= flavor (personality and grand strategy) / 2 */
