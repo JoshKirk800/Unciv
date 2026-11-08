@@ -21,7 +21,7 @@ enum class ReconState { Enough, Neutral, Needed }
  *
  *  Not ported, with the reason: DoHurry (its gold branch is commented out in the original, and the population branch needs
  *  HURRY_POPULATION access that no Brave New World policy or building grants - Unciv has no population rushing either);
- *  DisbandExtraArchaeologists and DoSwapGreatWorks (culture port); UpdatePlots and the goody-hut assignments (homeland AI, out of scope).
+ *  DisbandExtraArchaeologists and DoSwapGreatWorks (culture port). The exploration plots and the goody-hut assignments (UpdatePlots) are in [ExplorationAi]/[ExplorationPlots].
  */
 class EconomicAi : IsPartOfGameInfoSerialization {
     /** CvEconomicAI::m_iLastTurnWorkerDisbanded, -1 if never */

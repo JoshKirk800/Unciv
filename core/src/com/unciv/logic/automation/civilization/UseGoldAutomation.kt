@@ -44,18 +44,23 @@ object UseGoldAutomation {
     fun maxUpgradesPerTurn(civ: Civilization): Int =
         max(1, civ.ai.personalityAndGrandStrategy(Flavor.MilitaryTraining) / 3) + max(0, EconomicAi.gameHandicapIndex(civ.gameInfo) - 5)
 
+    /** What [plotUpgradeMoves] did: the units it [upgraded], and the unit that is next in line but could not upgrade now ([waiting]) */
+    class UpgradeMoves(val upgraded: Int, val waiting: MapUnit?)
+
     /**
-     *  CvHomelandAI::PlotUpgradeMoves, gold side. Units whose upgrade the tech and resources allow are ranked: lowest unit power first,
+     *  CvHomelandAI::PlotUpgradeMoves, gold side, over [units] (the units the homeland AI has this turn; the original leaves out human
+     *  units and units in an army, [isInArmy]). Units whose upgrade the tech and resources allow are ranked: lowest unit power first,
      *  +[UPGRADE_THIS_TURN_PRIORITY_BOOST] if they can upgrade now (gold, movement, own territory), else +[UPGRADE_IN_TERRITORY_PRIORITY_BOOST]
      *  in own territory. Those that can upgrade now are upgraded in that order, at most [maxUpgradesPerTurn]. If none could, the gold for
-     *  the first is reserved at priority AI_GOLD_PRIORITY_UPGRADE_BASE + AI_GOLD_PRIORITY_UPGRADE_PER_FLAVOR_POINT x current MILITARY_TRAINING.
-     *  Moving that unit home is homeland movement (out of scope); Unciv's unit automation moves it.
-     *  @return the units upgraded
+     *  the first is reserved at priority AI_GOLD_PRIORITY_UPGRADE_BASE + AI_GOLD_PRIORITY_UPGRADE_PER_FLAVOR_POINT x current MILITARY_TRAINING,
+     *  and that unit is returned as [UpgradeMoves.waiting]: bringing it home when it stands outside our territory is the homeland AI's
+     *  ([com.unciv.logic.automation.unit.HomelandAi]).
      */
-    fun plotUpgradeMoves(civ: Civilization): Int {
+    fun plotUpgradeMoves(civ: Civilization, units: Sequence<MapUnit> = civ.units.getCivUnits(), isInArmy: (MapUnit) -> Boolean = { false }): UpgradeMoves {
         class Candidate(val unit: MapUnit, val upgrade: PossibleUpgrade, val canUpgradeNow: Boolean, val priority: Int)
         val candidates = ArrayList<Candidate>()
-        for (unit in civ.units.getCivUnits()) {
+        for (unit in units) {
+            if (unit.isDestroyed || isInArmy(unit)) continue
             val upgrade = upgradeFor(unit) ?: continue
             val canUpgradeNow = unit.upgrade.canPerformUpgrade(upgrade, isFree = false)
             var priority = UPGRADE_THIS_TURN_PRIORITY_BOOST - unit.baseUnit.getForceEvaluation()
@@ -64,7 +69,7 @@ object UseGoldAutomation {
             candidates.add(Candidate(unit, upgrade, canUpgradeNow, priority))
         }
         // The original cancels the request only when it is not saving for it, which changes nothing: no candidates, nothing to do
-        if (candidates.isEmpty()) return 0
+        if (candidates.isEmpty()) return UpgradeMoves(0, null)
         candidates.sortByDescending { it.priority } // stable, as std::stable_sort
 
         val maxUpgrades = maxUpgradesPerTurn(civ)
@@ -76,9 +81,9 @@ object UseGoldAutomation {
             if (!candidate.unit.upgrade.canPerformUpgrade(upgrade, isFree = false)) continue
             candidate.unit.upgrade.performUpgrade(upgrade, isFree = false)
             upgraded++
-            if (upgraded >= maxUpgrades) return upgraded
+            if (upgraded >= maxUpgrades) return UpgradeMoves(upgraded, null)
         }
-        if (upgraded > 0) return upgraded
+        if (upgraded > 0) return UpgradeMoves(upgraded, null)
 
         val amount = candidates.first().upgrade.goldCostOfUpgrade
         if (amount > 0) {
@@ -88,7 +93,7 @@ object UseGoldAutomation {
             civ.ai.purchaseSavings.cancelSaveForPurchase(PurchaseType.UnitUpgrade)
             civ.ai.purchaseSavings.startSaveForPurchase(PurchaseType.UnitUpgrade, amount, priority)
         }
-        return 0
+        return UpgradeMoves(0, candidates.first().unit)
     }
     //endregion
 
