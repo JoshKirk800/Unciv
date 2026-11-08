@@ -214,6 +214,7 @@ class FullGameSim {
         val spans = System.getenv("FULL_SIM_SPANS") != null
         val performance = SimPerformance(game, spans, File("$outPath.perf.csv"), if (spans) File("$outPath.spans.csv") else null)
             .also { this.performance = it }
+        val civTrace = System.getenv("FULL_SIM_TRACE_CIV")?.let { CivDecisionTrace(game, it, File("$outPath.trace.txt")) }
         val out = StringBuilder()
         val events = ArrayList<String>()
         val checkpoint = File(System.getenv("FULL_SIM_OUT")!! + ".checkpoint.save")
@@ -251,6 +252,7 @@ class FullGameSim {
             }
             checkInvariants(game, turn)
             trace.afterTurn()
+            civTrace?.afterTurn(turn)
             val dump = dumpDir != null && (dumpAll || turn in dumpTurns)
             if (digestFile != null || dump) {
                 val state = stateJson(game)
@@ -302,6 +304,7 @@ class FullGameSim {
         summary(game, turn, (System.currentTimeMillis() - startedAt) / 1000, out)
         report(out, events, game, ended)
         performance.close()
+        civTrace?.close()
         Assert.assertFalse("The game threw: see the report", ended.startsWith("exception"))
     }
 }

@@ -1,5 +1,6 @@
 package com.unciv.logic.automation.civilization
 
+import com.unciv.logic.automation.AiDecisionLog
 import com.unciv.logic.civilization.Civilization
 import com.unciv.models.ruleset.Ruleset
 import com.unciv.models.ruleset.ai.AiDefine
@@ -253,11 +254,20 @@ object TechAutomation {
         var topTotal = 0
         for (i in 0 until top) topTotal += candidates[i].second
         var roll = random.nextInt(topTotal)
+        var chosen = candidates[top - 1].first
         for (i in 0 until top) {
             roll -= candidates[i].second
-            if (roll < 0) return candidates[i].first
+            if (roll < 0) {
+                chosen = candidates[i].first
+                break
+            }
         }
-        return candidates[top - 1].first
+        AiDecisionLog.log(civ) {
+            "${if (freeTech) "free tech" else "researches"} ${chosen.name} of " +
+                candidates.take(top).joinToString { "${it.first.name} ${it.second}" } +
+                " (science ${civ.stats.statsForNextTurn.science.toInt()})"
+        }
+        return chosen
     }
 
     /**

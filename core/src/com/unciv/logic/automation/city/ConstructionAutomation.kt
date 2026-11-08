@@ -1,6 +1,7 @@
 package com.unciv.logic.automation.city
 
 import com.unciv.UncivGame
+import com.unciv.logic.automation.AiDecisionLog
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.diplomacy.WarAi
 import com.unciv.logic.automation.strategy.ProductionAi
@@ -74,9 +75,22 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
     fun chooseNextConstruction(interruptWonders: Boolean = false): Unit = timeThis("AI.ChooseProduction") {
         if (!interruptWonders && cityConstructions.getCurrentConstruction() !is PerpetualConstruction) return
 
-        val chosen = chooseWonderForWonderCity(interruptWonders) ?: run {
+        val chosen = chooseWonderForWonderCity(interruptWonders)?.also { wonder ->
+            AiDecisionLog.log(civInfo) { "${city.name} builds wonder ${wonder.name} (wonder city)" }
+        } ?: run {
             val candidates = getBuildables()
             val picked = pickFromTopChoices(candidates) ?: return@run null
+            AiDecisionLog.log(civInfo) {
+                val sorted = candidates.sortedByDescending { it.weight }
+                val settler = sorted.firstOrNull { (it.construction as? BaseUnit)?.isCityFounder() == true }
+                val military = sorted.firstOrNull { (it.construction as? BaseUnit)?.isMilitary == true }
+                "${city.name} builds ${picked.construction.name} [${picked.weight}, ${picked.turns}t] of " +
+                    sorted.take(6).joinToString { "${it.construction.name} ${it.weight}/${it.turns}t" } +
+                    "; settler ${settler?.let { "#${sorted.indexOf(it) + 1} ${it.weight}" } ?: "not a candidate"}" +
+                    "; best military ${military?.let { "${it.construction.name} #${sorted.indexOf(it) + 1} ${it.weight}" } ?: "none"}" +
+                    "; city flavors " + listOf(Flavor.Expansion, Flavor.Defense, Flavor.Offense, Flavor.Growth, Flavor.Science)
+                        .joinToString(" ") { "${it.name}=${city.ai.flavor(it, allowNegative = true)}" }
+            }
             commitToOperationUnit(picked)
             picked.construction
         } ?: return@timeThis
