@@ -471,18 +471,6 @@
           "default": null,
           "description": "Improvement picker skips improvements whose tech requirement is more advanced than current Era + this value."
         },
-        "goldGiftMultiplier": {
-          "title": "Gold Gift Multiplier",
-          "type": "number",
-          "default": 1,
-          "description": "Multiplier for gold value of one-sided trade stored as gifts."
-        },
-        "goldGiftTradeMultiplier": {
-          "title": "Gold Gift Trade Multiplier",
-          "type": "number",
-          "default": 0.8,
-          "description": "Multiplier for gold value of regular trade stored as gifts."
-        },
         "goldGiftDegradationMultiplier": {
           "title": "Gold Gift Degradation Multiplier",
           "type": "number",

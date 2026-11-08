@@ -302,7 +302,7 @@ class CityConquestFunctions(val city: City) {
                 .addModifier(DiplomaticModifiers.CapturedOurCities, respectForLiberatingOurCity)
             val openBordersTrade = TradeLogic(foundingCiv, conqueringCiv)
             openBordersTrade.currentTrade.ourOffers.add(TradeOffer(Constants.openBorders, TradeOfferType.Agreement, speed = conqueringCiv.gameInfo.speed))
-            openBordersTrade.acceptTrade(false)
+            openBordersTrade.acceptTrade()
         } else {
             // Liberating a city state gives a large amount of influence, and peace
             // as per discussion in #15226 
@@ -326,7 +326,7 @@ class CityConquestFunctions(val city: City) {
                 val tradeLogic = TradeLogic(foundingCiv, civ)
                 tradeLogic.currentTrade.ourOffers.add(TradeOffer(Constants.peaceTreaty, TradeOfferType.Treaty, speed = conqueringCiv.gameInfo.speed))
                 tradeLogic.currentTrade.theirOffers.add(TradeOffer(Constants.peaceTreaty, TradeOfferType.Treaty, speed = conqueringCiv.gameInfo.speed))
-                tradeLogic.acceptTrade(false)
+                tradeLogic.acceptTrade()
             }
         }
 

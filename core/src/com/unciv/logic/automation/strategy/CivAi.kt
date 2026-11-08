@@ -94,6 +94,10 @@ class CivAi : IsPartOfGameInfoSerialization {
     var aggressionMemory = HashMap<String, AggressionMemory>()
     /** CvDiplomacyAI::m_paeMinorCivApproach: our approach to each city-state by civID, missing = [MinorCivApproach.Ignore] */
     var minorCivApproaches = HashMap<String, MinorCivApproach>()
+    var purchaseSavings = PurchaseSavings()
+    var unitAiOverrides = HashMap<String, String>()
+    /** Deal and city-state AI memory: deal statements sent, expired deals to renew, tributes taken from us (see [DealsAiState]) */
+    var deals = com.unciv.logic.automation.civilization.DealsAiState()
     //endregion
 
     //region Transients
@@ -128,6 +132,9 @@ class CivAi : IsPartOfGameInfoSerialization {
         toReturn.isCramped = isCramped
         for ((civId, memory) in aggressionMemory) toReturn.aggressionMemory[civId] = memory.clone()
         toReturn.minorCivApproaches.putAll(minorCivApproaches)
+        toReturn.purchaseSavings = purchaseSavings.clone()
+        toReturn.unitAiOverrides.putAll(unitAiOverrides)
+        toReturn.deals = deals.clone()
         return toReturn
     }
 

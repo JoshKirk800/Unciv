@@ -290,8 +290,6 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | baseTurnsUntilRevolt                     | Int    | 4                             | [^Q]  |
 | cityStateElectionTurns                   | Int    | 15                            | [^R]  |
 | maxImprovementTechErasForward            | Int    | None                          | [^S]  |
-| goldGiftMultiplier                       | Float  | 1                             | [^T]  |
-| goldGiftTradeMultiplier                  | Float  | 0.8                           | [^U]  |
 | scoreFromGreatWorks                      | Int    | 0                             | Score for each Great Work. Brave New World uses 4 |
 | greatWorkBaseCulture                     | Int    | 2                             | Culture each Great Work gives its city, before bonuses (see the unique `[stats] from each Great Work`) |
 | greatWorkBaseTourism                     | Int    | 2                             | Tourism each Great Work gives its city, before bonuses |
@@ -380,8 +378,6 @@ Legend:
 - [^Q]: The number of turns before a revolt is spawned
 - [^R]: The number of turns between city-state elections
 - [^S]: If set, the Improvement picker will silently skip improvements whose tech requirement is more advanced than your current Era + this value. Example: With a 0, Trade posts will not show until the Medieval Era, with a 1 they will already show in the CLassical Era.
-- [^T]: The multiplier of the gold value of a one-sided trade to be stored as gifts.
-- [^U]: The multiplier of the gold value of a regular trade to be stored as gifts. Set to 0 to disable gold gifting in two-sided trades.
 - [^V]: Modifies how quickly the GaveUsGifts dimplomacy modifier runs out. A higher value makes it run out quicker. Normally the gifts reduced by ~2.5% per turn depending on the diplomatic relations with the default value.
 - [^W]: Number of air units that can be stationed in a city, not including carried/transported air units.
 

@@ -9,7 +9,6 @@ import com.unciv.logic.civilization.NotificationCategory
 import com.unciv.logic.civilization.NotificationIcon
 import com.unciv.logic.civilization.PopupAlert
 import com.unciv.logic.trade.Trade
-import com.unciv.logic.trade.TradeEvaluation
 import com.unciv.logic.trade.TradeLogic
 import com.unciv.logic.trade.TradeOffer
 import com.unciv.logic.trade.TradeOfferType
@@ -956,49 +955,5 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
                 "The resting point for Influence has decreased by [20] for [${civInfo.civName}].",
             NotificationCategory.Diplomacy, civInfo.civName)
     }
-
-    /**
-     * Resolves the otherCiv giving gifts to this civ with negative gold values.
-     * Prioritises reducing gifts given to the other civ before increasing our gift value.
-     * Does not take the gold from either civ's stockpile
-     * @param gold the amount of gold without inflation, can be negative
-     * @param isPureGift should be true if the gift was one-sided, or false if it wasn't
-     */
-    fun giftGold(gold: Int, isPureGift: Boolean) {
-        val currentGold = if (isPureGift)
-            (gold * civInfo.gameInfo.ruleset.modOptions.constants.goldGiftMultiplier).roundToInt()
-        else
-            (gold * civInfo.gameInfo.ruleset.modOptions.constants.goldGiftTradeMultiplier).roundToInt()
-
-        val otherGold = otherCivDiplomacy().getGoldGifts()
-        if (otherGold > currentGold) {
-            otherCivDiplomacy().recieveGoldGifts(-currentGold)
-        } else {
-            otherCivDiplomacy().removeModifier(DiplomaticModifiers.GaveUsGifts)
-            recieveGoldGifts(currentGold - otherGold)
-        }
-    }
-
-    /**
-     * Adds a gift from the other civilization of the value of [gold] that will deteriate over time.
-     * Does not take into account how much gold we have given to the other civ. Use [giftGold] for that.
-     * Does not take the gold from either civ's stockpile.
-     * @param gold the amount of gold without inflation, cannot be negative
-     */
-    fun recieveGoldGifts(gold: Int) {
-        val diplomaticValueOfTrade = (gold * TradeEvaluation().getGoldInflation(civInfo)) / (civInfo.gameInfo.speed.goldGiftModifier * 100)
-        addModifier(DiplomaticModifiers.GaveUsGifts, diplomaticValueOfTrade.toFloat())
-    }
-
-    /**
-     * @return the total value of the gold gifts the other civilization has given us
-     */
-    @Readonly
-    fun getGoldGifts(): Int {
-        // The inverse of howe we calculate GaveUsGifts in TradeLogic.acceptTrade gives us how much gold it is worth
-        val giftAmount = getModifier(DiplomaticModifiers.GaveUsGifts)
-        return ((giftAmount * civInfo.gameInfo.speed.goldGiftModifier * 100) / TradeEvaluation().getGoldInflation(civInfo)).toInt()
-    }
-
     //endregion
 }
