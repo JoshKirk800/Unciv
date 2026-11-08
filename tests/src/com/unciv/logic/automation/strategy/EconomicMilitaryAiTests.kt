@@ -258,6 +258,29 @@ class EconomicMilitaryAiTests {
     }
 
     @Test
+    fun `a barbarian camp operation that is running keeps eradication on after the camp threat has dropped below the threshold`() {
+        val civ = neutralCiv()
+        civ.ai.setPersonalityFlavor(Flavor.Offense, 5)
+        civ.ai.setPersonalityFlavor(Flavor.Defense, 5)
+        game.addCity(civ, tile(0, 0))
+        val camp = tile(3, 0)
+        camp.setImprovementBasic(Constants.barbarianEncampment)
+        camp.setExplored(civ, true)
+        civ.ai.military.scanForBarbarians(civ)
+        val def = militaryDef("MILITARYAISTRATEGY_ERADICATE_BARBARIANS")
+        civ.ai.militaryStrategies[def.name] = 0
+        MilitaryOperations.updateOperations(civ)
+        assertEquals(1, civ.ai.operations.numOperationsOfType(AiOperationType.DESTROY_BARBARIAN_CAMP))
+
+        camp.removeImprovement()
+        civ.ai.military.scanForBarbarians(civ)
+        assertEquals(0, civ.ai.military.barbarianCampCount)
+        assertTrue(EconomicMilitaryStrategyTests.eradicateBarbarians(civ, def))
+        civ.ai.operations.killAll(AiOperationType.DESTROY_BARBARIAN_CAMP, OperationAbortReason.WAR_STATE_CHANGE)
+        assertFalse(EconomicMilitaryStrategyTests.eradicateBarbarians(civ, def))
+    }
+
+    @Test
     fun `need happiness uses half the happiness personality as margin, critical a fixed -3`() {
         val civ = neutralCiv()
         civ.ai.setPersonalityFlavor(Flavor.Happiness, 8)
