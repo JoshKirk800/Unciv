@@ -91,29 +91,6 @@ object GreatWorkFunctions {
             firstBefore - secondBefore
     }
 
-    /** Repeatedly make strictly beneficial rearrangements, retaining creator and era on each work. */
-    fun optimizeTheming(civ: Civilization) {
-        val slots = civ.cities.flatMap { it.greatWorks.getSlots() }
-        if (slots.none { it.building.themingBonuses.isNotEmpty() }
-            || slots.count { it.getWork() != null } < 2) return
-        while (true) {
-            var bestGain = 0
-            var bestFirst: GreatWorkSlot? = null
-            var bestSecond: GreatWorkSlot? = null
-            for (i in slots.indices) for (j in i + 1 until slots.size) {
-                val first = if (slots[i].getWork() != null) slots[i] else slots[j]
-                val second = if (first === slots[i]) slots[j] else slots[i]
-                val gain = themingGain(first, second)
-                if (gain > bestGain) {
-                    bestGain = gain
-                    bestFirst = first
-                    bestSecond = second
-                }
-            }
-            if (bestFirst == null || bestSecond == null || !move(bestFirst, bestSecond)) return
-        }
-    }
-
     /** Whether a work fits in the slot, that is whether the types match */
     @Readonly
     fun fits(work: GreatWorkInstance, slot: GreatWorkSlot): Boolean {

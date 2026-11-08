@@ -84,6 +84,15 @@ class CultureManager : IsPartOfGameInfoSerialization {
     var publicOpinion = PublicOpinion()
         private set
 
+    /**
+     * The work of each kind that the civilization is willing to swap with another (CvPlayerCulture::m_iSwappable*Index), by [GreatWorkInstance.id],
+     * "" for none. The AI sets them every turn (CvPlayerCulture::MoveWorks); a swap uses them up (CvGameCulture::SwapGreatWorks).
+     */
+    var swappableWriting = ""
+    var swappableArt = ""
+    var swappableArtifact = ""
+    var swappableMusic = ""
+
     @Transient
     lateinit var civ: Civilization
         private set
@@ -97,6 +106,10 @@ class CultureManager : IsPartOfGameInfoSerialization {
         toReturn.reportedOneCivAway = reportedOneCivAway
         toReturn.numCivsInfluentialLastTurn = numCivsInfluentialLastTurn
         toReturn.publicOpinion = publicOpinion.clone()
+        toReturn.swappableWriting = swappableWriting
+        toReturn.swappableArt = swappableArt
+        toReturn.swappableArtifact = swappableArtifact
+        toReturn.swappableMusic = swappableMusic
         return toReturn
     }
 

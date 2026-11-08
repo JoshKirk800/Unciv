@@ -170,8 +170,7 @@ object ArchaeologyFunctions {
      */
     fun onDigCompleted(civ: Civilization, tile: Tile, unit: MapUnit?, aiControlled: Boolean = civ.isAI()) {
         if (aiControlled) {
-            val others = civ.units.getCivUnits().count { it.hasUnique(UniqueType.CanExcavate) && it != unit }
-            execute(civ, tile, chooseForAi(civ, tile, others, getVisibleSites(civ).size), unit)
+            execute(civ, tile, chooseForAi(civ, tile, countOtherArchaeologists(civ, unit), getVisibleSites(civ).size), unit)
             return
         }
         civ.popupAlerts.add(PopupAlert(AlertType.ArchaeologyChoice, "${tile.position.x},${tile.position.y}"))
@@ -222,39 +221,61 @@ object ArchaeologyFunctions {
         return choices
     }
 
-    /** CvPlayerCulture::GetArchaeologyChoice, what the AI does with a dig */
+    /**
+     * The archaeologists of [civ] other than [unit], including those in the production queues of its cities
+     * (CvPlayer::GetNumUnitsWithUnitAI(UNITAI_ARCHAEOLOGIST, bIncludeBeingTrained = true), minus the one whose dig is complete)
+     */
+    fun countOtherArchaeologists(civ: Civilization, unit: MapUnit?): Int {
+        val units = civ.gameInfo.ruleset.units
+        val existing = civ.units.getCivUnits().count { it != unit && it.hasUnique(UniqueType.CanExcavate) }
+        val inProduction = civ.cities.sumOf { city ->
+            city.cityConstructions.constructionQueue.count { units[it]?.hasUnique(UniqueType.CanExcavate) == true }
+        }
+        return existing + inProduction
+    }
+
+    /**
+     * CvPlayerCulture::GetArchaeologyChoice, what the AI does with a dig. [numOtherArchaeologists] and [numOtherSites] leave this dig out.
+     *
+     * - No free Art/Artifact slot: a writing becomes culture, anything else a Landmark.
+     * - Outside our lands: the artifact, but a Landmark in the land of a city-state when pursuing the diplomatic grand strategy, unless
+     *   we are at war with it or plan to take it (a negative WaryOf flag stands in for the conquest approach to a city-state).
+     * - In our lands but outside the work radius of all our cities (CvPlot::getWorkingCity is null): the artifact.
+     * - From the first era: a Landmark.
+     * - Otherwise a Landmark (culture for a writing) if the other archaeologists and sites can fill all free Art/Artifact slots, else the artifact.
+     * - An artifact is taken in the name of the second civilization of the record if that is us.
+     *
+     * Like the DLL every test looks at Art/Artifact slots, also for a writing. Where the DLL then turns a writing into an artifact for an Art slot,
+     * the writing goes to a Literature slot, or becomes culture if there is none.
+     */
     fun chooseForAi(civ: Civilization, tile: Tile, numOtherArchaeologists: Int, numOtherSites: Int): ArchaeologyChoice {
         val record = tile.archaeologyRecord ?: return ArchaeologyChoice.Landmark
-        val choices = getChoices(civ, tile)
         val isWriting = record.kind == ArtifactClasses.Writing
-        val noSlot = if (isWriting) ArchaeologyChoice.Writing !in choices else ArchaeologyChoice.ArtifactOfFirst !in choices
+        val freeArtSlots = GreatWorkFunctions.getNumFreeSlots(civ, GreatWorkSlotType.ArtArtifact)
+        val owner = tile.getOwner()
         var choice = when {
-            isWriting && ArchaeologyChoice.Writing in choices -> ArchaeologyChoice.Writing
-            noSlot -> if (isWriting) ArchaeologyChoice.CultureBoost else ArchaeologyChoice.Landmark
-            tile.getOwner() != civ -> {
-                // CvPlayerCulture::GetArchaeologyChoice: diplomatic strategy favors a city-state
-                // Landmark unless our available diplomacy state says we are targeting it for conquest.
-                val owner = tile.getOwner()
-                if (owner?.isCityState == true && civ.ai.isGoingForDiploVictory()
-                    && !civ.isAtWarWith(owner)) {
+            freeArtSlots == 0 -> if (isWriting) ArchaeologyChoice.CultureBoost else ArchaeologyChoice.Landmark
+            owner != civ -> {
+                if (owner?.isCityState == true && civ.ai.isGoingForDiploVictory() && !civ.isAtWarWith(owner)) {
                     val diplomacy = civ.getDiplomacyManager(owner)
                     if (diplomacy?.hasFlag(DiplomacyFlags.WaryOf) == true && diplomacy.getFlag(DiplomacyFlags.WaryOf) < 0)
                         ArchaeologyChoice.ArtifactOfFirst
                     else ArchaeologyChoice.Landmark
                 } else ArchaeologyChoice.ArtifactOfFirst
             }
-            tile.getWorkingCity() == null -> ArchaeologyChoice.ArtifactOfFirst
+            civ.cities.none { tile in it.tilesInRange } -> ArchaeologyChoice.ArtifactOfFirst
             record.era == civ.gameInfo.ruleset.eras.values.minByOrNull { it.eraNumber }?.name -> ArchaeologyChoice.Landmark
-            else -> {
-                val freeSlots = GreatWorkFunctions.getNumFreeSlots(civ, GreatWorkSlotType.ArtArtifact)
-                if (freeSlots <= minOf(numOtherArchaeologists, numOtherSites))
-                    if (isWriting) ArchaeologyChoice.CultureBoost else ArchaeologyChoice.Landmark
-                else ArchaeologyChoice.ArtifactOfFirst
-            }
+            freeArtSlots <= minOf(numOtherArchaeologists, numOtherSites) ->
+                if (isWriting) ArchaeologyChoice.CultureBoost else ArchaeologyChoice.Landmark
+            else -> ArchaeologyChoice.ArtifactOfFirst
         }
-        // Collect the own artifacts if there are any
-        if (choice == ArchaeologyChoice.ArtifactOfFirst && record.civ2 == civ.civName && ArchaeologyChoice.ArtifactOfSecond in choices)
-            choice = ArchaeologyChoice.ArtifactOfSecond
+        // For now have AI player try to collect their own artifacts
+        if (choice == ArchaeologyChoice.ArtifactOfFirst && record.civ2 == civ.civName) choice = ArchaeologyChoice.ArtifactOfSecond
+        val choices = getChoices(civ, tile)
+        if (isWriting && (choice == ArchaeologyChoice.ArtifactOfFirst || choice == ArchaeologyChoice.ArtifactOfSecond))
+            choice = if (ArchaeologyChoice.Writing in choices) ArchaeologyChoice.Writing else ArchaeologyChoice.CultureBoost
+        // An artifact the ruleset has no work for can not be taken
+        if (choice !in choices) choice = ArchaeologyChoice.Landmark
         return choice
     }
 
