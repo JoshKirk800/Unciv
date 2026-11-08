@@ -160,12 +160,13 @@ class FullGameSim {
         out.appendLine("== turn $turn  (${wallSeconds}s wall)")
         for (civ in players(game)) {
             val line = String.format(Locale.ROOT,
-                "%-16s alive=%-5s era=%-18s cities=%2d pop=%3d techs=%3d policies=%2d gold=%5d happiness=%3d units=%3d culture=%d tourism=%d influential=%d works=%d ideology=%s opinion=%s religion=%s",
+                "%-16s alive=%-5s era=%-18s cities=%2d pop=%3d techs=%3d policies=%2d gold=%5d happiness=%3d units=%3d culture=%d tourism=%d influential=%d works=%d ideology=%s opinion=%s religion=%s strategy=%s",
                 civ.civName, !civ.isDefeated(), civ.getEra().name, civ.cities.size, civ.cities.sumOf { it.population.population },
                 civ.tech.researchedTechnologies.size, civ.policies.getAdoptedPolicies().size, civ.gold,
                 civ.stats.happiness, civ.units.getCivUnitsSize(), civ.policies.storedCulture,
                 civ.culture.getTourism(), civ.culture.getNumCivsInfluentialOn(), civ.cities.sumOf { it.greatWorks.getNumWorks() },
-                ideologyOf(civ) ?: "-", civ.culture.publicOpinion.type.label, civ.religionManager.religion?.getReligionDisplayName() ?: "-")
+                ideologyOf(civ) ?: "-", civ.culture.publicOpinion.type.label, civ.religionManager.religion?.getReligionDisplayName() ?: "-",
+                civ.ai.grandStrategy ?: "-")
             out.appendLine(line)
         }
         val league = game.league
@@ -230,6 +231,7 @@ class FullGameSim {
         val lastEra = HashMap<String, String>()
         val lastIdeology = HashMap<String, String?>()
         val lastOpinion = HashMap<String, String>()
+        val lastGrandStrategy = HashMap<String, String?>()
         val wasDefeated = HashSet<String>()
         var lastSession = game.league?.lastResultsTurn ?: -1
         var leagueFounded = game.league != null
@@ -268,6 +270,10 @@ class FullGameSim {
                 if (lastOpinion.put(civ.civName, opinion) != opinion && (opinion != "Content" || turn > 1))
                     event(turn, "${civ.civName} public opinion $opinion (unhappiness ${civ.culture.publicOpinion.unhappiness})")
                 if (civ.isDefeated() && wasDefeated.add(civ.civName)) event(turn, "${civ.civName} is defeated")
+                val grandStrategy = civ.ai.grandStrategy
+                if (lastGrandStrategy.containsKey(civ.civName) && lastGrandStrategy[civ.civName] != grandStrategy || !lastGrandStrategy.containsKey(civ.civName) && grandStrategy != null)
+                    event(turn, "${civ.civName} grand strategy ${lastGrandStrategy[civ.civName] ?: "none"} -> ${grandStrategy ?: "none"}")
+                lastGrandStrategy[civ.civName] = grandStrategy
             }
             val league = game.league
             if (league != null && !leagueFounded) { leagueFounded = true; event(turn, "World Congress founded") }
