@@ -98,16 +98,6 @@ class Personality : RulesetObject() {
     }
 
     /**
-     * An inverted version of [modifierFocus], a personality value of 0 becomes a 10, 8 becomes a 2, etc.
-     * @param weight a value between 0 and 1 that determines how much the modifier deviates from 1
-     * @return a modifier between 0 and 2 centered around 1 based off of the personality value and the weight given
-     */
-    @Readonly
-    fun inverseModifierFocus(value: PersonalityValue, weight: Float): Float {
-        return 1f + (inverseScaledFocus(value) - 1) * weight
-    }
-
-    /**
      * Scales the stats based on the personality and the weight given
      * @param weight a positive value that determines how much the personality should impact the stats given 
      */

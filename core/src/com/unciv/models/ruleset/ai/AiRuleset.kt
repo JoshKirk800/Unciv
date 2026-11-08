@@ -48,6 +48,7 @@ class AiRuleset {
     @Transient private var minorCivFlavorIndex: HashMap<String, NamedFlavors>? = null
     @Transient private var unitAiTypesIndex: HashMap<String, UnitAiTypesDef>? = null
     @Transient private val flavorCache = HashMap<String, IntArray>()
+    @Transient private var unitAiTypesIndex: HashMap<String, UnitAiTypesDef>? = null
 
     companion object {
         const val KIND_BUILDING = "Building"
@@ -122,6 +123,7 @@ class AiRuleset {
         minorCivFlavorIndex = null
         unitAiTypesIndex = null
         flavorCache.clear()
+        unitAiTypesIndex = null
     }
     //endregion
 
@@ -129,6 +131,7 @@ class AiRuleset {
 
     fun define(define: AiDefine): Int = (defines[define.name] ?: define.default).toInt()
     fun defineFloat(define: AiDefine): Float = defines[define.name] ?: define.default
+    fun handicapValue(difficulty: String, column: String): Int? = handicaps.firstOrNull { it.name == difficulty }?.values?.get(column)
 
     /** The four grand strategies of the original, without flavors, for a ruleset without AI.json */
     @delegate:Transient

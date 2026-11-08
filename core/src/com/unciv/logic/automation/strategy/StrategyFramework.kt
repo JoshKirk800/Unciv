@@ -23,6 +23,7 @@ object StrategyTests {
     init {
         GrandStrategyAi.registerStrategyTests(this)
         EconomicMilitaryStrategyTests.registerAll(this)
+        CityStrategyAi.registerAll(this)
     }
 
     /** Registers the test of an economic or military strategy: returns whether [Civilization] should be using it */

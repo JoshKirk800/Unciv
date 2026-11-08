@@ -385,7 +385,8 @@ class CivAi : IsPartOfGameInfoSerialization {
      *  DoUpdateCramped, CvGrandStrategyAI::DoTurn (majors), the war states of CvDiplomacyAI::DoTurn (majors, [WarStateAi.doTurn]),
      *  then CvEconomicAI::DoTurn (recon state and antiquity sites, the strategy loop, then for AI players plot purchases and worker
      *  disbanding - [EconomicAi]), CvMilitaryAI::DoTurn (base data and defense states, the strategy loop, then for AI players offensive
-     *  purchases and obsolete unit disbanding - [MilitaryAi]), then each city's CvCityStrategyAI::DoTurn (in CvCity::doTurn).
+     *  purchases and obsolete unit disbanding - [MilitaryAi]), CvCitySpecializationAI::DoTurn (as in doTurnPostDiplomacy), then each
+     *  city's CvCityStrategyAI::DoTurn (in CvCity::doTurn).
      *  Runs for every living civilization except barbarians and spectators, human or AI, as in the original.
      */
     fun doTurn() {
@@ -407,7 +408,9 @@ class CivAi : IsPartOfGameInfoSerialization {
                 onStrategiesChanged()
         }
         if (!civ.isHuman()) timeThis("AI.MilitaryDoTurn") { military.doTurnAfterStrategies(civ) }
+        timeThis("AI.CitySpecialization") { CitySpecializationAi.doTurn(civ) }
         timeThis("AI.CityStrategies") {
+            CityStrategyAi.clearTurnCache(civ)
             for (city in civ.cities) city.ai.doTurn()
         }
     }
