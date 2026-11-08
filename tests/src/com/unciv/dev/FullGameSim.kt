@@ -231,6 +231,7 @@ class FullGameSim {
         val lastIdeology = HashMap<String, String?>()
         val lastOpinion = HashMap<String, String>()
         val wasDefeated = HashSet<String>()
+        val atWar = HashSet<String>() // "civ1|civ2" of majors at war with each other, in player order
         var lastSession = game.league?.lastResultsTurn ?: -1
         var leagueFounded = game.league != null
         var ended = "turn limit $maxTurns"
@@ -268,6 +269,14 @@ class FullGameSim {
                 if (lastOpinion.put(civ.civName, opinion) != opinion && (opinion != "Content" || turn > 1))
                     event(turn, "${civ.civName} public opinion $opinion (unhappiness ${civ.culture.publicOpinion.unhappiness})")
                 if (civ.isDefeated() && wasDefeated.add(civ.civName)) event(turn, "${civ.civName} is defeated")
+            }
+            val majors = players(game)
+            for ((i, civ) in majors.withIndex()) for (other in majors.drop(i + 1)) {
+                val pair = "${civ.civName}|${other.civName}"
+                val fighting = civ.knows(other) && civ.isAtWarWith(other)
+                if (fighting && atWar.add(pair)) event(turn, "war: ${civ.civName} and ${other.civName}")
+                else if (!fighting && atWar.remove(pair) && !civ.isDefeated() && !other.isDefeated())
+                    event(turn, "peace: ${civ.civName} and ${other.civName}")
             }
             val league = game.league
             if (league != null && !leagueFounded) { leagueFounded = true; event(turn, "World Congress founded") }
