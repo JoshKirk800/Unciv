@@ -37,7 +37,10 @@ object PromotionAi {
     fun promoteUnits(civ: Civilization) {
         timeThis("AI.Promotions") {
             val random = civ.ai.random("UnitAI.Promote")
-            for (unit in civ.units.getCivUnits().sortedBy { it.id }.toList()) promote(unit, random)
+            for (unit in civ.units.getCivUnits().sortedBy { it.id }.toList()) {
+                // an earlier promotion can destroy a unit
+                if (!unit.isDestroyed) promote(unit, random)
+            }
         }
     }
 
