@@ -92,6 +92,8 @@ class CivAi : IsPartOfGameInfoSerialization {
     var isCramped = false
     /** Aggression of other majors this player has seen, by civID */
     var aggressionMemory = HashMap<String, AggressionMemory>()
+    /** CvCitySpecializationAI state, see [CitySpecializationAi] */
+    var citySpecialization = CitySpecializationState()
     //endregion
 
     //region Transients
@@ -125,6 +127,7 @@ class CivAi : IsPartOfGameInfoSerialization {
         toReturn.militaryStrategies.putAll(militaryStrategies)
         toReturn.isCramped = isCramped
         for ((civId, memory) in aggressionMemory) toReturn.aggressionMemory[civId] = memory.clone()
+        toReturn.citySpecialization = citySpecialization.clone()
         return toReturn
     }
 
