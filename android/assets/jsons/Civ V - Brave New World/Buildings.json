@@ -404,6 +404,8 @@
 	},
 	{
 		"name": "Writers' Guild",
+		"cost": 100,
+		"isNationalWonder": true,
 		"maintenance": 1,
 		"specialistSlots": {Writer: 2},
 		"greatPersonPoints": {"Great Writer": 1},
@@ -566,6 +568,7 @@
 	{
 		"name": "Artists' Guild",
 		"cost": 150,
+		"isNationalWonder": true,
 		"maintenance": 1,
 		"specialistSlots": {Artist: 2},
 		"greatPersonPoints": {"Great Artist": 2},
@@ -771,6 +774,8 @@
 	},
 	{
 		"name": "Musicians' Guild",
+		"cost": 200,
+		"isNationalWonder": true,
 		"maintenance": 1,
 		"specialistSlots": {Musician: 2},
 		"greatPersonPoints": {"Great Musician": 3},
