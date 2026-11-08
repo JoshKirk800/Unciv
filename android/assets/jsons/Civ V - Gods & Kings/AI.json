@@ -869,6 +869,7 @@
     "PLOT_VISIBILITY_RANGE": 1,
     "POLICY_WEIGHT_PERCENT_DROP_NEW_BRANCH": 78,
     "POLICY_WEIGHT_PROPAGATION_LEVELS": 2,
+    "POLICY_WEIGHT_PROPAGATION_PERCENT": 25,
     "QUEST_DISABLED_BULLY_CITY_STATE": 0,
     "QUEST_DISABLED_CONNECT_RESOURCE": 0,
     "QUEST_DISABLED_CONSTRUCT_WONDER": 0,
@@ -7781,7 +7782,10 @@
         "AIUnitUpgradePercent": 50,
         "AIInflationPercent": 100,
         "AIPerEraModifier": 0,
-        "AIAdvancedStartPercent": 100
+        "AIAdvancedStartPercent": 100,
+        "PolicyNumOptionsConsidered": 10,
+        "TechNumOptionsConsidered": 10,
+        "CityProductionNumOptionsConsidered": 10
       }
     },
     {
@@ -7808,7 +7812,10 @@
         "AIUnitUpgradePercent": 50,
         "AIInflationPercent": 100,
         "AIPerEraModifier": 0,
-        "AIAdvancedStartPercent": 100
+        "AIAdvancedStartPercent": 100,
+        "PolicyNumOptionsConsidered": 4,
+        "TechNumOptionsConsidered": 4,
+        "CityProductionNumOptionsConsidered": 4
       }
     },
     {
@@ -7835,7 +7842,10 @@
         "AIUnitUpgradePercent": 50,
         "AIInflationPercent": 100,
         "AIPerEraModifier": 0,
-        "AIAdvancedStartPercent": 100
+        "AIAdvancedStartPercent": 100,
+        "PolicyNumOptionsConsidered": 3,
+        "TechNumOptionsConsidered": 3,
+        "CityProductionNumOptionsConsidered": 3
       }
     },
     {
@@ -7862,7 +7872,10 @@
         "AIUnitUpgradePercent": 50,
         "AIInflationPercent": 100,
         "AIPerEraModifier": 0,
-        "AIAdvancedStartPercent": 100
+        "AIAdvancedStartPercent": 100,
+        "PolicyNumOptionsConsidered": 2,
+        "TechNumOptionsConsidered": 2,
+        "CityProductionNumOptionsConsidered": 2
       }
     },
     {
@@ -7889,7 +7902,10 @@
         "AIUnitUpgradePercent": 50,
         "AIInflationPercent": 100,
         "AIPerEraModifier": -2,
-        "AIAdvancedStartPercent": 120
+        "AIAdvancedStartPercent": 120,
+        "PolicyNumOptionsConsidered": 2,
+        "TechNumOptionsConsidered": 2,
+        "CityProductionNumOptionsConsidered": 2
       }
     },
     {
@@ -7916,7 +7932,10 @@
         "AIUnitUpgradePercent": 50,
         "AIInflationPercent": 100,
         "AIPerEraModifier": -3,
-        "AIAdvancedStartPercent": 135
+        "AIAdvancedStartPercent": 135,
+        "PolicyNumOptionsConsidered": 2,
+        "TechNumOptionsConsidered": 2,
+        "CityProductionNumOptionsConsidered": 2
       }
     },
     {
@@ -7943,7 +7962,10 @@
         "AIUnitUpgradePercent": 50,
         "AIInflationPercent": 100,
         "AIPerEraModifier": -4,
-        "AIAdvancedStartPercent": 150
+        "AIAdvancedStartPercent": 150,
+        "PolicyNumOptionsConsidered": 2,
+        "TechNumOptionsConsidered": 2,
+        "CityProductionNumOptionsConsidered": 2
       }
     },
     {
@@ -7970,7 +7992,10 @@
         "AIUnitUpgradePercent": 50,
         "AIInflationPercent": 100,
         "AIPerEraModifier": -5,
-        "AIAdvancedStartPercent": 170
+        "AIAdvancedStartPercent": 170,
+        "PolicyNumOptionsConsidered": 2,
+        "TechNumOptionsConsidered": 2,
+        "CityProductionNumOptionsConsidered": 2
       }
     }
   ]

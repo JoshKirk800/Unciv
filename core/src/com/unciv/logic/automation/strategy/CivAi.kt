@@ -94,6 +94,10 @@ class CivAi : IsPartOfGameInfoSerialization {
     var aggressionMemory = HashMap<String, AggressionMemory>()
     /** CvDiplomacyAI::m_paeMinorCivApproach: our approach to each city-state by civID, missing = [MinorCivApproach.Ignore] */
     var minorCivApproaches = HashMap<String, MinorCivApproach>()
+    /** CvDiplomacyAI war state memory (turns at war, war states, target values, military strength comparison), see [WarStateAi] */
+    var warStates = WarStateMemory()
+    /** CvCitySpecializationAI::m_iWonderCityID: the [com.unciv.logic.city.City.id] of the city chosen to build wonders, null if none */
+    var wonderCityId: String? = null
     //endregion
 
     //region Transients
@@ -128,6 +132,8 @@ class CivAi : IsPartOfGameInfoSerialization {
         toReturn.isCramped = isCramped
         for ((civId, memory) in aggressionMemory) toReturn.aggressionMemory[civId] = memory.clone()
         toReturn.minorCivApproaches.putAll(minorCivApproaches)
+        toReturn.warStates = warStates.clone()
+        toReturn.wonderCityId = wonderCityId
         return toReturn
     }
 
@@ -353,7 +359,8 @@ class CivAi : IsPartOfGameInfoSerialization {
 
     /**
      *  The strategic AI turn of this civilization, in CvPlayer::doTurn / doTurnPostDiplomacy order:
-     *  DoUpdateCramped, CvGrandStrategyAI::DoTurn (majors), then CvEconomicAI and CvMilitaryAI strategy loops, then each city's
+     *  DoUpdateCramped, CvGrandStrategyAI::DoTurn (majors), the war states of CvDiplomacyAI::DoTurn (majors, [WarStateAi.doTurn]),
+     *  then CvEconomicAI and CvMilitaryAI strategy loops, then each city's
      *  CvCityStrategyAI::DoTurn (in CvCity::doTurn). Runs for every living civilization except barbarians and spectators, human or AI,
      *  as in the original. City specialization (CvCitySpecializationAI::DoTurn) is not ported yet: [CityAi.specialization] stays unset.
      */
@@ -362,6 +369,7 @@ class CivAi : IsPartOfGameInfoSerialization {
         ensureInitialized()
         timeThis("AI.Cramped") { updateCramped() }
         if (civ.isMajorCiv) timeThis("AI.GrandStrategy") { GrandStrategyAi.doTurn(civ) }
+        if (civ.isMajorCiv) timeThis("AI.WarStates") { WarStateAi.doTurn(civ) }
         timeThis("AI.EconomicStrategies") {
             if (runStrategyLoop(rules.economicStrategies, economicStrategies, civ, checkFirstTurn = true) { StrategyTests.test(civ, it) })
                 onStrategiesChanged()
