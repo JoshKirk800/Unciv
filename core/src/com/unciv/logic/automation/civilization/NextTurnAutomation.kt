@@ -8,7 +8,7 @@ import com.unciv.view.isNuclearWeapon
 import com.unciv.view.isAtWar
 import com.unciv.UncivGame
 import com.unciv.logic.automation.Automation
-import com.unciv.logic.automation.ThreatLevel
+import com.unciv.logic.automation.diplomacy.PromiseAi
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.unit.CivilianUnitAutomation
 import com.unciv.logic.automation.unit.EspionageAutomation
@@ -53,25 +53,19 @@ object NextTurnAutomation {
         timeThis("AI.respondToTradeRequests") { TradeAutomation.respondToTradeRequests(civInfo, tradeAndChangeState) }
 
         if (tradeAndChangeState && civInfo.isMajorCiv) {
-            if (!civView.ruleset.modOptions.hasUnique(UniqueType.DiplomaticRelationshipsCannotChange)) timeThis("AI.diplomacyWarPeace") {
-                DiplomacyAutomation.declareWar(civView)
-                DiplomacyAutomation.offerPeaceTreaty(civView)
-                DiplomacyAutomation.askForHelp(civView)
-                DiplomacyAutomation.offerDeclarationOfFriendship(civView)
-            }
+            // CvPlayerAI::AI_doTurnPostDiplomacy order: CvDiplomacyAI::DoTurn (war, demands, planning), then the contacts, the deals, the requests
+            val relationshipsCanChange = !civView.ruleset.modOptions.hasUnique(UniqueType.DiplomaticRelationshipsCannotChange)
+            if (relationshipsCanChange) timeThis("AI.DiplomacyActions") { DiplomacyAutomation.doTurn(civInfo) }
             if (civView.isReligionEnabled()) {
                 timeThis("AI.spendFaithOnReligion") { ReligionAutomation.spendFaithOnReligion(civInfo) }
             }
 
-            timeThis("AI.diplomacyOffers") {
-                DiplomacyAutomation.denounce(civView)
-                DiplomacyAutomation.offerToEstablishEmbassy(civView)
-                DiplomacyAutomation.offerOpenBorders(civView)
-                DiplomacyAutomation.offerResearchAgreement(civView)
-                DiplomacyAutomation.offerDefensivePact(civView)
-                DiplomacyAutomation.checkMilitaryPresenceNearBorder(civView)
-            }
+            if (relationshipsCanChange) DiplomacyAutomation.contactMajorCivs(civInfo)
             timeThis("AI.exchangeLuxuries") { TradeAutomation.exchangeLuxuries(civInfo) }
+            if (relationshipsCanChange) {
+                DiplomacyAutomation.contactMajorCivsAfterOffers(civInfo)
+                DiplomacyAutomation.checkMilitaryPresenceNearBorder(civInfo)
+            }
             if (civInfo.gameInfo.ruleset.greatWorks.isNotEmpty()) timeThis("AI.greatWorks") {
                 GreatWorkFunctions.optimizeTheming(civInfo)
                 TradeAutomation.exchangeGreatWorks(civInfo)
@@ -146,8 +140,8 @@ object NextTurnAutomation {
             val demandingCiv = civInfo.gameInfo.getCivilization(popupAlert.value)
             if (demandingCiv.isDefeated()) return
             val diploManager = civInfo.getDiplomacyManager(demandingCiv)!!
-            if (Automation.threatAssessment(civView, GameView(civInfo.gameInfo, civInfo).getForeignCivView(demandingCiv)) >= ThreatLevel.High
-                || diploManager.isRelationshipLevelGT(RelationshipLevel.Ally))
+            PromiseAi.onDemandAsked(demandingCiv, civInfo, demand)
+            if (PromiseAi.isDemandAcceptable(civInfo, demandingCiv, demand))
                 diploManager.agreeToDemand(demand)
             else diploManager.refuseDemand(demand)
             return
@@ -160,7 +154,7 @@ object NextTurnAutomation {
         if (requestingCiv.isDefeated()) return
         val diploManager = civInfo.getDiplomacyManager(requestingCiv)!!
         if (civInfo.diplomacyFunctions.canSignDeclarationOfFriendshipWith(requestingCiv)
-            && DiplomacyAutomation.wantsToSignDeclarationOfFrienship(civView, requestingCiv)) {
+            && DiplomacyAutomation.isDoFAcceptable(civInfo, requestingCiv)) {
             diploManager.signDeclarationOfFriendship()
             requestingCiv.addNotification("We have signed a Declaration of Friendship with [${civView.civName}]!", NotificationCategory.Diplomacy, NotificationIcon.Diplomacy, civView.civName)
         } else {
@@ -602,23 +596,12 @@ object NextTurnAutomation {
             diplomacyManager.hasFlag(demand.agreedToDemand) -> {
                 offendingCiv.popupAlerts.add(PopupAlert(demand.violationDiscoveredAlert, civView.civID))
                 diplomacyManager.setFlag(demand.willIgnoreViolation, if (demand == Demand.DoNotDigInOurLands) 1 else 100, demand != Demand.DoNotDigInOurLands)
-                if (demand == Demand.DoNotDigInOurLands)
-                    diplomacyManager.setModifier(demand.betrayedPromiseDiplomacyModifier, -30f)
-                else diplomacyManager.addDiminishingModifier(demand.betrayedPromiseDiplomacyModifier, -20f)
-                if (demand == Demand.DoNotAttackUs) {
-                    // relationship penalty with all common known civs, similar to DoF backstabbing
-                    // TODO: apply WarmongerHatred personality trait here?
-                    for (thirdPartyCiv in diplomacyManager.getCommonKnownCivs()) {
-                        thirdPartyCiv.getDiplomacyManager(offendingCiv)!!
-                            .addDiminishingModifier(DiplomaticModifiers.BetrayedPromiseToNotAttackOtherCiv, -10f)
-                    }
-                }
+                PromiseAi.onDemandBroken(civInfo, offendingCiv, demand)
                 diplomacyManager.removeFlag(demand.agreedToDemand)
             }
             // violation before promise
             else -> {
-                if (demand == Demand.DoNotDigInOurLands || demand == Demand.DoNotAttackUs ||
-                    Automation.threatAssessment(civView, GameView(civInfo.gameInfo, civInfo).getForeignCivView(offendingCiv)) < ThreatLevel.High)
+                if (PromiseAi.wantsPromiseFrom(civInfo, offendingCiv, demand))
                     offendingCiv.popupAlerts.add(PopupAlert(demand.demandAlert, civView.civID))
             }
         }

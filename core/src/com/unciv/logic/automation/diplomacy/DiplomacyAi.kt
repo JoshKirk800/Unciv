@@ -6,6 +6,7 @@ import com.unciv.logic.automation.strategy.TargetValue
 import com.unciv.logic.automation.strategy.WarStateAi
 import com.unciv.logic.civilization.Civilization
 import org.jetbrains.annotations.VisibleForTesting
+import yairm210.purity.annotations.Readonly
 import com.unciv.models.ruleset.ai.MajorCivApproach
 
 /** A coop war agreement with one partner against one target (CvDiplomacyAI::m_ppaacCoopWarAcceptedState / m_ppaaiCoopWarCounter) */
@@ -61,8 +62,8 @@ class MajorCivMemory : IsPartOfGameInfoSerialization {
     var turnMadePeace = -1
     /** CvTeam::GetNumTurnsLockedIntoWar */
     var turnsLockedIntoWar = 0
-    /** CvDiplomacyAI::IsMusteringForAttack: our attack operation against them is in position */
-    var musteringForAttack = false
+    /** Our attack operation against them exists (CvMilitaryAI::GetSneakAttackOperation stand-in: the army has been formed, see [WarAi]) */
+    var attackOperation = false
 
     // Disputes and postures
     var landDispute = DisputeLevel.None
@@ -114,7 +115,6 @@ class MajorCivMemory : IsPartOfGameInfoSerialization {
     // Requests, demands, promises
     /** CvDiplomacyAI::m_paiDemandCounter: turns since they made a demand of us, -1 never */
     var demandCounter = -1
-    var demandTooSoonNumTurns = -1
     var noSettleRequestEverAsked = false
     var stopSpyingRequestEverAsked = false
     var madeMilitaryPromise = false
@@ -153,7 +153,7 @@ class MajorCivMemory : IsPartOfGameInfoSerialization {
         copy.economicStrength = economicStrength; copy.militaryThreat = militaryThreat; copy.warmongerThreat = warmongerThreat
         copy.warmongerAmount = warmongerAmount; copy.treatyWillingToOffer = treatyWillingToOffer
         copy.treatyWillingToAccept = treatyWillingToAccept; copy.numWarsFought = numWarsFought; copy.turnMadePeace = turnMadePeace
-        copy.turnsLockedIntoWar = turnsLockedIntoWar; copy.musteringForAttack = musteringForAttack
+        copy.turnsLockedIntoWar = turnsLockedIntoWar; copy.attackOperation = attackOperation
         copy.landDispute = landDispute; copy.lastTurnLandDispute = lastTurnLandDispute; copy.wonderDispute = wonderDispute
         copy.minorCivDispute = minorCivDispute; copy.numWondersBeatenTo = numWondersBeatenTo; copy.expansionPosture = expansionPosture
         copy.plotBuyingPosture = plotBuyingPosture; copy.militaryPosture = militaryPosture
@@ -173,7 +173,7 @@ class MajorCivMemory : IsPartOfGameInfoSerialization {
         copy.friendDenouncedUs = friendDenouncedUs; copy.friendDeclaredWarOnUs = friendDeclaredWarOnUs
         copy.declaredWarOnFriendValue = declaredWarOnFriendValue
         for ((target, entry) in coopWars) copy.coopWars[target] = entry.clone()
-        copy.demandCounter = demandCounter; copy.demandTooSoonNumTurns = demandTooSoonNumTurns
+        copy.demandCounter = demandCounter
         copy.noSettleRequestEverAsked = noSettleRequestEverAsked; copy.stopSpyingRequestEverAsked = stopSpyingRequestEverAsked
         copy.madeMilitaryPromise = madeMilitaryPromise; copy.brokenMilitaryPromise = brokenMilitaryPromise
         copy.ignoredMilitaryPromise = ignoredMilitaryPromise
@@ -202,8 +202,8 @@ class DiplomacyAi : IsPartOfGameInfoSerialization {
     /** CvDiplomacyAI::m_eDemandTargetPlayer, civID */
     var demandTarget: String? = null
     var demandReady = false
-    /** CvDiplomacyAI::GetTotalLandDisputeLevel of the last update */
-    var totalLandDisputeLevel = 0
+    /** CvDiplomacyAI::GetTotalLandDisputeLevel as of the last [DiplomacyTurn.doTurn] (the disputes it sums change only there) */
+    var lastTotalLandDisputeLevel = 0
 
     @Transient lateinit var civ: Civilization
 
@@ -212,7 +212,7 @@ class DiplomacyAi : IsPartOfGameInfoSerialization {
         for ((id, memory) in memories) copy.memories[id] = memory.clone()
         copy.demandTarget = demandTarget
         copy.demandReady = demandReady
-        copy.totalLandDisputeLevel = totalLandDisputeLevel
+        copy.lastTotalLandDisputeLevel = lastTotalLandDisputeLevel
         return copy
     }
 
@@ -228,6 +228,7 @@ class DiplomacyAi : IsPartOfGameInfoSerialization {
      *  CvDiplomacyAI::GetMajorCivApproach. With [hideTrueFeelings] the approach the AI shows: Deceptive looks Friendly, War shows its war face.
      *  Before the first evaluation the approach is Neutral.
      */
+    @Readonly
     fun approachTowards(other: Civilization, hideTrueFeelings: Boolean = false): MajorCivApproach {
         val memory = memories[other.civID] ?: return MajorCivApproach.Neutral
         val approach = memory.approach ?: return MajorCivApproach.Neutral
@@ -244,21 +245,27 @@ class DiplomacyAi : IsPartOfGameInfoSerialization {
     }
 
     /** CvDiplomacyAI::GetMajorCivOpinion */
+    @Readonly
     fun opinionOf(other: Civilization): MajorCivOpinion = memories[other.civID]?.opinion ?: MajorCivOpinion.Neutral
 
     /** CvDiplomacyAI::GetMajorCivOpinionWeight of the last update (positive = bad) */
+    @Readonly
     fun opinionWeightOf(other: Civilization): Int = memories[other.civID]?.opinionWeight ?: 0
 
     /** CvDiplomacyAI::GetWarProjection, null = NO_WAR_PROJECTION_TYPE */
+    @Readonly
     fun warProjection(other: Civilization): WarProjection? = memories[other.civID]?.warProjection
 
     /** CvDiplomacyAI::GetWarGoal, null = NO_WAR_GOAL_TYPE */
+    @Readonly
     fun warGoal(other: Civilization): WarGoal? = memories[other.civID]?.warGoal
 
     /** CvDiplomacyAI::GetTreatyWillingToOffer */
+    @Readonly
     fun treatyWillingToOffer(other: Civilization): PeaceTreatyType = memories[other.civID]?.treatyWillingToOffer ?: PeaceTreatyType.None
 
     /** CvDiplomacyAI::GetTreatyWillingToAccept */
+    @Readonly
     fun treatyWillingToAccept(other: Civilization): PeaceTreatyType = memories[other.civID]?.treatyWillingToAccept ?: PeaceTreatyType.None
 
     /** CvDiplomacyAI::GetPlayerTargetValue (kept by [WarStateAi]) */
@@ -268,27 +275,38 @@ class DiplomacyAi : IsPartOfGameInfoSerialization {
     fun militaryStrength(other: Civilization): StrengthLevel? = WarStateAi.militaryStrengthComparedToUs(civ, other)
 
     /** CvDiplomacyAI::GetPlayerEconomicStrengthComparedToUs */
+    @Readonly
     fun economicStrength(other: Civilization): StrengthLevel? = memories[other.civID]?.economicStrength
 
     /** CvDiplomacyAI::GetPlayerNumTurnsAtWar (kept by [WarStateAi]) */
     fun turnsAtWarWith(other: Civilization): Int = WarStateAi.turnsAtWar(civ, other)
 
     /** CvDiplomacyAI::GetMilitaryThreat */
+    @Readonly
     fun militaryThreat(other: Civilization): AiThreat = memories[other.civID]?.militaryThreat ?: AiThreat.None
 
     /** CvDiplomacyAI::GetWarmongerThreat */
+    @Readonly
     fun warmongerThreat(other: Civilization): AiThreat = memories[other.civID]?.warmongerThreat ?: AiThreat.None
 
     /** CvDiplomacyAI::GetLandDisputeLevel */
+    @Readonly
     fun landDisputeLevel(other: Civilization): DisputeLevel = memories[other.civID]?.landDispute ?: DisputeLevel.None
 
     /** CvDiplomacyAI::GetWarDamageLevel: how much [other] has hurt us */
+    @Readonly
     fun warDamageLevel(other: Civilization): WarDamageLevel = memories[other.civID]?.warDamageLevel ?: WarDamageLevel.None
 
+    /** CvDiplomacyAI::GetTotalLandDisputeLevel: the land disputes with all players, weighted by AI_DIPLO_LAND_DISPUTE_WEIGHT_* */
+    @Readonly
+    fun totalLandDisputeLevel(): Int = lastTotalLandDisputeLevel
+
     /** CvDiplomacyAI::IsWantsPeaceWithPlayer: the war goal has been PEACE for REQUEST_PEACE_TURN_THRESHOLD turns (updated by [DiplomacyTurn]) */
+    @Readonly
     fun isWantsPeaceWith(other: Civilization): Boolean = memories[other.civID]?.wantsPeace == true
 
     /** CvDiplomacyAI::IsWantsResearchAgreementWithPlayer (DoUpdatePlanningExchanges) */
+    @Readonly
     fun wantsResearchAgreementWith(other: Civilization): Boolean = memories[other.civID]?.wantsResearchAgreement == true
 
     /** CvDiplomacyAI::GetNumOurEnemiesPlayerAtWarWith: how many of the valid players we fight are also at war with [other] */
@@ -296,14 +314,38 @@ class DiplomacyAi : IsPartOfGameInfoSerialization {
         civ.gameInfo.civilizations.count { isPlayerValid(it) && civ.isAtWarWith(it) && other.isAtWarWith(it) }
 
     /** CvTeam::GetTurnMadePeaceTreatyWithTeam: game turn, -1 = never */
+    @Readonly
     fun turnMadePeaceWith(other: Civilization): Int = memories[other.civID]?.turnMadePeace ?: -1
 
+    /** CvDiplomacyAI::GetGlobalCoopWarAcceptedState(ePlayer) >= COOP_WAR_STATE_SOON: a coop war with [other] as partner is agreed against anyone */
+    @Readonly
+    fun isCoopWarSoon(other: Civilization): Boolean {
+        val wars = memories[other.civID]?.coopWars ?: return false
+        for (entry in wars.values) {
+            val state = entry.state
+            if (state != null && state >= CoopWarState.Soon) return true
+        }
+        return false
+    }
+
     /** DoContactPlayer sends one statement or offer per player per turn: true when one was sent to [other] this turn */
+    @Readonly
     fun hasMadeStatementThisTurn(other: Civilization): Boolean = memories[other.civID]?.lastContactTurn == civ.gameInfo.turns
 
     /** Records a statement or offer to [other] this turn (see [hasMadeStatementThisTurn]) */
     fun markStatementMade(other: Civilization) {
         memoryOf(other).lastContactTurn = civ.gameInfo.turns
+    }
+
+    /** CvDiplomacyAI::ChangeRecentTradeValue: what a deal with [from] was worth to us (CvDealAI::DoAcceptedDeal: in full if generous, else half) */
+    fun changeRecentTradeValue(from: Civilization, value: Int) {
+        val memory = memoryOf(from)
+        memory.recentTradeValue = maxOf(0, memory.recentTradeValue + value)
+    }
+
+    /** CvDiplomacyAI::ChangeRecentAssistValue: negative = [from] helped us, positive = they refused */
+    fun changeRecentAssistValue(from: Civilization, value: Int) {
+        memoryOf(from).recentAssistValue += value
     }
 
     /** Sets the approach towards [other] directly (scenario setup and tests) */

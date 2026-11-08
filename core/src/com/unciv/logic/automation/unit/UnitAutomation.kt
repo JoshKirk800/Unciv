@@ -1,5 +1,6 @@
 package com.unciv.logic.automation.unit
 
+import com.unciv.logic.automation.diplomacy.WarGoal
 import com.unciv.view.hasMovement
 import com.unciv.view.isAirUnit
 import com.unciv.view.isCivilian
@@ -521,8 +522,8 @@ object UnitAutomation {
             val diploManager = civ.getDiplomacyManagerWith(targetCiv)!!
             if (diploManager.hasFlag(DiplomacyFlags.Denunciation)
                 || diploManager.hasModifier(DiplomaticModifiers.Denunciation)) return true
-            if (diploManager.hasFlag(DiplomacyFlags.WaryOf) && diploManager.getFlag(DiplomacyFlags.WaryOf) < 0) return true
-            return false
+            // CvDiplomacyAI war goal PREPARE: we are mustering an attack on them
+            return civ.getCiv().ai.diplomacy.warGoal(targetCiv.getCiv()) == WarGoal.Prepare
         }
 
         // Prepare against the civs we're actually at war with - only if there are none, against the ones we might go to war with

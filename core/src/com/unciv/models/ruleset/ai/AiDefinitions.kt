@@ -128,3 +128,36 @@ class PolicyBranchAiDef : INamed {
     var firstAdopterFreePolicies = 0
     var secondAdopterFreePolicies = 0
 }
+
+/** Eras.DiploEmphasisReligion / DiploEmphasisLatePolicies, by Unciv era name (religion and ideology opinion of CvDiplomacyAI) */
+class EraDiplomacyDef : INamed {
+    override var name = ""
+    var diploEmphasisReligion = 0
+    var diploEmphasisLatePolicies = 0
+}
+
+/** GameSpeeds.RelationshipDuration / OpinionDurationPercent, by Unciv speed name (XML defaults: standard speed) */
+class GameSpeedDiplomacyDef : INamed {
+    override var name = ""
+    var relationshipDuration = 50
+    var opinionDurationPercent = 100
+}
+
+/** Worlds.EstimatedNumCities, by Unciv map size name (CvDiplomacyAIHelpers::GetWarmongerOffset) */
+class WorldSizeDef : INamed {
+    override var name = ""
+    var estimatedNumCities = 52
+}
+
+/** One slot of a MultiUnitFormation: the unit AI types that fill it and whether the formation needs it */
+class FormationSlotDef {
+    var primaryUnitAi = ""
+    var secondaryUnitAi = ""
+    var required = false
+}
+
+/** MultiUnitFormation_SlotEntries by formation type (CvMilitaryAI::IsAttackReady) */
+class MultiUnitFormationDef : INamed {
+    override var name = ""
+    var slots = ArrayList<FormationSlotDef>()
+}

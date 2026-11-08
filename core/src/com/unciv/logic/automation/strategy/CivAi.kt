@@ -4,6 +4,7 @@ import com.unciv.Constants
 import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.diplomacy.DiplomacyAi
+import com.unciv.logic.automation.diplomacy.DiplomacyTurn
 import com.unciv.logic.civilization.Civilization
 import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.ai.AiRuleset
@@ -383,6 +384,7 @@ class CivAi : IsPartOfGameInfoSerialization {
     /**
      *  The strategic AI turn of this civilization, in CvPlayer::doTurn / doTurnPostDiplomacy order:
      *  DoUpdateCramped, CvGrandStrategyAI::DoTurn (majors), the war states of CvDiplomacyAI::DoTurn (majors, [WarStateAi.doTurn]),
+     *  the rest of CvDiplomacyAI::DoTurn (majors, [DiplomacyTurn.doTurn]),
      *  then CvEconomicAI::DoTurn (recon state and antiquity sites, the strategy loop, then for AI players plot purchases and worker
      *  disbanding - [EconomicAi]), CvMilitaryAI::DoTurn (base data and defense states, the strategy loop, then for AI players offensive
      *  purchases and obsolete unit disbanding - [MilitaryAi]), CvCitySpecializationAI::DoTurn (as in doTurnPostDiplomacy), then each
@@ -396,6 +398,7 @@ class CivAi : IsPartOfGameInfoSerialization {
         if (civ.isMajorCiv) timeThis("AI.GrandStrategy") { GrandStrategyAi.doTurn(civ) }
         if (civ.isMajorCiv) timeThis("AI.WarStates") { WarStateAi.doTurn(civ) }
         if (civ.isCityState) minorCivStatus = MinorCivStatusAi.status(civ)
+        if (civ.isMajorCiv) timeThis("AI.Diplomacy") { DiplomacyTurn.doTurn(civ) }
         timeThis("AI.EconomicStrategies") {
             economic.doTurnBeforeStrategies(civ)
             if (runStrategyLoop(rules.economicStrategies, economicStrategies, civ, checkFirstTurn = true) { StrategyTests.test(civ, it) })

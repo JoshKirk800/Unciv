@@ -37,5 +37,5 @@ enum class CoopWarState { Rejected, Soon, Accepted }
 /** The DiploStatementTypes this port sends between AIs, kept in the statement log for their resend intervals */
 enum class DiploStatement {
     WorkWithUs, WorkWithUsRandFailed, DenounceFriend, Denounce, DenounceRandFailed, RequestFriendDenounce, CoopWarRequest,
-    Demand, Request, RequestRandFailed, RequestPeace,
+    Demand, Request, RequestRandFailed, RequestPeace, AggressiveMilitaryWarning,
 }

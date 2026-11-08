@@ -120,6 +120,8 @@ class TradeLogic(val ourCivilization: Civilization, val otherCivilization: Civil
         return offers
     }
 
+    /** @param applyGifts unused: Brave New World has no gift bank (CvDealAI values deals without one); kept for the callers */
+    @Suppress("UNUSED_PARAMETER")
     fun acceptTrade(applyGifts: Boolean = true) {
         val ourDiploManager = ourCivilization.getDiplomacyManager(otherCivilization)!!
         // A stale or one-sided request must never execute a partial trade.
@@ -240,29 +242,6 @@ class TradeLogic(val ourCivilization: Civilization, val otherCivilization: Civil
             }
         }
 
-        // We shouldn't evaluate trades if we are doing a peace treaty
-        // Their value can be so big it throws the gift system out of wack
-        // Also, offers for peace/war with a third nation are not a "gift"
-        val shouldChangeRelationshipDueToGiftedValue = applyGifts
-                && !currentTrade.ourOffers.any { 
-                    it.name == Constants.peaceTreaty
-                            || it.type == TradeOfferType.WarDeclaration
-                            || it.type == TradeOfferType.PeaceProposal
-                }
-        
-        if (shouldChangeRelationshipDueToGiftedValue) {
-            // Must evaluate before moving, or else cities have already moved and we get an exception
-            val ourGoldValueOfTrade = TradeEvaluation().getTradeAcceptability(currentTrade, ourCivilization, otherCivilization, includeDiplomaticGifts = false)
-            val theirGoldValueOfTrade = TradeEvaluation().getTradeAcceptability(currentTrade.reverse(), otherCivilization, ourCivilization, includeDiplomaticGifts = false)
-            
-            if (ourGoldValueOfTrade > theirGoldValueOfTrade) {
-                val isPureGift = currentTrade.ourOffers.isEmpty()
-                ourDiploManager.giftGold(ourGoldValueOfTrade - theirGoldValueOfTrade.coerceAtLeast(0), isPureGift)
-            } else if (theirGoldValueOfTrade > ourGoldValueOfTrade) {
-                val isPureGift = currentTrade.theirOffers.isEmpty()
-                theirDiploManager.giftGold(theirGoldValueOfTrade - ourGoldValueOfTrade.coerceAtLeast(0), isPureGift)
-            }
-        }
         for ((ours, theirs) in ourWorks.zip(theirWorks)) {
             val ourSlot = GreatWorkFunctions.findTradeSlot(ourCivilization, ours.name) ?: return
             val theirSlot = GreatWorkFunctions.findTradeSlot(otherCivilization, theirs.name) ?: return

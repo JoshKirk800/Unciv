@@ -60,7 +60,7 @@ object TradeAutomation {
         // AIs counteroffering each other could be problematic if they ping-pong back and forth forever
         // If this happens, that means our trade automation doesn't settle into an equilibrium that's favourable to both parties, so that should be updated when observed
         val evaluation = TradeEvaluation()
-        var deltaInOurFavor = evaluation.getTradeAcceptability(tradeRequest.trade, civInfo, otherCiv, true)
+        var deltaInOurFavor = evaluation.getTradeAcceptability(tradeRequest.trade, civInfo, otherCiv)
         if (deltaInOurFavor > 0) deltaInOurFavor = (deltaInOurFavor / 1.1f).toInt() // They seem very interested in this deal, let's push it a bit.
         val tradeLogic = TradeLogic(civInfo, otherCiv)
 

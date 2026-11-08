@@ -4,7 +4,9 @@ import com.unciv.logic.automation.civilization.DiplomacyAutomation
 import com.unciv.logic.civilization.AlertType
 import com.unciv.logic.civilization.Civilization
 
-/** After creating the required flags, modifiers, and alert type, the only remaining work should be
+/** Requests one civilization makes of another (CvDiplomacyRequests / the promises of CvDiplomacyAI). What they do to opinion is kept in
+ * the promiser's memory by [com.unciv.logic.automation.diplomacy.PromiseAi].
+ * After creating the required flags and alert type, the only remaining work should be
  * - Adding the new alerts in the when() of AlertPopup.kt
  * - Triggering the violation (adding the violationOccurred flag) from somewhere in the code
  * (Translation templates are found automatically)
@@ -15,9 +17,6 @@ enum class Demand(
     val agreedToDemand: DiplomacyFlags,
     val violationOccurred: DiplomacyFlags,
     val willIgnoreViolation: DiplomacyFlags,
-    val refusedDiplomaticModifier: DiplomaticModifiers,
-    val betrayedPromiseDiplomacyModifier: DiplomaticModifiers,
-    val fulfilledPromiseDiplomacyModifier: DiplomaticModifiers?,
     val demandAlert: AlertType,
     val violationDiscoveredAlert: AlertType,
     val demandText: String,
@@ -37,9 +36,6 @@ enum class Demand(
         agreedToDemand = DiplomacyFlags.AgreedToNotSendSpies,
         violationOccurred = DiplomacyFlags.DiscoveredSpiesInOurCities,
         willIgnoreViolation = DiplomacyFlags.IgnoreThemSendingSpies,
-        refusedDiplomaticModifier = DiplomaticModifiers.RefusedToNotSendingSpiesToUs,
-        betrayedPromiseDiplomacyModifier = DiplomaticModifiers.BetrayedPromiseToNotSendingSpiesToUs,
-        fulfilledPromiseDiplomacyModifier = DiplomaticModifiers.FulfilledPromiseToNotSpy,
         demandAlert = AlertType.DemandToStopSpyingOnUs,
         violationDiscoveredAlert = AlertType.SpyingOnUsDespiteOurPromise,
         demandText = "Stop spying on us.",
@@ -57,9 +53,6 @@ enum class Demand(
         agreedToDemand = DiplomacyFlags.AgreedToNotSpreadReligion,
         violationOccurred = DiplomacyFlags.SpreadReligionInOurCities,
         willIgnoreViolation = DiplomacyFlags.IgnoreThemSpreadingReligion,
-        refusedDiplomaticModifier = DiplomaticModifiers.RefusedToNotSpreadReligionToUs,
-        betrayedPromiseDiplomacyModifier = DiplomaticModifiers.BetrayedPromiseToNotSpreadReligionToUs,
-        fulfilledPromiseDiplomacyModifier = DiplomaticModifiers.FulfilledPromiseToNotSpreadReligion,
         demandAlert = AlertType.DemandToStopSpreadingReligion,
         violationDiscoveredAlert = AlertType.ReligionSpreadDespiteOurPromise,
         demandText = "Please don't spread your religion to us.",
@@ -77,9 +70,6 @@ enum class Demand(
         agreedToDemand = DiplomacyFlags.AgreedToNotSettleNearUs,
         violationOccurred = DiplomacyFlags.SettledCitiesNearUs,
         willIgnoreViolation = DiplomacyFlags.IgnoreThemSettlingNearUs,
-        refusedDiplomaticModifier = DiplomaticModifiers.RefusedToNotSettleCitiesNearUs,
-        betrayedPromiseDiplomacyModifier = DiplomaticModifiers.BetrayedPromiseToNotSettleCitiesNearUs,
-        fulfilledPromiseDiplomacyModifier = DiplomaticModifiers.FulfilledPromiseToNotSettleCitiesNearUs,
         demandAlert = AlertType.DemandToStopSettlingCitiesNear,
         violationDiscoveredAlert = AlertType.CitySettledNearOtherCivDespiteOurPromise,
         demandText = "Please don't settle new cities near us.",
@@ -95,9 +85,6 @@ enum class Demand(
         agreedToDemand = DiplomacyFlags.AgreedToNotDigInOurLands,
         violationOccurred = DiplomacyFlags.DugInOurLands,
         willIgnoreViolation = DiplomacyFlags.IgnoreThemDiggingInOurLands,
-        refusedDiplomaticModifier = DiplomaticModifiers.IgnoredRequestToStopDigging,
-        betrayedPromiseDiplomacyModifier = DiplomaticModifiers.BetrayedPromiseToNotDigInOurLands,
-        fulfilledPromiseDiplomacyModifier = null,
         demandAlert = AlertType.DemandToStopDiggingInOurLands,
         violationDiscoveredAlert = AlertType.DugInOurLandsDespitePromise,
         demandText = "Please stop digging up artifacts in our lands.",
@@ -118,9 +105,6 @@ enum class Demand(
         // second violation = declare war after promising not to
         violationOccurred = DiplomacyFlags.MilitaryPresenceNearBorderOrAttackedUsDespitePromise,
         willIgnoreViolation = DiplomacyFlags.IgnoreMilitaryPresenceNearBorder,
-        refusedDiplomaticModifier = DiplomaticModifiers.RefusedToPromiseNotToAttackUs,
-        betrayedPromiseDiplomacyModifier = DiplomaticModifiers.BetrayedPromiseToNotAttackUs,
-        fulfilledPromiseDiplomacyModifier = DiplomaticModifiers.FulfilledPromiseToNotAttackUs,
         demandAlert = AlertType.DemandToNotAttackUs,
         violationDiscoveredAlert = AlertType.AttackedUsDespitePromise,
         demandText = "We have noticed substantial military activity near our borders. How should we interpret this?",
