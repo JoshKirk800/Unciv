@@ -296,25 +296,4 @@ object MilitaryTargets {
     /** CvMilitaryAI::GetCoastalPlotAdjacentToTarget without an army: the first shallow water tile next to [target] */
     fun coastalPlotAdjacentToTarget(target: Tile): Tile? =
         target.neighbors.firstOrNull { it.isWater && it.getBaseTerrain().isCoast }
-
-    /** CvMilitaryAI::GetNearestCoastalCity: our coastal city nearest to a revealed coastal city of [enemy] on the same body of water */
-    fun nearestCoastalCity(civ: Civilization, enemy: Civilization): City? {
-        var best: City? = null
-        var bestDistance = Int.MAX_VALUE
-        val steps = civ.ai.military.steps
-        for (city in civ.cities) {
-            if (!city.isCoastal()) continue
-            val from = coastalPlotAdjacentToTarget(city.getCenterTile()) ?: continue
-            for (enemyCity in enemy.cities) {
-                if (!enemyCity.isCoastal() || !enemyCity.getCenterTile().isExplored(civ)) continue
-                val distance = city.getCenterTile().aerialDistanceTo(enemyCity.getCenterTile())
-                if (distance >= bestDistance) continue
-                val to = coastalPlotAdjacentToTarget(enemyCity.getCenterTile()) ?: continue
-                if (!steps.seaPathExists(civ, from, to)) continue
-                bestDistance = distance
-                best = city
-            }
-        }
-        return best
-    }
 }

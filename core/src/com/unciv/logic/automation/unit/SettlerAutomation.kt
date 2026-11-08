@@ -7,7 +7,6 @@ import com.unciv.logic.automation.strategy.AiOperation
 import com.unciv.logic.automation.strategy.AiOperationLogic
 import com.unciv.logic.automation.strategy.AiOperationType
 import com.unciv.logic.automation.strategy.NavalOperationLogic
-import com.unciv.logic.automation.strategy.OperationState
 import com.unciv.logic.automation.strategy.UnitAiType
 import com.unciv.logic.automation.strategy.UnitAiTypes
 import com.unciv.logic.map.mapunit.MapUnit
@@ -97,8 +96,4 @@ object SettlerAutomation {
     /** Settlers without an operation of their own that the operation pass launches one for: loose units with the SETTLE unit AI */
     fun isLooseSettler(unit: MapUnit): Boolean =
         unit.civ.ai.operations.armyOf(unit) == null && UnitAiTypes.current(unit) == UnitAiType.SETTLE && unit.hasUnique(UniqueType.FoundCity)
-
-    /** True if [settler] runs a found-city operation that has not found its escort yet (still recruiting or gathering with one) */
-    fun wantsEscort(settler: MapUnit): Boolean =
-        settler.civ.ai.operations.operationFor(settler)?.let { it.type == AiOperationType.FOUND_CITY && it.escorted && it.state != OperationState.MOVING_TO_TARGET } == true
 }

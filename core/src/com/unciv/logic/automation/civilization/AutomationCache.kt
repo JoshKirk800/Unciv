@@ -1,7 +1,6 @@
 package com.unciv.logic.automation.civilization
 
 import com.unciv.logic.automation.unit.PlotDanger
-import com.unciv.logic.automation.unit.tactical.TacticalMap
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.mapunit.MapUnit
 
@@ -19,7 +18,4 @@ class AutomationCache {
 
     /** The plot danger of [civ] for the current turn, see [com.unciv.logic.automation.strategy.CivAi.plotDanger] */
     fun plotDanger(civ: Civilization): PlotDanger = civ.ai.plotDanger
-
-    /** The tactical analysis map of [civ] for the current turn, see [com.unciv.logic.automation.unit.tactical.TacticalState.map] */
-    fun tacticalMap(civ: Civilization): TacticalMap = civ.ai.tactical.map
 }

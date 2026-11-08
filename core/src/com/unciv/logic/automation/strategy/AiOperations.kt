@@ -221,8 +221,6 @@ class AiOperations : IsPartOfGameInfoSerialization {
     fun firstOfType(type: AiOperationType, enemy: Civilization? = null, target: Tile? = null): AiOperation? =
         operations.firstOrNull { it.type == type && (enemy == null || it.enemyCivId == enemy.civID) && (target == null || it.targetTile == target.position) }
 
-    fun operationsOfType(type: AiOperationType): List<AiOperation> = operations.filter { it.type == type }
-
     /** CvPlayer::numOperationsOfType */
     fun numOperationsOfType(type: AiOperationType) = operations.count { it.type == type }
 
@@ -270,11 +268,6 @@ class AiOperations : IsPartOfGameInfoSerialization {
             if (naval == null || naval == operation.type.mixedLandNaval) return true
         }
         return false
-    }
-
-    /** CvPlayer::IsPlotTargetedForCity: a settler operation heads for a plot within 2 of [tile] */
-    fun isPlotTargetedForCity(tile: Tile): Boolean = operations.any { operation ->
-        operation.type.isEscorted && operation.targetTile?.let { civ.gameInfo.tileMap[it].aerialDistanceTo(tile) <= 2 } == true
     }
 
     /** The target tiles of the settler operations of this civilization other than [except] */

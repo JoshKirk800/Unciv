@@ -589,7 +589,7 @@ object GreatPersonAutomation {
     /**
      *  CvAIOperationMerchantDelegation / CvAIOperationConcertTour::ArmyInPosition: at the target, trade / perform the concert; at the target
      *  but unable to (the city-state was conquered, the borders closed), retarget; else move on. No target any more aborts the operation.
-     *  Deviation: the operations' escort is not formed (the military operations are not ported).
+     *  Deviation: these are not [com.unciv.logic.automation.strategy.AiOperations] operations, so the escort of CvAIEscortedOperation is not formed.
      */
     private fun continueOperation(unit: MapUnit, role: GreatPersonRole): Boolean {
         val target = unit.greatPersonTarget?.let { unit.civ.gameInfo.tileMap[it] } ?: return false

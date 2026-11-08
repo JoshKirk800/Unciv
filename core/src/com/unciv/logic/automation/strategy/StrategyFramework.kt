@@ -38,8 +38,6 @@ object StrategyTests {
         cityTests[strategyName] = test
     }
 
-    fun isRegistered(strategyName: String) = strategyName in playerTests || strategyName in cityTests
-
     internal fun test(civ: Civilization, def: PlayerStrategyDef): Boolean = playerTests[def.name]?.invoke(civ, def) ?: false
     internal fun test(city: City, def: CityStrategyDef): Boolean = cityTests[def.name]?.invoke(city, def) ?: false
 }

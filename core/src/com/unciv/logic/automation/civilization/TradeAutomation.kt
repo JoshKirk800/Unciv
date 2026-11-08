@@ -4,12 +4,9 @@ import com.unciv.Constants
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.diplomacy.DiplomacyTurn
 import com.unciv.logic.automation.strategy.PurchaseType
-import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.NotificationCategory
 import com.unciv.logic.civilization.NotificationIcon
-import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
-import com.unciv.logic.civilization.diplomacy.RelationshipLevel
 import com.unciv.logic.trade.Trade
 import com.unciv.logic.trade.TradeEvaluation
 import com.unciv.logic.trade.TradeLogic
@@ -214,35 +211,5 @@ object TradeAutomation {
         logic.acceptTrade()
         if (statement == DealStatement.ResearchAgreementOffer)
             civ.ai.purchaseSavings.cancelSaveForPurchase(PurchaseType.MajorCivTrade)
-    }
-
-    /** Offer an exact same-kind swap that improves our theming without damaging theirs. */
-    fun exchangeGreatWorks(civInfo: Civilization) {
-        if (civInfo.cities.none { it.greatWorks.getNumWorks() > 0 }) return
-        if (civInfo.cities.none { city -> city.greatWorks.getSlots().any { it.building.themingBonuses.isNotEmpty() } }) return
-        for (otherCiv in civInfo.getKnownCivs()) {
-            if (!otherCiv.isMajorCiv || otherCiv.isAtWarWith(civInfo)
-                || otherCiv.tradeRequests.any { it.requestingCiv == civInfo.civID }
-                || civInfo.getDiplomacyManager(otherCiv)!!.hasFlag(DiplomacyFlags.DeclinedGreatWorkExchange)
-                || civInfo.getDiplomacyManager(otherCiv)!!.isRelationshipLevelLE(RelationshipLevel.Enemy)) continue
-            val available = TradeLogic(civInfo, otherCiv)
-            val evaluation = TradeEvaluation()
-            offers@ for (ours in available.ourAvailableOffers.filter { it.type == TradeOfferType.GreatWork }) {
-                val ourSlot = GreatWorkFunctions.findTradeSlot(civInfo, ours.name) ?: continue
-                for (theirs in available.theirAvailableOffers.filter { it.type == TradeOfferType.GreatWork }) {
-                    val theirSlot = GreatWorkFunctions.findTradeSlot(otherCiv, theirs.name) ?: continue
-                    if (!GreatWorkFunctions.canExchange(ourSlot, theirSlot)
-                        || GreatWorkFunctions.themingGain(ourSlot, theirSlot) <= 0
-                        || GreatWorkFunctions.themingGain(theirSlot, ourSlot) < 0) continue
-                    val proposed = Trade()
-                    proposed.ourOffers.add(ours.copy())
-                    proposed.theirOffers.add(theirs.copy())
-                    if (!evaluation.isTradeValid(proposed, civInfo, otherCiv)
-                        || (otherCiv.isAI() && !evaluation.isTradeAcceptable(proposed.reverse(), otherCiv, civInfo))) continue
-                    otherCiv.tradeRequests.add(TradeRequest(civInfo.civID, proposed.reverse()))
-                    break@offers
-                }
-            }
-        }
     }
 }

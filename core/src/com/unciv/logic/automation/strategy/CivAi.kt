@@ -360,10 +360,6 @@ class CivAi : IsPartOfGameInfoSerialization {
     fun isEconomicStrategyActive(name: String) = name in economicStrategies
     /** CvMilitaryAI::IsUsingStrategy */
     fun isMilitaryStrategyActive(name: String) = name in militaryStrategies
-    /** CvEconomicAI::GetTurnStrategyAdopted: -1 if not active */
-    fun economicStrategyTurnAdopted(name: String): Int = economicStrategies[name] ?: -1
-    /** CvMilitaryAI::GetTurnStrategyAdopted: -1 if not active */
-    fun militaryStrategyTurnAdopted(name: String): Int = militaryStrategies[name] ?: -1
 
     /** EconomicAIHelpers / MilitaryAIHelpers / CityStrategyAIHelpers::GetWeightThresholdModifier: Σ personality flavor × the strategy's
      *  PersonalityFlavorThresholdMods. A test compares against `def.weightThreshold` plus this. */

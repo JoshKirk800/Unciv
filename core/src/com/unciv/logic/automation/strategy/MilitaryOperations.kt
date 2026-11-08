@@ -260,14 +260,6 @@ object MilitaryOperations {
             AiOperationLogic.addOperation(civ, AiOperationType.NAVAL_BOMBARDMENT)
     }
 
-    /** CvMilitaryAI::RequestPillageAttack (no caller in BNW's UpdateOperations) */
-    fun requestPillageAttack(civ: Civilization, enemy: Civilization): Boolean {
-        val formation = civ.ai.operations.formationDef("MUFORMATION_FAST_PILLAGERS") ?: return false
-        val fillable = numberOfFillableSlots(civ, formation, false)
-        if (fillable.filled < fillable.required || fillable.landReservesUsed > landReservesAvailable(civ)) return false
-        return isOperationOk(AiOperationLogic.addOperation(civ, AiOperationType.PILLAGE_ENEMY, enemy))
-    }
-
     private fun operationAgainst(civ: Civilization, vararg types: AiOperationType, enemy: Civilization): AiOperation? =
         types.firstNotNullOfOrNull { civ.ai.operations.firstOfType(it, enemy) }
 
