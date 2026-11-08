@@ -397,6 +397,19 @@ class CityReligionManager : IsPartOfGameInfoSerialization {
         return majorityReligion.name to sender.religion.pressureAmountToAdjacentCities(city, tradeConnection == true)
     }
 
+    /**
+     * CvCityReligions::WouldExertTradeRoutePressureToward: the majority religion of this city and the pressure a trade route to [target] would
+     * carry (the pressure of a route that starts here), `null` if this city has no major majority religion or [target] is close enough to be
+     * pressured without a route. Same units as [getPressuresFromSurroundingCities].
+     */
+    @Readonly
+    fun wouldExertTradeRoutePressureToward(target: City): Pair<String, Int>? {
+        val majorityReligion = getMajorityReligion() ?: return null
+        if (!majorityReligion.isMajorReligion()) return null
+        if (city.getCenterTile().aerialDistanceTo(target.getCenterTile()) <= getSpreadRange()) return null
+        return majorityReligion.name to pressureAmountToAdjacentCities(target, viaTradeRouteFromHere = true)
+    }
+
     @Readonly
     private fun getSpreadRange(): Int {
         var spreadRange = 10

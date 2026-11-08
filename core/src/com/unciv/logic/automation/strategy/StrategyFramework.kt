@@ -25,6 +25,7 @@ object StrategyTests {
         EconomicMilitaryStrategyTests.registerAll(this)
         CityStrategyAi.registerAll(this)
         GreatPeopleStrategyTests.registerAll(this)
+        EspionageTradeStrategyTests.registerAll(this)
     }
 
     /** Registers the test of an economic or military strategy: returns whether [Civilization] should be using it */

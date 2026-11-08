@@ -1,5 +1,6 @@
 package com.unciv.logic.civilization
 
+import com.unciv.logic.automation.strategy.GrandStrategyAi
 import com.unciv.logic.automation.unit.EspionageAutomation
 import com.unciv.logic.city.GreatWorkSlot
 import com.unciv.logic.league.League
@@ -108,15 +109,28 @@ class DiplomatTests {
     }
 
     @Test
-    fun `AI assigns a spare spy as a diplomat for Globalization`() {
+    fun `AI going for a diplomatic victory makes a diplomat of a spy once the other civilizations are worth a whole one`() {
+        // CvEspionageAI::FindTargetSpyNumbers: Globalization makes each other civilization worth 0.25 diplomats, floored after summing
+        a.ai.grandStrategy = GrandStrategyAi.UNITED_NATIONS
+        game.addCity(game.addCiv(), game.tileMap[5, 0], replacePalace = true)
+        game.addCity(game.addCiv(), game.tileMap[-5, 0], replacePalace = true)
         game.gameInfo.league = League().also { it.setTransients(game.gameInfo) }
         a.tech.addTechnology("Globalization")
         val spare = a.espionageManager.addSpy()
+        assertEquals(1, EspionageAutomation(a).findTargetSpyNumbers().diplomat)
         EspionageAutomation(a).automateSpies()
-        assertSame(a.getCapital(), spy.getCityOrNull())
-        assertSame(b.getCapital(), spare.getCityOrNull())
-        assertTrue(spare.isDiplomat)
-        assertEquals(SpyAction.Moving, spare.action)
+        assertSame(b.getCapital(), spy.getCityOrNull())
+        assertTrue(spy.isDiplomat)
+        assertEquals(SpyAction.Moving, spy.action)
+        assertFalse(spare.isDiplomat)
+    }
+
+    @Test
+    fun `AI without a diplomatic or culture strategy sends no diplomats`() {
+        game.gameInfo.league = League().also { it.setTransients(game.gameInfo) }
+        a.tech.addTechnology("Globalization")
+        a.espionageManager.addSpy()
+        assertEquals(0, EspionageAutomation(a).findTargetSpyNumbers().diplomat)
     }
 
     @Test

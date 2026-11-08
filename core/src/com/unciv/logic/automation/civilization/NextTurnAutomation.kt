@@ -100,7 +100,7 @@ object NextTurnAutomation {
             }
             if (civInfo.gameInfo.isEspionageEnabled()) {
                 // Do after cities are conquered
-                timeThis("AI.automateSpies") { EspionageAutomation(civInfo).automateSpies() }
+                EspionageAutomation(civInfo).automateSpies()
             }
         }
 
