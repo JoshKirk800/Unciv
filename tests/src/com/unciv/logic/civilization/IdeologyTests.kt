@@ -331,11 +331,11 @@ class IdeologyTests {
     fun `the AI that wants to conquer does not choose Freedom, one that wants science not Autocracy`() {
         reachEra(civ, "Modern era")
         game.gameInfo.gameParameters.victoryTypes = ArrayList(game.ruleset.victories.keys)
-        civ.nation.preferredVictoryType = "Domination"
+        civ.ai.grandStrategy = "AIGRANDSTRATEGY_CONQUEST"
         for (seed in 0 until 40) assertTrue(PolicyAutomation.chooseIdeology(civ, Random(seed))!!.name != "Freedom")
-        civ.nation.preferredVictoryType = "Scientific"
+        civ.ai.grandStrategy = "AIGRANDSTRATEGY_SPACESHIP"
         for (seed in 0 until 40) assertTrue(PolicyAutomation.chooseIdeology(civ, Random(seed))!!.name != "Autocracy")
-        civ.nation.preferredVictoryType = "Diplomatic"
+        civ.ai.grandStrategy = "AIGRANDSTRATEGY_UNITED_NATIONS"
         for (seed in 0 until 40) assertTrue(PolicyAutomation.chooseIdeology(civ, Random(seed))!!.name != "Order")
     }
 

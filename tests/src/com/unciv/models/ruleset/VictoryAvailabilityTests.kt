@@ -127,20 +127,10 @@ class VictoryAvailabilityTests {
 
         Assert.assertEquals(listOf(victoryName), availableVictories(human))
         Assert.assertEquals(listOf(victoryName), victoriesShown(human))
-        Assert.assertEquals(listOf(victoryName), human.getPreferredVictoryTypes())
 
         Assert.assertEquals(emptyList<String>(), availableVictories(ai))
         Assert.assertEquals(emptyList<String>(), victoriesShown(ai))
-        Assert.assertEquals(listOf(Constants.neutralVictoryType), ai.getPreferredVictoryTypes())
         Assert.assertNull(ai.victoryManager.getVictoryTypeAchieved())
-    }
-
-    @Test
-    fun `an AI civ does not prefer a victory it may not achieve`() {
-        val testGame = gameWithVictory("Only available <for [Human player] Civilizations>")
-        val ai = testGame.addCiv()
-        Assert.assertEquals(listOf(Constants.neutralVictoryType), ai.getPreferredVictoryTypes())
-        Assert.assertEquals(listOf(victoryName), testGame.addCiv(isPlayer = true).getPreferredVictoryTypes())
     }
 
     @Test

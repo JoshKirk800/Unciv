@@ -58,7 +58,7 @@ class LeagueAutomationTests {
     private fun resolution(name: String) = game.ruleset.resolutions[name]!!
 
     /** The scores that depend on the strategy a civilization seeks: what the original adds then, computed from the same preference */
-    private fun seeks(civ: Civilization, strategy: String) = strategy in civ.getPreferredVictoryTypes()
+    private fun seeks(civ: Civilization, strategy: String) = civ.ai.grandStrategyDef()?.victoryType == strategy
 
     private fun evaluator(civ: Civilization) = LeagueEvaluator(civ, league)
 

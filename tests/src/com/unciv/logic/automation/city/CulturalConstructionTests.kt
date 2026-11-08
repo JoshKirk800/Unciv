@@ -18,7 +18,7 @@ class CulturalConstructionTests {
         game.makeHexagonalMap(6)
         game.gameInfo.gameParameters.victoryTypes.add("Cultural")
         val civ = game.addCiv()
-        civ.nation.preferredVictoryType = "Cultural"
+        civ.ai.grandStrategy = "AIGRANDSTRATEGY_CULTURE"
         val city = game.addCity(civ, game.tileMap[0, 0])
         val gallery = game.createBuilding("Has [12] [Art/Artifact] Great Work slots")
         city.cityConstructions.addBuilding(gallery)
