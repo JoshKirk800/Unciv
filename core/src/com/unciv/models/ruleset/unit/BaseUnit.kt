@@ -380,7 +380,8 @@ class BaseUnit : RulesetObject(), INonPerpetualConstruction {
     override fun isBuildable(cityConstructions: CityConstructions): Boolean =
             getRejectionReasons(cityConstructions).none()
 
-    fun construct(cityConstructions: CityConstructions, boughtWith: Stat?): MapUnit? {
+    /** @param useToSatisfyOperation CvCity::CreateUnit's flag: false for an extra unit bought for an operation, which must not fill the city's committed slot */
+    fun construct(cityConstructions: CityConstructions, boughtWith: Stat?, useToSatisfyOperation: Boolean = true): MapUnit? {
         val civInfo = cityConstructions.city.civ
         val unit = civInfo.units.addUnit(this, cityConstructions.city)
             ?: return null  // couldn't place the unit, so there's actually no unit =(
@@ -391,7 +392,7 @@ class BaseUnit : RulesetObject(), INonPerpetualConstruction {
 
         addConstructionBonuses(unit, cityConstructions)
         // CvCity::CreateUnit: a unit trained for an operation joins it, any other may be sent exploring
-        if (!civInfo.ai.operations.finishedBuilding(unit, cityConstructions.city)) EconomicAi.onUnitTrained(unit)
+        if (!(useToSatisfyOperation && civInfo.ai.operations.finishedBuilding(unit, cityConstructions.city))) EconomicAi.onUnitTrained(unit)
 
         return unit
     }

@@ -928,16 +928,23 @@ object AiOperationLogic {
         return true
     }
 
-    /** CvAIOperation::BuyFinalUnit: the one slot an operation still needs is bought in its start city, with the primary unit AI of the slot */
+    /**
+     *  CvAIOperation::BuyFinalUnit: the one slot an operation still needs is bought in its start city, with the primary unit AI of the slot.
+     *  The slot leaves the list before the purchase: an idle city choosing its next production while buying must not commit to it.
+     */
     fun buyFinalUnit(civ: Civilization, operation: AiOperation): Boolean {
         val city = startCity(civ, operation) ?: return false
         val slot = operation.slotsToBuild.lastOrNull() ?: return false
         val army = operation.armyById(slot.armyId) ?: return false
         val entry = civ.ai.operations.slotDefs(army).getOrNull(slot.slotId) ?: return false
         val type = UnitAiType.ofXmlName(entry.primaryUnitAi) ?: return false
-        val unit = UseGoldAutomation.buyEmergencyUnit(civ, type, city) ?: return false
-        civ.ai.operations.addUnit(army, unit, slot.slotId)
         operation.slotsToBuild.removeAt(operation.slotsToBuild.lastIndex)
+        val unit = UseGoldAutomation.buyEmergencyUnit(civ, type, city)
+        if (unit == null) {
+            operation.slotsToBuild.add(slot)
+            return false
+        }
+        civ.ai.operations.addUnit(army, unit, slot.slotId)
         if (operation.slotsToBuild.isEmpty() && operation.committedCities.isEmpty() && operation.state == OperationState.RECRUITING_UNITS) {
             operation.state = OperationState.GATHERING_FORCES
             for (a in operation.armies) a.state = ArmyState.WAITING_FOR_UNITS_TO_CATCH_UP

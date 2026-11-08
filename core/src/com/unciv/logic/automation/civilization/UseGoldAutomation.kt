@@ -248,6 +248,7 @@ object UseGoldAutomation {
      *  CvMilitaryAI::BuyEmergencyUnit: buys the unit CvUnitProductionAI::RecommendUnit picks for [unitAi] in [city] - with gold if the
      *  purchase savings let its cost go at AI_GOLD_PRIORITY_UNIT, else with faith if it can be bought with faith. Not in puppets
      *  (unless the civilization may buy in puppets, the original's Venice exception). The unit has no movement left.
+     *  The unit is an extra one: it does not fill a slot its city committed to (the original's CreateUnit without bUseToSatisfyOperation).
      *  @return the unit bought, null if none
      */
     fun buyEmergencyUnit(civ: Civilization, unitAi: UnitAiType, city: City): MapUnit? {
@@ -290,7 +291,7 @@ object UseGoldAutomation {
 
     private fun purchase(city: City, unitType: BaseUnit, stat: Stat): MapUnit? {
         val before = city.civ.units.getCivUnitsSize()
-        if (!city.cityConstructions.purchaseConstruction(unitType, -1, true, stat)) return null
+        if (!city.cityConstructions.purchaseConstruction(unitType, -1, true, stat, useToSatisfyOperation = false)) return null
         if (city.civ.units.getCivUnitsSize() <= before) return null
         val unit = city.civ.units.getCivUnits().last()
         unit.currentMovement = 0f
