@@ -1,5 +1,6 @@
 package com.unciv.logic.automation.unit
 
+import com.unciv.logic.automation.civilization.AutomationCache
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.MapType
@@ -11,10 +12,12 @@ import com.unciv.models.ruleset.ai.DiplomacyPersonality
 import com.unciv.models.ruleset.ai.Flavor
 import com.unciv.testing.GdxTestRunner
 import com.unciv.testing.TestGame
+import com.unciv.view.GameView
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -245,5 +248,17 @@ class SettleAreasTest {
         val scores = HashMap<Tile, Int>()
         SettleAreas.bestSettlePlot(settler, escorted = false, area = -1, targetedSites = emptyList(), scores = scores)
         assertTrue(scores.keys.none { tile -> tile.neighbors.any { it.getOwner() == neighbor } })
+    }
+
+    @Test
+    fun `a settler whose new site is out of reach ends its operation instead of moving`() {
+        val civ = twoLandmasses()
+        val island = tile(7, 7).getContinent()
+        val settler = game.addUnit("Settler", civ, tile(-7, -3))
+        // A quick colony of the island (no embarking yet) whose site was lost: the best site left is on the island too
+        settler.settlerOperation = SettlerOperation().apply { foundCity = false; area = island; target = HexCoord(0, 0) }
+        SettlerAutomation.automateSettler(GameView(game.gameInfo, civ).getMapUnitView(settler), hashSetOf(), AutomationCache())
+        assertNull("AI_ABORT_LOST_PATH", settler.settlerOperation)
+        assertEquals(tile(-7, -3), settler.getTile())
     }
 }
