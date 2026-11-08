@@ -358,6 +358,8 @@ class CityConquestFunctions(val city: City) {
         city.hasJustBeenConquered = false
         city.turnAcquired = city.civ.gameInfo.turns
         city.previousOwner = oldCiv.civID
+        // The new owner starts with no progress toward Great People: CvPlayer::acquireCity makes a new city and does not copy it
+        city.greatPersonProgress.clear()
 
         // now that the tiles have changed, we need to reassign population
         for (tile in city.getWorkedTiles().filter { it.position !in city.tiles }.toList()) {

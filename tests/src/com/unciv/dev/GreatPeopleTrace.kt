@@ -126,9 +126,8 @@ internal class GreatPeopleTrace(private val game: GameInfo) {
             text.appendLine("  specialists: " + trace.specialistSlotTurns.keys.sorted()
                 .joinToString { "$it ${trace.specialistTurns[it]}/${trace.specialistSlotTurns[it]}" })
             text.appendLine("  points: " + trace.greatPersonPoints.entries.sortedBy { it.key }.joinToString { "${it.key} ${it.value}" })
-            text.appendLine("  pools now (base threshold, unspent points): " + civ.greatPeople.pointsForNextGreatPersonCounter.entries
-                .sortedBy { it.key }.joinToString { "${it.key.ifEmpty { "(none)" }} ${it.value}" } + "; " +
-                civ.greatPeople.greatPersonPointsCounter.entries.sortedBy { it.key }.joinToString { "${it.key} ${it.value}" })
+            text.appendLine("  Great People gained per group (sets the next threshold): " + civ.greatPeople.greatPeopleCreated.entries
+                .sortedBy { it.key }.joinToString { "${it.key.ifEmpty { "(none)" }} ${it.value}" })
             val alive = civ.units.getCivGreatPeople().groupingBy { it.name }.eachCount()
             for (name in (trace.born.keys + alive.keys).sorted()) {
                 val outcomes = trace.outcomes.filterKeys { it.startsWith("$name: ") }.entries

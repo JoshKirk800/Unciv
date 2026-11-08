@@ -104,6 +104,9 @@ class City : IsPartOfGameInfoSerialization, INamed {
 
     var resourceStockpiles = Counter<String>()
 
+    /** Points toward each Great Person (unit name) this city has gathered since its last one of that kind (CvCityCitizens), see [GreatPersonManager] */
+    var greatPersonProgress = Counter<String>()
+
     /** All tiles that this city controls */
     var tiles = HashSet<HexCoord>()
 
@@ -202,6 +205,7 @@ class City : IsPartOfGameInfoSerialization, INamed {
         toReturn.workedTiles = workedTiles
         toReturn.lockedTiles = lockedTiles
         toReturn.resourceStockpiles = resourceStockpiles.clone()
+        toReturn.greatPersonProgress = greatPersonProgress.clone()
         toReturn.isBeingRazed = isBeingRazed
         toReturn.attackedThisTurn = attackedThisTurn
         toReturn.hasSoldBuildingThisTurn = hasSoldBuildingThisTurn

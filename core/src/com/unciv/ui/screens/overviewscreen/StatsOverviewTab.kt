@@ -201,15 +201,17 @@ class StatsOverviewTab(
         add(greatPeopleHeader).colspan(3).row()
         addSeparator()
         add()
-        add("Current points".toLabel())
+        add("Closest city".toLabel())
         add("Points per turn".toLabel()).row()
 
-        val greatPersonPoints = viewingPlayer.getGreatPersonPointsCounter()
+        // Points are kept per city: show the city closest to each Great Person
+        val leadingCities = viewingPlayer.getGreatPersonLeadingCities()
         val greatPersonPointsPerTurn = viewingPlayer.getGreatPersonPointsForNextTurn()
-        for ((greatPerson, points) in greatPersonPoints) {
+        for ((greatPerson, cityAndPoints) in leadingCities) {
+            val (cityName, points) = cityAndPoints
             val pointsToGreatPerson = viewingPlayer.getPointsRequiredForGreatPerson(greatPerson)
             add(greatPerson.toLabel()).left()
-            add("$points/$pointsToGreatPerson".toLabel())
+            add("$cityName: $points/$pointsToGreatPerson".toLabel(hideIcons = true))
             add(greatPersonPointsPerTurn[greatPerson].toLabel()).right().row()
         }
 
