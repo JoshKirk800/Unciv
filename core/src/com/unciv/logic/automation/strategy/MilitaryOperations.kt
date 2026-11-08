@@ -235,8 +235,8 @@ object MilitaryOperations {
         if (civ.religionManager.religion?.founderBeliefUniqueMap?.hasUnique(com.unciv.models.ruleset.unique.UniqueType.ConvertAdjacentBarbarians) == true)
             willingToAcceptRisk = true // CvPlayerTraits::GetLandBarbarianConversionPercent > 0: the belief that converts them here
         // if they have one of our civilians
-        val barbarians = civ.gameInfo.getBarbarianCivilization()
-        if (barbarians.units.getCivUnits().any { it.originalOwner == civ.civID && UnitAiTypes.current(it).let { t -> t == UnitAiType.SETTLE || t == UnitAiType.WORKER } })
+        val barbarians = civ.gameInfo.civilizations.firstOrNull { it.isBarbarian }
+        if (barbarians?.units?.getCivUnits()?.any { it.originalOwner == civ.civID && UnitAiTypes.current(it).let { t -> t == UnitAiType.SETTLE || t == UnitAiType.WORKER } } == true)
             willingToAcceptRisk = true
 
         // Operations vs. Barbarians

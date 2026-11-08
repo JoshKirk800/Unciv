@@ -241,8 +241,8 @@ object AiOperationLogic {
         operation.civilianRescue = false
         val start = startCity(civ, operation)?.getCenterTile() ?: return null
         val steps = civ.ai.military.steps
-        val barbarians = civ.gameInfo.getBarbarianCivilization()
-        val captives = barbarians.units.getCivUnits().filter {
+        val barbarians = civ.gameInfo.civilizations.firstOrNull { it.isBarbarian }
+        val captives = (barbarians?.units?.getCivUnits() ?: emptySequence()).filter {
             it.originalOwner == civ.civID && UnitAiTypes.current(it).let { type ->
                 type == UnitAiType.SETTLE || type == UnitAiType.WORKER || type == UnitAiType.ARCHAEOLOGIST
             }
@@ -786,7 +786,7 @@ object AiOperationLogic {
             if (!target.isBarbarianEncampment()) return true
         } else {
             // Is the unit rescued?
-            val captive = civ.gameInfo.getBarbarianCivilization().units.getUnitById(operation.unitToRescue) ?: return true
+            val captive = civ.gameInfo.civilizations.firstOrNull { it.isBarbarian }?.units?.getUnitById(operation.unitToRescue) ?: return true
             if (captive.originalOwner != civ.civID || UnitAiTypes.current(captive).let { it != UnitAiType.SETTLE && it != UnitAiType.WORKER }) return true
         }
         if (!operation.civilianRescue && operation.state != OperationState.RECRUITING_UNITS) {
