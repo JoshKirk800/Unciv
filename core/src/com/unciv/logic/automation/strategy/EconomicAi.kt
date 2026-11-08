@@ -28,6 +28,8 @@ class EconomicAi : IsPartOfGameInfoSerialization {
     var lastTurnWorkerDisbanded = -1
     /** CvEconomicAI::m_iVisibleAntiquitySites, updated by [doAntiquitySites] */
     var visibleAntiquitySites = 0
+    /** CvEconomicAI::m_iExplorersDisbanded: land explorers [com.unciv.logic.automation.unit.HomelandAi] disbanded for finding no way home; they count as explorers in [doReconState] for good */
+    var explorersDisbanded = 0
 
     /** CvEconomicAI::m_eReconState, recomputed each turn before the strategy loop (null before the first computation) */
     @Transient var reconState: ReconState? = null
@@ -38,6 +40,7 @@ class EconomicAi : IsPartOfGameInfoSerialization {
         val toReturn = EconomicAi()
         toReturn.lastTurnWorkerDisbanded = lastTurnWorkerDisbanded
         toReturn.visibleAntiquitySites = visibleAntiquitySites
+        toReturn.explorersDisbanded = explorersDisbanded
         return toReturn
     }
 
@@ -56,7 +59,7 @@ class EconomicAi : IsPartOfGameInfoSerialization {
      *  CvEconomicAI::DoReconState (and DoAntiquitySites, counted in the same pass). Over the tiles the civilization has explored, counts revealed land and revealed coastal water (deep water
      *  too once embarked units may enter the ocean), and the revealed tiles with an unrevealed neighbor (the first such neighbor decides
      *  whether it counts as land or as water fog). The land state compares [reconWeight] of the land counts and the land explorers
-     *  (UNITAI_EXPLORE, being trained included) with 110 - 10 x RECON flavor (at most 100); the naval state, with a coastal city, does
+     *  (UNITAI_EXPLORE, being trained included, plus [explorersDisbanded]) with 110 - 10 x RECON flavor (at most 100); the naval state, with a coastal city, does
      *  the same for the water counts, the sea explorers and NAVAL_RECON. At ENOUGH the explorers that can attack go back to the attack
      *  role (one land explorer is kept before turn 100).
      */
@@ -100,7 +103,7 @@ class EconomicAi : IsPartOfGameInfoSerialization {
 
         visibleAntiquitySites = antiquitySites
 
-        val landExplorers = UnitAiTypes.numUnitsWithUnitAi(civ, UnitAiType.EXPLORE, includeBeingTrained = true, includeWater = false)
+        val landExplorers = UnitAiTypes.numUnitsWithUnitAi(civ, UnitAiType.EXPLORE, includeBeingTrained = true, includeWater = false) + explorersDisbanded
         val landWeight = reconWeight(civ, landWithAdjacentFog, landRevealed, landExplorers)
         val landState = reconState(landWeight, reconThreshold(civ, Flavor.Recon))
         reconState = landState

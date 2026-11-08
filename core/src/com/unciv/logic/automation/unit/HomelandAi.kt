@@ -426,6 +426,7 @@ object HomelandAi {
                     // "If this is a land explorer and there is no path to a friendly city, then disband him"
                     processed(unit)
                     unit.disband()
+                    civ.ai.economic.explorersDisbanded++
                 }
             }
             return ordered
