@@ -1,5 +1,6 @@
 package com.unciv.logic.automation.strategy
 
+import com.unciv.logic.automation.WaterBodies
 import com.unciv.logic.automation.diplomacy.WarGoal
 import com.unciv.logic.automation.unit.SettleAreas
 import com.unciv.logic.city.GreatWorkFunctions
@@ -56,7 +57,7 @@ object EconomicMilitaryStrategyTests {
             needImprovement(civ, Stat.Food, "AICITYSTRATEGY_NEED_IMPROVEMENT_FOOD") }
         tests.register("ECONOMICAISTRATEGY_NEED_IMPROVEMENT_PRODUCTION") { civ, _ ->
             needImprovement(civ, Stat.Production, "AICITYSTRATEGY_NEED_IMPROVEMENT_PRODUCTION") }
-        tests.register("ECONOMICAISTRATEGY_ONE_OR_FEWER_COASTAL_CITIES") { civ, _ -> civ.cities.count { it.isCoastal() } <= 1 }
+        tests.register("ECONOMICAISTRATEGY_ONE_OR_FEWER_COASTAL_CITIES") { civ, _ -> civ.cities.count { WaterBodies.isCoastal(it) } <= 1 }
         tests.register(EconomicAi.LOSING_MONEY) { civ, def -> losingMoney(civ, def) }
         tests.register("ECONOMICAISTRATEGY_HALT_GROWTH_BUILDINGS") { civ, _ -> haltGrowthBuildings(civ) }
         tests.register("ECONOMICAISTRATEGY_TOO_MANY_UNITS") { civ, _ -> civ.stats.getUnitSupplyDeficit() > 0 }
@@ -225,16 +226,31 @@ object EconomicMilitaryStrategyTests {
         return settlers >= def.weightThreshold + extraSettlers
     }
 
-    /** IsTestStrategy_NeedHappiness: with population, excess happiness <= (HAPPINESS personality x threshold mod) / weight threshold (2) */
+    /**
+     *  CvPlayer::GetUnhappiness: the unhappiness of the city count, the citizens and the occupied cities (the negative parts of the cities'
+     *  happiness lists, whose AI-handicap scaling is already in them) plus the public opinion unhappiness (scaled for an AI player), as a whole number.
+     */
+    internal fun unhappiness(civ: Civilization): Int {
+        var fromCities = 0f
+        for (city in civ.cities)
+            for (source in UNHAPPINESS_SOURCES) fromCities -= city.cityStats.happinessList[source] ?: 0f
+        var opinion = civ.culture.publicOpinion.unhappiness.toFloat()
+        if (!civ.isHuman()) opinion *= civ.gameInfo.getDifficulty().aiUnhappinessModifier
+        return fromCities.toInt() + opinion.toInt()
+    }
+
+    private val UNHAPPINESS_SOURCES = listOf("Cities", "Population", "Occupied City")
+
+    /** IsTestStrategy_NeedHappiness: with population and some unhappiness, excess happiness <= (HAPPINESS personality x threshold mod) / weight threshold (2) */
     fun needHappiness(civ: Civilization, def: PlayerStrategyDef): Boolean {
-        if (civ.cities.sumOf { it.population.population } <= 0) return false
+        if (civ.cities.sumOf { it.population.population } <= 0 || unhappiness(civ) <= 0) return false
         return civ.getHappiness() <= civ.ai.weightThresholdModifier(def) / def.weightThreshold
     }
 
-    /** IsTestStrategy_NeedHappinessCritical: not losing all wars; with population, excess happiness <= the weight threshold (-3) */
+    /** IsTestStrategy_NeedHappinessCritical: not losing all wars; with population and some unhappiness, excess happiness <= the weight threshold (-3) */
     fun needHappinessCritical(civ: Civilization, def: PlayerStrategyDef): Boolean {
         if (WarStateAi.stateAllWars(civ) == StateAllWars.Losing) return false
-        if (civ.cities.sumOf { it.population.population } <= 0) return false
+        if (civ.cities.sumOf { it.population.population } <= 0 || unhappiness(civ) <= 0) return false
         return civ.getHappiness() <= def.weightThreshold
     }
 
@@ -251,12 +267,14 @@ object EconomicMilitaryStrategyTests {
     }
 
     /**
-     *  IsTestStrategy_FoundCity (the test; launching the found-city operation is the settling port's): AI players with at least one city,
-     *  a settler (UNITAI_SETTLE) and a settle area.
+     *  IsTestStrategy_FoundCity (the test; launching the found-city operation is [com.unciv.logic.automation.unit.SettlerAutomation.launchOperation]):
+     *  AI players with at least one city and a loose settler (UNITAI_SETTLE that is in no army, so not one an operation already moves)
+     *  and a settle area.
      */
     fun foundCity(civ: Civilization): Boolean {
         if (civ.isHuman() || civ.cities.isEmpty()) return false
-        if (civ.units.getCivUnits().none { UnitAiTypes.current(it) == UnitAiType.SETTLE }) return false
+        val operations = civ.ai.operations
+        if (civ.units.getCivUnits().none { UnitAiTypes.current(it) == UnitAiType.SETTLE && operations.armyOf(it) == null }) return false
         return SettleAreas.bestSettleAreas(civ, minimumSettleFertility(civ)).count > 0
     }
 
@@ -349,12 +367,12 @@ object EconomicMilitaryStrategyTests {
         return best != capital.getCenterTile().getContinent() && best != -1
     }
 
-    /** IsTestStrategy_MostlyOnTheCoast: population of coastal cities at least that of the others, and some */
+    /** IsTestStrategy_MostlyOnTheCoast: population of cities on a body of water of at least 100 tiles (no lakes or small inland seas) at least that of the others, and some */
     fun mostlyOnTheCoast(civ: Civilization): Boolean {
         var coastal = 0
         var inland = 0
         for (city in civ.cities) {
-            if (city.isCoastal()) coastal += city.population.population
+            if (WaterBodies.isCoastal(city, 100)) coastal += city.population.population
             else inland += city.population.population
         }
         return coastal > 0 && coastal >= inland

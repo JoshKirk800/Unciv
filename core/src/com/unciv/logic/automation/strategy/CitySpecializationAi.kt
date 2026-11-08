@@ -1,6 +1,7 @@
 package com.unciv.logic.automation.strategy
 
 import com.unciv.logic.IsPartOfGameInfoSerialization
+import com.unciv.logic.automation.WaterBodies
 import com.unciv.logic.automation.city.ConstructionAutomation
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
@@ -245,9 +246,9 @@ object CitySpecializationAi {
      *  CvCitySpecializationAI::WeightProductionSubtypes:
      *  - military training: OFFENSE (personality and grand strategy) × _TRAINING_PER_OFFENSE + the WAR approach bias × _TRAINING_PER_PERSONALITY,
      *    + _WEIGHT_WAR_MOBILIZATION under MILITARYAISTRATEGY_WAR_MOBILIZATION;
-     *  - emergency units: the civilizations at war with × _CIVS_AT_WAR_WITH, + _CAPITAL_THREAT if the capital runs AICITYSTRATEGY_CAPITAL_UNDER_THREAT,
-     *    + _EMPIRE_DEFENSE / _EMPIRE_DEFENSE_CRITICAL under those strategies (units requested by operations × _OPERATIONAL_UNITS_REQUESTED:
-     *    the military operations are not ported, so none are requested); both 0 under MILITARYAISTRATEGY_ENOUGH_MILITARY_UNITS;
+     *  - emergency units: the unit slots operations still need to build ([AiOperations.numUnitsNeededToBeBuilt]) × _OPERATIONAL_UNITS_REQUESTED +
+     *    the civilizations at war with × _CIVS_AT_WAR_WITH, + _CAPITAL_THREAT if the capital runs AICITYSTRATEGY_CAPITAL_UNDER_THREAT,
+     *    + _EMPIRE_DEFENSE / _EMPIRE_DEFENSE_CRITICAL under those strategies; both 0 under MILITARYAISTRATEGY_ENOUGH_MILITARY_UNITS;
      *  - naval: _NEED_NAVAL_UNITS (_CRITICAL) under those strategies, 0 under ENOUGH_NAVAL_UNITS;
      *  - wonder: min(WONDER × _FLAVOR_WONDER, the next wonders' total weight × _NEXT_WONDER), at least 0, halved under EMPIRE_DEFENSE_CRITICAL;
      *  - spaceship: SPACESHIP × _FLAVOR_SPACESHIP if spaceship parts can be built;
@@ -259,7 +260,8 @@ object CitySpecializationAi {
         var criticalDefense = false
         var militaryTraining = civ.ai.personalityAndGrandStrategy(Flavor.Offense) * rules.define(AiDefine.AI_CITY_SPECIALIZATION_PRODUCTION_TRAINING_PER_OFFENSE) +
             civ.ai.majorCivApproachBias(MajorCivApproach.War) * rules.define(AiDefine.AI_CITY_SPECIALIZATION_PRODUCTION_TRAINING_PER_PERSONALITY)
-        var emergencyUnits = WarStateAi.numberCivsAtWarWith(civ) * rules.define(AiDefine.AI_CITY_SPECIALIZATION_PRODUCTION_WEIGHT_CIVS_AT_WAR_WITH)
+        var emergencyUnits = civ.ai.operations.numUnitsNeededToBeBuilt() * rules.define(AiDefine.AI_CITY_SPECIALIZATION_PRODUCTION_WEIGHT_OPERATIONAL_UNITS_REQUESTED) +
+            WarStateAi.numberCivsAtWarWith(civ) * rules.define(AiDefine.AI_CITY_SPECIALIZATION_PRODUCTION_WEIGHT_CIVS_AT_WAR_WITH)
         if (civ.getCapital()?.ai?.isCityStrategyActive("AICITYSTRATEGY_CAPITAL_UNDER_THREAT") == true)
             emergencyUnits += rules.define(AiDefine.AI_CITY_SPECIALIZATION_PRODUCTION_WEIGHT_CAPITAL_THREAT)
         if (usingMilitary("MILITARYAISTRATEGY_WAR_MOBILIZATION"))
@@ -495,7 +497,7 @@ object CitySpecializationAi {
             var best: CityData? = null
             var bestValue = -1
             for (data in unassigned) {
-                if (def.mustBeCoastal && !data.city.isCoastal()) continue
+                if (def.mustBeCoastal && !WaterBodies.isCoastal(data.city, 100)) continue
                 val value = if (yieldIndex == GENERAL) data.weights.sum() else data.weights[yieldIndex]
                 if (value > bestValue) {
                     bestValue = value

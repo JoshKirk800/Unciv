@@ -105,6 +105,8 @@ class CivAi : IsPartOfGameInfoSerialization {
     var warStates = WarStateMemory()
     /** CvCitySpecializationAI::m_iWonderCityID: the [com.unciv.logic.city.City.id] of the city chosen to build wonders, null if none */
     var wonderCityId: String? = null
+    /** CvWonderProductionAI::m_WonderAIWeights by building name: the flavors added up once per flavor broadcast, see [WonderProductionAi]; empty in old saves */
+    var wonderWeights = LinkedHashMap<String, Int>()
     /** CvEconomicAI's gold reservations (StartSaveForPurchase ...) */
     var purchaseSavings = PurchaseSavings()
     /** CvUnit::AI_setUnitAIType reassignments: unit id -> UNITAI_* name, see [UnitAiTypes] */
@@ -162,6 +164,7 @@ class CivAi : IsPartOfGameInfoSerialization {
         toReturn.minorCivApproaches.putAll(minorCivApproaches)
         toReturn.warStates = warStates.clone()
         toReturn.wonderCityId = wonderCityId
+        toReturn.wonderWeights.putAll(wonderWeights)
         toReturn.purchaseSavings = purchaseSavings.clone()
         toReturn.unitAiOverrides.putAll(unitAiOverrides)
         toReturn.economic = economic.clone()
@@ -237,13 +240,15 @@ class CivAi : IsPartOfGameInfoSerialization {
     /** CvFlavorManager::GetPersonalityIndividualFlavor: the leader's flavor, randomized once per game (±2, 0..20) and adjusted for the map */
     fun personality(flavor: Flavor): Int = personalityFlavorVector()[flavor.ordinal]
 
-    /** Sets a personality flavor directly (scenario setup and tests); the active flavors follow */
+    /** Sets a personality flavor directly (scenario setup and tests); the active flavors follow and the wonder weights start over at the new flavors added once */
     @VisibleForTesting
     fun setPersonalityFlavor(flavor: Flavor, value: Int) {
         ensureInitialized()
         personalityFlavors[flavor.name] = value
         personalityVector = null
         onStrategiesChanged()
+        WonderProductionAi.reset(civ)
+        WonderProductionAi.flavorUpdate(civ)
     }
 
     /** A CvDiplomacyAI personality value (GetVictoryCompetitiveness, GetBoldness, ...), randomized once per game by GetRandomPersonalityWeight */
@@ -305,6 +310,13 @@ class CivAi : IsPartOfGameInfoSerialization {
         strategyVersion++
     }
 
+    /** CvFlavorManager::ChangeFlavors to the player-level recipients after a strategy was adopted or dropped: the wonder AI adds its weights again */
+    private fun onFlavorBroadcast() {
+        WonderProductionAi.ensureWeights(civ)
+        onStrategiesChanged()
+        WonderProductionAi.flavorUpdate(civ)
+    }
+
     internal fun activeEconomicStrategyDefs(): Sequence<EconomicStrategyDef> =
         rules.economicStrategies.asSequence().filter { it.name in economicStrategies }
 
@@ -348,10 +360,6 @@ class CivAi : IsPartOfGameInfoSerialization {
     fun isEconomicStrategyActive(name: String) = name in economicStrategies
     /** CvMilitaryAI::IsUsingStrategy */
     fun isMilitaryStrategyActive(name: String) = name in militaryStrategies
-    /** CvEconomicAI::GetTurnStrategyAdopted: -1 if not active */
-    fun economicStrategyTurnAdopted(name: String): Int = economicStrategies[name] ?: -1
-    /** CvMilitaryAI::GetTurnStrategyAdopted: -1 if not active */
-    fun militaryStrategyTurnAdopted(name: String): Int = militaryStrategies[name] ?: -1
 
     /** EconomicAIHelpers / MilitaryAIHelpers / CityStrategyAIHelpers::GetWeightThresholdModifier: Σ personality flavor × the strategy's
      *  PersonalityFlavorThresholdMods. A test compares against `def.weightThreshold` plus this. */
@@ -448,14 +456,12 @@ class CivAi : IsPartOfGameInfoSerialization {
         if (civ.isMajorCiv) timeThis("AI.Diplomacy") { DiplomacyTurn.doTurn(civ) }
         timeThis("AI.EconomicStrategies") {
             economic.doTurnBeforeStrategies(civ)
-            if (runStrategyLoop(rules.economicStrategies, economicStrategies, civ, checkFirstTurn = true) { StrategyTests.test(civ, it) })
-                onStrategiesChanged()
+            runStrategyLoop(rules.economicStrategies, economicStrategies, civ, checkFirstTurn = true, onChange = ::onFlavorBroadcast) { StrategyTests.test(civ, it) }
         }
         if (!civ.isHuman()) timeThis("AI.EconomicDoTurn") { economic.doTurnAfterStrategies(civ) }
         timeThis("AI.MilitaryStrategies") {
             military.doTurnBeforeStrategies(civ)
-            if (runStrategyLoop(rules.militaryStrategies, militaryStrategies, civ, checkFirstTurn = true) { StrategyTests.test(civ, it) })
-                onStrategiesChanged()
+            runStrategyLoop(rules.militaryStrategies, militaryStrategies, civ, checkFirstTurn = true, onChange = ::onFlavorBroadcast) { StrategyTests.test(civ, it) }
         }
         if (!civ.isHuman()) timeThis("AI.MilitaryDoTurn") { military.doTurnAfterStrategies(civ) }
         timeThis("AI.TechFlavors") { com.unciv.logic.automation.civilization.TechAutomation.updateFlavorWeights(civ) }

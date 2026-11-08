@@ -31,8 +31,6 @@ class CoopWarEntry() : IsPartOfGameInfoSerialization {
 class MajorCivMemory : IsPartOfGameInfoSerialization {
     // Opinion and approach
     var opinion = MajorCivOpinion.Neutral
-    /** GetMajorCivOpinionWeight of the last update (positive = bad) */
-    var opinionWeight = 0
     /** null = NO_MAJOR_CIV_APPROACH (not evaluated yet: reads as Neutral) */
     var approach: MajorCivApproach? = null
     var warFace: WarFace? = null
@@ -146,7 +144,7 @@ class MajorCivMemory : IsPartOfGameInfoSerialization {
 
     fun clone(): MajorCivMemory {
         val copy = MajorCivMemory()
-        copy.opinion = opinion; copy.opinionWeight = opinionWeight; copy.approach = approach; copy.warFace = warFace
+        copy.opinion = opinion; copy.approach = approach; copy.warFace = warFace
         copy.warGoal = warGoal; copy.wantPeaceCounter = wantPeaceCounter; copy.wantsPeace = wantsPeace; copy.warProjection = warProjection
         copy.lastWarProjection = lastWarProjection; copy.warDamageLevel = warDamageLevel; copy.warValueLost = warValueLost
         copy.theirWarValueLostToUs = theirWarValueLostToUs; copy.theirWarDamageLevel = theirWarDamageLevel
@@ -248,10 +246,6 @@ class DiplomacyAi : IsPartOfGameInfoSerialization {
     @Readonly
     fun opinionOf(other: Civilization): MajorCivOpinion = memories[other.civID]?.opinion ?: MajorCivOpinion.Neutral
 
-    /** CvDiplomacyAI::GetMajorCivOpinionWeight of the last update (positive = bad) */
-    @Readonly
-    fun opinionWeightOf(other: Civilization): Int = memories[other.civID]?.opinionWeight ?: 0
-
     /** CvDiplomacyAI::GetWarProjection, null = NO_WAR_PROJECTION_TYPE */
     @Readonly
     fun warProjection(other: Civilization): WarProjection? = memories[other.civID]?.warProjection
@@ -277,9 +271,6 @@ class DiplomacyAi : IsPartOfGameInfoSerialization {
     /** CvDiplomacyAI::GetPlayerEconomicStrengthComparedToUs */
     @Readonly
     fun economicStrength(other: Civilization): StrengthLevel? = memories[other.civID]?.economicStrength
-
-    /** CvDiplomacyAI::GetPlayerNumTurnsAtWar (kept by [WarStateAi]) */
-    fun turnsAtWarWith(other: Civilization): Int = WarStateAi.turnsAtWar(civ, other)
 
     /** CvDiplomacyAI::GetMilitaryThreat */
     @Readonly

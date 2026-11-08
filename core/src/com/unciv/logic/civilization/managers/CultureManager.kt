@@ -168,14 +168,23 @@ class CultureManager : IsPartOfGameInfoSerialization {
         }
     }
 
-    /** The culture the world wonders of the city give by themselves */
+    /** CvCityCulture::GetCultureFromWonders: the culture of the world wonders of the city, with what the World Congress adds per world wonder */
     @Readonly
-    private fun getCultureOfWonders(city: City): Int =
-        city.cityConstructions.getBuiltBuildings().filter { it.isWonder }.sumOf { it.culture.toInt() }
+    fun getCultureOfWonders(city: City): Int {
+        var culture = 0f
+        for (building in city.cityConstructions.getBuiltBuildings()) {
+            if (!building.isWonder) continue
+            culture += building.culture
+            city.forEachMatchingUnique(UniqueType.StatsFromObject, city.state) { unique ->
+                if (building.matchesFilter(unique.params[1], city.state)) culture += unique.stats.culture
+            }
+        }
+        return culture.toInt()
+    }
 
     /** CvCityCulture::GetCultureFromNaturalWonders and GetCultureFromImprovements: the culture of worked natural wonders and improved tiles, the city tile left out */
     @Readonly
-    private fun getCultureOfWorkedTiles(city: City): Int =
+    fun getCultureOfWorkedTiles(city: City): Int =
         city.getWorkedTiles()
             .filter { !it.isCityCenter() && (it.isNaturalWonder() || it.improvement != null) }
             .sumOf { it.stats.getTileStats(city, civ).culture.toInt() }

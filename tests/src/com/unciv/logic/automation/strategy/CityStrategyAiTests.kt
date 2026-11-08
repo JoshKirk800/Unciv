@@ -167,4 +167,30 @@ class CityStrategyAiTests {
         assertTrue(other.ai.isCityStrategyActive("AICITYSTRATEGY_FIRST_CULTURE_BUILDING"))
         assertEquals(4 + 150, other.ai.flavor(Flavor.Culture))
     }
+
+    @Test
+    fun `a scrapped worker locks the tile improver strategies out for 25, 10 and 10 turns`() {
+        city(0, 0, 2)
+        val other = city(4, 0, 2)
+        game.gameInfo.turns = 40 // past the desperate turn of 30
+        assertTrue(CityStrategyAi.needTileImprovers(other, 67))
+        assertTrue(CityStrategyAi.wantTileImprovers(other, 40))
+        assertFalse(CityStrategyAi.enoughTileImprovers(other, 100))
+
+        civ.ai.economic.lastTurnWorkerDisbanded = 40
+        for (turn in listOf(40, 50)) {
+            game.gameInfo.turns = turn
+            assertFalse("need $turn", CityStrategyAi.needTileImprovers(other, 67))
+            assertFalse("want $turn", CityStrategyAi.wantTileImprovers(other, 40))
+            assertTrue("enough $turn", CityStrategyAi.enoughTileImprovers(other, 100))
+        }
+        game.gameInfo.turns = 51
+        assertFalse(CityStrategyAi.needTileImprovers(other, 67))
+        assertTrue(CityStrategyAi.wantTileImprovers(other, 40))
+        assertFalse(CityStrategyAi.enoughTileImprovers(other, 100))
+        game.gameInfo.turns = 65
+        assertFalse(CityStrategyAi.needTileImprovers(other, 67))
+        game.gameInfo.turns = 66
+        assertTrue(CityStrategyAi.needTileImprovers(other, 67))
+    }
 }

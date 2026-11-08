@@ -75,6 +75,15 @@ class CitySpecializationAiTests {
     }
 
     @Test
+    fun `emergency unit weight is 25 per unit slot the operations still need to build`() {
+        fun emergency() = CitySpecializationAi.weightProductionSubtypes(civ, 0, 0).first { it.key == CitySpecializationAi.SUBTYPE_EMERGENCY_UNITS }.weight
+        assertEquals(0, emergency())
+        civ.ai.operations.operations.add(AiOperation().apply { slotsToBuild.addAll(listOf(SlotRef(1, 1, 0), SlotRef(1, 1, 1))) })
+        civ.ai.operations.operations.add(AiOperation().apply { slotsToBuild.add(SlotRef(2, 1, 0)) })
+        assertEquals(3 * 25, emergency())
+    }
+
+    @Test
     fun `specializations are assigned from turn 25 with a science city for a science-minded civ`() {
         civ.ai.setPersonalityFlavor(Flavor.Science, 20)
         game.gameInfo.turns = 24

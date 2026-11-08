@@ -47,6 +47,9 @@ enum class AiDefine(val default: Float) {
     FLAVOR_STANDARD_LOG10_TILES_PER_PLAYER(2.1f),
     FLAVOR_EXPANDGROW_COEFFICIENT(8f),
 
+    // CvPlot::isCoastalLand default: the smallest body of water that counts as an ocean
+    MIN_WATER_SIZE_FOR_OCEAN(10f),
+
     // CvTechAI, CvPlayerTechs (tech choice)
     TECH_WEIGHT_PROPAGATION_PERCENT(50f),
     TECH_WEIGHT_PROPAGATION_LEVELS(3f),
