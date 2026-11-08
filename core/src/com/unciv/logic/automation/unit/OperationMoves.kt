@@ -66,9 +66,10 @@ object OperationMoves {
         cache.processedUnits.add(unit)
     }
 
+    /** MISSION_MOVE_TO for an army unit: without a path (a ship sent at a land tile, a unit cut off by water) the move fails and the unit stays */
     private fun moveToward(unit: MapUnit, tile: Tile, cache: AutomationCache) {
         cache.processedUnits.add(unit)
-        if (unit.getTile() == tile || !unit.hasMovement()) return
+        if (unit.getTile() == tile || !unit.hasMovement() || !unit.movement.canReach(tile)) return
         unit.movement.headTowards(tile)
     }
 
