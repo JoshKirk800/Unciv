@@ -561,6 +561,7 @@
     "MINOR_APPROACH_WAR_TARGET_FAVORABLE": 110,
     "MINOR_APPROACH_WAR_TARGET_IMPOSSIBLE": 10,
     "MINOR_APPROACH_WAR_TARGET_SOFT": 130,
+    "MINOR_CIV_AGGRESSOR_THRESHOLD": 2,
     "MINOR_CIV_CONTACT_GOLD_FIRST": 30,
     "MINOR_CIV_CONTACT_GOLD_OTHER": 15,
     "MINOR_CIV_DISPUTE_ALLIES_WEIGHT": 10,
@@ -590,6 +591,7 @@
     "MINOR_CIV_QUEST_WONDER_COMPLETION_THRESHOLD": 25,
     "MINOR_CIV_ROUTE_QUEST_WEIGHT": 1000,
     "MINOR_CIV_SCIENCE_BONUS_MULTIPLIER": 25,
+    "MINOR_CIV_WARMONGER_THRESHOLD": 4,
     "MINOR_FRIENDSHIP_AT_WAR": -60,
     "MINOR_FRIENDSHIP_CLOSE_AMOUNT": 8,
     "MINOR_FRIENDSHIP_DROP_PER_TURN": -100,
@@ -849,7 +851,8 @@
     "WAR_STATE_THRESHOLD_STALEMATE": 42,
     "WONDER_DISPUTE_FIERCE_THRESHOLD": 10,
     "WONDER_DISPUTE_STRONG_THRESHOLD": 7,
-    "WONDER_DISPUTE_WEAK_THRESHOLD": 5
+    "WONDER_DISPUTE_WEAK_THRESHOLD": 5,
+    "WOUNDED_DAMAGE_MULTIPLIER": 50
   },
   "postDefines": {
     "AI_HANDICAP": "Chieftain",
@@ -6791,5 +6794,467 @@
   "featureStartingLocationWeights": {
     "Jungle": -10,
     "Marsh": -10
-  }
+  },
+  "eraDiplomacy": [
+    {
+      "name": "Ancient era",
+      "diploEmphasisReligion": 0,
+      "diploEmphasisLatePolicies": 0
+    },
+    {
+      "name": "Classical era",
+      "diploEmphasisReligion": 0,
+      "diploEmphasisLatePolicies": 0
+    },
+    {
+      "name": "Medieval era",
+      "diploEmphasisReligion": 0,
+      "diploEmphasisLatePolicies": 0
+    },
+    {
+      "name": "Renaissance era",
+      "diploEmphasisReligion": 0,
+      "diploEmphasisLatePolicies": 0
+    },
+    {
+      "name": "Industrial era",
+      "diploEmphasisReligion": 0,
+      "diploEmphasisLatePolicies": 0
+    },
+    {
+      "name": "Modern era",
+      "diploEmphasisReligion": 0,
+      "diploEmphasisLatePolicies": 0
+    },
+    {
+      "name": "Information era",
+      "diploEmphasisReligion": 0,
+      "diploEmphasisLatePolicies": 0
+    },
+    {
+      "name": "Future era",
+      "diploEmphasisReligion": 0,
+      "diploEmphasisLatePolicies": 0
+    }
+  ],
+  "gameSpeedDiplomacy": [
+    {
+      "name": "Marathon",
+      "relationshipDuration": 0,
+      "opinionDurationPercent": 0
+    },
+    {
+      "name": "Epic",
+      "relationshipDuration": 0,
+      "opinionDurationPercent": 0
+    },
+    {
+      "name": "Standard",
+      "relationshipDuration": 0,
+      "opinionDurationPercent": 0
+    },
+    {
+      "name": "Quick",
+      "relationshipDuration": 0,
+      "opinionDurationPercent": 0
+    }
+  ],
+  "worldSizes": [
+    {
+      "name": "Duel",
+      "estimatedNumCities": 0
+    },
+    {
+      "name": "Tiny",
+      "estimatedNumCities": 0
+    },
+    {
+      "name": "Small",
+      "estimatedNumCities": 0
+    },
+    {
+      "name": "Medium",
+      "estimatedNumCities": 0
+    },
+    {
+      "name": "Large",
+      "estimatedNumCities": 0
+    },
+    {
+      "name": "Huge",
+      "estimatedNumCities": 0
+    }
+  ],
+  "multiUnitFormations": [
+    {
+      "name": "MUFORMATION_BASIC_CITY_ATTACK_FORCE",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_RANGED",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_RANGED",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_COUNTER",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_GENERAL",
+          "secondaryUnitAi": "UNITAI_GENERAL",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_CITY_STATE_ATTACK_FORCE",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_RANGED",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_FAST_PILLAGERS",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_FAST_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_ANTI_BARBARIAN_TEAM",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_RANGED",
+          "secondaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_FAST_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_RAPID_RESPONSE_FORCE",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_COUNTER",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_RANGED",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_FAST_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_FAST_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_CLOSE_CITY_DEFENSE",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_COUNTER",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_COUNTER",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_RANGED",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_RANGED",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_SETTLER_ESCORT",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_SETTLE",
+          "secondaryUnitAi": "UNITAI_SETTLE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_DEFENSE",
+          "secondaryUnitAi": "UNITAI_COUNTER",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_MERCHANT_ESCORT",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_MERCHANT",
+          "secondaryUnitAi": "UNITAI_MERCHANT",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_DEFENSE",
+          "secondaryUnitAi": "UNITAI_COUNTER",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_SMALL_CITY_ATTACK_FORCE",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_RANGED",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_RANGED",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_GENERAL",
+          "secondaryUnitAi": "UNITAI_GENERAL",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_QUICK_COLONY_SETTLER",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_SETTLE",
+          "secondaryUnitAi": "UNITAI_SETTLE",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_NAVAL_SQUADRON",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_ATTACK_SEA",
+          "secondaryUnitAi": "UNITAI_RESERVE_SEA",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK_SEA",
+          "secondaryUnitAi": "UNITAI_RESERVE_SEA",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_COLONIZATION_PARTY",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_SETTLE",
+          "secondaryUnitAi": "UNITAI_SETTLE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_DEFENSE",
+          "secondaryUnitAi": "UNITAI_COUNTER",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ESCORT_SEA",
+          "secondaryUnitAi": "UNITAI_RESERVE_SEA",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ESCORT_SEA",
+          "secondaryUnitAi": "UNITAI_RESERVE_SEA",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_NAVAL_INVASION",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_RANGED",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ESCORT_SEA",
+          "secondaryUnitAi": "UNITAI_RESERVE_SEA",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ESCORT_SEA",
+          "secondaryUnitAi": "UNITAI_RESERVE_SEA",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_GENERAL",
+          "secondaryUnitAi": "UNITAI_GENERAL",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_CITY_STATE_INVASION",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_RANGED",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_RANGED",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_ESCORT_SEA",
+          "secondaryUnitAi": "UNITAI_RESERVE_SEA",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ESCORT_SEA",
+          "secondaryUnitAi": "UNITAI_RESERVE_SEA",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_NUKE_ATTACK",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_ICBM",
+          "secondaryUnitAi": "UNITAI_ICBM",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_EARLY_RUSH",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_RANGED",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_GENERAL",
+          "secondaryUnitAi": "UNITAI_GENERAL",
+          "required": false
+        }
+      ]
+    }
+  ]
 }

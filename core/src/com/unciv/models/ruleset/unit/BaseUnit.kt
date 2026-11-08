@@ -1,5 +1,6 @@
 package com.unciv.models.ruleset.unit
 
+import com.unciv.logic.automation.strategy.EconomicAi
 import com.unciv.Constants
 import com.unciv.logic.GameInfo
 import com.unciv.logic.MultiFilter
@@ -388,6 +389,7 @@ class BaseUnit : RulesetObject(), INonPerpetualConstruction {
             unit.currentMovement = 0f
 
         addConstructionBonuses(unit, cityConstructions)
+        EconomicAi.onUnitTrained(unit)
 
         return unit
     }

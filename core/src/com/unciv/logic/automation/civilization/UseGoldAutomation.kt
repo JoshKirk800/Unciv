@@ -1,182 +1,254 @@
 package com.unciv.logic.automation.civilization
 
-import com.unciv.view.GameView
-import com.unciv.logic.automation.unit.UnitAutomation
+import com.unciv.logic.automation.diplomacy.DisputeLevel
+import com.unciv.logic.automation.strategy.CityStrategyAi
+import com.unciv.logic.automation.strategy.EconomicAi
+import com.unciv.logic.automation.strategy.ProductionAi
+import com.unciv.logic.automation.strategy.PurchaseType
+import com.unciv.logic.automation.strategy.UnitAiType
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
-import com.unciv.logic.map.BFS
+import com.unciv.logic.map.mapunit.MapUnit
+import com.unciv.logic.map.mapunit.PossibleUpgrade
+import com.unciv.logic.map.mapunit.UpgradeAvailability
 import com.unciv.logic.map.tile.Tile
-import com.unciv.models.ruleset.INonPerpetualConstruction
+import com.unciv.models.ruleset.ai.AiDefine
+import com.unciv.models.ruleset.ai.Flavor
 import com.unciv.models.ruleset.tile.ResourceType
-import com.unciv.models.ruleset.unique.UniqueType
+import com.unciv.models.ruleset.unit.BaseUnit
 import com.unciv.models.stats.Stat
-import yairm210.purity.annotations.LocalState
-import yairm210.purity.annotations.Readonly
-import java.util.*
+import kotlin.math.max
 
+/**
+ *  Where the AI spends gold, by the rules of the original: plot purchases (CvEconomicAI::DoPlotPurchases), unit upgrades
+ *  (CvHomelandAI::PlotUpgradeMoves) and military unit purchases (CvMilitaryAI::BuyEmergencyUnit), each through the purchase savings
+ *  ([com.unciv.logic.automation.strategy.PurchaseSavings]). The original never buys the current construction of a city
+ *  (CvEconomicAI::DoHurry's gold branch is disabled), so neither does this. City-state gifts are the city-state diplomacy port's.
+ */
 object UseGoldAutomation {
 
+    //region Unit upgrades (CvHomelandAI::PlotUpgradeMoves)
 
-    /** allow AI to spend money to purchase city-state friendship, buildings & unit */
-    fun useGold(civ: Civilization) {
-        for (unit in civ.units.getCivUnits())
-            UnitAutomation.tryUpgradeUnit(GameView(unit.civ.gameInfo, unit.civ).getMapUnitView(unit))
+    /** UPGRADE_THIS_TURN_PRIORITY_BOOST of CvHomelandAI.h */
+    private const val UPGRADE_THIS_TURN_PRIORITY_BOOST = 1000
+    /** UPGRADE_IN_TERRITORY_PRIORITY_BOOST of CvHomelandAI.h */
+    private const val UPGRADE_IN_TERRITORY_PRIORITY_BOOST = 500
 
-        if (civ.isMajorCiv)
-            useGoldForCityStates(civ)
+    /** The upgrade CvUnit::GetUpgradeUnitType gives (the unit type's normal upgrade), if the tech and the resources allow it */
+    private fun upgradeFor(unit: MapUnit): PossibleUpgrade? =
+        unit.upgrade.getUpgradesOfKind(isSpecial = false).firstOrNull { it.availability == UpgradeAvailability.Available }
 
-        val acceptableHurryCostModifier = civ.gold.coerceAtLeast(0)/100
-        // Ideally we buy things with good gold:production conversion from purchasing and hard-build the rest, but some mods have high hurryCostModifier on everything leading to too much gold being saved. 
-        // Rather than checking the full ruleset for future available constructions and determining if they're worth it, let's gradually accept less efficiency if it turns out we're saving too much
+    /** The number of units [PlotUpgradeMoves][plotUpgradeMoves] upgrades per turn: max(1, MILITARY_TRAINING / 3) + max(0, handicap - 5) */
+    fun maxUpgradesPerTurn(civ: Civilization): Int =
+        max(1, civ.ai.personalityAndGrandStrategy(Flavor.MilitaryTraining) / 3) + max(0, EconomicAi.gameHandicapIndex(civ.gameInfo) - 5)
 
-        for (city in civ.cities.sortedByDescending { it.cityStats.currentCityStats.production }) {
-            // Low production cities are disallowed from building military and world wonders, and have low priority for xp buildings
-            val construction = city.cityConstructions.getCurrentConstruction()
-            if (construction !is INonPerpetualConstruction) continue
-            val statBuyCost = construction.getStatBuyCost(city, Stat.Gold) ?: continue
-            if (!city.cityConstructions.isConstructionPurchaseAllowed(construction, Stat.Gold, statBuyCost)) continue
-            if (civ.gold < statBuyCost || construction.hurryCostModifier > acceptableHurryCostModifier) continue
-            if (city.cityConstructions.getWorkDone(construction.name) > 0) continue // Don't buy things we already invested production into (may waste the invested production)
-            city.cityConstructions.purchaseConstruction(construction, 0, true)
+    /**
+     *  CvHomelandAI::PlotUpgradeMoves, gold side. Units whose upgrade the tech and resources allow are ranked: lowest unit power first,
+     *  +[UPGRADE_THIS_TURN_PRIORITY_BOOST] if they can upgrade now (gold, movement, own territory), else +[UPGRADE_IN_TERRITORY_PRIORITY_BOOST]
+     *  in own territory. Those that can upgrade now are upgraded in that order, at most [maxUpgradesPerTurn]. If none could, the gold for
+     *  the first is reserved at priority AI_GOLD_PRIORITY_UPGRADE_BASE + AI_GOLD_PRIORITY_UPGRADE_PER_FLAVOR_POINT x current MILITARY_TRAINING.
+     *  Moving that unit home is homeland movement (out of scope); Unciv's unit automation moves it.
+     *  @return the units upgraded
+     */
+    fun plotUpgradeMoves(civ: Civilization): Int {
+        class Candidate(val unit: MapUnit, val upgrade: PossibleUpgrade, val canUpgradeNow: Boolean, val priority: Int)
+        val candidates = ArrayList<Candidate>()
+        for (unit in civ.units.getCivUnits()) {
+            val upgrade = upgradeFor(unit) ?: continue
+            val canUpgradeNow = unit.upgrade.canPerformUpgrade(upgrade, isFree = false)
+            var priority = UPGRADE_THIS_TURN_PRIORITY_BOOST - unit.baseUnit.getForceEvaluation()
+            if (canUpgradeNow) priority += UPGRADE_THIS_TURN_PRIORITY_BOOST
+            else if (unit.getTile().getOwner() == civ) priority += UPGRADE_IN_TERRITORY_PRIORITY_BOOST
+            candidates.add(Candidate(unit, upgrade, canUpgradeNow, priority))
         }
+        // The original cancels the request only when it is not saving for it, which changes nothing: no candidates, nothing to do
+        if (candidates.isEmpty()) return 0
+        candidates.sortByDescending { it.priority } // stable, as std::stable_sort
 
-        maybeBuyCityTiles(civ)
+        val maxUpgrades = maxUpgradesPerTurn(civ)
+        var upgraded = 0
+        for (candidate in candidates) {
+            if (!candidate.canUpgradeNow) continue
+            // An earlier upgrade spent gold or took the resources: check again
+            val upgrade = upgradeFor(candidate.unit) ?: continue
+            if (!candidate.unit.upgrade.canPerformUpgrade(upgrade, isFree = false)) continue
+            candidate.unit.upgrade.performUpgrade(upgrade, isFree = false)
+            upgraded++
+            if (upgraded >= maxUpgrades) return upgraded
+        }
+        if (upgraded > 0) return upgraded
+
+        val amount = candidates.first().upgrade.goldCostOfUpgrade
+        if (amount > 0) {
+            val rules = civ.gameInfo.ruleset.ai
+            val priority = rules.define(AiDefine.AI_GOLD_PRIORITY_UPGRADE_BASE) +
+                rules.define(AiDefine.AI_GOLD_PRIORITY_UPGRADE_PER_FLAVOR_POINT) * civ.ai.flavor(Flavor.MilitaryTraining)
+            civ.ai.purchaseSavings.cancelSaveForPurchase(PurchaseType.UnitUpgrade)
+            civ.ai.purchaseSavings.startSaveForPurchase(PurchaseType.UnitUpgrade, amount, priority)
+        }
+        return 0
+    }
+    //endregion
+
+    //region Plot purchases (CvEconomicAI::DoPlotPurchases)
+
+    /**
+     *  The base tile cost of a city - the original's player-level CvPlayer::GetBuyPlotCost, which its tile costs scale by distance.
+     *  Unciv prices tiles per city ([com.unciv.logic.city.managers.CityExpansionManager.getGoldCostOfTile]): this is the price of a
+     *  tile at distance 2, the closest one that can be bought.
+     */
+    fun baseTileCost(city: City): Int {
+        val ringTwoTile = city.getCenterTile().getTilesAtDistance(2).firstOrNull() ?: city.getCenterTile()
+        return city.expansion.getGoldCostOfTile(ringTwoTile)
     }
 
-    private fun useGoldForCityStates(civ: Civilization) {
-        // RARE EDGE CASE: If you ally with a city-state, you may reveal more map that includes ANOTHER civ!
-        // So if we don't lock this list, we may later discover that there are more known civs, concurrent modification exception!
-        val knownCityStates = civ.getKnownCivs().filter { it.isCityState && MotivationToAttackAutomation.hasAtLeastMotivationToAttack(civ, GameView(civ.gameInfo, civ).getForeignCivView(it), 0f) <= 0 }.toList()
+    /**
+     *  CvEconomicAI::DoPlotPurchases: not for city-states, not while AT_WAR. With more gold than the base tile cost (and that below
+     *  AI_GOLD_BALANCE_TO_HALVE_PLOT_BUY_MINIMUM), the score a tile needs starts at AI_GOLD_PRIORITY_MINIMUM_PLOT_BUY_VALUE and drops by
+     *  50% x (gold - cost) / (balance to halve - cost). The best tile of all cities ([buyPlotScore]) above it is bought, at most one per
+     *  turn, if the purchase savings let its cost go at its score as priority.
+     */
+    fun doPlotPurchases(civ: Civilization) {
+        if (civ.isCityState) return
+        if (civ.ai.isMilitaryStrategyActive(AT_WAR)) return
+        val currentCost = civ.cities.minOfOrNull { baseTileCost(it) } ?: return
+        var bestScore = minimumPlotBuyScore(civ, currentCost) ?: return
 
-        // canBeMarriedBy checks actual cost, but it can't be below 500*speedmodifier, and the later check is expensive
-        if (civ.gold >= 330 && civ.getHappiness() > 0 && civ.hasUnique(UniqueType.CityStateCanBeBoughtForGold)) {
-            for (cityState in knownCityStates.toList() ) {  // Materialize sequence as diplomaticMarriage may kill a CS
-                if (cityState.cityStateFunctions.canBeMarriedBy(civ))
-                    cityState.cityStateFunctions.diplomaticMarriage(civ)
-                if (civ.getHappiness() <= 0) break // Stop marrying if happiness is getting too low
+        var bestCity: City? = null
+        var bestTile: Tile? = null
+        for (city in civ.cities) {
+            val (score, tile) = buyPlotScore(city) ?: continue
+            if (score > bestScore) {
+                bestCity = city
+                bestTile = tile
+                bestScore = score
             }
         }
-
-        if (civ.gold < 500 || knownCityStates.none()) return // skip checks if tryGainInfluence will bail anyway
-        val cityState = knownCityStates
-            .filter { it.allyCiv != civ }
-            .associateWith { NextTurnAutomation.valueCityStateAlliance(GameView(civ.gameInfo, civ).civView, it, true) }
-            .maxByOrNull { it.value }?.takeIf { it.value > 0 }?.key
-        if (cityState != null) {
-            tryGainInfluence(civ, cityState)
-        }
+        if (bestCity == null || bestTile == null) return
+        val cost = bestCity.expansion.getGoldCostOfTile(bestTile)
+        if (civ.gold < cost) return
+        if (civ.ai.purchaseSavings.canWithdrawMoneyForPurchase(civ, PurchaseType.Tile, cost, bestScore))
+            bestCity.expansion.buyTile(bestTile)
     }
 
-    private fun maybeBuyCityTiles(civInfo: Civilization) {
-        if (civInfo.gold <= 0)
-            return
-        // Don't buy tiles in the very early game. It is unlikely that we already have the required
-        // tech, the necessary worker and that there is a reasonable threat from another player to
-        // grab the tile. We could also check all that, but it would require a lot of cycles each
-        // turn and this is probably a good approximation.
-        if (civInfo.gameInfo.turns < (civInfo.gameInfo.speed.scienceCostModifier * 20).toInt())
-            return
+    /**
+     *  The score a tile must beat in [doPlotPurchases]: AI_GOLD_PRIORITY_MINIMUM_PLOT_BUY_VALUE, lowered by 50% x (gold - cost) /
+     *  (AI_GOLD_BALANCE_TO_HALVE_PLOT_BUY_MINIMUM - cost); null (no purchase) unless the gold exceeds [currentCost] and the cost is below
+     *  that balance.
+     */
+    fun minimumPlotBuyScore(civ: Civilization, currentCost: Int): Int? {
+        val rules = civ.gameInfo.ruleset.ai
+        val goldForHalfCost = rules.define(AiDefine.AI_GOLD_BALANCE_TO_HALVE_PLOT_BUY_MINIMUM)
+        val balance = civ.gold
+        if (currentCost >= balance || goldForHalfCost <= currentCost) return null
+        val minimum = rules.define(AiDefine.AI_GOLD_PRIORITY_MINIMUM_PLOT_BUY_VALUE)
+        val discountPercent = 50 * (balance - currentCost) / (goldForHalfCost - currentCost)
+        return minimum - minimum * discountPercent / 100
+    }
 
-        val highlyDesirableTiles: SortedMap<Tile, MutableSet<City>> = getHighlyDesirableTilesToCityMap(civInfo)
-
-        // Always try to buy highly desirable tiles if it can be afforded.
-        for (highlyDesirableTile in highlyDesirableTiles) {
-            val cityWithLeastCostToBuy = highlyDesirableTile.value.minBy {
-                it.getCenterTile().aerialDistanceTo(highlyDesirableTile.key)
+    /** CvCity::GetBuyPlotScore: the best tile the city can buy and its [individualPlotScore]; null if it can buy none (CanBuyAnyPlot) */
+    fun buyPlotScore(city: City): Pair<Int, Tile>? {
+        var bestScore = -1
+        var bestTile: Tile? = null
+        for (tile in city.tilesInRange) {
+            if (!city.expansion.canBuyTile(tile)) continue
+            val score = individualPlotScore(city, tile)
+            if (score > bestScore) {
+                bestScore = score
+                bestTile = tile
             }
-            val bfs = BFS(cityWithLeastCostToBuy.getCenterTile())
-            {
-                it.getOwner() == null || it.owningCity == cityWithLeastCostToBuy
-            }
-            bfs.stepUntilDestination(highlyDesirableTile.key)
-            val tilesThatNeedBuying =
-                bfs.getPathTo(highlyDesirableTile.key).filter { it.getOwner() == null }
-                    .toList().reversed() // getPathTo is from destination to source
+        }
+        return bestTile?.let { bestScore to it }
+    }
 
-            // We're trying to acquire everything and revert if it fails, because of the difficult
-            // way how tile acquisition cost is calculated. Everytime you buy a tile, the next one
-            // gets more expensive and by how much depends on other things such as game speed. To
-            // not introduce hidden dependencies on that and duplicate that logic here to calculate
-            // the price of the whole path, this is probably simpler.
-            var ranOutOfMoney = false
-            var goldSpent = 0
-            for (tileThatNeedsBuying in tilesThatNeedBuying) {
-                val goldCostOfTile =
-                    cityWithLeastCostToBuy.expansion.getGoldCostOfTile(tileThatNeedsBuying)
-                if (civInfo.gold >= goldCostOfTile) {
-                    cityWithLeastCostToBuy.expansion.buyTile(tileThatNeedsBuying)
-                    goldSpent += goldCostOfTile
-                } else {
-                    ranOutOfMoney = true
-                    break
+    /**
+     *  CvCity::GetIndividualPlotScore: a revealed strategic resource 50, a luxury 40 (x2 if the civilization has none of it); each yield
+     *  x10 (x20 if it is the city specialization's yield), x5 if the city is deficient in it; for every major we have a land dispute with
+     *  whose nearest city on the tile's landmass is within 10 tiles, (10 - distance) x 6 / 4 / 2 (fierce / strong / weak);
+     *  all x base tile cost / this tile's cost.
+     */
+    fun individualPlotScore(city: City, tile: Tile): Int {
+        val civ = city.civ
+        val rules = civ.gameInfo.ruleset.ai
+        var value = 0
+        val resource = tile.tileResource
+        if (tile.resource != null && civ.canSeeResource(resource)) {
+            when (resource.resourceType) {
+                ResourceType.Strategic -> value += rules.define(AiDefine.AI_PLOT_VALUE_STRATEGIC_RESOURCE)
+                ResourceType.Luxury -> {
+                    var luxuryValue = rules.define(AiDefine.AI_PLOT_VALUE_LUXURY_RESOURCE)
+                    if (civ.getResourceAmount(resource) == 0) luxuryValue *= 2
+                    value += luxuryValue
                 }
-            }
-            if (ranOutOfMoney) {
-                for (tileThatNeedsBuying in tilesThatNeedBuying) {
-                    cityWithLeastCostToBuy.expansion.relinquishOwnership(tileThatNeedsBuying)
-                }
-                civInfo.addGold(goldSpent)
+                else -> {}
             }
         }
-    }
 
-    @Readonly
-    private fun getHighlyDesirableTilesToCityMap(civInfo: Civilization): SortedMap<Tile, MutableSet<City>> {
-        val highlyDesirableTiles: SortedMap<Tile, MutableSet<City>> = TreeMap(
-            compareByDescending<Tile?> { it?.naturalWonder != null }
-                .thenByDescending { it?.tileResource?.resourceType == ResourceType.Luxury }
-                .thenByDescending { it?.tileResource?.resourceType == ResourceType.Strategic }
-                // This is necessary, so that the map keeps Tiles with the same resource as two
-                // separate entries.
-                .thenBy { it.hashCode() }
-        )
+        val specializationYield = city.ai.specializationDef()?.yieldType
+        val natureYields = tile.stats.getTileStats(null, civ)
+        for (stat in YIELDS) {
+            val yield = natureYields[stat].toInt()
+            var yieldValue = yield * if (stat.name == specializationYield) rules.define(AiDefine.AI_PLOT_VALUE_SPECIALIZATION_MULTIPLIER)
+                else rules.define(AiDefine.AI_PLOT_VALUE_YIELD_MULTIPLIER)
+            if (CityStrategyAi.isYieldDeficient(city, stat)) yieldValue *= rules.define(AiDefine.AI_PLOT_VALUE_DEFICIENT_YIELD_MULTIPLIER)
+            value += yieldValue
+        }
 
-        for (city in civInfo.cities.filter { !it.isPuppet && !it.isBeingRazed }) {
-            city.getCenterTile().forEachTileAtDistance(2) {
-                // Only consider second ring tiles: further tiles may be as good or better, but have much higher gold cost
-                if (isHighlyDesirableTile(it, civInfo, city)) {
-                    @LocalState val desirableTiles = highlyDesirableTiles.getOrPut(it) { mutableSetOf() }
-                    desirableTiles.add(city)
-                }
+        for (other in civ.gameInfo.civilizations) {
+            if (other == civ || !other.isMajorCiv || !other.isAlive()) continue
+            val disputeMultiplier = when (civ.ai.diplomacy.landDisputeLevel(other)) {
+                DisputeLevel.Fierce -> rules.define(AiDefine.AI_PLOT_VALUE_FIERCE_DISPUTE)
+                DisputeLevel.Strong -> rules.define(AiDefine.AI_PLOT_VALUE_STRONG_DISPUTE)
+                DisputeLevel.Weak -> rules.define(AiDefine.AI_PLOT_VALUE_WEAK_DISPUTE)
+                DisputeLevel.None -> continue
             }
-        }
-        return highlyDesirableTiles
-    }
-
-    @Readonly
-    private fun isHighlyDesirableTile(it: Tile, civInfo: Civilization, city: City): Boolean {
-        if (!it.isVisible(civInfo)) return false
-        if (it.getOwner() != null) return false
-        if (it.neighbors.none { neighbor -> neighbor.getCity() == city }) return false
-
-        @Readonly fun hasNaturalWonder() = it.naturalWonder != null
-
-        @Readonly  fun hasLuxury(): Boolean {
-            val resource = it.tileResource
-            return civInfo.canSeeResource(resource) &&
-                resource.resourceType == ResourceType.Luxury &&
-                civInfo.getResourceAmount(resource) < 2 // At 2 or more, we haven't been able to trade it away for another duplicate...
+            val nearest = other.cities.asSequence()
+                .filter { it.getCenterTile().getContinent() == tile.getContinent() }
+                .minOfOrNull { it.getCenterTile().aerialDistanceTo(tile) } ?: continue
+            if (nearest < 10) value += (10 - nearest) * disputeMultiplier
         }
 
-        @Readonly fun hasHighYields(): Boolean {
-            val tileStats = it.stats.getTileStats(civInfo)
-            return tileStats.food + tileStats.production >= 3
+        val cost = city.expansion.getGoldCostOfTile(tile)
+        if (cost == 0) return 0
+        return value * baseTileCost(city) / cost
+    }
+
+    /** The original's yields (YieldTypes): Unciv stats without happiness */
+    private val YIELDS = Stat.entries.filter { it != Stat.Happiness }
+    //endregion
+
+    //region Military purchases (CvMilitaryAI::BuyEmergencyUnit)
+
+    /**
+     *  CvMilitaryAI::BuyEmergencyUnit: buys the unit CvUnitProductionAI::RecommendUnit picks for [unitAi] in [city] - with gold if the
+     *  purchase savings let its cost go at AI_GOLD_PRIORITY_UNIT, else with faith if it can be bought with faith. Not in puppets
+     *  (unless the civilization may buy in puppets, the original's Venice exception). The unit has no movement left.
+     *  @return the unit bought, null if none
+     */
+    fun buyEmergencyUnit(civ: Civilization, unitAi: UnitAiType, city: City): MapUnit? {
+        val unitType = ProductionAi.recommendUnit(city, unitAi) ?: return null
+        val constructions = city.cityConstructions
+        val goldCost = unitType.getStatBuyCost(city, Stat.Gold)
+        if (goldCost != null && constructions.isConstructionPurchaseAllowed(unitType, Stat.Gold, goldCost)) {
+            val priority = civ.gameInfo.ruleset.ai.define(AiDefine.AI_GOLD_PRIORITY_UNIT)
+            if (civ.ai.purchaseSavings.canWithdrawMoneyForPurchase(civ, PurchaseType.Unit, goldCost, priority))
+                return purchase(city, unitType, Stat.Gold)
         }
-
-        return (hasNaturalWonder() || hasLuxury() || hasHighYields())
+        val faithCost = unitType.getStatBuyCost(city, Stat.Faith)
+        if (faithCost != null && constructions.isConstructionPurchaseAllowed(unitType, Stat.Faith, faithCost))
+            return purchase(city, unitType, Stat.Faith)
+        return null
     }
 
-    private fun tryGainInfluence(civInfo: Civilization, cityState: Civilization) {
-        if (civInfo.gold < 500) return // Save up, giving 500 gold in one go typically grants +5 influence compared to giving 2×250 gold
-        val influence = cityState.getDiplomacyManager(civInfo)!!.getInfluence()
-        val stopSpending =  influence > 60 + 2 * NextTurnAutomation.valueCityStateAlliance(GameView(civInfo.gameInfo, civInfo).civView, cityState, true)
-        // Don't go into a gold gift race: be content with friendship for cheap, or use the gold on more productive uses,
-        // for example upgrading an army to conquer the player who's contesting our city states
-        if (influence < 10 || stopSpending) return
-        // Only make an investment if we got our Pledge to Protect influence at the highest level
-        if (civInfo.gold >= 1000) cityState.cityStateFunctions.receiveGoldGift(civInfo, 1000)
-        else cityState.cityStateFunctions.receiveGoldGift(civInfo, 500)
-        return
+    private fun purchase(city: City, unitType: BaseUnit, stat: Stat): MapUnit? {
+        val before = city.civ.units.getCivUnitsSize()
+        if (!city.cityConstructions.purchaseConstruction(unitType, -1, true, stat)) return null
+        if (city.civ.units.getCivUnitsSize() <= before) return null
+        val unit = city.civ.units.getCivUnits().last()
+        unit.currentMovement = 0f
+        return unit
     }
+    //endregion
 
+    private const val AT_WAR = "MILITARYAISTRATEGY_AT_WAR"
 }

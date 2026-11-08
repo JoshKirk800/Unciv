@@ -91,7 +91,8 @@ object NextTurnAutomation {
 
         timeThis("AI.chooseTechToResearch") { chooseTechToResearch(civView) }
         timeThis("AI.automateCityBombardment") { automateCityBombardment(civView) }
-        if (tradeAndChangeState) timeThis("AI.useGold") { UseGoldAutomation.useGold(civInfo) }
+        if (tradeAndChangeState) timeThis("AI.considerAnnex") { CityConquestAutomation.considerAnnex(civInfo) }
+        if (tradeAndChangeState) timeThis("AI.upgradeUnits") { UseGoldAutomation.plotUpgradeMoves(civInfo) }
         if (tradeAndChangeState && !civView.isCityState) timeThis("AI.cityStates") {
             protectCityStates(civView)
             bullyCityStates(civView)
@@ -629,16 +630,6 @@ object NextTurnAutomation {
         for (city in civView.cities()) UnitAutomation.tryBombardEnemy(city)
     }
 
-    private fun shouldAnnexCity(civView: CivView, city: City): Boolean {
-        val civInfo = civView.getCiv()
-        return city.isPuppet
-            && city.population.population > 9
-            && !city.isInResistance()
-            && !civView.hasUnique(UniqueType.MayNotAnnexCities)
-            && civView.getHappiness() >= 5 // live happiness - statsForNextTurn is stale mid-turn, so a multi-city conquest wave would otherwise annex several puppets against a pre-conquest reading
-            && civInfo.stats.statsForNextTurn.happiness > city.population.population * 2 - 8 // don't go below -10 happiness due to annexing
-    }
-
     fun automateCities(civView: CivView) {
         val civInfo = civView.getCiv()
         val ownMilitaryStrength = civInfo.getStatForRanking(RankingType.Force)
@@ -649,8 +640,6 @@ object NextTurnAutomation {
         val civHasSignificantlyWeakerMilitaryThanEnemies =
                 ownMilitaryStrength < sumOfEnemiesMilitaryStrength * 0.66f
         for (city in civInfo.cities) {
-            if (shouldAnnexCity(civView, city)) city.annexCity()
-
             // Don't pull a city off a spaceship part it's already building for the military push (only if actually attacked)
             val onSpaceshipPart = city.cityConstructions.getCurrentConstruction().name in civInfo.gameInfo.spaceResources
             if (city.health < city.getMaxHealth() || (civHasSignificantlyWeakerMilitaryThanEnemies && !onSpaceshipPart)) {
