@@ -106,12 +106,15 @@ object SettlerAutomation {
             && (civ.gameInfo.turns - operation.turnStarted > ESCORT_WAIT_TURNS || unit.getTile().getOwner() != civ)
             && committedCity(civ, operation) == null) operation.escorted = false
 
-        // CvAIOperationFoundCity::ArmyInPosition: the site was taken or can no longer hold a city - find another one
+        // CvAIOperationFoundCity::ArmyInPosition: the site was taken or can no longer hold a city - find another one.
+        // No path to the new site either (GetBestSettlePlot does not check paths): AI_ABORT_LOST_PATH, a new operation starts next turn
         if (!isStillValidTarget(unit, target) || !unit.movement.canReach(target)) {
-            target = retarget(unit, operation, target) ?: run {
+            val newTarget = retarget(unit, operation, target)
+            if (newTarget == null || !unit.movement.canReach(newTarget)) {
                 unit.settlerOperation = null
                 return@timeThis
             }
+            target = newTarget
         }
 
         if (unit.getTile() == target && unit.hasMovement()) {
