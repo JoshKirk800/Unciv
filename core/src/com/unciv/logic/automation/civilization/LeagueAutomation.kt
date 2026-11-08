@@ -733,16 +733,9 @@ class LeagueEvaluator(private val civ: Civilization, private val league: League)
 
     /** (CvVotingClasses.cpp:9166-9191) */
     private fun scoreScholars(): Int {
-        val ratio = (getTechRatio() - 0.5f) * 2f // -1 if in first, 1 if in last
+        val ratio = (TechAutomation.techRatio(civ) - 0.5f) * 2f // -1 if in first, 1 if in last
         return if (ratio < 0f) (ratio * 30).toInt() + (if (seekingScience) -30 else 0)
         else (ratio * 50).toInt() + (if (seekingScience) 40 else 0)
-    }
-
-    /** CvTechAI::GetTechRatio (CvTechAI.cpp:248-292): 0 for the civilization with most technologies, 1 for the one with fewest */
-    private fun getTechRatio(): Float {
-        val ranked = gameInfo.getAliveMajorCivs().sortedByDescending { it.tech.researchedTechnologies.size }
-        if (ranked.size < 2) return 0f
-        return ranked.indexOf(civ).coerceAtLeast(0) / (ranked.size - 1).toFloat()
     }
 
     /** (CvVotingClasses.cpp:9231-9278) */

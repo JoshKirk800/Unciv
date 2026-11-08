@@ -42,7 +42,7 @@ class PlotDanger(private val civ: Civilization) {
             for (city in other.cities)
                 if (city.getCenterTile().isExplored(civ)) cities.add(city)
             if (civ.isAtWarWith(other)) for (city in other.cities) for (tile in city.getTiles())
-                if (tile.isExplored(civ) && tile.getTileImprovement()?.hasUnique(UniqueType.DamagesAdjacentEnemyUnits) == true) citadels.add(tile)
+                if (tile.isExplored(civ) && tile.getUnpillagedTileImprovement()?.hasUnique(UniqueType.DamagesAdjacentEnemyUnits) == true) citadels.add(tile)
         }
     }
 

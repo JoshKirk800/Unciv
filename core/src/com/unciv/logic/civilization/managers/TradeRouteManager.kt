@@ -54,9 +54,9 @@ class TradeRouteManager : IsPartOfGameInfoSerialization {
     private var potentialConnectionsTurn = -1
 
     /** The trade AI's ordered connections for [aiRoutesTurn] (CvHomelandAI::ExecuteTradeUnitMoves keeps one list per turn) */
-    @Transient @Cache
+    @Transient
     var aiPrioritizedRoutes: List<TradeRouteCandidate> = emptyList()
-    @Transient @Cache
+    @Transient
     var aiRoutesTurn = -1
 
     fun clone(): TradeRouteManager {

@@ -1,11 +1,14 @@
 package com.unciv.logic.automation.unit
 
+import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.civilization.DiplomatUsefulness
 import com.unciv.logic.automation.civilization.LeagueAutomation
 import com.unciv.logic.automation.civilization.MinorCivHelpers
+import com.unciv.logic.automation.civilization.TechAutomation
+import com.unciv.logic.automation.diplomacy.OpinionAi
 import com.unciv.logic.automation.diplomacy.WarGoal
 import com.unciv.logic.city.City
-import com.unciv.logic.civilization.CityStatePersonality
+import com.unciv.logic.civilization.diplomacy.CityStatePersonality
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.Proximity
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
@@ -27,11 +30,11 @@ class SpyTargets(var offensive: Int = 0, var defensive: Int = 0, var cityState: 
  *
  * The thefts themselves happen in [Spy.endTurn] (the AI takes the first stealable technology, CvEspionageAI::StealTechnology).
  * Inputs the original reads and what stands in for them:
- * - Declaration of Friendship, denunciation, stop-spying promise: [DiplomacyFlags.DeclarationOfFriendship], [DiplomacyFlags.Denunciation],
- *   the target's [DiplomacyFlags.AgreedToNotSendSpies] towards us; research agreement [DiplomacyFlags.ResearchAgreement], defensive pact
- *   [DiplomaticStatus.DefensivePact], open borders the two `hasOpenBorders`.
+ * - Declaration of Friendship and denunciation: [OpinionAi.isDoFAccepted], [OpinionAi.isDenouncedPlayer]; stop-spying promise: the
+ *   target's [DiplomacyFlags.AgreedToNotSendSpies] towards us; research agreement [DiplomacyFlags.ResearchAgreement], defensive pact
+ *   [DiplomaticStatus.DefensivePact], open borders the two `hasOpenBorders`; tech rank [TechAutomation.techRatio].
  * - War goal: `civ.ai.diplomacy.warGoal`; minor civ approach: `civ.ai.minorCivApproaches`; diplomat usefulness: CvLeagueAI's port in
- *   [LeagueAutomation]; influence levels: [com.unciv.logic.civilization.managers.CultureManager.getInfluenceLevel] (unmet = no level).
+ *   [LeagueAutomation]; city-state rules [MinorCivHelpers]; influence levels: [com.unciv.logic.civilization.managers.CultureManager.getInfluenceLevel] (unmet = no level).
  * - The steal-rate memory of the original's city espionage (m_aiLastBasePotential, m_aiNumTimesCityRobbed) and the AI memory
  *   (m_aiCivOutOfTechTurn, m_bUNCountdownStarted) are in [com.unciv.logic.civilization.managers.EspionageManager].
  *
@@ -43,8 +46,8 @@ class EspionageAutomation(private val civInfo: Civilization) {
     private val gameInfo = civInfo.gameInfo
 
     /** CvEspionageAI::DoTurn */
-    fun automateSpies() {
-        if (!civInfo.isMajorCiv) return
+    fun automateSpies() = timeThis("AI.Espionage") {
+        if (!civInfo.isMajorCiv) return@timeThis
         val spies = espionage.spyList
         updateCivOutOfTechTurn()
         attemptCoups()
@@ -142,15 +145,13 @@ class EspionageAutomation(private val civInfo: Civilization) {
     }
 
     /**
-     * CvEspionageAI::AttemptCoups: every spy that can stage a coup (set up in a city-state allied to someone else) tries it with a
-     * probability equal to its chance of success, unless the ally has a Declaration of Friendship with us.
+     * CvEspionageAI::AttemptCoups: every [isCoupCandidate] spy rolls 0..99 and stages the coup when the roll is below its chance of success
+     * in percent ([Spy.getCoupChanceOfSuccess], hidden defenders included).
      */
     private fun attemptCoups() {
         val random = civInfo.ai.random("AttemptCoups")
         for (spy in espionage.spyList) {
-            if (!canStageCoup(spy)) continue
-            val ally = spy.getCity().civ.allyCiv!!
-            if (civInfo.getDiplomacyManager(ally)?.hasFlag(DiplomacyFlags.DeclarationOfFriendship) == true) continue
+            if (!isCoupCandidate(spy)) continue
             val chancePercent = (spy.getCoupChanceOfSuccess(true) * 100).toInt()
             if (random.nextInt(100) < chancePercent) {
                 spy.setAction(SpyAction.Coup, 1)
@@ -159,12 +160,15 @@ class EspionageAutomation(private val civInfo: Civilization) {
         }
     }
 
-    /** CvPlayerEspionage::CanStageCoup: surveillance in a city-state whose ally is another civilization */
-    private fun canStageCoup(spy: Spy): Boolean {
+    /**
+     * Whether [spy] considers a coup in CvEspionageAI::AttemptCoups: CvPlayerEspionage::CanStageCoup (surveillance set up in a city-state
+     * whose ally is another civilization), and that ally is not one we have a Declaration of Friendship with.
+     */
+    fun isCoupCandidate(spy: Spy): Boolean {
         if (!spy.isAlive() || !spy.isSetUp() || spy.action == SpyAction.Coup) return false
         val owner = spy.getCityOrNull()?.civ ?: return false
-        val ally = owner.allyCiv
-        return owner.isCityState && ally != null && ally != civInfo
+        val ally = owner.allyCiv ?: return false
+        return owner.isCityState && ally != civInfo && !OpinionAi.isDoFAccepted(civInfo, ally)
     }
     //endregion
 
@@ -175,7 +179,7 @@ class EspionageAutomation(private val civInfo: Civilization) {
         var remaining = espionage.spyList.count { it.isAlive() }
         if (remaining == 0) return targets
         val ai = civInfo.ai
-        val techRatio = techRatio(civInfo)
+        val techRatio = TechAutomation.techRatio(civInfo)
         var offenseAllocated = false
 
         when {
@@ -333,8 +337,8 @@ class EspionageAutomation(private val civInfo: Civilization) {
         val ours = civInfo.getDiplomacyManager(target) ?: return modifier
         val theirs = target.getDiplomacyManager(civInfo)
         if (theirs?.hasFlag(DiplomacyFlags.AgreedToNotSendSpies) == true) modifier *= 100
-        if (ours.hasFlag(DiplomacyFlags.Denunciation) || theirs?.hasFlag(DiplomacyFlags.Denunciation) == true) modifier /= 2
-        else if (ours.hasFlag(DiplomacyFlags.DeclarationOfFriendship)) modifier *= 50
+        if (OpinionAi.isDenouncedPlayer(civInfo, target) || OpinionAi.isDenouncedPlayer(target, civInfo)) modifier /= 2
+        else if (OpinionAi.isDoFAccepted(civInfo, target)) modifier *= 50
         if (ours.hasFlag(DiplomacyFlags.ResearchAgreement)) modifier *= 5
         if (ours.diplomaticStatus == DiplomaticStatus.DefensivePact) modifier *= 50
         if (theirs?.hasOpenBorders == true) modifier *= 2 // we let them in
@@ -369,7 +373,7 @@ class EspionageAutomation(private val civInfo: Civilization) {
     /** The score of a city-state in CvEspionageAI::BuildMinorCityList */
     fun minorCityScore(cityState: Civilization, plan: CityStatePlan, growthFlavor: Int): Long {
         val rules = gameInfo.ruleset.ai
-        val influence = cityState.getDiplomacyManager(civInfo)?.getInfluence()?.toInt() ?: 0
+        val influence = MinorCivHelpers.influence(cityState, civInfo)
         val isAlly = cityState.allyCiv == civInfo
         val ai = civInfo.ai
         var value = 100L
@@ -406,7 +410,7 @@ class EspionageAutomation(private val civInfo: Civilization) {
             CityStatePlanKind.AttackToPreventDefeat, CityStatePlanKind.DefendForWin -> {
                 val threat = plan.diploThreat!!
                 if (cityState.allyCiv == threat)
-                    value = MAX_INT - (cityState.getDiplomacyManager(threat)?.getInfluence()?.toInt() ?: 0)
+                    value = MAX_INT - MinorCivHelpers.influence(cityState, threat)
             }
         }
         return value
@@ -447,16 +451,6 @@ class EspionageAutomation(private val civInfo: Civilization) {
         private const val MAX_INT = Int.MAX_VALUE.toLong()
         private const val MARITIME = "Maritime"
         private const val MILITARISTIC = "Militaristic"
-
-        /**
-         * CvTechAI::GetTechRatio: our position among the living major civilizations by number of known technologies (stable in the order of
-         * the civilizations), 0 for the first and 1 for the last.
-         */
-        fun techRatio(civ: Civilization): Float {
-            val ranked = civ.gameInfo.getAliveMajorCivs().sortedByDescending { it.tech.techsResearched.size }
-            if (ranked.size < 2) return 0f
-            return ranked.indexOf(civ).coerceAtLeast(0) / (ranked.size - 1).toFloat()
-        }
 
         /** CvEspionageAI::EvaluateSpiesAssignedToTargetPlayer: after promising [other] to stop spying, our spies there reconsider their post */
         fun onAgreedToStopSpying(civ: Civilization, other: Civilization) {

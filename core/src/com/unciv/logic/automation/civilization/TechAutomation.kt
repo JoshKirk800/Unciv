@@ -205,6 +205,16 @@ object TechAutomation {
 
     /** CvTechAI::GetWeight */
     fun weightOf(civ: Civilization, techName: String): Int = civ.tech.aiTechWeights[techName] ?: 0
+
+    /**
+     *  CvTechAI::GetTechRatio: [civ]'s position among the living major civilizations ranked by number of known technologies (stable in the
+     *  order of the civilizations), 0 for the first and 1 for the last; 0 when [civ] is alone.
+     */
+    fun techRatio(civ: Civilization): Float {
+        val ranked = civ.gameInfo.getAliveMajorCivs().sortedByDescending { it.tech.researchedTechnologies.size }
+        if (ranked.size < 2) return 0f
+        return ranked.indexOf(civ).coerceAtLeast(0) / (ranked.size - 1).toFloat()
+    }
     //endregion
 
     //region Choice (CvTechAI::ChooseNextTech, CvPlayerAI::AI_chooseResearch / AI_chooseFreeTech)
