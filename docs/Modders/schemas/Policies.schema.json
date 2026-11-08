@@ -28,10 +28,6 @@
           "Future era"
         ]
       },
-      "priorities": {
-        "$ref": "refs/Priorities.schema.json",
-        "description": "Priorities for each victory type."
-      },
       "uniques": {
         "$ref": "refs/Uniques.schema.json"
       },

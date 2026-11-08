@@ -116,3 +116,15 @@ class HandicapDef : INamed {
     override var name = ""
     var values = LinkedHashMap<String, Int>()
 }
+
+/** The PolicyBranchTypes columns the policy AI reads, by Unciv branch name: the AIDelayNo* flags of CvPolicyAI::IsBranchEffectiveInGame
+ *  and the free tenets of the first and second adopter (PolicyHelpers::GetNumFreePolicies) */
+class PolicyBranchAiDef : INamed {
+    override var name = ""
+    var aiDelayNoReligion = false
+    var aiDelayNoCulture = false
+    var aiDelayNoScience = false
+    var aiDelayNoCityStates = false
+    var firstAdopterFreePolicies = 0
+    var secondAdopterFreePolicies = 0
+}

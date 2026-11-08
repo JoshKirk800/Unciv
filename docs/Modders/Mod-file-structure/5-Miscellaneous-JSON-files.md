@@ -426,7 +426,8 @@ no economic/military/city strategies, and item flavors derived from each object'
 | minorCivFlavors     | List   | `name` (a city-state nation), `flavors`                                                                                |
 | itemFlavors         | List   | `kind` (Building, Unit, Technology, Policy, Process, Project, Resource, Improvement), `name`, `flavors`                 |
 | unitAiTypes         | List   | `name` (a unit), `defaultUnitAi`, `unitAiTypes`                                                                        |
-| handicaps           | List   | `name` (a difficulty), `values` (the AI columns of the original's handicaps)                                           |
+| handicaps           | List   | `name` (a difficulty), `values` (the AI columns of the original's handicaps, and PolicyNumOptionsConsidered, TechNumOptionsConsidered, CityProductionNumOptionsConsidered) |
+| policyBranches      | List   | `name` (a policy branch), `aiDelayNoReligion`, `aiDelayNoCulture`, `aiDelayNoScience`, `aiDelayNoCityStates` (the branch is worthless to the AI in such a game), `firstAdopterFreePolicies`, `secondAdopterFreePolicies` (free tenets the AI expects from an ideology) |
 
 Flavor objects map flavor names to integers. The flavors are, in the original's order: Offense, Defense, CityDefense, MilitaryTraining, Recon,
 Ranged, Mobile, Naval, NavalRecon, NavalGrowth, NavalTileImprovement, Air, Expansion, Growth, TileImprovement, Infrastructure, Production,

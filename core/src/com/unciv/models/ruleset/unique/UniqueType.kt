@@ -1234,7 +1234,6 @@ enum class UniqueType(
         UniqueTarget.EventChoice,
         UniqueTarget.FollowerBelief,
         UniqueTarget.FounderBelief,
-        UniqueTarget.Policy,
         UniqueTarget.Promotion,
         flags = UniqueFlag.setOfHiddenToUsers),
 

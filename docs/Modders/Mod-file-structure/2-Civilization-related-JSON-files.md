@@ -159,31 +159,12 @@ Each personality has the following structure:
 | name                                                                                                                                | String | Required |                                                                                                                                                 |
 | preferredVictoryType                                                                                                                | String | Neutral  | Shown in the Civilopedia only. What the AI pursues is its grand strategy, chosen each turn from the data in [AI.json](5-Miscellaneous-JSON-files.md#aijson) |
 | [`<stats>`](3-Map-related-JSON-files.md#general-stat), [`<behaviors>`](2-Civilization-related-JSON-files.md#personality-behaviours) | Float  | 5        | Amount of focus on the stat the computer player will have. Typically ranges from 0 (no focus) to 10 (double focus)                              |
-| priorities                                                                                                                          | Object | none     | Priorities for each policy branch [^B]                                                                                                          |
 | uniques                                                                                                                             | List   | empty    | List of [unique abilities](../uniques.md) this personality has                                                                                  |
 | flavors                                                                                                                             | Object | none     | The leader's AI flavors (the original's Leader_Flavors, 0-20) by flavor name (`Offense`, `Defense`, `CityDefense`, ... `Airlift`, see [AI.json](5-Miscellaneous-JSON-files.md#aijson)). Missing flavors are 5. Randomized by ±2 once per game |
 | diplomacyPersonality                                                                                                                | Object | none     | The leader's diplomacy personality (the original's Leaders columns: VictoryCompetitiveness, WonderCompetitiveness, MinorCivCompetitiveness, Boldness, DiploBalance, WarmongerHate, DenounceWillingness, DoFWillingness, Loyalty, Neediness, Forgiveness, Chattiness, Meanness). Missing values are 5 |
 | majorCivApproachBiases                                                                                                              | Object | none     | Biases towards the approaches War, Hostile, Deceptive, Guarded, Afraid, Friendly, Neutral to major civilizations. Missing values are 5 |
 | minorCivApproachBiases                                                                                                              | Object | none     | Biases towards the approaches Ignore, Friendly, Protective, Conquest, Bully to city-states. Missing values are 5 |
 | civilopediaText                                                                                                                     | List   | empty    | See [civilopediaText chapter](5-Miscellaneous-JSON-files.md#civilopedia-text)                                                                   |
-
-[^B]: Similar to [policy priorites](#branch-priorities) The "priorities" object defines the priority
-major civilizations' AI give to a policy branch. The AI chooses the policy branch with the highest
-number for the victory of its active grand strategy. If two or more candidate branches have the same priority,
-the AI chooses a random branch among the candidates.
-
-The object maps policy branches to priority values for the major civilization using the policy
-branches name and integers. Any branches not listed have a default value of 0
-
-The code below is an example of a valid "priorities" definition.
-
-```
-"priorities": {
-    "Tradition": 30,
-    "Liberty": 20,
-    "Honor": 10
-}
-```
 
 ### Personality Behaviours
 
@@ -249,7 +230,6 @@ Each policy branch has the following structure:
 |------------|--------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
 | name       | String | Required |                                                                                                                                                     |
 | era        | String | Required | Unlocking era as defined in [Eras.json](5-Miscellaneous-JSON-files.md#erasjson)                                                                     |
-| priorities | Object | none     | Priorities for each victory type, [see here](#branch-priorities)                                                                                    |
 | uniques    | List   | empty    | List of [unique abilities](../uniques.md) this policy branch grants upon adopting it                                                                |
 | civilopediaText | List | empty | See [civilopediaText chapter](5-Miscellaneous-JSON-files.md#civilopedia-text) |
 | policies   | List   | empty    | List of [member policies](#member-policy-structure) and [branch 'finisher'](#branch-finisher-structure) - pay attention to the nesting of {} and [] |
@@ -273,28 +253,13 @@ Each policy branch has the following structure:
 | uniques   | List   | empty    | List of [unique abilities](../uniques.md) this finisher grants upon adopting all the policy members in the branch |
 | civilopediaText | List | empty | See [civilopediaText chapter](5-Miscellaneous-JSON-files.md#civilopedia-text) |
 
-### Branch priorities
+### How the AI chooses policies
 
-The "priorities" object defines the priority major civilizations' AI give to a policy branch. The AI
-chooses the policy branch with the highest sum of the priority listed here for the victory type of its
-active grand strategy ("Neutral" before it has chosen one) and the number listed in the personality's
-priority. If two or more candidate branches have the same priority, the AI chooses a random branch
-among the candidates.
-
-The object maps victory types to priority values for the major civilization using strings and
-integers. If that victory type is not specified, the default priority value is set to 0.
-
-The code below is an example of a valid "priorities" definition.
-
-```json
-"priorities": {
-"Neutral": 0,
-"Cultural": 10,
-"Diplomatic": 0,
-"Domination": 0,
-"Scientific": 10
-}
-```
+The AI weighs policies and branches as the original game does: each policy's flavors (the `Policy` entries of `itemFlavors` in
+[AI.json](5-Miscellaneous-JSON-files.md#aijson), the original's Policy_Flavors; a branch's entry is its opener's) times the leader's
+flavors and those of its grand strategy, a quarter of that passed on to the policies it requires. Opening a branch weighs its opener and
+its policies without requirements, at 22%. The `policyBranches` entries of AI.json say which branches are worthless without religion or
+city-states, and how many free tenets the first and second civilizations to adopt an ideology get (for the AI's choice of ideology).
 
 ## Quests.json
 

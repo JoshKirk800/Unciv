@@ -158,9 +158,28 @@ class PublicOpinion : IsPartOfGameInfoSerialization {
         preferredIdeology = preferred.name
         biggestInfluence = byCiv[preferred.name]?.entries?.maxByOrNull { it.value }?.key // the first of equals, the order of the civilizations
 
+        unhappiness = unhappinessOf(type)
+    }
+
+    /** CvPlayerCulture::ComputePublicOpinionUnhappiness: per city, or per so many citizens, whichever is more */
+    private fun unhappinessOf(type: PublicOpinionType): Int {
         val cities = civ.cities.size
         val population = civ.cities.sumOf { it.population.population }
-        unhappiness = maxOf(cities * type.unhappinessPerCity, population / type.populationPerUnhappiness)
+        return maxOf(cities * type.unhappinessPerCity, population / type.populationPerUnhappiness)
+    }
+
+    /**
+     * CvPlayerCulture::ComputeHypotheticalPublicOpinionUnhappiness: the unhappiness the public opinion would bring if [ideology] were ours,
+     * by the pressure on us now (the ideology AI weighs it before choosing one).
+     */
+    fun hypotheticalUnhappiness(ideology: PolicyBranch): Int {
+        val (total, _) = getPressureOnUs()
+        val againstIt = civ.gameInfo.ruleset.policyBranches.values.filter { it.isIdeology && it != ideology }.sumOf { total[it.name] }
+        val hypotheticalDissatisfaction = againstIt - total[ideology.name]
+        if (hypotheticalDissatisfaction <= 0) return 0
+        val constants = civ.gameInfo.ruleset.modOptions.constants
+        return unhappinessOf(PublicOpinionType.forDissatisfaction(hypotheticalDissatisfaction,
+            constants.publicOpinionCivilResistance, constants.publicOpinionRevolutionaryWave))
     }
 
     @Readonly

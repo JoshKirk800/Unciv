@@ -344,7 +344,6 @@ class Ruleset {
             val newBranch = PolicyBranch()
             copyDataTo(newBranch)
             newBranch.branch = newBranch
-            newBranch.priorities = HashMap(priorities)
             newBranch.era = era
             newBranch.policies = ArrayList(members.map { member ->
                 Policy().also {
@@ -636,11 +635,6 @@ class Ruleset {
                 // Setup this branch
                 branch.requires = ArrayList()
                 branch.branch = branch
-                for (victoryType in victories.values) {
-                    if (victoryType.name !in branch.priorities.keys) {
-                        branch.priorities[victoryType.name] = 0
-                    }
-                }
                 policies[branch.name] = branch
 
                 // Append child policies of this branch

@@ -1,6 +1,5 @@
 package com.unciv.logic.civilization.managers
 
-import com.unciv.Constants
 import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.CivFlags
@@ -53,50 +52,17 @@ class PolicyManager : IsPartOfGameInfoSerialization {
     /** Used by NextTurnAction.PickPolicy.isChoice */
     @Readonly fun shouldShowPolicyPicker() = (shouldOpenPolicyPicker || freePolicies > 0 || freeTenets > 0 || canChooseIdeology()) && canAdoptPolicy()
 
-    /** A [Map] pairing each [PolicyBranch] to its priority ([Int]). */
-    val priorityMap: Map<PolicyBranch, Int>
-        get() {
-            val value = HashMap<PolicyBranch, Int>()
-            // The victory of the active grand strategy; "Neutral" before the AI has chosen one
-            val victoryType = civInfo.ai.grandStrategyDef()?.victoryType ?: Constants.neutralVictoryType
-            for (branch in branches) {
-                val victoryPriority = branch.priorities[victoryType] ?: 0
-                val personalityPriority = civInfo.getPersonality().priorities[branch.name] ?: 0
-                val branchPriority = (victoryPriority + personalityPriority) * 
-                        branch.getWeightForAiDecision(civInfo.state)
-                value[branch] = branchPriority.roundToInt()
-            }
-            return value
-        }
-    /** A [Set] of newly adoptable [PolicyBranch]es. */
-    val adoptableBranches: Set<PolicyBranch>
-        get() = branches.filter { isAdoptable(it) }.toSet()
-    /** A [Set] of incomplete [PolicyBranch]es including newly adoptable ones. */
-    val incompleteBranches: Set<PolicyBranch>
-        get() {
-            val value = HashSet<PolicyBranch>()
-            for (branch in branches) {
-                if (branch.policies.any { isAdoptable(it) }) value.add(branch)
-            }
-            return value
-        }
+    /** CvPolicyAI::m_PolicyAIWeights: the AI weight of every policy, by its position in the ruleset's policies (see PolicyAutomation.flavorUpdate) */
+    @Transient internal var aiPolicyWeights: IntArray? = null
+    /** The [com.unciv.logic.automation.strategy.CivAi] strategy version [aiPolicyWeights] were computed for: the original recomputes them when the flavors change */
+    @Transient internal var aiPolicyWeightsVersion = -1
+
     /** A [Set] of completed [PolicyBranch]es. */
     val completedBranches: Set<PolicyBranch>
         get() {
             val value = HashSet<PolicyBranch>()
             for (branch in branches) {
                 if (branch.policies.all { isAdopted(it.name) }) value.add(branch)
-            }
-            return value
-        }
-    /** A [Map] pairing each [PolicyBranch] to how many of its child branches are adopted ([Int]). */
-    val branchCompletionMap: Map<PolicyBranch, Int>
-        get() {
-            val value = HashMap<PolicyBranch, Int>()
-            for (branch in branches) {
-                value[branch] = adoptedPolicies.count {
-                    branch.policies.contains(getPolicyByName(it))
-                }
             }
             return value
         }
@@ -418,16 +384,6 @@ class PolicyManager : IsPartOfGameInfoSerialization {
                 if (otherCiv.knows(civInfo)) "[${civInfo.civName}] has changed its ideology to [${newBranch.name}]"
                 else "A civilization we have not met has changed its ideology to [${newBranch.name}]",
                 NotificationCategory.Diplomacy, "StatIcons/Culture")
-    }
-
-    /**
-     * Return the highest priority ([Int]) among the given [Set] of [PolicyBranch]es.
-     * Would return null if the given [Set] is empty.
-     */
-    @Readonly
-    fun getMaxPriority(branchesToCompare: Set<PolicyBranch>): Int? {
-        val filteredMap = priorityMap.filterKeys { branch -> branch in branchesToCompare }
-        return filteredMap.values.maxOrNull()
     }
 
     @Readonly

@@ -25,8 +25,6 @@ import com.unciv.logic.civilization.diplomacy.*
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.ruleset.MilestoneType
-import com.unciv.models.ruleset.Policy
-import com.unciv.models.ruleset.PolicyBranch
 import com.unciv.models.ruleset.nation.PersonalityValue
 import com.unciv.models.ruleset.tile.ResourceType
 import com.unciv.models.ruleset.unique.GameContext
@@ -263,89 +261,11 @@ object NextTurnAutomation {
         }
     }
 
+    /** CvPlayer::doTurn: an AI without an ideology chooses one when it is time (CvPolicyAI::DoChooseIdeology), then CvPlayerPolicies::DoPolicyAI */
     private fun adoptPolicy(civView: CivView) {
         val civInfo = civView.getCiv()
-        val rng = civInfo.state.stateBasedRandom("NextTurnAutomation.adoptPolicy")
-        val seeksCulturalVictory = civInfo.ai.isGoingForCultureVictory()
-        /*
-        # Branch-based policy-to-adopt decision
-        Basically the AI prioritizes finishing incomplete branches before moving on, \
-        unless a new branch with higher priority is adoptable.
-
-        - If incomplete branches have higher priorities than any newly adoptable branch,
-            - Candidates are the unfinished branches.
-        - Else if newly adoptable branches have higher priorities than any incomplete branch,
-            - Candidates are the new branches.
-        - Choose a random candidate closest to completion.
-        - Pick a random child policy of a chosen branch and adopt it.
-        */
-        // An ideology is chosen before anything is bought (CvPlayer::doTurn), and the free tenets go to tenets (they can buy nothing else)
-        PolicyAutomation.considerIdeologySwitch(civInfo)
-        PolicyAutomation.chooseIdeology(civInfo, rng)?.let { civInfo.policies.adopt(it) }
-        while (civInfo.policies.freeTenets > 0) {
-            val tenet = PolicyAutomation.chooseTenet(civInfo, rng) ?: break
-            civInfo.policies.adopt(tenet)
-        }
-
-        while (civView.canAdoptPolicy()) {
-            // Choosing an ideology costs nothing and is done above, so it is not what makes a policy adoptable here
-            val incompleteBranches: Set<PolicyBranch> = civInfo.policies.incompleteBranches
-            val adoptableBranches: Set<PolicyBranch> = civInfo.policies.adoptableBranches.filterNot { it.isIdeology }.toSet()
-            if (civInfo.policies.freePolicies == 0 && civInfo.policies.storedCulture < civInfo.policies.getCultureNeededForNextPolicy()) return
-
-            // Skip the whole thing if all branches are completed
-            if (incompleteBranches.isEmpty() && adoptableBranches.isEmpty()) return
-
-            val priorityMap: Map<PolicyBranch, Int> = civInfo.policies.priorityMap
-            var maxIncompletePriority: Int? =
-                civInfo.policies.getMaxPriority(incompleteBranches)
-            var maxAdoptablePriority: Int? = civInfo.policies.getMaxPriority(adoptableBranches)
-
-            // This here is a (probably dirty) code to bypass NoSuchElementException error
-            //  when one of the priority variables is null
-            if (maxIncompletePriority == null) maxIncompletePriority =
-                maxAdoptablePriority!! - 1
-            if (maxAdoptablePriority == null) maxAdoptablePriority =
-                maxIncompletePriority - 1
-
-            // Candidate branches to adopt
-            val candidates: Set<PolicyBranch> =
-                // If incomplete branches have higher priorities than any newly adoptable branch,
-                if (maxAdoptablePriority <= maxIncompletePriority) {
-                    // Prioritize finishing one of the unfinished branches
-                    incompleteBranches.filter { priorityMap[it] == maxIncompletePriority }.toSet()
-                }
-                // If newly adoptable branches have higher priorities than any incomplete branch,
-                else {
-                    // Prioritize adopting one of the new branches
-                    adoptableBranches.filter { priorityMap[it] == maxAdoptablePriority }.toSet()
-                }
-
-            // branchCompletionMap but keys are only candidates
-            val candidateCompletionMap: Map<PolicyBranch, Int> =
-                civInfo.policies.branchCompletionMap.filterKeys { key -> key in candidates }
-
-            // Choose the branch with the LEAST REMAINING policies, not the MOST ADOPTED ones
-            val targetBranch = candidateCompletionMap.asIterable()
-                .groupBy { it.key.policies.size - it.value }
-                .minByOrNull { it.key }!!.value.random(rng).key
-
-            val policyToAdopt: Policy =
-                if (civInfo.policies.isAdoptable(targetBranch)) targetBranch
-                else targetBranch.policies.filter { civInfo.policies.isAdoptable(it) }
-                    .randomWeighted(rng) { policy ->
-                        val weight = policy.getWeightForAiDecision(civInfo.state)
-                        if (seeksCulturalVictory && (
-                            policy.hasUnique(UniqueType.TourismTowardsPercent, civInfo.state)
-                                || policy.hasUnique(UniqueType.GreatWorksTourismPercent, civInfo.state)
-                                || policy.hasUnique(UniqueType.LandmarksTourismPercent, civInfo.state)
-                                || policy.hasUnique(UniqueType.FlatTourism, civInfo.state)
-                            )) weight * 3f else weight
-                    }
-
-            if (!civInfo.policies.canAdopt(policyToAdopt)) return
-            civInfo.policies.adopt(policyToAdopt)
-        }
+        PolicyAutomation.chooseIdeology(civInfo)?.let { civInfo.policies.adopt(it) }
+        PolicyAutomation.doPolicyAi(civInfo)
     }
 
     fun chooseGreatPerson(civView: CivView) {
