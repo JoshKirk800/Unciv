@@ -29,7 +29,7 @@ import com.unciv.models.ruleset.unique.UniqueType
 object TradeRouteAutomation {
 
     /** CvHomelandAI::ExecuteTradeUnitMoves for one unit, with CvTradeAI::ChooseTradeUnitTargetPlot */
-    fun automateTradeUnit(unit: MapUnit) {
+    fun automateTradeUnit(unit: MapUnit): Unit = timeThis("AI.TradeRoutes") {
         val civ = unit.civ
         val manager = civ.tradeRoutes
         val candidates = getPrioritizedRoutes(civ)
@@ -44,7 +44,7 @@ object TradeRouteAutomation {
                 if (slots - tradeUnits == 0) {
                     // Wrong domain for every free slot: the unit is disbanded
                     unit.disband()
-                    return
+                    return@timeThis
                 }
             }
             if (candidate.isSea != isSea) continue
@@ -55,7 +55,7 @@ object TradeRouteAutomation {
             } else if (unit.movement.canReach(candidate.origin.getCenterTile())) {
                 unit.movement.headTowards(candidate.origin.getCenterTile())
             }
-            return
+            return@timeThis
         }
     }
 
