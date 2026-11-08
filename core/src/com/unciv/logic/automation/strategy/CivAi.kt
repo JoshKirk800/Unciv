@@ -113,6 +113,8 @@ class CivAi : IsPartOfGameInfoSerialization {
     var economic = EconomicAi()
     /** CvMilitaryAI state beyond the strategies, see [MilitaryAi] */
     var military = MilitaryAi()
+    /** CvPlayer's AI operations and armies, with the per-unit army and deploy turn, see [AiOperations] */
+    var operations = AiOperations()
     /** CvDiplomacyAI state towards other players (opinions, approaches, war goals, disputes, memories), see [DiplomacyAi] */
     var diplomacy = DiplomacyAi()
     /** CvMinorCivAI::m_eStatus of a city-state, updated each turn by [MinorCivStatusAi.status] */
@@ -164,6 +166,7 @@ class CivAi : IsPartOfGameInfoSerialization {
         toReturn.unitAiOverrides.putAll(unitAiOverrides)
         toReturn.economic = economic.clone()
         toReturn.military = military.clone()
+        toReturn.operations = operations.clone()
         toReturn.diplomacy = diplomacy.clone()
         toReturn.minorCivStatus = minorCivStatus
         toReturn.deals = deals.clone()
@@ -174,6 +177,7 @@ class CivAi : IsPartOfGameInfoSerialization {
     fun setTransients(civ: Civilization) {
         this.civ = civ
         diplomacy.civ = civ
+        operations.setTransients(civ)
         tactical.setTransients(civ)
         plotDangerCache = null
         personalityVector = null
@@ -208,11 +212,10 @@ class CivAi : IsPartOfGameInfoSerialization {
      *  CvArmyAI::CanTacticalAIInterruptUnit of the army the unit is in: false if the unit sits in an army the tactical AI must leave alone
      *  (CvTacticalAI::CommandeerUnits). Units in no army can always be interrupted.
      */
-    @Suppress("FunctionOnlyReturningConstant", "UNUSED_PARAMETER") // true until the operations keep their armies in the state, which decide it
-    fun canTacticalAiInterrupt(unit: MapUnit): Boolean = true
+    fun canTacticalAiInterrupt(unit: MapUnit): Boolean = operations.canTacticalAiInterrupt(unit)
 
     /** CvUnit::GetDeployFromOperationTurn: the game turn an army released the unit at its target, -100 if it never did */
-    fun deployFromOperationTurn(unit: MapUnit): Int = -100
+    fun deployFromOperationTurn(unit: MapUnit): Int = operations.deployFromOperationTurn(unit.id)
 
     //region Personality (CvFlavorManager, CvDiplomacyAI personality)
 

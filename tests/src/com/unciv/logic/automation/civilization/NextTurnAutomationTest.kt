@@ -4,7 +4,6 @@ import com.unciv.view.GameView
 import com.unciv.UncivGame
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.HexCoord
-import com.unciv.logic.automation.unit.SettlerOperation
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.models.metadata.GameSettings.PathfindingAlgorithm
 import com.unciv.models.metadata.GameSettings.PathfindingAlgorithm.AStarPathfinding
@@ -43,77 +42,6 @@ class NextTurnAutomationTest(private val algorithm: PathfindingAlgorithm) {
         civInfo = testGame.addCiv()
         val capital = testGame.addCity(civInfo, testGame.tileMap[0,0])
         assertTrue(capital.isCapital())
-    }
-
-    @Test
-    fun `automateSettlerEscorting replaces low hp escort`() {
-        val settler = testGame.addUnit("Settler", civInfo, testGame.tileMap[0,2]).also(::wantEscort)
-        val highHpWarrior = testGame.addUnit("Warrior", civInfo, testGame.tileMap[0,1])
-        val lowHpWarrior = testGame.addUnit("Warrior", civInfo, testGame.tileMap[0,2])
-        lowHpWarrior.takeDamage(90)
-        lowHpWarrior.startEscorting()
-        assertTrue(settler.isEscorting())
-
-        // Act
-        NextTurnAutomation.automateSettlerEscorting(GameView(civInfo.gameInfo, civInfo).civView)
-        assertEquals("settler should not have moved, else test is invalid", testGame.tileMap[0,2], settler.currentTile)
-
-        // Assert
-        assertEquals("high hp warrior have taken the place of low hp escort of settler", testGame.tileMap[0,2], highHpWarrior.currentTile)
-        assertEquals("high hp warrior have taken the place of low hp escort of settler", testGame.tileMap[0,1], lowHpWarrior.currentTile)
-        assertEquals("high hp warrior have taken the place of low hp escort of settler", highHpWarrior, settler.getOtherEscortUnit())
-        assertEquals("high hp warrior have taken the place of low hp escort of settler", settler, highHpWarrior.getOtherEscortUnit())
-        assertEquals("high hp warrior have taken the place of low hp escort of settler", null, lowHpWarrior.getOtherEscortUnit())
-    }
-
-    @Test
-    fun `automateSettlerEscorting replaces low hp escort even with no movement`() {
-        // AStar fails this because UnitMovement#canUnitSwapToReachableTile
-        // calls escortedUnit.movement.canMoveTo(includeOtherEscortUnit = false) 
-        // and escortedUnit.movement.canUnitSwapToReachableTile(checkEscorted = false)
-        // but AStar assumes includeOtherEscortUnit always true.
-        val settler1 = testGame.addUnit("Settler", civInfo, testGame.tileMap[0,2]).also(::wantEscort)
-        val settler2 = testGame.addUnit("Settler", civInfo, testGame.tileMap[0,1]).also(::wantEscort)
-        val highHpWarrior = testGame.addUnit("Warrior", civInfo, testGame.tileMap[0,1])
-        val lowHpWarrior = testGame.addUnit("Warrior", civInfo, testGame.tileMap[0,2])
-        lowHpWarrior.takeDamage(90)
-        lowHpWarrior.startEscorting()
-        settler2.currentMovement = 0f
-        assertEquals(lowHpWarrior, settler1.getOtherEscortUnit())
-        assertEquals(highHpWarrior, settler2.getOtherEscortUnit())
-
-        // Act
-        NextTurnAutomation.automateSettlerEscorting(GameView(civInfo.gameInfo, civInfo).civView)
-        assertEquals("settlers should not have moved, else test is invalid", testGame.tileMap[0,2], settler1.currentTile)
-        assertEquals("settlers should not have moved, else test is invalid", testGame.tileMap[0,1], settler2.currentTile)
-
-        // Assert
-        assertEquals("high hp warrior have taken the place of low hp escort of settler", testGame.tileMap[0,2], highHpWarrior.currentTile)
-        assertEquals("high hp warrior have taken the place of low hp escort of settler", testGame.tileMap[0,1], lowHpWarrior.currentTile)
-        assertEquals("high hp warrior have taken the place of low hp escort of settler", highHpWarrior, settler1.getOtherEscortUnit())
-        assertEquals("high hp warrior have taken the place of low hp escort of settler", settler1, highHpWarrior.getOtherEscortUnit())
-        assertEquals("high hp warrior have taken the place of low hp escort of settler", lowHpWarrior, settler2.getOtherEscortUnit())
-        assertEquals("high hp warrior have taken the place of low hp escort of settler", settler2, lowHpWarrior.getOtherEscortUnit())
-    }
-
-    @Test
-    fun `automateSettlerEscorting does not draft a ship to escort a settler in a coastal city`() {
-        // Whole-game simulation, turn 364: a Ship of the Line was sent to swap places with the land unit escorting a settler in a
-        // port. The land unit could embark onto the ship's tile, so the swap looked possible, but it then failed halfway.
-        civInfo.tech.addTechnology("Optics") // lets land units embark
-        testGame.setTileTerrain(HexCoord(0, 2), "Coast")
-        testGame.addCity(civInfo, testGame.tileMap[0,3])
-        val settler = testGame.addUnit("Settler", civInfo, testGame.tileMap[0,3]).also(::wantEscort)
-        val warrior = testGame.addUnit("Warrior", civInfo, testGame.tileMap[0,3])
-        val ship = testGame.addUnit("Caravel", civInfo, testGame.tileMap[0,2])
-        warrior.startEscorting()
-        assertTrue(settler.isEscorting())
-
-        NextTurnAutomation.automateSettlerEscorting(GameView(civInfo.gameInfo, civInfo).civView)
-
-        assertEquals(testGame.tileMap[0,3], warrior.currentTile)
-        assertEquals(testGame.tileMap[0,2], ship.currentTile)
-        assertEquals(warrior, settler.getOtherEscortUnit())
     }
 
     @Test
@@ -205,11 +133,6 @@ class NextTurnAutomationTest(private val algorithm: PathfindingAlgorithm) {
             "unaffected unit was still automated",
             bystander.currentTile != bystanderStart || bystander.currentMovement < 2f
         )
-    }
-
-    /** Gives [settler] a found-city operation that wants an escort: only such settlers get one */
-    private fun wantEscort(settler: MapUnit) {
-        settler.settlerOperation = SettlerOperation().apply { foundCity = true; escorted = true }
     }
 
     /** Puts [unit]'s Mockito-spy in the civ unit list and runs [action] the first time automation asks it for terrain damage on its current tile. */

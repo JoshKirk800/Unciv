@@ -160,10 +160,12 @@ class FullGameSim {
         out.appendLine("== turn $turn  (${wallSeconds}s wall)")
         for (civ in players(game)) {
             val line = String.format(Locale.ROOT,
-                "%-16s alive=%-5s era=%-18s cities=%2d pop=%3d techs=%3d policies=%2d gold=%5d happiness=%3d units=%3d culture=%d tourism=%d influential=%d works=%d ideology=%s opinion=%s religion=%s",
+                "%-16s alive=%-5s era=%-18s cities=%2d pop=%3d techs=%3d policies=%2d gold=%5d happiness=%3d units=%3d landMil=%3d inArmies=%2d ops=%d/%d/%d culture=%d tourism=%d influential=%d works=%d ideology=%s opinion=%s religion=%s",
                 civ.civName, !civ.isDefeated(), civ.getEra().name, civ.cities.size, civ.cities.sumOf { it.population.population },
                 civ.tech.researchedTechnologies.size, civ.policies.getAdoptedPolicies().size, civ.gold,
-                civ.stats.happiness, civ.units.getCivUnitsSize(), civ.policies.storedCulture,
+                civ.stats.happiness, civ.units.getCivUnitsSize(),
+                civ.units.getCivUnits().count { it.isMilitary() && it.baseUnit.isLandUnit }, civ.units.getCivUnits().count { civ.ai.operations.armyOf(it) != null && it.baseUnit.isLandUnit },
+                civ.ai.operations.statsLaunched, civ.ai.operations.statsSucceeded, civ.ai.operations.statsAborted, civ.policies.storedCulture,
                 civ.culture.getTourism(), civ.culture.getNumCivsInfluentialOn(), civ.cities.sumOf { it.greatWorks.getNumWorks() },
                 ideologyOf(civ) ?: "-", civ.culture.publicOpinion.type.label, civ.religionManager.religion?.getReligionDisplayName() ?: "-")
             out.appendLine(line)

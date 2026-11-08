@@ -113,7 +113,7 @@ object DiplomacyEvents {
         val ai = civ.ai.diplomacy
         val memory = ai.memoryOf(other)
         memory.turnMadePeace = civ.gameInfo.turns
-        memory.attackOperation = false
+        memory.musteringForAttack = false
         if (!other.isMajorCiv) return
         // Coop wars against them are over
         for (partnerMemory in ai.memories.values) partnerMemory.coopWars[other.civID]?.state = null

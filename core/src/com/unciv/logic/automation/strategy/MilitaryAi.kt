@@ -27,9 +27,8 @@ enum class ArmyType { Land, NavalInvasion }
  *  [percentOfRecommendedMilitarySize], the unit counts ([numLandUnits], [numRangedLandUnits], [numMobileLandUnits], [numMeleeLandUnits],
  *  [numAntiAirUnits], [numNavalUnits], [numAirUnits]), [highestThreat], [totalThreatWeight] and [barbarianThreatTotal].
  *
- *  Not ported, with the reason: UpdateWars (its only effect is a log line), UpdateOperations and MakeEmergencyPurchases (they work on
- *  AI operations: CvAIOperation is out of scope - Unciv has no operations, so GetArmyBeingBuilt is always NO_ARMY_TYPE and an army is
- *  never "in an army").
+ *  Not ported, with the reason: UpdateWars (its only effect is a log line). The operation side (UpdateOperations, the Request* functions,
+ *  IsAttackReady, MakeEmergencyPurchases) is in [MilitaryOperations], the target selection in [MilitaryTargets].
  */
 class MilitaryAi : IsPartOfGameInfoSerialization {
     /** CvMilitaryAI::m_paeLastTurnMilitaryThreat: by civID, [AiThreat] name (missing = None) */
@@ -44,9 +43,14 @@ class MilitaryAi : IsPartOfGameInfoSerialization {
     var numLandAttacksRequested = 0
     var numNavalAttacksRequested = 0
 
+    /** The step finder the target selection and the operations use (scratch space, not saved) */
+    @Transient val steps = StepFinder()
+
     //region Per-turn data (CvMilitaryAI::UpdateBaseData, ScanForBarbarians, UpdateDefenseState), recomputed each turn
     @Transient private var dataTurn = -1
     @Transient var numLandUnits = 0; private set
+    /** CvMilitaryAI::m_iNumLandUnitsInArmies: land units that serve in an operation's army, counted with the base data */
+    @Transient var numLandUnitsInArmies = 0; private set
     @Transient var numRangedLandUnits = 0; private set
     @Transient var numMobileLandUnits = 0; private set
     @Transient var numMeleeLandUnits = 0; private set
@@ -87,8 +91,13 @@ class MilitaryAi : IsPartOfGameInfoSerialization {
         dataTurn = civ.gameInfo.turns
     }
 
-    /** What CvMilitaryAI::DoTurn does after its strategy loop for AI players: MakeOffensivePurchases, DisbandObsoleteUnits */
+    /**
+     *  What CvMilitaryAI::DoTurn does after its strategy loop for AI players: UpdateOperations, MakeEmergencyPurchases,
+     *  MakeOffensivePurchases, DisbandObsoleteUnits
+     */
     fun doTurnAfterStrategies(civ: Civilization) {
+        MilitaryOperations.updateOperations(civ)
+        MilitaryOperations.makeEmergencyPurchases(civ)
         makeOffensivePurchases(civ)
         disbandObsoleteUnits(civ)
     }
@@ -179,13 +188,14 @@ class MilitaryAi : IsPartOfGameInfoSerialization {
      *  x multiplier, at least 1; city-states halve the reserve and have none. Both x 2/3 under NAVAL_MAP.
      */
     fun updateBaseData(civ: Civilization) {
-        var land = 0; var ranged = 0; var mobile = 0; var melee = 0; var antiAir = 0; var naval = 0; var air = 0
+        var land = 0; var ranged = 0; var mobile = 0; var melee = 0; var antiAir = 0; var naval = 0; var air = 0; var inArmies = 0
         for (unit in civ.units.getCivUnits()) {
             if (!countsAsMilitary(unit)) continue
             val baseUnit = unit.baseUnit
             when {
                 baseUnit.isLandUnit -> {
                     land++
+                    if (civ.ai.operations.armyOf(unit) != null) inArmies++
                     when {
                         baseUnit.isRanged() -> ranged++
                         unit.canIntercept() -> antiAir++
@@ -198,6 +208,7 @@ class MilitaryAi : IsPartOfGameInfoSerialization {
             }
         }
         numLandUnits = land; numRangedLandUnits = ranged; numMobileLandUnits = mobile; numMeleeLandUnits = melee
+        numLandUnitsInArmies = inArmies
         numAntiAirUnits = antiAir; numNavalUnits = naval; numAirUnits = air
 
         val rules = civ.gameInfo.ruleset.ai
@@ -270,6 +281,8 @@ class MilitaryAi : IsPartOfGameInfoSerialization {
         if (civ.ai.isMilitaryStrategyActive(AT_WAR) && WarStateAi.stateAllWars(civ) != StateAllWars.Winning) return
         if (civ.ai.personality(Flavor.Offense) < 7) return
         if (percentOfRecommendedMilitarySize() >= 100 && navalDefenseState <= DefenseState.Enough) return
+        // Do we have operations running (if so let them recruit the units)?
+        if (armyTypeBeingBuilt != null) return
         var city = civ.getCapital(firstCityIfNoCapital = false) ?: return
         var needNaval = navalDefenseState > landDefenseState
         if (needNaval && !city.isCoastal()) {

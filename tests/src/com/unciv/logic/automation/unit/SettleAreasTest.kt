@@ -1,6 +1,9 @@
 package com.unciv.logic.automation.unit
 
 import com.unciv.logic.automation.civilization.AutomationCache
+import com.unciv.logic.automation.strategy.AiOperationLogic
+import com.unciv.logic.automation.strategy.AiOperationType
+import com.unciv.logic.automation.strategy.OperationState
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.MapType
@@ -251,14 +254,16 @@ class SettleAreasTest {
     }
 
     @Test
-    fun `a settler whose new site is out of reach ends its operation instead of moving`() {
+    fun `a settler whose site is out of reach does not move and its operation ends`() {
         val civ = twoLandmasses()
         val island = tile(7, 7).getContinent()
         val settler = game.addUnit("Settler", civ, tile(-7, -3))
-        // A quick colony of the island (no embarking yet) whose site was lost: the best site left is on the island too
-        settler.settlerOperation = SettlerOperation().apply { foundCity = false; area = island; target = HexCoord(0, 0) }
-        SettlerAutomation.automateSettler(GameView(game.gameInfo, civ).getMapUnitView(settler), AutomationCache())
-        assertNull("AI_ABORT_LOST_PATH", settler.settlerOperation)
+        // A quick colony of the island (no embarking yet): the best site is unreachable, so is the one the retarget finds (AI_ABORT_REPEAT_TARGET)
+        val operation = AiOperationLogic.addSettlerOperation(civ, AiOperationType.QUICK_COLONIZE, settler, island)
+        assertEquals(OperationState.MOVING_TO_TARGET, operation.state)
+        OperationMoves.moveOperation(civ, operation, AutomationCache())
+        civ.ai.operations.sweep()
+        assertNull(civ.ai.operations.operationFor(settler))
         assertEquals(tile(-7, -3), settler.getTile())
     }
 }
