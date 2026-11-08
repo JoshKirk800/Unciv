@@ -378,6 +378,16 @@ class TacticalAttackTests {
         assertEquals(tile(-2), archer.getTile())
     }
 
+    @Test
+    fun `a ranged unit is used on a tile with a defender but not on one with only a civilian (IsExpectedToDamageWithRangedAttack)`() {
+        val archer = game.addUnit("Archer", civ, tile(-1))
+        game.addUnit("Worker", enemy, tile(0))
+        game.addUnit("Swordsman", enemy, tile(1))
+        val ctx = context()
+        assertEquals(listOf(archer), TacticalAttacks.findUnits(ctx, tile(1), 1).map { it.unit })
+        assertTrue("nobody to damage on the worker's tile", TacticalAttacks.findUnits(ctx, tile(0), 1).none { it.unit == archer })
+    }
+
     /** A tile 2 from the target that two of the tiles next to the target touch, and the tile behind it for the archer */
     private fun coveredCell(target: Tile): Pair<Tile, Tile> {
         val cell = target.getTilesAtDistance(2).first { c -> c.neighbors.count { it.aerialDistanceTo(target) == 1 } == 2 }
