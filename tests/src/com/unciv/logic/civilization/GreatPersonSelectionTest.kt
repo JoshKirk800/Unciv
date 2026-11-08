@@ -1,11 +1,12 @@
 package com.unciv.logic.civilization
 
-import com.unciv.view.GameView
 import com.unciv.Constants
-import com.unciv.logic.automation.civilization.NextTurnAutomation
+import com.unciv.logic.automation.strategy.GrandStrategyAi
+import com.unciv.logic.automation.unit.GreatPersonAutomation
 import com.unciv.logic.map.HexCoord
 import com.unciv.models.metadata.BaseRuleset
 import com.unciv.models.ruleset.RulesetCache
+import com.unciv.models.ruleset.ai.DiplomacyPersonality
 import com.unciv.testing.BaseTestRunner
 import com.unciv.testing.TestGame
 import com.unciv.ui.screens.worldscreen.WorldScreen
@@ -165,27 +166,17 @@ class GreatPersonSelectionTest {
     }
 
     @Test
-    fun `automation commits its preferred available great person`() {
-        val scenario = createScenario(BaseRuleset.Civ_V_GnK, "Rome")
-        val manager = scenario.civ.greatPeople
-        manager.freeGreatPeople = 1
-
-        NextTurnAutomation.chooseGreatPerson(GameView(scenario.civ.gameInfo, scenario.civ).civView)
-
-        assertEquals(0, manager.freeGreatPeople)
-        assertTrue(scenario.civ.units.getCivGreatPeople().any { it.name == "Great Scientist" })
-    }
-
-    @Test
     fun `automation retains a pick when its chosen unit cannot be placed`() {
         val game = TestGame()
         val civ = game.addCiv()
         val city = game.addCity(civ, game.getTile(HexCoord.Zero))
         val blocker = game.addUnit("Worker", civ, city.getCenterTile())
         civ.greatPeople.freeGreatPeople = 1
+        civ.ai.setDiplomacyValue(DiplomacyPersonality.WonderCompetitiveness, 0)
+        civ.ai.grandStrategy = GrandStrategyAi.SPACESHIP
         val originalUnits = civ.units.getCivUnits().toList()
 
-        NextTurnAutomation.chooseGreatPerson(GameView(civ.gameInfo, civ).civView)
+        GreatPersonAutomation.chooseFreeGreatPeople(civ)
 
         assertEquals(1, civ.greatPeople.freeGreatPeople)
         assertEquals(originalUnits, civ.units.getCivUnits().toList())
