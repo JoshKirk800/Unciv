@@ -88,12 +88,12 @@ class LeagueAutomationTests {
         val toB = a.getDiplomacyManager(b)!!
         toB.setFlag(DiplomacyFlags.DeclarationOfFriendship, 20)
         assertEquals("+1 for the declaration alone is neutral", LeagueAlignment.NEUTRAL, LeagueAutomation.evaluateAlignment(a, b))
-        toB.diplomaticModifiers[DiplomaticModifiers.DeclarationOfFriendship.name] = 50f // opinion 50: Friend, +1
+        toB.diplomaticModifiers[DiplomaticModifiers.DeclarationOfFriendship.name] = 50f // opinion weight -50: Favorable (above Neutral), +1
         assertEquals(LeagueAlignment.FRIEND, LeagueAutomation.evaluateAlignment(a, b))
 
         val toC = a.getDiplomacyManager(c)!!
         toC.setFlag(DiplomacyFlags.Denunciation, 20)
-        toC.diplomaticModifiers[DiplomaticModifiers.Denunciation.name] = -50f // opinion -50: Enemy, -1
+        toC.diplomaticModifiers[DiplomaticModifiers.Denunciation.name] = -80f // opinion weight 80 (OPINION_THRESHOLD_ENEMY): Enemy, -1
         assertEquals(LeagueAlignment.RIVAL, LeagueAutomation.evaluateAlignment(a, c))
     }
 
