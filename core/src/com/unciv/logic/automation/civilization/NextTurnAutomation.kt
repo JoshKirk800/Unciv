@@ -11,7 +11,7 @@ import com.unciv.logic.automation.Automation
 import com.unciv.logic.automation.diplomacy.PromiseAi
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.unit.HomelandAi
-import com.unciv.logic.automation.unit.OperationMoves
+import com.unciv.logic.automation.unit.tactical.OperationalMoves
 import com.unciv.logic.automation.unit.ArchaeologistAutomation
 import com.unciv.logic.automation.unit.EspionageAutomation
 import com.unciv.logic.automation.unit.tactical.TacticalAi
@@ -91,8 +91,8 @@ object NextTurnAutomation {
         timeThis("AI.chooseTechToResearch") { TechAutomation.chooseTechToResearch(civInfo) }
         if (tradeAndChangeState) timeThis("AI.considerAnnex") { CityConquestAutomation.considerAnnex(civInfo) }
         val cache = AutomationCache()
-        // CvPlayer::doTurnUnits' operational AI: the armies of the operations move before the other units
-        OperationMoves.doTurn(civInfo, cache)
+        // CvPlayer::doTurnUnits' operations: units that were lost, cities that stopped building for a slot, loose settlers; the armies move in the tactical AI
+        OperationalMoves.prepareTurn(civInfo)
         timeThis("AI.automateUnits") { automateUnits(civView, cache, canUpgrade = tradeAndChangeState) }  // this is the most expensive part
 
         if (tradeAndChangeState && civInfo.isMajorCiv) {

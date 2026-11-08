@@ -2,8 +2,6 @@ package com.unciv.logic.automation.unit
 
 import com.unciv.view.isMilitary
 import com.unciv.view.isAutomatingRoadConnection
-import com.unciv.logic.automation.unit.tactical.TacticalAi
-import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.logic.automation.civilization.AutomationCache
 import com.unciv.view.CivView
 import com.unciv.logic.civilization.managers.ReligionState
@@ -91,11 +89,8 @@ object CivilianUnitAutomation {
             return SpecificUnitAutomation.automateAddInCapital(unit)
 
         // Great People but Prophets: the directives of CvPlayerAI and the moves of CvHomelandAI. A general near a visible enemy is the
-        // tactical AI's (CvTacticalAI::CommandeerUnits), for which following our troops stands in
+        // tactical AI's (CvTacticalAI::CommandeerUnits, MoveGreatGeneral); one it left unmoved is the homeland AI's like any other
         val greatPersonRole = GreatPersonAutomation.roleOf(mapUnit.baseUnit, mapUnit.civ.gameInfo.ruleset)
-        if (greatPersonRole == GreatPersonRole.General && TacticalAi.nearVisibleEnemy(mapUnit, mapUnit.civ.gameInfo.ruleset.ai.define(AiDefine.AI_TACTICAL_RECRUIT_RANGE))
-            && SpecificUnitAutomation.automateGreatGeneral(unit))
-            return
         if (greatPersonRole != null && greatPersonRole != GreatPersonRole.Prophet && GreatPersonAutomation.automate(mapUnit))
             return
 

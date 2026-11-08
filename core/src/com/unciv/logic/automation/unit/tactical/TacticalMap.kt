@@ -172,7 +172,10 @@ class TacticalMap(private val civ: Civilization, state: TacticalState) {
     /** CvTacticalAnalysisCell::CanUseForOperationGathering */
     fun canUseForOperationGathering(tile: Tile): Boolean = !(isImpassableTerrain(tile) || isImpassableTerritory(tile)
         || enemyMilitaryUnit(tile) != null || neutralMilitaryUnit(tile) != null || neutralCivilianUnit(tile) != null
-        || isEnemyCity(tile) || isNeutralCity(tile))
+        || isFriendlyTurnEndTile(tile) || isEnemyCity(tile) || isNeutralCity(tile))
+
+    /** CvTacticalAnalysisCell::CanUseForOperationGatheringCheckWater: as [canUseForOperationGathering], and the tile is water exactly if [water] */
+    fun canUseForOperationGatheringCheckWater(tile: Tile, water: Boolean): Boolean = water == isWater(tile) && canUseForOperationGathering(tile)
 
     /** The landmass or body of water of the tile (CvPlot::getArea): land tiles by continent, water tiles by connected body of water */
     fun areaOf(tile: Tile) = areas[tile.zeroBasedIndex]

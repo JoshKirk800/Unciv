@@ -2,7 +2,7 @@ package com.unciv.logic.automation.strategy
 
 import com.unciv.logic.automation.city.ConstructionAutomation
 import com.unciv.logic.automation.civilization.AutomationCache
-import com.unciv.logic.automation.unit.OperationMoves
+import com.unciv.logic.automation.unit.tactical.OperationalMoves
 import com.unciv.logic.automation.unit.tactical.CityThreat
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
@@ -304,7 +304,7 @@ class OperationTests {
         val island = game.getTile(HexCoord(-8, 0))
         for (neighbor in island.neighbors) game.setTileTerrain(neighbor.position, "Ocean") // no embarking without Optics
         stranded.removeFromTile(); stranded.putInTile(island)
-        OperationMoves.moveOperation(civ, operation, AutomationCache())
+        OperationalMoves.moveOperation(civ, operation, AutomationCache())
         assertEquals(island, stranded.getTile())
     }
 
@@ -645,7 +645,7 @@ class OperationTests {
         assertEquals(operation.firstArmy, ops.armyOf(warrior))
         assertEquals(1, ops.slotIndexOf(operation.firstArmy!!, warrior))
         // The escort comes to the settler, then both move on
-        OperationMoves.moveOperation(civ, operation, AutomationCache())
+        OperationalMoves.moveOperation(civ, operation, AutomationCache())
         assertEquals(settler.getTile(), warrior.getTile())
         assertEquals(OperationState.MOVING_TO_TARGET, operation.state)
     }

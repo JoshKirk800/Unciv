@@ -4,6 +4,7 @@ import com.unciv.logic.automation.civilization.AutomationCache
 import com.unciv.logic.automation.strategy.AiOperationLogic
 import com.unciv.logic.automation.strategy.AiOperationType
 import com.unciv.logic.automation.strategy.OperationState
+import com.unciv.logic.automation.unit.tactical.OperationalMoves
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.MapType
@@ -261,7 +262,7 @@ class SettleAreasTest {
         // A quick colony of the island (no embarking yet): the best site is unreachable, so is the one the retarget finds (AI_ABORT_REPEAT_TARGET)
         val operation = AiOperationLogic.addSettlerOperation(civ, AiOperationType.QUICK_COLONIZE, settler, island)
         assertEquals(OperationState.MOVING_TO_TARGET, operation.state)
-        OperationMoves.moveOperation(civ, operation, AutomationCache())
+        OperationalMoves.moveOperation(civ, operation, AutomationCache())
         civ.ai.operations.sweep()
         assertNull(civ.ai.operations.operationFor(settler))
         assertEquals(tile(-7, -3), settler.getTile())

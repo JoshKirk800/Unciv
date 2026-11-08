@@ -88,6 +88,9 @@ class TacticalTargets private constructor(val all: List<TacticalTarget>) {
         /** The mean of the damage roll: expected damage is the original's getCombatDamage without randomness */
         const val EXPECTED_RANDOMNESS = 0.5f
 
+        /** No targets: for moves that look at none */
+        fun none() = TacticalTargets(emptyList())
+
         /** The targets of [type] in [targets] (CvTacticalAI::GetFirstZoneTarget / GetNextZoneTarget) */
         fun ofType(targets: List<TacticalTarget>, type: TacticalTargetType) = targets.filter { it.type == type }
 

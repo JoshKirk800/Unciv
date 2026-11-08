@@ -13,6 +13,7 @@ import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.models.UnitActionType
 import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.unique.UniqueType
+import com.unciv.logic.automation.unit.tactical.OperationalMoves
 import com.unciv.view.MapUnitView
 
 /**
@@ -20,7 +21,7 @@ import com.unciv.view.MapUnitView
  *  EconomicAIHelpers::IsTestStrategy_FoundCity (which area, escorted or not). The operations themselves - target from
  *  CvPlayer::GetBestSettlePlot, the escort recruited from the reserves or trained by a city (slot commitments of
  *  [com.unciv.logic.automation.strategy.AiOperations]), retargeting when the site is lost, founding on arrival - are
- *  CvAIOperationFoundCity / CvAIOperationQuickColonize in [AiOperationLogic], moved by [OperationMoves].
+ *  CvAIOperationFoundCity / CvAIOperationQuickColonize in [AiOperationLogic], moved by [OperationalMoves].
  */
 object SettlerAutomation {
 
@@ -35,7 +36,7 @@ object SettlerAutomation {
             if (unitView.tryInvokeUnitAction(UnitActionType.FoundCity)) return@timeThis
         }
 
-        // The operation normally exists and has moved the settler already (OperationMoves.doTurn); a settler of a human's automation, or one
+        // The operation normally exists and has moved the settler already (the tactical AI's MOVE_OPERATIONS); a settler of a human's automation, or one
         // that came to our civilization this turn, starts and moves it here.
         val operations = civ.ai.operations
         operations.reconcileUnits()
@@ -43,7 +44,7 @@ object SettlerAutomation {
             AiDecisionLog.log(civ) { "settler ${unit.id} at ${unit.getTile().position}: no settle site" }
             return@timeThis
         }
-        OperationMoves.moveOperation(civ, operation, cache)
+        OperationalMoves.moveOperation(civ, operation, cache)
         operations.sweep()
     }
 

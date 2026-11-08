@@ -20,7 +20,7 @@ import kotlin.math.max
 /**
  *  The behaviour of CvAIOperation and its subclasses (CvAIOperation.cpp): Init of each operation type, the state machine (CheckOnTarget,
  *  ArmyInPosition, ShouldAbort, UnitWasRemoved, DoDelayedDeath), recruiting from the reserves (GrabUnitsFromTheReserves,
- *  FindBestFitReserveUnit) and BuyFinalUnit. Operation and army data are in [AiOperations]; the units are moved by [OperationMoves].
+ *  FindBestFitReserveUnit) and BuyFinalUnit. Operation and army data are in [AiOperations]; the units are moved by [com.unciv.logic.automation.unit.tactical.OperationalMoves].
  *
  *  Covered: CvAIOperationFoundCity, QuickColonize, BasicCityAttack, SneakCityAttack (and the Quick one), SmallCityAttack, CityStateAttack,
  *  DestroyBarbarianCamp, PillageEnemy, CityCloseDefense, RapidResponse, and the naval attacks as plain land attacks (see [AiOperationType]).
@@ -667,18 +667,6 @@ object AiOperationLogic {
             }
             else -> return baseArmyInPosition(operation, army)
         }
-    }
-
-    /** CvAIOperationPillageEnemy::ArmyMoved: every move check for a better pillage target */
-    fun armyMoved(civ: Civilization, operation: AiOperation, army: AiArmy) {
-        if (operation.type != AiOperationType.PILLAGE_ENEMY || operation.state != OperationState.MOVING_TO_TARGET) return
-        val better = findBestTarget(civ, operation)
-        if (better == null) { abort(operation, OperationAbortReason.NO_TARGET); return }
-        if (better.position == operation.targetTile) return
-        operation.targetTile = better.position
-        val position = tileAt(civ, army.position) ?: return
-        army.goalTile = (civ.ai.military.steps.xPlotsFromEnd(civ, enemy(civ, operation), position, better,
-            civ.gameInfo.ruleset.ai.define(AiDefine.AI_OPERATIONAL_PILLAGE_ENEMY_DEPLOY_RANGE)) ?: better).position
     }
 
     /** CvAIOperationRapidResponse::RetargetDefensiveArmy */

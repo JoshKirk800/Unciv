@@ -13,15 +13,17 @@ import com.unciv.models.ruleset.ai.AiDefine
  *  ([TacticalTargets]), then the moves of the tactical priority list (`tacticalMoves` of AI.json, [com.unciv.models.ruleset.ai.TacticalMoveDef.priority]
  *  first, in the XML order among equals): emergency purchases (once per dominance zone), the attack moves (capture and damage cities, destroy
  *  and attrition attacks on units, civilians, camps, pillaging, safe bombards - [TacticalMoves], [TacticalAttacks], [TacticalBombards]),
- *  withdrawing from zones the enemy dominates, moves to safety and healing, garrisons, bastions, guarding improvements, repositioning.
- *  A unit a move commands is added to [AutomationCache.processedUnits]; the other units, tactical or not, go on to the rest of the unit AI.
+ *  the moves of the dominance zones' postures (offensive postures, shore bombardment, hedgehog, withdrawing, closing on the target - [Postures],
+ *  [Deployment]), the armies of the operations ([OperationalMoves]), moves to safety and healing, garrisons, bastions, guarding improvements,
+ *  repositioning. A unit a move commands is added to [AutomationCache.processedUnits]; the other units, tactical or not, go on to the rest of
+ *  the unit AI.
  *
- *  Not ported yet (their rows of AI.json's `tacticalMoves` have no code behind them): the posture moves (offensive postures, hedgehog,
- *  shore bombardment, close on target), operation moves, air moves and trade moves.
+ *  Not ported (their rows of AI.json's `tacticalMoves` have no code behind them): air moves, trade moves, naval blockades, escorting embarked units.
  */
 object TacticalAi {
 
     private const val EMERGENCY_PURCHASES = "TACTICAL_EMERGENCY_PURCHASES"
+    private const val MOVE_OPERATIONS = "TACTICAL_MOVE_OPERATIONS"
     private const val POSTURE_WITHDRAW = "TACTICAL_POSTURE_WITHDRAW"
     private const val TO_SAFETY = "TACTICAL_TO_SAFETY"
     private const val HEAL = "TACTICAL_HEAL"
@@ -86,9 +88,9 @@ object TacticalAi {
         class Step(val name: String, val run: () -> Unit)
         val steps = listOf(
             Step(EMERGENCY_PURCHASES) {
-                if (civ.isAIOrAutoPlaying()) for (zone in map.zones)
-                    if (zone.dominance != TacticalDominance.Friendly && zone.territory == TacticalTerritory.Friendly && PostureSelection.useThisZone(civ, state, zone))
-                        EmergencyPurchases.plot(civ, zone, map) { highPriority }
+                if (civ.isAIOrAutoPlaying()) Postures.forEachZone(ctx, { zone, _ -> zone.dominance != TacticalDominance.Friendly && zone.territory == TacticalTerritory.Friendly }) { zone, _ ->
+                    EmergencyPurchases.plot(civ, zone, map) { highPriority }
+                }
             },
             Step("TACTICAL_CAPTURE_CITY") { TacticalMoves.plotCaptureCityMoves(ctx) },
             Step("TACTICAL_DESTROY_HIGH_UNIT") { TacticalMoves.plotDestroyUnitMoves(ctx, TacticalTargetType.HighPriorityUnit, true) },
@@ -96,17 +98,17 @@ object TacticalAi {
             Step("TACTICAL_PILLAGE_CITADEL") { TacticalMoves.plotPillageMoves(ctx, TacticalTargetType.Citadel, true) },
             Step("TACTICAL_DESTROY_MEDIUM_UNIT") { TacticalMoves.plotDestroyUnitMoves(ctx, TacticalTargetType.MediumPriorityUnit, true) },
             Step("TACTICAL_DESTROY_LOW_UNIT") { TacticalMoves.plotDestroyUnitMoves(ctx, TacticalTargetType.LowPriorityUnit, true) },
+            Step(Postures.OFFENSIVE_POSTURE_MOVES) { Postures.offensivePostureMoves(ctx) },
+            Step(Postures.SHORE_BOMBARDMENT) { Postures.shoreBombardmentZones(ctx) },
             Step("TACTICAL_ATTACK_HIGH_PRIORITY_CIVILIAN") { TacticalMoves.plotCivilianAttackMoves(ctx, TacticalTargetType.HighPriorityCivilian) },
             Step(POSTURE_WITHDRAW) {
-                for (zone in map.zones) {
-                    val posture = state.findPosture(zone.owner?.civName, zone.isWater, zone.closestCity?.id)
-                    // CvTacticalAI::ProcessDominanceZones: the zone must have targets, or be a temporary zone or enemy land
-                    if (posture == TacticalPosture.Withdraw && !zone.isWater && PostureSelection.useThisZone(civ, state, zone)
-                        && (zone.territory == TacticalTerritory.TempZone || zone.territory == TacticalTerritory.Enemy || ctx.targets.forZone(zone).isNotEmpty()))
-                        withdrawMoves(ctx, zone)
-                }
+                // CvTacticalAI::PlotWithdrawMoves: land zones
+                Postures.forEachZone(ctx, { zone, posture -> posture == TacticalPosture.Withdraw && !zone.isWater }) { zone, _ -> withdrawMoves(ctx, zone) }
             },
+            Step(MOVE_OPERATIONS) { OperationalMoves.plotOperationalArmyMoves(ctx) },
             Step("TACTICAL_SAFE_BOMBARDS") { TacticalMoves.plotSafeBombardMoves(ctx) },
+            Step(Postures.HEDGEHOG) { Postures.hedgehogZones(ctx) },
+            Step(Postures.CLOSE_ON_TARGET) { Postures.closeOnTargetZones(ctx) },
             Step("TACTICAL_PILLAGE") { TacticalMoves.plotPillageMoves(ctx, TacticalTargetType.Improvement, true) },
             Step("TACTICAL_ATTACK_MEDIUM_PRIORITY_CIVILIAN") { TacticalMoves.plotCivilianAttackMoves(ctx, TacticalTargetType.MediumPriorityCivilian) },
             Step("TACTICAL_PILLAGE_RESOURCE") { TacticalMoves.plotPillageMoves(ctx, TacticalTargetType.ImprovementResource, true) },
@@ -137,7 +139,12 @@ object TacticalAi {
         )
         // CvTacticalAI::EstablishTacticalPriorities: every move with a priority of 0 or more, the highest first, stable in XML order
         val stepByName = steps.associateBy { it.name }
-        for (move in civ.gameInfo.ruleset.ai.tacticalMoves.filter { it.priority >= 0 }.sortedByDescending { it.priority }) stepByName[move.name]?.run()
+        for (move in civ.gameInfo.ruleset.ai.tacticalMoves.filter { it.priority >= 0 }.sortedByDescending { it.priority }) {
+            // A posture may have turned a move off for the rest of the turn (CvTacticalAI::TurnOffMove)
+            if (move.name in ctx.disabledMoves) continue
+            ctx.currentTargets = ctx.targets.all
+            stepByName[move.name]?.run()
+        }
         AiDecisionLog.log(civ) {
             "Tactical: $commandeered units commandeered, ${commandeered - ctx.units.size} commanded, ${ctx.targets.all.size} targets; postures " +
                 state.postures.filter { it.posture != TacticalPosture.None }.joinToString { "${it.posture}${if (it.isWater) " (sea)" else ""}" }.ifEmpty { "-" }
