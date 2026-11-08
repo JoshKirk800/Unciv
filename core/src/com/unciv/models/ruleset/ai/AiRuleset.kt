@@ -51,7 +51,6 @@ class AiRuleset {
     @Transient private var minorCivFlavorIndex: HashMap<String, NamedFlavors>? = null
     @Transient private var unitAiTypesIndex: HashMap<String, UnitAiTypesDef>? = null
     @Transient private val flavorCache = HashMap<String, IntArray>()
-    @Transient private var unitAiTypesIndex: HashMap<String, UnitAiTypesDef>? = null
 
     companion object {
         const val KIND_BUILDING = "Building"
@@ -130,7 +129,6 @@ class AiRuleset {
         minorCivFlavorIndex = null
         unitAiTypesIndex = null
         flavorCache.clear()
-        unitAiTypesIndex = null
     }
     //endregion
 
@@ -171,6 +169,7 @@ class AiRuleset {
         val index = unitAiTypesIndex ?: unitAiTypes.associateByTo(HashMap()) { it.name }.also { unitAiTypesIndex = it }
         return index[unitName]
     }
+
     /** The policy AI columns of a policy branch, null if the ruleset has no entry for it */
     fun policyBranchOf(branchName: String): PolicyBranchAiDef? = policyBranches.firstOrNull { it.name == branchName }
     //endregion

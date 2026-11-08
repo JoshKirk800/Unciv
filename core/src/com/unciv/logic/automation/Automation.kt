@@ -3,15 +3,20 @@ package com.unciv.logic.automation
 import com.unciv.view.GameView
 import com.unciv.view.CivView
 import com.unciv.view.ForeignCivView
+import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.city.City
+import com.unciv.logic.city.CityFocus
+import com.unciv.logic.city.CityStats
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.TileMap
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.ruleset.Building
 import com.unciv.models.ruleset.INonPerpetualConstruction
+import com.unciv.models.ruleset.PerpetualConstruction
 import com.unciv.models.ruleset.tile.ResourceType
 import com.unciv.models.ruleset.tile.TileImprovement
 import com.unciv.models.ruleset.unique.GameContext
+import com.unciv.models.ruleset.unique.Unique
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.models.ruleset.unit.BaseUnit
 import com.unciv.models.stats.Stats
@@ -20,9 +25,6 @@ import yairm210.purity.annotations.Readonly
 
 
 object Automation {
-
-
-    }
 
     /** Determines whether [civInfo] should be allocating military to fending off barbarians */
     fun afraidOfBarbarians(civView: CivView): Boolean {

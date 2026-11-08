@@ -1,7 +1,6 @@
 package com.unciv.logic.automation.strategy
 
 import com.unciv.Constants
-import com.unciv.logic.automation.diplomacy.DiplomacyAi
 import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.diplomacy.DiplomacyAi
