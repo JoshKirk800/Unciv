@@ -20,7 +20,6 @@ class Nation : RulesetObject() {
     var leaderName = ""
     val style = ""
     var cityStateType: String? = null
-    var preferredVictoryType: String = Constants.neutralVictoryType
 
     /// The following all have audio hooks to play corresponding leader
     /// voice clips - named <civName>.<fieldName>, e.g. "America.defeated.ogg"

@@ -58,12 +58,6 @@
         "title": "Inner Color",
         "description": "The secondary color representing the nation."
       },
-      "preferredVictoryType": {
-        "type": "string",
-        "title": "Preferred Victory Type",
-        "description": "The victory type most favored by this nation. See VictoryTypes.json.",
-        "examples": ["Domination", "Science", "Cultural"]
-      },
       "startBias": {
         "type": "array",
         "items": {

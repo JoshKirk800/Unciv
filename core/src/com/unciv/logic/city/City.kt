@@ -5,6 +5,7 @@ import com.unciv.UncivGame
 import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.MultiFilter
 import com.unciv.logic.automation.Timers.Companion.timeThis
+import com.unciv.logic.automation.strategy.CityAi
 import com.unciv.logic.city.managers.CityConquestFunctions
 import com.unciv.logic.city.managers.CityEspionageManager
 import com.unciv.logic.city.managers.CityExpansionManager
@@ -86,6 +87,8 @@ class City : IsPartOfGameInfoSerialization, INamed {
     var expansion = CityExpansionManager()
     var religion = CityReligionManager()
     var greatWorks = CityGreatWorks()
+    /** Strategic AI state: city strategies, specialization, city flavors - see [CityAi] */
+    var ai = CityAi()
 
     @Transient // Class carries no persisted fields
     var espionage = CityEspionageManager()
@@ -200,6 +203,7 @@ class City : IsPartOfGameInfoSerialization, INamed {
         toReturn.expansion = expansion.clone()
         toReturn.religion = religion.clone()
         toReturn.greatWorks = greatWorks.clone()
+        toReturn.ai = ai.clone()
         toReturn.disabledConstructions.addAll(disabledConstructions)
         toReturn.tiles = tiles
         toReturn.workedTiles = workedTiles
@@ -427,6 +431,7 @@ class City : IsPartOfGameInfoSerialization, INamed {
         greatWorks.setTransients(this)
         cityConstructions.setTransients()
         espionage.setTransients(this)
+        ai.setTransients(this)
     }
 
     fun setFlag(flag: CityFlags, amount: Int, adjustWithGameSpeed: Boolean = false) {

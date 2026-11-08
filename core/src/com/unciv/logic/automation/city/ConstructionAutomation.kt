@@ -43,7 +43,7 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
     private val cityStats = city.cityStats
 
     private val personality = civInfo.getPersonality()
-    private val seeksCulturalVictory = "Cultural" in civInfo.getPreferredVictoryTypes()
+    private val seeksCulturalVictory = civInfo.ai.isGoingForCultureVictory()
     private var cachedCityTourism = Int.MIN_VALUE
 
     private val constructionsToAvoid = personality.getMatchingUniques(UniqueType.WillNotBuild, cityState)

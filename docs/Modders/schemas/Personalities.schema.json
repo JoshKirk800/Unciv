@@ -15,9 +15,33 @@
       "preferredVictoryType": {
         "type": "string",
         "default": "Neutral",
-        "description": "The victory type major civilizations will pursue (need not be specified in VictoryTypes.json)",
+        "description": "Shown in the Civilopedia only; the AI pursues its grand strategy (AI.json)",
         "title": "Preferred Victory Type",
         "examples": ["Scientific", "Cultural", "Domination", "Diplomatic"]
+      },
+      "flavors": {
+        "type": "object",
+        "title": "Flavors",
+        "description": "The leader's AI flavors (Leader_Flavors of the original, 0-20) by flavor name, e.g. Offense, Culture, Spaceship. Missing flavors are 5.",
+        "additionalProperties": { "type": "integer" }
+      },
+      "diplomacyPersonality": {
+        "type": "object",
+        "title": "Diplomacy personality",
+        "description": "VictoryCompetitiveness, WonderCompetitiveness, MinorCivCompetitiveness, Boldness, DiploBalance, WarmongerHate, DenounceWillingness, DoFWillingness, Loyalty, Neediness, Forgiveness, Chattiness, Meanness. Missing values are 5.",
+        "additionalProperties": { "type": "integer" }
+      },
+      "majorCivApproachBiases": {
+        "type": "object",
+        "title": "Major civ approach biases",
+        "description": "War, Hostile, Deceptive, Guarded, Afraid, Friendly, Neutral. Missing values are 5.",
+        "additionalProperties": { "type": "integer" }
+      },
+      "minorCivApproachBiases": {
+        "type": "object",
+        "title": "Minor civ approach biases",
+        "description": "Ignore, Friendly, Protective, Conquest, Bully. Missing values are 5.",
+        "additionalProperties": { "type": "integer" }
       },
       "production": {
         "type": "number",

@@ -1,6 +1,7 @@
 package com.unciv.logic.civilization.diplomacy
 
 import com.unciv.Constants
+import com.unciv.logic.automation.strategy.GrandStrategyAi
 import com.unciv.logic.civilization.AlertType
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.DiplomacyAction
@@ -37,6 +38,8 @@ object DeclareWar {
 
         onWarDeclared(diplomacyManager, true, declareWarReason.warType)
         onWarDeclared(otherCivDiplomacy, false, declareWarReason.warType)
+        // What the other majors' grand strategy AI remembers (CvTeam::declareWar)
+        GrandStrategyAi.onWarDeclared(civInfo, otherCiv, isDefensivePact = declareWarReason.warType == WarType.DefensivePactWar)
         if (otherCiv.isCityState) civInfo.cache.updateCivResources()
         if (civInfo.isCityState) otherCiv.cache.updateCivResources()
 

@@ -186,8 +186,8 @@ enum class LeagueAlignment { WAR, ENEMY, HATRED, RIVAL, NEUTRAL, FRIEND, CONFIDA
  * Positive is like. The scores are the integers of the original.
  *
  * ## Mapping layer: inputs of the original and what stands in for them
- * - Grand strategy (`bSeeking*`): [Civilization.getPreferredVictoryTypes] as in [PolicyAutomation]: Domination = conquest, Diplomatic = diplomacy (United Nations),
- *   Scientific = space race, Cultural = culture. A civilization without a preference ("Neutral") seeks none of them.
+ * - Grand strategy (`bSeeking*`): CvDiplomacyAI::IsGoingFor* of the active grand strategy ([com.unciv.logic.automation.strategy.CivAi]):
+ *   Conquest, United Nations (diplomacy), Spaceship (space race), Culture. Before the first grand strategy is chosen none of them is sought.
  * - Production might: the sum of the production of the cities (CvPlayer::calculateProductionMight). Tech rank: the number of researched technologies
  *   (CvTechAI::GetTechRatio, position among the living major civilizations, ties by civilization order).
  * - Opinion: [DiplomacyManager.relationshipIgnoreAfraid]; "opinion above neutral" is Favorable or better, "at most enemy" Enemy or Unforgivable,
@@ -223,18 +223,16 @@ class LeagueEvaluator(private val civ: Civilization, private val league: League)
         private val artsyPersons = setOf("Great Artist", "Great Writer", "Great Musician")
         private val scienceyPersons = setOf("Great Scientist", "Great Engineer", "Great Merchant")
 
-        private const val CONQUEST = "Domination"
-        private const val DIPLOMACY = "Diplomatic"
+        /** The strategy (seeking culture or science) a project profits */
         private const val SCIENCE = "Scientific"
         private const val CULTURE = "Cultural"
     }
 
     private val gameInfo = league.gameInfo
-    private val preferred = civ.getPreferredVictoryTypes()
-    private val seekingConquest = CONQUEST in preferred
-    private val seekingDiplomacy = DIPLOMACY in preferred
-    private val seekingScience = SCIENCE in preferred
-    private val seekingCulture = CULTURE in preferred
+    private val seekingConquest = civ.ai.isGoingForWorldConquest()
+    private val seekingDiplomacy = civ.ai.isGoingForDiploVictory()
+    private val seekingScience = civ.ai.isGoingForSpaceshipVictory()
+    private val seekingCulture = civ.ai.isGoingForCultureVictory()
 
     private val ownedTiles by lazy { civ.cities.flatMap { it.getTiles().toList() } }
     private val statMap by lazy { civ.stats.getStatMapForNextTurn() }

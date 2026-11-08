@@ -235,7 +235,7 @@ object ArchaeologyFunctions {
                 // CvPlayerCulture::GetArchaeologyChoice: diplomatic strategy favors a city-state
                 // Landmark unless our available diplomacy state says we are targeting it for conquest.
                 val owner = tile.getOwner()
-                if (owner?.isCityState == true && "Diplomatic" in civ.getPreferredVictoryTypes()
+                if (owner?.isCityState == true && civ.ai.isGoingForDiploVictory()
                     && !civ.isAtWarWith(owner)) {
                     val diplomacy = civ.getDiplomacyManager(owner)
                     if (diplomacy?.hasFlag(DiplomacyFlags.WaryOf) == true && diplomacy.getFlag(DiplomacyFlags.WaryOf) < 0)

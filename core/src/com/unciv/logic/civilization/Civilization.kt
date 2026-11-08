@@ -4,6 +4,7 @@ import com.unciv.Constants
 import com.unciv.UncivGame
 import com.unciv.json.LastSeenImprovement
 import com.unciv.logic.*
+import com.unciv.logic.automation.strategy.CivAi
 import com.unciv.logic.automation.unit.WorkerAutomation
 import com.unciv.logic.city.City
 import com.unciv.logic.city.managers.CityFounder
@@ -191,6 +192,8 @@ class Civilization : IsPartOfGameInfoSerialization {
     var culture = CultureManager()
     var victoryManager = VictoryManager()
     var ruinsManager = RuinsManager()
+    /** Strategic AI state: flavors, grand strategy, economic and military strategies - see [CivAi] */
+    var ai = CivAi()
     var diplomacy = HashMap<String, DiplomacyManager>()
     var proximity = HashMap<String, Proximity>()
     val popupAlerts = ArrayList<PopupAlert>()
@@ -349,6 +352,7 @@ class Civilization : IsPartOfGameInfoSerialization {
         toReturn.tradeRoutes = tradeRoutes.clone()
         toReturn.culture = culture.clone()
         toReturn.victoryManager = victoryManager.clone()
+        toReturn.ai = ai.clone()
         toReturn.allyCivName = allyCivName
         for (diplomacyManager in diplomacy.values.map { it.clone() })
             toReturn.diplomacy[diplomacyManager.otherCivName] = diplomacyManager
@@ -482,18 +486,6 @@ class Civilization : IsPartOfGameInfoSerialization {
             otherCiv.getCivTerritory().any { gameInfo.tileMap[it].isExplored(this) }
     @Readonly fun getCompletedPolicyBranchesCount(): Int = policies.adoptedPolicies.count { Policy.isBranchCompleteByName(it) }
     @Readonly private fun getCivTerritory() = cities.asSequence().flatMap { it.tiles.asSequence() }
-
-    @Readonly
-    fun getPreferredVictoryTypes(): List<String> {
-        // A victory this civilization cannot achieve is not worth working towards
-        val victoryTypes = victoryManager.getAvailableVictories().map { it.name }
-        if (victoryTypes.size == 1)
-            return listOf(victoryTypes.first()) // That is the most relevant one
-        val victoryType: List<String> = listOf(nation.preferredVictoryType, getPersonality().preferredVictoryType)
-            .filter { it in victoryTypes }
-        return victoryType.ifEmpty { listOf(Constants.neutralVictoryType) }
-
-    }
 
     @Readonly
     fun getPersonality(): Personality {
@@ -1060,6 +1052,7 @@ class Civilization : IsPartOfGameInfoSerialization {
         tradeRoutes.setTransients(this)
         culture.setTransients(this)
         victoryManager.civInfo = this
+        ai.setTransients(this)
 
         for (diplomacyManager in diplomacy.values) {
             diplomacyManager.civInfo = this

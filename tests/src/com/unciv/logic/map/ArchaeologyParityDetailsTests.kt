@@ -165,19 +165,19 @@ class ArchaeologyParityDetailsTests {
     fun `diplomatic victory AI builds a landmark in peaceful city state territory`() {
         game.gameInfo.gameParameters.victoryTypes = ArrayList(game.ruleset.victories.keys)
         builder.playerType = PlayerType.AI
-        builder.nation.preferredVictoryType = "Diplomatic"
+        builder.ai.grandStrategy = "AIGRANDSTRATEGY_UNITED_NATIONS"
         val state = game.addCiv(cityStateType = game.ruleset.cityStateTypes.keys.first())
         val stateCity = game.addCity(state, tile(-6, 2))
         builder.diplomacyFunctions.makeCivilizationsMeet(state)
         val find = site(-5, 2, stateCity)
-        assertTrue("Diplomatic" in builder.getPreferredVictoryTypes())
+        assertTrue(builder.ai.isGoingForDiploVictory())
         assertEquals(ArchaeologyChoice.Landmark, ArchaeologyFunctions.chooseForAi(builder, find, 0, 0))
         builder.getDiplomacyManager(state)!!.setFlag(DiplomacyFlags.WaryOf, -1)
         assertEquals("planned conquest rules out a Landmark", ArchaeologyChoice.ArtifactOfFirst, ArchaeologyFunctions.chooseForAi(builder, find, 0, 0))
         builder.getDiplomacyManager(state)!!.removeFlag(DiplomacyFlags.WaryOf)
-        builder.nation.preferredVictoryType = "Scientific"
+        builder.ai.grandStrategy = "AIGRANDSTRATEGY_SPACESHIP"
         assertEquals(ArchaeologyChoice.ArtifactOfFirst, ArchaeologyFunctions.chooseForAi(builder, find, 0, 0))
-        builder.nation.preferredVictoryType = "Diplomatic"
+        builder.ai.grandStrategy = "AIGRANDSTRATEGY_UNITED_NATIONS"
         val previousInfluence = state.getDiplomacyManager(builder)!!.getInfluence()
         ArchaeologyFunctions.onDigCompleted(builder, find, null)
         assertEquals("Landmark", find.improvement)

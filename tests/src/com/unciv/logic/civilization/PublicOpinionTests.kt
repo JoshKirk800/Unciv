@@ -234,7 +234,7 @@ class PublicOpinionTests {
         unhappyAi().stats.happiness = -19
         assertFalse(PolicyAutomation.considerIdeologySwitch(me))
         me.stats.happiness = -25
-        me.nation.preferredVictoryType = "Scientific" // which does not go with Autocracy
+        me.ai.grandStrategy = "AIGRANDSTRATEGY_SPACESHIP" // which does not go with Autocracy
         game.gameInfo.gameParameters.victoryTypes = ArrayList(game.ruleset.victories.keys)
         assertFalse(PolicyAutomation.considerIdeologySwitch(me))
         assertEquals("Freedom", me.getIdeology()!!.name)

@@ -76,6 +76,9 @@ class TurnManager(val civInfo: Civilization) {
             UniqueTriggerActivation.triggerUnique(unique, civInfo)
         }
 
+        // CvPlayer::doTurn at the start of the player's turn: grand strategy, economic/military/city strategies (humans too, as the original)
+        civInfo.ai.doTurn()
+
         for (city in civInfo.cities) {
             progressBar?.increment()
             CityTurnManager(city).startTurn()  // Most expensive part of startTurn
