@@ -7,6 +7,7 @@ import com.unciv.logic.automation.strategy.OperationState
 import com.unciv.logic.automation.unit.tactical.OperationalMoves
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.HexCoord
+import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
 import com.unciv.logic.map.MapType
 import com.unciv.logic.map.TileMap
 import com.unciv.logic.map.tile.Tile
@@ -252,6 +253,30 @@ class SettleAreasTest {
         val scores = HashMap<Tile, Int>()
         SettleAreas.bestSettlePlot(settler, escorted = false, area = -1, targetedSites = emptyList(), scores = scores)
         assertTrue(scores.keys.none { tile -> tile.neighbors.any { it.getOwner() == neighbor } })
+    }
+
+    @Test
+    fun `best settle plot skips plots within 6 of a civilization it promised not to settle near`() {
+        val civ = twoLandmasses()
+        val neighbor = civ()
+        game.addCity(neighbor, tile(7, 7))
+        civ.diplomacyFunctions.makeCivilizationsMeet(neighbor)
+        val settler = game.addUnit("Settler", civ, tile(-7, -3))
+        val island = tile(7, 7).getContinent()
+        val before = HashMap<Tile, Int>()
+        SettleAreas.bestSettlePlot(settler, escorted = false, area = -1, targetedSites = emptyList(), scores = before)
+        assertTrue("setup: sites within 6 of the neighbor's city", before.keys.any { it.aerialDistanceTo(tile(7, 7)) <= 6 })
+
+        // CvDiplomacyAI::SetPlayerNoSettleRequestAccepted: the plots within 6 of their cities are no-settling for us
+        neighbor.getDiplomacyManager(civ)!!.setFlag(DiplomacyFlags.AgreedToNotSettleNearUs, 100)
+        val after = HashMap<Tile, Int>()
+        SettleAreas.bestSettlePlot(settler, escorted = false, area = -1, targetedSites = emptyList(), scores = after)
+        assertTrue(after.keys.none { it.aerialDistanceTo(tile(7, 7)) <= 6 })
+        assertNull(SettleAreas.bestSettlePlot(settler, escorted = false, area = island, targetedSites = emptyList()))
+
+        // A war ends the promise
+        civ.getDiplomacyManager(neighbor)!!.declareWar()
+        assertNotNull(SettleAreas.bestSettlePlot(settler, escorted = false, area = island, targetedSites = emptyList()))
     }
 
     @Test
