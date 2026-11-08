@@ -68,9 +68,8 @@ class AutoPlayMenu(
     private fun autoPlayMilitary() {
         val civInfo = worldScreen.selectedGameView.civView.getCiv()
         val autoPlayMilitaryFunction = {
-            val isAtWar = civInfo.isAtWar()
             val cache = AutomationCache()
-            val sortedUnits = civInfo.units.getCivUnits().filter { it.isMilitary() }.sortedBy { unit -> NextTurnAutomation.getUnitPriority(worldScreen.selectedGameView.getMapUnitView(unit), isAtWar, cache) }
+            val sortedUnits = civInfo.units.getCivUnits().filter { it.isMilitary() }.sortedBy { it.id }
             // The attacks of the units are the tactical AI's; the rest of the unit AI skips the units it commanded
             TacticalAi.automate(civInfo, sortedUnits.toList(), cache)
             for (unit in sortedUnits) UnitAutomation.automateUnitMoves(worldScreen.selectedGameView.getMapUnitView(unit), cache)
@@ -90,10 +89,8 @@ class AutoPlayMenu(
     private fun autoPlayCivilian() {
         val civInfo = worldScreen.selectedGameView.civView.getCiv()
         val autoPlayCivilainFunction = {
-            val isAtWar = civInfo.isAtWar()
             val cache = AutomationCache()
-            val sortedUnits = civInfo.units.getCivUnits().filter { it.isCivilian() }
-                .sortedBy { unit -> NextTurnAutomation.getUnitPriority(worldScreen.selectedGameView.getMapUnitView(unit), isAtWar, cache) }
+            val sortedUnits = civInfo.units.getCivUnits().filter { it.isCivilian() }.sortedBy { it.id }
             for (unit in sortedUnits) UnitAutomation.automateUnitMoves(worldScreen.selectedGameView.getMapUnitView(unit), cache)
             worldScreen.shouldUpdate = true
         }

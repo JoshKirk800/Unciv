@@ -4,7 +4,6 @@ import com.unciv.logic.automation.unit.PlotDanger
 import com.unciv.logic.automation.unit.tactical.TacticalMap
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.mapunit.MapUnit
-import com.unciv.view.TileView
 
 /**
  * Holds data that automation caches while a civ's moves are being automated.
@@ -12,20 +11,6 @@ import com.unciv.view.TileView
  * so it cannot go stale between turns.
  */
 class AutomationCache {
-
-    class ClosestEnemyTileData(
-        /** The farthest radius in which we have checked tiles for enemies.
-         * A value of 2 means all enemies at a radius of 2 are in tilesWithEnemies. */
-        var distanceSearched: Int,
-        /** Stores the location of the enemy tiles that we saw with the distance at which we saw them.
-         * Tiles are sorted by distance in increasing order.
-         * This allows us to quickly check if they are still alive and if we should search farther.
-         * It is not guaranteed that each tile in this list has an enemy (since they may have died).*/
-        var tilesWithEnemies: MutableList<Pair<TileView,Int>>
-    )
-
-
-    val distanceToClosestEnemyTiles = HashMap<TileView, ClosestEnemyTileData>()
 
     /**
      *  The units whose moves were decided this turn (CvUnit::TurnProcessed): whoever commands a unit adds it here, every later routine skips it.
