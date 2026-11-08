@@ -98,11 +98,8 @@ object UnitAutomation {
             return AirUnitAutomation.automateBomber(unitView)
         }
 
-        // The escort trained for a settler's operation goes to the settler
-        if (unit.civ.isAI() && SettlerAutomation.tryJoinSettler(unit)) return
-
-        // Accompany settlers
-        if (tryAccompanySettlerOrGreatPerson(unitView)) return
+        // Settlers get their escort from their operation (OperationMoves); Great People are accompanied here
+        if (tryAccompanyGreatPerson(unitView)) return
 
         if (tryGoToRuin(unitView) && !unitView.hasMovement()) return
 
@@ -553,13 +550,13 @@ object UnitAutomation {
         return false
     }
 
-    private fun tryAccompanySettlerOrGreatPerson(unitView: MapUnitView): Boolean {
+    private fun tryAccompanyGreatPerson(unitView: MapUnitView): Boolean {
         val distanceToTiles = unitView.getDistanceToTiles()
         val settlerOrGreatPersonToAccompany = unitView.civ().getUnits()
             .firstOrNull {
                 val tile = it.getTile()
                 it.isCivilian() &&
-                        (it.hasUnique(UniqueType.FoundCity) || it.getMatchingUniques(UniqueType.GreatPerson).any())
+                        it.getMatchingUniques(UniqueType.GreatPerson).any()
                         && !it.hasUnique(UniqueType.StrengthBonusInRadius) // Exlude great generals, as they move independently after all military units
                         && (tile == unitView.getTile() || tile.militaryUnit == null && unitView.canMoveTo(tile))
                         && distanceToTiles.containsKey(tile)

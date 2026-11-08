@@ -62,8 +62,8 @@ class MajorCivMemory : IsPartOfGameInfoSerialization {
     var turnMadePeace = -1
     /** CvTeam::GetNumTurnsLockedIntoWar */
     var turnsLockedIntoWar = 0
-    /** Our attack operation against them exists (CvMilitaryAI::GetSneakAttackOperation stand-in: the army has been formed, see [WarAi]) */
-    var attackOperation = false
+    /** CvDiplomacyAI::m_pabMusteringForAttack: our sneak attack operation against them finished with the army in position; war is declared next (see [WarAi]) */
+    var musteringForAttack = false
 
     // Disputes and postures
     var landDispute = DisputeLevel.None
@@ -153,7 +153,7 @@ class MajorCivMemory : IsPartOfGameInfoSerialization {
         copy.economicStrength = economicStrength; copy.militaryThreat = militaryThreat; copy.warmongerThreat = warmongerThreat
         copy.warmongerAmount = warmongerAmount; copy.treatyWillingToOffer = treatyWillingToOffer
         copy.treatyWillingToAccept = treatyWillingToAccept; copy.numWarsFought = numWarsFought; copy.turnMadePeace = turnMadePeace
-        copy.turnsLockedIntoWar = turnsLockedIntoWar; copy.attackOperation = attackOperation
+        copy.turnsLockedIntoWar = turnsLockedIntoWar; copy.musteringForAttack = musteringForAttack
         copy.landDispute = landDispute; copy.lastTurnLandDispute = lastTurnLandDispute; copy.wonderDispute = wonderDispute
         copy.minorCivDispute = minorCivDispute; copy.numWondersBeatenTo = numWondersBeatenTo; copy.expansionPosture = expansionPosture
         copy.plotBuyingPosture = plotBuyingPosture; copy.militaryPosture = militaryPosture

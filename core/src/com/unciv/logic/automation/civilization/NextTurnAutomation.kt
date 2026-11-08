@@ -10,7 +10,7 @@ import com.unciv.UncivGame
 import com.unciv.logic.automation.Automation
 import com.unciv.logic.automation.diplomacy.PromiseAi
 import com.unciv.logic.automation.Timers.Companion.timeThis
-import com.unciv.logic.automation.unit.SettlerAutomation
+import com.unciv.logic.automation.unit.OperationMoves
 import com.unciv.logic.automation.unit.ArchaeologistAutomation
 import com.unciv.logic.automation.unit.EspionageAutomation
 import com.unciv.logic.automation.unit.UnitAutomation
@@ -91,6 +91,8 @@ object NextTurnAutomation {
         if (tradeAndChangeState) timeThis("AI.considerAnnex") { CityConquestAutomation.considerAnnex(civInfo) }
         if (tradeAndChangeState) timeThis("AI.upgradeUnits") { UseGoldAutomation.plotUpgradeMoves(civInfo) }
         val cache = AutomationCache()
+        // CvPlayer::doTurnUnits' operational AI: the armies of the operations move before the other units
+        OperationMoves.doTurn(civInfo, cache)
         timeThis("AI.automateUnits") { automateUnits(civView, cache) }  // this is the most expensive part
 
         if (tradeAndChangeState && civInfo.isMajorCiv) {
@@ -237,14 +239,11 @@ object NextTurnAutomation {
             applyPromotions(unit)
         }
         for (unit in unitsInPriorityOrder()) {
-            // settlers need to move before automateSettlerEscorting(),
-            // move spaceship parts before that to make sure we're not blocking them
+            // move spaceship parts and settlers first, so we're not blocking them
             if (!unit.hasUnique(UniqueType.SpaceshipPart) && !unit.hasUnique(UniqueType.FoundCity)) continue
             if (!isStillOurUnit(unit, civView)) continue
             UnitAutomation.automateUnitMoves(unit, cache)
         }
-
-        if (civView.cities().isNotEmpty()) automateSettlerEscorting(civView)
 
         for (city in citiesRequiringManualPlacement) automateCityConquer(civView, city, cache)
 
@@ -335,39 +334,6 @@ object NextTurnAutomation {
             } // aims to maximize flanking bonus and number of hits in order to get kills
 
             Battle.moveAndAttack(MapUnitCombatant(unit), mostSurroundedEnemy)
-        }
-    }
-    
-    /**
-     *  Brings an escort to the settlers whose operation wants one (a CvAIOperationFoundCity, see [SettlerAutomation.wantsEscort]):
-     *  Unciv's stand-in for the operation's CvAIOperation::GrabUnitsFromTheReserves. Quick-colonize settlers travel alone.
-     */
-    @VisibleForTesting
-    fun automateSettlerEscorting(civView: CivView){
-        val civInfo = civView.getCiv()
-        val capitalTile = civInfo.getCapital()!!.getCenterTile()
-        @Readonly fun bestUnitInRange(tile: Tile, range: Int) = tile.getTilesInDistance(range)
-            .mapNotNull { it.militaryUnit }.filter {
-                it.civ == civInfo
-                    && it.type.isLandUnit() // a ship can reach a port, but the escort it swaps with cannot follow it to sea
-                    && it.health >= 100
-                    // only draft a unit from the core of the empire (at most as far from the capital as the settler), or it'll interfere with other anti-barb activities
-                    && (it.currentTile.aerialDistanceTo(capitalTile) <= tile.aerialDistanceTo(capitalTile))
-                    && it.movement.canReach(tile) 
-            }
-            .sortedBy { it.currentTile.aerialDistanceTo(tile) }
-            .maxByOrNull { it.baseUnit.strength } // could be more sophisticated based on promotions, movement speed etc.
-        
-        val settlersToAccompany = civInfo.units.getCivUnits()
-            .filter { it.isCivilian() && it.hasUnique(UniqueType.FoundCity) && SettlerAutomation.wantsEscort(it) }
-        
-        for (settler in settlersToAccompany) {
-            val escortUnit = bestUnitInRange(settler.currentTile, 3) ?: continue
-            escortUnit.movement.headTowards(settler.currentTile)
-            if (escortUnit.movement.canUnitSwapTo(settler.currentTile)) {
-                // check if we can swap to replace the current inferior (wounded) escort
-                escortUnit.movement.swapMoveToTile(settler.currentTile)
-            }
         }
     }
 
