@@ -160,11 +160,13 @@ class FullGameSim {
         out.appendLine("== turn $turn  (${wallSeconds}s wall)")
         for (civ in players(game)) {
             val line = String.format(Locale.ROOT,
-                "%-16s alive=%-5s era=%-18s cities=%2d pop=%3d techs=%3d policies=%2d gold=%5d happiness=%3d units=%3d landMil=%3d inArmies=%2d ops=%d/%d/%d culture=%d tourism=%d influential=%d works=%d ideology=%s opinion=%s religion=%s",
+                "%-16s alive=%-5s era=%-18s cities=%2d pop=%3d techs=%3d policies=%2d gold=%5d happiness=%3d units=%3d landMil=%3d garrisoned=%2d/%2d inArmies=%2d ops=%d/%d/%d culture=%d tourism=%d influential=%d works=%d ideology=%s opinion=%s religion=%s",
                 civ.civName, !civ.isDefeated(), civ.getEra().name, civ.cities.size, civ.cities.sumOf { it.population.population },
                 civ.tech.researchedTechnologies.size, civ.policies.getAdoptedPolicies().size, civ.gold,
                 civ.stats.happiness, civ.units.getCivUnitsSize(),
-                civ.units.getCivUnits().count { it.isMilitary() && it.baseUnit.isLandUnit }, civ.units.getCivUnits().count { civ.ai.operations.armyOf(it) != null && it.baseUnit.isLandUnit },
+                civ.units.getCivUnits().count { it.isMilitary() && it.baseUnit.isLandUnit },
+                civ.cities.count { city -> city.getCenterTile().militaryUnit.let { it != null && it.civ == civ && it.baseUnit.isLandUnit && (it.isFortified() || !it.canFortify(ignoreAlreadyFortified = true)) } }, civ.cities.size,
+                civ.units.getCivUnits().count { civ.ai.operations.armyOf(it) != null && it.baseUnit.isLandUnit },
                 civ.ai.operations.statsLaunched, civ.ai.operations.statsSucceeded, civ.ai.operations.statsAborted, civ.policies.storedCulture,
                 civ.culture.getTourism(), civ.culture.getNumCivsInfluentialOn(), civ.cities.sumOf { it.greatWorks.getNumWorks() },
                 ideologyOf(civ) ?: "-", civ.culture.publicOpinion.type.label, civ.religionManager.religion?.getReligionDisplayName() ?: "-")
@@ -240,6 +242,10 @@ class FullGameSim {
         var ended = "turn limit $maxTurns"
 
         fun event(turn: Int, text: String) = events.add("turn $turn: $text")
+        // Military units that left the game (killed, captured, disbanded; an upgrade keeps the id) and cities that changed hands, per snapshot interval
+        var knownMilitary = HashMap<String, String>() // "civ#unit id" -> civ
+        val militaryGone = HashMap<String, Int>()
+        val cityOwners = HashMap<String, String>()
 
         for (turn in 1..maxTurns) {
             try {
@@ -274,6 +280,17 @@ class FullGameSim {
                     event(turn, "${civ.civName} public opinion $opinion (unhappiness ${civ.culture.publicOpinion.unhappiness})")
                 if (civ.isDefeated() && wasDefeated.add(civ.civName)) event(turn, "${civ.civName} is defeated")
             }
+            val nowMilitary = HashMap<String, String>()
+            for (civ in game.civilizations) {
+                if (civ.isSpectator || civ.isBarbarian) continue
+                for (unit in civ.units.getCivUnits()) if (unit.isMilitary()) nowMilitary["${civ.civName}#${unit.id}"] = civ.civName
+                for (city in civ.cities) {
+                    val before = cityOwners.put(city.id, civ.civName)
+                    if (before != null && before != civ.civName) event(turn, "city changed hands: ${city.name} from $before to ${civ.civName}")
+                }
+            }
+            for ((key, owner) in knownMilitary) if (key !in nowMilitary) militaryGone.merge(owner, 1, Int::plus)
+            knownMilitary = nowMilitary
             val majors = players(game)
             for ((i, civ) in majors.withIndex()) for (other in majors.drop(i + 1)) {
                 val pair = "${civ.civName}|${other.civName}"
@@ -290,6 +307,7 @@ class FullGameSim {
             }
 
             if (turn % 25 == 0) {
+                event(turn, "military units gone since the start: " + militaryGone.entries.sortedBy { it.key }.joinToString { "${it.key} ${it.value}" })
                 summary(game, turn, (System.currentTimeMillis() - startedAt) / 1000, out)
                 checkpoint.writeText(UncivFiles.gameInfoToString(game, forceZip = true))
                 report(out, events, game, "running, turn $turn")
