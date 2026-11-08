@@ -84,7 +84,7 @@ object Deployment {
         if (unit.getTile() == tile) return true
         if (!unit.hasMovement() || unit.movement.getDistanceToTiles().isEmpty()) return false
         if (!unit.movement.canReachInCurrentTurn(tile) && unit.movement.getShortestPath(tile).isEmpty()) return false
-        unit.movement.headTowards(tile)
+        unit.movement.tryHeadTowards(tile)
         return true
     }
 

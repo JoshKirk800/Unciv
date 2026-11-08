@@ -200,7 +200,7 @@ object TacticalAi {
             val unit = withdrawal.unit
             val target = TacticalMoves.emptyTileNextTo(unit, withdrawal.city) ?: continue
             AiDecisionLog.log(civ) { "Tactical: ${unit.name} withdraws from zone ${zone.id} (${zone.closestCity?.name}) toward ${target.position}" }
-            unit.movement.headTowards(target)
+            unit.movement.tryHeadTowards(target)
             unit.currentMovement = 0f
             ctx.unitProcessed(unit)
             moved.add(unit)

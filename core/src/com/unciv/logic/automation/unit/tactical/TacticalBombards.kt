@@ -130,7 +130,7 @@ object TacticalBombards {
                 // Check for presence of unmovable friendly units
                 val blocker = cell.militaryUnit
                 if (blocker != null && blocker != unit && !TacticalMoves.executeMoveOfBlockingUnit(ctx, blocker)) continue
-                if (cell != unit.getTile()) unit.movement.headTowards(cell)
+                if (cell != unit.getTile()) unit.movement.tryHeadTowards(cell)
                 ctx.log { "moving closer for safe bombard with ${unit.name}, target ${tile.position}, bombard from ${cell.position}, now at ${unit.getTile().position}" }
                 if (unit.getTile() != cell) {
                     ctx.unitProcessed(unit)
@@ -208,7 +208,7 @@ object TacticalBombards {
             val unit = block.unit
             if (unit.getTile() != block.tile) {
                 ctx.log { "moving to cover a protected bombard with ${unit.name}, to ${block.tile.position}" }
-                unit.movement.headTowards(block.tile)
+                unit.movement.tryHeadTowards(block.tile)
             } else if (UnitActionsPillage.canPillage(unit, unit.getTile()) && unit.health < 100) {
                 ctx.log { "pillaging during a protected bombard with ${unit.name}" }
                 UnitActionsPillage.getPillageAction(unit, unit.getTile())?.action?.invoke()
@@ -220,7 +220,7 @@ object TacticalBombards {
         // Then move the attacking unit
         if (cell != shooter.getTile()) {
             ctx.log { "moving closer for protected bombard with ${shooter.name}, to ${cell.position}" }
-            shooter.movement.headTowards(cell)
+            shooter.movement.tryHeadTowards(cell)
         }
         ctx.unitProcessed(shooter)
         if (shooter.hasMovement() && !TacticalAttacks.isOutOfAttacks(shooter) && TacticalAttacks.attackOptions(shooter, tile, true).isNotEmpty()) {
@@ -307,7 +307,7 @@ object TacticalBombards {
             if (unit.getTile() == block.tile) ctx.log { "already in a flanking position with ${unit.name}, ${block.tile.position}" }
             else {
                 ctx.log { "moving into a flanking position with ${unit.name}, ${block.tile.position}" }
-                unit.movement.headTowards(block.tile)
+                unit.movement.tryHeadTowards(block.tile)
                 if (!unit.hasMovement()) ctx.unitProcessed(unit)
             }
         }

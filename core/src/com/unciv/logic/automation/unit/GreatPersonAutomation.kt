@@ -129,7 +129,7 @@ object GreatPersonAutomation {
     /** MISSION_MOVE_TO: a step along the path to [tile]. Without a path the mission fails and the unit stays; returns whether it moved on. */
     private fun moveTo(unit: MapUnit, tile: Tile): Boolean {
         if (!unit.movement.canReach(tile)) return false
-        unit.movement.headTowards(tile)
+        unit.movement.tryHeadTowards(tile)
         return true
     }
 

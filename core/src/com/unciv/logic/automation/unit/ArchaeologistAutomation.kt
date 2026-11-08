@@ -42,7 +42,7 @@ object ArchaeologistAutomation {
         if (!unit.hasMovement()) return true
 
         val target = findTarget(unit) ?: return false
-        if (tile != target) unit.movement.headTowards(target)
+        if (tile != target) unit.movement.tryHeadTowards(target)
         if (unit.getTile() == target && unit.canBuildImprovement(dig, target))
             target.startWorkingOnImprovement(dig, civ, unit)
         return true

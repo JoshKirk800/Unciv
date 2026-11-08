@@ -61,7 +61,7 @@ class WorkerAutomation(val civInfo: Civilization, val cachedForTurn: Int) {
         val directive = builderTaskingAi.evaluateBuilder(unit) ?: return false
         builderTaskingAi.claim(directive.tile)
         if (unit.getTile() == directive.tile) startBuild(unit, directive.build)
-        else unit.movement.headTowards(directive.tile)
+        else unit.movement.tryHeadTowards(directive.tile)
         return true
     }
 
@@ -107,7 +107,7 @@ class WorkerAutomation(val civInfo: Civilization, val cachedForTurn: Int) {
             }
         }
         if (target == null) return@timeThis false
-        if (unitTile != target) unit.movement.headTowards(target)
+        if (unitTile != target) unit.movement.tryHeadTowards(target)
         if (unit.getTile() == target) unitView.tryInvokeUnitAction(UnitActionType.CreateImprovement)
         unitTile != unit.getTile() || target.improvement != null
     }

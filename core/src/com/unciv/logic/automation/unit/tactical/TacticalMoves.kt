@@ -343,7 +343,7 @@ object TacticalMoves {
             val unit = candidate.unit
             if (unit.getTile() == tile && unit.canFortify()) unit.fortify()
             else if (candidate.turns < Int.MAX_VALUE) {
-                unit.movement.headTowards(tile)
+                unit.movement.tryHeadTowards(tile)
                 unit.currentMovement = 0f
             } else return false
             ctx.unitProcessed(unit)
@@ -404,7 +404,7 @@ object TacticalMoves {
      */
     fun moveToEmptySpaceNearTarget(ctx: TacticalContext, unit: MapUnit, target: Tile): Boolean {
         val destination = emptyTileNextTo(unit, target) ?: return false
-        unit.movement.headTowards(destination)
+        unit.movement.tryHeadTowards(destination)
         return true
     }
 

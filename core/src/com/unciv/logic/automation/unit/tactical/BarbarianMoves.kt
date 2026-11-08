@@ -77,7 +77,7 @@ object BarbarianMoves {
                 val best = if (current != null && current != unit.getTile() && unit.movement.canReach(current)) current else findBestSeaMove(ctx, unit)
                 if (best != null && unit.movement.canReach(best)) {
                     state.unitDestinations[unit.id] = best.position
-                    if (best != unit.getTile()) unit.movement.headTowards(best)
+                    if (best != unit.getTile()) unit.movement.tryHeadTowards(best)
                     ctx.log { "moving ${unit.name} to new position ${best.position}, now at ${unit.getTile().position}" }
                 } else {
                     state.unitDestinations.remove(unit.id)
@@ -190,7 +190,7 @@ object BarbarianMoves {
     private fun moveSafely(ctx: TacticalContext, unit: MapUnit, tile: Tile) {
         if (unit.getTile() == tile || unit.movement.getDistanceToTiles().containsKey(tile) && unit.movement.canMoveTo(tile)) TacticalMoves.moveToPlot(ctx, unit, tile)
         else {
-            if (unit.movement.canReach(tile)) unit.movement.headTowards(tile)
+            if (unit.movement.canReach(tile)) unit.movement.tryHeadTowards(tile)
             unit.currentMovement = 0f
             ctx.unitProcessed(unit)
         }

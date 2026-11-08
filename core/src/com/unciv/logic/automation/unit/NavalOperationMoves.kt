@@ -244,7 +244,7 @@ object NavalOperationMoves {
         cache.processedUnits.add(unit)
         if (unit.getTile() == tile || !unit.hasMovement()) return
         if (unit.movement.getDistanceToTiles().containsKey(tile) && unit.movement.canMoveTo(tile)) unit.movement.moveToTile(tile)
-        else if (unit.movement.canReach(tile)) unit.movement.headTowards(tile)
+        else if (unit.movement.canReach(tile)) unit.movement.tryHeadTowards(tile)
     }
 
     /** MoveToEmptySpaceNearTarget for a ship: the nearest water tile next to [target] without a unit it can reach */

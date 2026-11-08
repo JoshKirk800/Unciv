@@ -49,14 +49,14 @@ object CivilianSafety {
     fun headTowardsAvoidingDanger(unit: MapUnit, target: Tile): Boolean {
         if (unit.getTile() == target) return true
         if (unit.isEscorting()) { // the escort goes along: no danger to speak of
-            unit.movement.headTowards(target)
+            unit.movement.tryHeadTowards(target)
             return true
         }
         val reachable = unit.movement.getDistanceToTiles()
         val path = unit.movement.getShortestPath(target)
         val endOfTurn = path.lastOrNull { it in reachable }
         if (endOfTurn != null && unit.civ.ai.plotDanger.get(endOfTurn) > 0 && endOfTurn != target) return false
-        unit.movement.headTowards(target)
+        unit.movement.tryHeadTowards(target)
         return true
     }
 

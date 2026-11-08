@@ -419,7 +419,7 @@ object HomelandAi {
 
                 val best = bestNearbyExplorePlot(unit) ?: bestExplorationPlotStep(unit, exploration)
                 if (best != null) {
-                    unit.movement.headTowards(best)
+                    unit.movement.tryHeadTowards(best)
                     ordered = true
                     if (!unit.hasMovement()) processed(unit, if (unit.baseUnit.isWaterUnit) HomelandMove.ExploreSea else HomelandMove.Explore)
                 } else if (disbandWhenStuck && UnitAiTypes.current(unit) == UnitAiType.EXPLORE && civ.cities.none { unit.movement.getShortestPath(it.getCenterTile()).isNotEmpty() }) {
@@ -438,7 +438,7 @@ object HomelandAi {
             val stillWorth = ruleset.tileImprovements[goody.improvement]?.isAncientRuinsEquivalent() == true ||
                 (goody.isBarbarianEncampment() && goody.militaryUnit == null)
             if (!stillWorth || unit.movement.getShortestPath(goody).isEmpty()) return false
-            unit.movement.headTowards(goody)
+            unit.movement.tryHeadTowards(goody)
             processed(unit, if (unit.baseUnit.isWaterUnit) HomelandMove.ExploreSea else HomelandMove.Explore)
             return true
         }
@@ -666,7 +666,7 @@ object HomelandAi {
 
         /** MISSION_MOVE_TO for [unit]: as far as it gets this turn, the rest by a `moveTo` order carried out when its next turn starts; fortifies if it stands on the target */
         private fun sendTo(unit: MapUnit, target: Tile, fortifyOnArrival: Boolean = true) {
-            if (unit.getTile() != target) unit.movement.headTowards(target)
+            if (unit.getTile() != target) unit.movement.tryHeadTowards(target)
             if (unit.isDestroyed) return
             if (unit.getTile() == target) {
                 if (fortifyOnArrival) unit.fortifyIfCan()
