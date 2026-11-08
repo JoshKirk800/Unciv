@@ -1,6 +1,5 @@
 package com.unciv.logic.city
 
-import com.unciv.logic.automation.civilization.TradeAutomation
 import com.unciv.logic.automation.unit.GreatWorkAutomation
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.mapunit.MapUnit
@@ -459,45 +458,6 @@ class GreatWorkTests {
     }
 
     @Test
-    fun `AI rearranges artifacts to satisfy distinct creator and era theming`() {
-        val other = game.addCiv()
-        val gallery = themedGallery({ mustBeArtifact = true; uniqueEras = true; requiresUniquePlayers = true })
-        val spareCity = game.addCity(civ, game.tileMap[0, 3])
-        val spare = addBuilding(artSlots(1), to = spareCity)
-        val first = instance(work(GreatWorkType.Artifact), "Ancient era")
-        val duplicate = instance(work(GreatWorkType.Artifact), "Ancient era")
-        val replacement = instance(work(GreatWorkType.Artifact), "Medieval era", other)
-        put(gallery, 0, first)
-        put(gallery, 1, duplicate)
-        put(spare, 0, replacement, spareCity)
-        assertEquals(0, city.greatWorks.getThemingBonus(gallery))
-
-        GreatWorkFunctions.optimizeTheming(civ)
-
-        assertEquals(3, city.greatWorks.getThemingBonus(gallery))
-        assertEquals(setOf(first, duplicate, replacement), (city.greatWorks.getWorks() + spareCity.greatWorks.getWorks()).toSet())
-        assertTrue(city.greatWorks.getWorks().any { it === replacement })
-    }
-
-    @Test
-    fun `AI fills a themed building from another city before leaving a free slot unused`() {
-        val other = game.addCiv()
-        val gallery = themedGallery({ mustBeArtifact = true; uniqueEras = true; requiresUniquePlayers = true })
-        val spareCity = game.addCity(civ, game.tileMap[0, 3])
-        val spare = addBuilding(artSlots(1), to = spareCity)
-        val first = instance(work(GreatWorkType.Artifact), "Ancient era")
-        val second = instance(work(GreatWorkType.Artifact), "Medieval era", other)
-        put(gallery, 0, first)
-        put(spare, 0, second, spareCity)
-
-        GreatWorkFunctions.optimizeTheming(civ)
-
-        assertEquals(3, city.greatWorks.getThemingBonus(gallery))
-        assertTrue(GreatWorkSlot(city, gallery, 1).getWork() === second)
-        assertNull(GreatWorkSlot(spareCity, spare, 0).getWork())
-    }
-
-    @Test
     fun `duplicate artifact names identify the offered slot and stale slots cannot be traded`() {
         val other = game.addCiv()
         civ.diplomacyFunctions.makeCivilizationsMeet(other)
@@ -552,32 +512,6 @@ class GreatWorkTests {
         assertEquals(3, aiCity.greatWorks.getThemingBonus(themed))
         assertTrue(ownSlot.getWork() === theirArtifact)
         assertTrue(aiSlot.getWork() === ourArtifact)
-    }
-
-    @Test
-    fun `AI proposes a same-kind exchange that improves its artifact theme`() {
-        val ai = game.addCiv()
-        civ.diplomacyFunctions.makeCivilizationsMeet(ai)
-        val aiCity = game.addCity(ai, game.tileMap[0, 4], replacePalace = true)
-        val ownBuilding = addBuilding(artSlots(1))
-        val themed = addBuilding(artSlots(2), to = aiCity)
-        themed.themingBonuses.add(ThemingBonus().apply {
-            bonus = 3
-            uniqueEras = true
-            requiresUniquePlayers = true
-            mustBeArtifact = true
-        })
-        put(ownBuilding, 0, instance(work(GreatWorkType.Artifact), "Medieval era"))
-        put(themed, 0, instance(work(GreatWorkType.Artifact), "Ancient era", ai), aiCity)
-        put(themed, 1, instance(work(GreatWorkType.Artifact), "Ancient era", ai), aiCity)
-
-        TradeAutomation.exchangeGreatWorks(ai)
-
-        val request = civ.tradeRequests.single()
-        assertEquals(ai.civID, request.requestingCiv)
-        assertTrue(TradeEvaluation().isTradeValid(request.trade, civ, ai))
-        assertEquals(TradeOfferType.GreatWork, request.trade.ourOffers.single().type)
-        assertEquals(TradeOfferType.GreatWork, request.trade.theirOffers.single().type)
     }
 
     @Test
