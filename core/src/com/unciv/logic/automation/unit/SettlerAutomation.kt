@@ -84,11 +84,13 @@ object SettlerAutomation {
             area = areas.first
             wantEscort = true
         }
-        // An escorted settler whose best site is overseas sails with a colonization party (CvAINavalEscortedOperation)
-        if (wantEscort && civ.tech.unitsCanEmbark && !unit.getTile().isWater) NavalOperationLogic.tryStartColonization(civ, unit)?.let { party ->
-            AiDecisionLog.log(civ) { "settler ${unit.id} at ${unit.getTile().position}: ${party.type} to ${party.targetTile} (${party.state})" }
-            return party
-        }
+        // Off, as in BNW: nothing in the DLL calls addAIOperation(AI_OPERATION_COLONIZE), so its settlers never start a colonization party.
+        // (CvAIOperationFoundCity::Init has no water rule: an escorted settler with an overseas site waits for its escort, then goes alone
+        // after 15 turns or when a safe site is found - as here.) Kept for a later decision:
+        // if (wantEscort && civ.tech.unitsCanEmbark && !unit.getTile().isWater) NavalOperationLogic.tryStartColonization(civ, unit)?.let { party ->
+        //     AiDecisionLog.log(civ) { "settler ${unit.id} at ${unit.getTile().position}: ${party.type} to ${party.targetTile} (${party.state})" }
+        //     return party
+        // }
         val operation = AiOperationLogic.addSettlerOperation(civ, if (wantEscort) AiOperationType.FOUND_CITY else AiOperationType.QUICK_COLONIZE, unit, area)
         AiDecisionLog.log(civ) {
             "settler ${unit.id} at ${unit.getTile().position}: ${operation.type} to ${operation.targetTile} (area $area, " +
