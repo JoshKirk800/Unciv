@@ -123,7 +123,7 @@ object TacticalBombards {
                 if (cell == tile || !map.isRevealed(cell) || !map.canUseForOperationGathering(cell)) continue
                 if (!map.isWithinRangeOfTarget(cell) || map.isSubjectToAttack(cell)) continue
                 val distance = cell.aerialDistanceTo(tile)
-                val hasLos = hasLineOfSight(cell, tile, range)
+                val hasLos = ctx.hasLineOfSight(cell, tile)
                 val candidate = findClosestUnits(ctx, cell, turnsToReach, mustBeRanged = true, rangeRequired = distance, needsIgnoreLos = !hasLos,
                     ignoreUnits = true, exclude = series.attacks.mapNotNull { it.unit }).firstOrNull() ?: continue
                 val unit = candidate.unit
@@ -146,9 +146,6 @@ object TacticalBombards {
     }
 
     private const val MAX_TURNS_TO_BOMBARD_TILE = 2
-
-    /** CvPlot::canSeePlot: [from] has a line of sight to [target] at [range] */
-    private fun hasLineOfSight(from: Tile, target: Tile, range: Int) = target in from.tileMap.getViewableTiles(from.position, range, true)
 
     // endregion
     // region Protected bombards
@@ -182,7 +179,7 @@ object TacticalBombards {
             if (cell == tile || !map.isRevealed(cell) || !map.canUseForOperationGathering(cell) || !map.isWithinRangeOfTarget(cell)) continue
             if (cell.neighbors.any { map.enemyMilitaryUnit(it) != null }) continue
             val distance = cell.aerialDistanceTo(tile)
-            val needsIgnoreLos = !hasLineOfSight(cell, tile, range)
+            val needsIgnoreLos = !ctx.hasLineOfSight(cell, tile)
             val shooter = findClosestUnits(ctx, cell, 0, mustBeRanged = true, rangeRequired = distance, needsIgnoreLos = needsIgnoreLos).firstOrNull()
                 ?: findClosestUnits(ctx, cell, 1, mustBeRanged = true, rangeRequired = distance, needsIgnoreLos = needsIgnoreLos).firstOrNull()
                 ?: continue
@@ -197,7 +194,7 @@ object TacticalBombards {
         val cell = best ?: return false
 
         val distance = cell.aerialDistanceTo(tile)
-        val needsIgnoreLos = !hasLineOfSight(cell, tile, range)
+        val needsIgnoreLos = !ctx.hasLineOfSight(cell, tile)
         val shooter = (findClosestUnits(ctx, cell, 0, mustBeRanged = true, rangeRequired = distance, needsIgnoreLos = needsIgnoreLos).firstOrNull()
             ?: findClosestUnits(ctx, cell, 1, mustBeRanged = true, rangeRequired = distance, needsIgnoreLos = needsIgnoreLos).firstOrNull())?.unit
             ?: return false

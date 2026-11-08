@@ -54,6 +54,20 @@ class TacticalContext(
     fun isEnemyCity(tile: Tile): Boolean = analysisMap?.isEnemyCity(tile)
         ?: (tile.isCityCenter() && tile.getOwner()?.let { it != civ && civ.isAtWarWith(it) } == true)
 
+    /** Per target tile, by the [Tile.zeroBasedIndex] of the tile looking at it: 0 not computed, 1 line of sight, 2 none */
+    private val lineOfSight = HashMap<Tile, ByteArray>()
+
+    /**
+     *  CvPlot::canSeePlot for a ranged attack: [from] sees [target] over the terrain between them. Terrain does not change during the turn,
+     *  so each pair is computed once. A tile's visibility depends only on the rings nearer than it: looking as far as [target] is enough.
+     */
+    fun hasLineOfSight(from: Tile, target: Tile): Boolean {
+        val known = lineOfSight.getOrPut(target) { ByteArray(target.tileMap.tileList.size) }
+        if (known[from.zeroBasedIndex] == 0.toByte())
+            known[from.zeroBasedIndex] = if (target in from.tileMap.getViewableTiles(from.position, from.aerialDistanceTo(target), true)) 1 else 2
+        return known[from.zeroBasedIndex] == 1.toByte()
+    }
+
     /** The two tiles are on the same landmass or body of water (CvPlot::getArea) */
     fun sameArea(a: Tile, b: Tile): Boolean = analysisMap?.let { it.areaOf(a) == it.areaOf(b) } ?: (a.getContinent() == b.getContinent())
 

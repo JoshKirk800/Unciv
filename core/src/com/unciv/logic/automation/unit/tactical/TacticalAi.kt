@@ -92,7 +92,7 @@ object TacticalAi {
         val ctx = TacticalContext(civ, map, danger, cache, tacticalUnits, TacticalTargets.find(civ, map, danger))
         val highPriority by lazy { ctx.targets.all.filter { it.type == TacticalTargetType.HighPriorityUnit }.mapNotNullTo(HashSet()) { it.unit } }
 
-        class Step(val name: String, val run: () -> Unit)
+        class Step(val name: String, val run: () -> Unit) { val span = "AI.Tactical.$name" }
         val steps = listOf(
             Step(EMERGENCY_PURCHASES) {
                 if (civ.isAIOrAutoPlaying()) Postures.forEachZone(ctx, { zone, _ -> zone.dominance != TacticalDominance.Friendly && zone.territory == TacticalTerritory.Friendly }) { zone, _ ->
@@ -153,7 +153,7 @@ object TacticalAi {
             // A posture may have turned a move off for the rest of the turn (CvTacticalAI::TurnOffMove)
             if (move.name in ctx.disabledMoves) continue
             ctx.currentTargets = ctx.targets.all
-            stepByName[move.name]?.run()
+            stepByName[move.name]?.let { step -> timeThis(step.span) { step.run() } }
         }
         AiDecisionLog.log(civ) {
             "Tactical: $commandeered units commandeered, ${commandeered - ctx.units.size} commanded, ${ctx.targets.all.size} targets; postures " +
