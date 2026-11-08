@@ -2,7 +2,6 @@ package com.unciv.logic.automation.unit
 
 import com.unciv.view.isMilitary
 import com.unciv.view.isAutomatingRoadConnection
-import com.unciv.logic.automation.civilization.ThreatManager
 import com.unciv.logic.automation.civilization.AutomationCache
 import com.unciv.view.CivView
 import com.unciv.logic.civilization.managers.ReligionState
@@ -27,7 +26,7 @@ object CivilianUnitAutomation {
         && !unit.hasUnique(UniqueType.AddInCapital)
         && unit.civ().getUnits().any { it.hasUnique(UniqueType.AddInCapital) }
 
-    fun automateCivilianUnit(unit: MapUnitView, dangerousTiles: HashSet<TileView>, cache: AutomationCache): Unit = timeThis("automateCivilianUnit") {
+    fun automateCivilianUnit(unit: MapUnitView, cache: AutomationCache): Unit = timeThis("automateCivilianUnit") {
         // Temporary - logic-layer automation below still works on MapUnit
         val mapUnit = unit.getUnit()
 
@@ -43,9 +42,10 @@ object CivilianUnitAutomation {
         val hasSettlerUnique = hasSettlerAction(UniqueType.FoundCity) || hasSettlerAction(UniqueType.FoundPuppetCity)
         
         if (hasSettlerUnique && !(unit.civ().isCityState && unit.isMilitary()))
-            return SettlerAutomation.automateSettler(unit, dangerousTiles, cache)
+            return SettlerAutomation.automateSettler(unit, cache)
 
-        if (tryRunAwayIfNeccessary(unit, cache)) return
+        // CvHomelandAI::PlotMovesToSafety: a civilian that cannot defend itself flees from a plot with danger
+        if (CivilianSafety.fleeIfThreatened(mapUnit)) return
 
         if (shouldClearTileForAddInCapitalUnits(unit, unit.getTile())) {
             // First off get out of the way, then decide if you actually want to do something else
@@ -62,14 +62,14 @@ object CivilianUnitAutomation {
             return
 
         if (unit.isAutomatingRoadConnection())
-            return mapUnit.civ.getWorkerAutomation().roadToAutomation.automateConnectRoad(unit, dangerousTiles)
+            return mapUnit.civ.getWorkerAutomation().roadToAutomation.automateConnectRoad(unit)
 
         if (unit.hasUnique(UniqueType.BuildImprovements))
-            return mapUnit.civ.getWorkerAutomation().automateWorkerAction(unit, dangerousTiles)
+            return mapUnit.civ.getWorkerAutomation().automateWorkerAction(unit)
 
         if (unit.hasUniqueToCreateWaterImprovements()) {
             if (!mapUnit.civ.getWorkerAutomation().automateWorkBoats(unit))
-                UnitAutomation.tryExplore(unit, cache)
+                HomelandAi.exploreUnit(mapUnit, cache)
             return
         }
 
@@ -89,13 +89,9 @@ object CivilianUnitAutomation {
             return SpecificUnitAutomation.automateAddInCapital(unit)
 
         // Great People but Prophets: the directives of CvPlayerAI and the moves of CvHomelandAI. A general near a visible enemy is the
-        // tactical AI's (CvTacticalAI::CommandeerUnits), for which following our troops stands in
+        // tactical AI's (CvTacticalAI::CommandeerUnits, MoveGreatGeneral); one it left unmoved is the homeland AI's like any other
         val greatPersonRole = GreatPersonAutomation.roleOf(mapUnit.baseUnit, mapUnit.civ.gameInfo.ruleset)
-        if (greatPersonRole == GreatPersonRole.General && GreatPersonAutomation.isNearVisibleEnemy(mapUnit)
-            && SpecificUnitAutomation.automateGreatGeneral(unit))
-            return
-        if (greatPersonRole != null && greatPersonRole != GreatPersonRole.Prophet
-            && GreatPersonAutomation.automate(mapUnit) { unit.getTile().getTileMap().getTile(it) in dangerousTiles })
+        if (greatPersonRole != null && greatPersonRole != GreatPersonRole.Prophet && GreatPersonAutomation.automate(mapUnit))
             return
 
         // A Great Prophet here has the directive to build the Holy Site, not to spread
@@ -129,7 +125,7 @@ object CivilianUnitAutomation {
             return
         }
 
-        if (SpecificUnitAutomation.automateImprovementPlacer(mapUnit) { unit.getTile().getTileMap().getTile(it) in dangerousTiles }) return
+        if (SpecificUnitAutomation.automateImprovementPlacer(mapUnit)) return
         
         val goldenAgeAction = UnitActions.getUnitActions(mapUnit, UnitActionType.TriggerUnique)
             .filter { it.action != null && it.associatedUnique?.type in listOf(UniqueType.OneTimeEnterGoldenAge,
@@ -140,57 +136,5 @@ object CivilianUnitAutomation {
         }
 
         return // The AI doesn't know how to handle unknown civilian units
-    }
-
-    /** Returns whether the civilian spends its turn hiding and not moving */
-    fun tryRunAwayIfNeccessary(unit: MapUnitView, cache: AutomationCache): Boolean {
-        // This is a little 'Bugblatter Beast of Traal': Run if we can attack an enemy
-        // Cheaper than determining which enemies could attack us next turn
-        val enemyUnitsInWalkingDistance = unit.getDistanceToTiles().keys
-            .filter { ThreatManager.doesTileHaveMilitaryEnemy(unit.civ(), it) }
-
-        if (enemyUnitsInWalkingDistance.isNotEmpty() && !unit.getBaseUnit().isMilitary
-            && unit.getTile().militaryUnit == null && !unit.getTile().isCityCenter()) {
-            runAway(unit, cache)
-            return true
-        }
-
-        return false
-    }
-
-    private fun runAway(unit: MapUnitView, cache: AutomationCache) {
-        val mapUnit = unit.getUnit()
-        val reachableTiles = mapUnit.movement.getDistanceToTiles()
-        val enterableCity = reachableTiles.keys
-            .firstOrNull { it.isCityCenter() && mapUnit.movement.canMoveTo(it) }
-        if (enterableCity != null) {
-            mapUnit.movement.moveToTile(enterableCity)
-            return
-        }
-        val defensiveUnit = reachableTiles.keys
-            .firstOrNull {
-                it.militaryUnit != null && it.militaryUnit!!.civ == mapUnit.civ && it.civilianUnit == null
-            }
-        if (defensiveUnit != null) {
-            mapUnit.movement.moveToTile(defensiveUnit)
-            return
-        }
-
-        val dangerousTiles = ThreatManager.getDangerousTiles(cache, unit)
-        val unitTileView = unit.getTile()
-        val tileClosestToDanger = dangerousTiles
-            // Priotirize capture threat over ranged attack
-            .sortedByDescending { ThreatManager.getEnemyUnitsOnTiles(unit.civ(), listOf(it)).isNotEmpty() }
-            .minByOrNull { it.aerialDistanceTo(unitTileView) } ?: unitTileView
-        val tileFurthestFromDanger = reachableTiles.keys
-            .filter {
-                mapUnit.movement.canMoveTo(it)
-                    && mapUnit.getDamageFromTerrain(it) < unit.unitHealth
-                    && unitTileView.getTileMap().getTile(it) !in dangerousTiles }
-            .sortedWith(compareByDescending<Tile> { unitTileView.getTileMap().getTile(it).aerialDistanceTo(tileClosestToDanger) } // As far away from threat
-                .thenByDescending { it.isFriendlyTerritory(mapUnit.civ) }) // Priotirize friendly territory
-            .firstOrNull() ?: return // can't move anywhere!
-
-        mapUnit.movement.moveToTile(tileFurthestFromDanger)
     }
 }

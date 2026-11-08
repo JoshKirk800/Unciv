@@ -2,6 +2,9 @@ package com.unciv.logic.automation.civilization
 
 import com.unciv.Constants
 import com.unciv.logic.automation.Timers.Companion.timeThis
+import com.unciv.logic.automation.strategy.AiOperationLogic
+import com.unciv.logic.automation.strategy.MilitaryOperations
+import com.unciv.logic.automation.strategy.OperationAbortReason
 import com.unciv.logic.automation.diplomacy.AggressivePosture
 import com.unciv.logic.automation.diplomacy.CoopWarAi
 import com.unciv.logic.automation.diplomacy.DiploStatement
@@ -360,19 +363,36 @@ object DiplomacyAutomation {
             rules.define(AiDefine.DEMAND_RAND) > civ.ai.random("DiplomacyAI.DemandRoll").nextInt(100)) {
             val target = candidates[0].first
             ai.demandTarget = target.civID
-            if (civ.getDiplomacyManager(target)?.canDeclareWar() == true) ai.memoryOf(target).warGoal = WarGoal.Demand
+            // CvDiplomacyAI::DoStartDemandProcess: the show of force that puts units near them
+            val memory = ai.memoryOf(target)
+            if (MilitaryOperations.showOfForceOperation(civ, target) == null && !memory.musteringForAttack &&
+                !civ.isAtWarWith(target) && civ.getDiplomacyManager(target)?.canDeclareWar() == true) {
+                MilitaryOperations.requestShowOfForce(civ, target)
+                memory.warGoal = WarGoal.Demand
+            }
         }
         val target = ai.demandTarget?.let { civ.gameInfo.getCivilizationOrNull(it) }
         if (target != null && !isPlayerDemandAttractive(civ, target)) cancel = true
         if (cancel && target != null) {
-            if (ai.memoryOf(target).warGoal == WarGoal.Demand) ai.memoryOf(target).warGoal = null
+            if (ai.memoryOf(target).warGoal == WarGoal.Demand) {
+                ai.memoryOf(target).warGoal = null
+                // Get rid of the operation to put units near them
+                MilitaryOperations.showOfForceOperation(civ, target)?.let {
+                    civ.ai.operations.kill(it, OperationAbortReason.DIPLO_OPINION_CHANGE)
+                    ai.memoryOf(target).musteringForAttack = false
+                }
+            }
             ai.demandTarget = null
             ai.demandReady = false
         }
-        // The show of force is in position (the attack operation stand-in, see WarAi)
+        // CvDiplomacyAI::DoTestDemandReady: the show of force is 85% of the way, or has mustered
         val current = ai.demandTarget?.let { civ.gameInfo.getCivilizationOrNull(it) } ?: return
-        if (ai.memoryOf(current).warGoal == WarGoal.Demand && !civ.isAtWarWith(current) && WarAi.isArmyInPosition(civ, current, rules))
+        val operation = MilitaryOperations.showOfForceOperation(civ, current)
+        if (ai.memoryOf(current).warGoal == WarGoal.Demand && operation != null && !civ.isAtWarWith(current) &&
+            (ai.memoryOf(current).musteringForAttack || AiOperationLogic.percentFromMusterPointToTarget(civ, operation) >= WarAi.PERCENT_TO_DECLARE_WAR)) {
+            ai.memoryOf(current).musteringForAttack = false
             ai.demandReady = true
+        }
     }
 
     /** CvDiplomacyAI::DoMakeDemand with CvDealAI::IsMakeDemand: tribute in gold (at most 200 + 150 × their era); AIs always give in */

@@ -104,10 +104,12 @@ class ItemFlavors {
     var flavors = LinkedHashMap<String, Int>()
 }
 
-/** Unit_AITypes + Units.DefaultUnitAI, by Unciv unit name */
+/** Unit_AITypes + Units.DefaultUnitAI + Units.CivilianAttackPriority, by Unciv unit name */
 class UnitAiTypesDef : INamed {
     override var name = ""
     var defaultUnitAi: String? = null
+    /** CvUnitEntry::GetCivilianAttackPriority: `CIVILIAN_ATTACK_PRIORITY_HIGH`, `_HIGH_EARLY_GAME_ONLY` or `_LOW`, null for none */
+    var civilianAttackPriority: String? = null
     var unitAiTypes = ArrayList<String>()
 }
 
@@ -149,15 +151,41 @@ class WorldSizeDef : INamed {
     var estimatedNumCities = 52
 }
 
-/** One slot of a MultiUnitFormation: the unit AI types that fill it and whether the formation needs it */
+/** MultiUnitPositionTypes (CvTacticalAI.h): where a unit of a formation stands relative to the others while the army moves */
+enum class FormationPosition(val xmlName: String) {
+    BOMBARD("MUPOSITION_BOMBARD"), FRONT_LINE("MUPOSITION_FRONT_LINE"), CIVILIAN_SUPPORT("MUPOSITION_CIVILIAN_SUPPORT"),
+    NAVAL_ESCORT("MUPOSITION_NAVAL_ESCORT");
+
+    companion object {
+        fun ofXmlName(name: String) = entries.firstOrNull { it.xmlName == name }
+    }
+}
+
+/** One slot of a MultiUnitFormation: the unit AI types that fill it, whether the formation needs it, and its position (MultiUnitPositionType) */
 class FormationSlotDef {
     var primaryUnitAi = ""
     var secondaryUnitAi = ""
     var required = false
+    /** MUPOSITION_* name; "" in data generated before positions were added */
+    var positionType = ""
+
+    val position get() = FormationPosition.ofXmlName(positionType) ?: FormationPosition.FRONT_LINE
 }
 
 /** MultiUnitFormation_SlotEntries by formation type (CvMilitaryAI::IsAttackReady) */
 class MultiUnitFormationDef : INamed {
     override var name = ""
+    /** MultiUnitFormations.RequiresNavalUnitConsistency: with ocean-going ships available only those may fill the slots (naval and city-state invasions) */
+    var requiresNavalUnitConsistency = false
     var slots = ArrayList<FormationSlotDef>()
+}
+
+/** One TacticalMoves row (CvTacticalMoveXMLEntry): [priority] orders the moves of a turn, [dominanceZoneMove] runs them once per dominance zone */
+class TacticalMoveDef : INamed {
+    override var name = ""
+    var priority = 0
+    var operationsCanRecruit = false
+    var dominanceZoneMove = false
+    var offenseFlavorWeight = 0
+    var defenseFlavorWeight = 0
 }

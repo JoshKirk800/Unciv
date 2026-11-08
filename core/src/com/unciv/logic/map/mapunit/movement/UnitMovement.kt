@@ -278,7 +278,12 @@ class UnitMovement(val unit: MapUnit) {
     class UnreachableDestinationException(msg: String) : Exception(msg)
 
     @Readonly
-    fun getTileToMoveToThisTurn(finalDestination: Tile): Tile {
+    fun getTileToMoveToThisTurn(finalDestination: Tile): Tile = getTileToMoveToThisTurnOrNull(finalDestination)
+        ?: throw UnreachableDestinationException("$unit ${unit.currentTile} cannot reach $finalDestination")
+
+    /** [getTileToMoveToThisTurn], null when [finalDestination] cannot be reached */
+    @Readonly
+    fun getTileToMoveToThisTurnOrNull(finalDestination: Tile): Tile? {
         val currentTile = unit.getTile()
         if (currentTile == finalDestination) return currentTile
 
@@ -289,8 +294,7 @@ class UnitMovement(val unit: MapUnit) {
 
         // If the tile is far away, we need to build a path how to get there, and then take the first step
         if (!distanceToTiles.containsKey(finalDestination)) {
-            val shortestDestination = getShortestPath(finalDestination).firstOrNull()
-                ?: throw UnreachableDestinationException("$unit ${unit.currentTile} cannot reach $finalDestination")
+            val shortestDestination = getShortestPath(finalDestination).firstOrNull() ?: return null
             if (shortestDestination !in distanceToTiles)
                 return distanceToTiles.keys.minBy { it.aerialDistanceTo(finalDestination) }
             return shortestDestination
@@ -318,6 +322,16 @@ class UnitMovement(val unit: MapUnit) {
         val destinationTileThisTurn = getTileToMoveToThisTurn(destination)
         moveToTile(destinationTileThisTurn)
         return unit.currentTile
+    }
+
+    /**
+     *  [headTowards] for the AI, whose destinations come from plans that can go stale (a tile cut off, a ship sent at land): no move and
+     *  false when [destination] cannot be reached, as a failed MISSION_MOVE_TO of the original.
+     */
+    fun tryHeadTowards(destination: Tile): Boolean {
+        val destinationTileThisTurn = getTileToMoveToThisTurnOrNull(destination) ?: return false
+        moveToTile(destinationTileThisTurn)
+        return true
     }
 
     /** This is performance-heavy - use as last resort, only after checking everything else!

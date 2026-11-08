@@ -129,7 +129,7 @@ object GreatPersonAutomation {
     /** MISSION_MOVE_TO: a step along the path to [tile]. Without a path the mission fails and the unit stays; returns whether it moved on. */
     private fun moveTo(unit: MapUnit, tile: Tile): Boolean {
         if (!unit.movement.canReach(tile)) return false
-        unit.movement.headTowards(tile)
+        unit.movement.tryHeadTowards(tile)
         return true
     }
 
@@ -405,19 +405,6 @@ object GreatPersonAutomation {
             || approach == MajorCivApproach.Neutral && civ.ai.diplomacy.landDisputeLevel(other) >= DisputeLevel.Strong
     }
 
-    /**
-     *  Whether the tactical AI takes [unit] this turn (CvTacticalAI::CommandeerUnits for a great general: a visible enemy unit or city within
-     *  AI_TACTICAL_RECRUIT_RANGE, CvTacticalAI::NearVisibleEnemy). The tactical AI is not ported; [SpecificUnitAutomation.automateGreatGeneral]
-     *  (following our troops) stands in for it.
-     */
-    fun isNearVisibleEnemy(unit: MapUnit): Boolean {
-        val civ = unit.civ
-        val range = civ.gameInfo.ruleset.ai.define(AiDefine.AI_TACTICAL_RECRUIT_RANGE)
-        return unit.currentTile.getTilesInDistance(range).any { tile ->
-            tile in civ.viewableTiles && (
-                tile.getUnits().any { it.civ.isAtWarWith(civ) } || tile.isCityCenter() && tile.getOwner()?.isAtWarWith(civ) == true)
-        }
-    }
     //endregion
 
     //region Execution (CvHomelandAI::Execute*Moves, MERCHANT_DELEGATION / CONCERT_TOUR operations)
@@ -425,21 +412,20 @@ object GreatPersonAutomation {
     /**
      *  Moves [unit] if it is a Great Person other than a Prophet. Returns whether it was handled (including waiting in safety);
      *  false lets the caller try other uses (and for Great Generals, the tactical stand-in).
-     *  @param isDangerous whether a tile is threatened by enemies (stands in for CvDangerPlots in MoveCivilianToSafety)
      */
-    fun automate(unit: MapUnit, isDangerous: (Tile) -> Boolean): Boolean = timeThis("AI.GreatPeople") {
+    fun automate(unit: MapUnit): Boolean = timeThis("AI.GreatPeople") {
         val role = roleOf(unit.baseUnit, unit.civ.gameInfo.ruleset) ?: return@timeThis false
         if (role == GreatPersonRole.Prophet) return@timeThis false
         // Trade missions and concert tours under way are the operations' (the original keeps the unit in its army)
         if (unit.greatPersonTarget != null && (role == GreatPersonRole.Merchant || role == GreatPersonRole.Musician))
-            return@timeThis continueOperation(unit, role, isDangerous)
+            return@timeThis continueOperation(unit, role)
         val directive = directive(unit) ?: return@timeThis false
         unit.greatPeopleDirective = directive
         when (role) {
-            GreatPersonRole.Writer, GreatPersonRole.Artist, GreatPersonRole.Musician -> executeCultureMoves(unit, directive, isDangerous)
-            GreatPersonRole.Scientist -> executeScientistMoves(unit, directive, isDangerous)
-            GreatPersonRole.Engineer -> executeEngineerMoves(unit, directive, isDangerous)
-            GreatPersonRole.Merchant -> executeMerchantMoves(unit, directive, isDangerous)
+            GreatPersonRole.Writer, GreatPersonRole.Artist, GreatPersonRole.Musician -> executeCultureMoves(unit, directive)
+            GreatPersonRole.Scientist -> executeScientistMoves(unit, directive)
+            GreatPersonRole.Engineer -> executeEngineerMoves(unit, directive)
+            GreatPersonRole.Merchant -> executeMerchantMoves(unit, directive)
             GreatPersonRole.General -> executeGeneralMoves(unit, directive)
             GreatPersonRole.Admiral -> executeAdmiralMoves(unit)
             GreatPersonRole.Prophet -> false
@@ -447,20 +433,24 @@ object GreatPersonAutomation {
     }
 
     /** CvHomelandAI::ExecuteWriterMoves / ExecuteArtistMoves / ExecuteMusicianMoves */
-    private fun executeCultureMoves(unit: MapUnit, directive: GreatPeopleDirective, isDangerous: (Tile) -> Boolean): Boolean {
+    private fun executeCultureMoves(unit: MapUnit, directive: GreatPeopleDirective): Boolean {
         when (directive) {
-            GreatPeopleDirective.CultureBlast -> executeCultureBlast(unit, isDangerous)
-            GreatPeopleDirective.GoldenAge -> executeGoldenAgeMove(unit, isDangerous)
-            GreatPeopleDirective.UsePower -> executeGreatWork(unit, isDangerous)
-            GreatPeopleDirective.TourismBlast -> startOperation(unit, GreatPersonRole.Musician, isDangerous)
-            else -> moveCivilianToSafety(unit, isDangerous)
+            GreatPeopleDirective.CultureBlast -> executeCultureBlast(unit)
+            GreatPeopleDirective.GoldenAge -> executeGoldenAgeMove(unit)
+            GreatPeopleDirective.UsePower -> executeGreatWork(unit)
+            GreatPeopleDirective.TourismBlast -> startOperation(unit, GreatPersonRole.Musician)
+            else -> CivilianSafety.moveToSafety(unit)
         }
         return true
     }
 
     /** The USE_POWER case of ExecuteWriter/Artist/MusicianMoves: create the work next to the [bestGreatWorkCity], or walk there */
-    private fun executeGreatWork(unit: MapUnit, isDangerous: (Tile) -> Boolean) {
-        val city = bestGreatWorkCity(unit) ?: return moveCivilianToSafety(unit, isDangerous)
+    private fun executeGreatWork(unit: MapUnit) {
+        val city = bestGreatWorkCity(unit)
+        if (city == null) {
+            CivilianSafety.moveToSafety(unit)
+            return
+        }
         if (city.getCenterTile().aerialDistanceTo(unit.currentTile) <= 1) {
             createGreatWork(unit)
             return
@@ -489,43 +479,43 @@ object GreatPersonAutomation {
     }
 
     /** CvHomelandAI::ExecuteCultureBlast: a political treatise if possible, else to safety */
-    private fun executeCultureBlast(unit: MapUnit, isDangerous: (Tile) -> Boolean) {
-        if (!UnitActions.invokeUnitAction(unit, UnitActionType.HurryPolicy)) moveCivilianToSafety(unit, isDangerous)
+    private fun executeCultureBlast(unit: MapUnit) {
+        if (!UnitActions.invokeUnitAction(unit, UnitActionType.HurryPolicy)) CivilianSafety.moveToSafety(unit)
     }
 
     /** CvHomelandAI::ExecuteGoldenAgeMove: a golden age if possible, else to safety */
-    private fun executeGoldenAgeMove(unit: MapUnit, isDangerous: (Tile) -> Boolean) {
+    private fun executeGoldenAgeMove(unit: MapUnit) {
         val goldenAge = UnitActions.getUnitActions(unit, UnitActionType.TriggerUnique)
             .firstOrNull {
                 it.action != null && (it.associatedUnique?.type == UniqueType.OneTimeEnterGoldenAge
                     || it.associatedUnique?.type == UniqueType.OneTimeEnterGoldenAgeTurns)
             }
         if (goldenAge != null) goldenAge.action!!.invoke()
-        else moveCivilianToSafety(unit, isDangerous)
+        else CivilianSafety.moveToSafety(unit)
     }
 
     /** CvHomelandAI::ExecuteScientistMoves. The two uses have their own spans, so simulations count bulbs and academy moves */
-    private fun executeScientistMoves(unit: MapUnit, directive: GreatPeopleDirective, isDangerous: (Tile) -> Boolean): Boolean {
+    private fun executeScientistMoves(unit: MapUnit, directive: GreatPeopleDirective): Boolean {
         when (directive) {
             GreatPeopleDirective.UsePower -> timeThis("AI.GreatPeople.ScientistBulb") {
-                if (!UnitActions.invokeUnitAction(unit, UnitActionType.HurryResearch)) moveCivilianToSafety(unit, isDangerous)
+                if (!UnitActions.invokeUnitAction(unit, UnitActionType.HurryResearch)) CivilianSafety.moveToSafety(unit)
             }
             GreatPeopleDirective.ConstructImprovement -> timeThis("AI.GreatPeople.ScientistAcademy") {
                 SpecificUnitAutomation.automateImprovementPlacer(unit)
             }
-            GreatPeopleDirective.GoldenAge -> executeGoldenAgeMove(unit, isDangerous)
-            else -> moveCivilianToSafety(unit, isDangerous)
+            GreatPeopleDirective.GoldenAge -> executeGoldenAgeMove(unit)
+            else -> CivilianSafety.moveToSafety(unit)
         }
         return true
     }
 
     /** CvHomelandAI::ExecuteMerchantMoves (USE_POWER is the MERCHANT_DELEGATION operation) */
-    private fun executeMerchantMoves(unit: MapUnit, directive: GreatPeopleDirective, isDangerous: (Tile) -> Boolean): Boolean {
+    private fun executeMerchantMoves(unit: MapUnit, directive: GreatPeopleDirective): Boolean {
         when (directive) {
-            GreatPeopleDirective.UsePower -> startOperation(unit, GreatPersonRole.Merchant, isDangerous)
+            GreatPeopleDirective.UsePower -> startOperation(unit, GreatPersonRole.Merchant)
             GreatPeopleDirective.ConstructImprovement -> SpecificUnitAutomation.automateImprovementPlacer(unit)
-            GreatPeopleDirective.GoldenAge -> executeGoldenAgeMove(unit, isDangerous)
-            else -> moveCivilianToSafety(unit, isDangerous)
+            GreatPeopleDirective.GoldenAge -> executeGoldenAgeMove(unit)
+            else -> CivilianSafety.moveToSafety(unit)
         }
         return true
     }
@@ -535,19 +525,23 @@ object GreatPersonAutomation {
      *  builds that wonder, is under a third done and the engineer gets there in under a third of the turns it still needs, hurry it there;
      *  else go to the city chosen for the wonder, switch its production to it and hurry it (unless it is done next turn anyway).
      */
-    private fun executeEngineerMoves(unit: MapUnit, directive: GreatPeopleDirective, isDangerous: (Tile) -> Boolean): Boolean {
+    private fun executeEngineerMoves(unit: MapUnit, directive: GreatPeopleDirective): Boolean {
         when (directive) {
             GreatPeopleDirective.ConstructImprovement -> SpecificUnitAutomation.automateImprovementPlacer(unit)
-            GreatPeopleDirective.GoldenAge -> executeGoldenAgeMove(unit, isDangerous)
-            GreatPeopleDirective.UsePower -> executeWonderHurry(unit, isDangerous)
-            else -> moveCivilianToSafety(unit, isDangerous)
+            GreatPeopleDirective.GoldenAge -> executeGoldenAgeMove(unit)
+            GreatPeopleDirective.UsePower -> executeWonderHurry(unit)
+            else -> CivilianSafety.moveToSafety(unit)
         }
         return true
     }
 
-    private fun executeWonderHurry(unit: MapUnit, isDangerous: (Tile) -> Boolean) {
+    private fun executeWonderHurry(unit: MapUnit) {
         val civ = unit.civ
-        val choice = WonderProductionAi.chooseWonderForGreatEngineer(civ) ?: return moveCivilianToSafety(unit, isDangerous)
+        val choice = WonderProductionAi.chooseWonderForGreatEngineer(civ)
+        if (choice == null) {
+            CivilianSafety.moveToSafety(unit)
+            return
+        }
         val wonder = choice.wonder
         val specializationCity = WonderProductionAi.wonderBuildCity(civ)
         if (specializationCity != null) {
@@ -583,11 +577,14 @@ object GreatPersonAutomation {
      *  Starts the MERCHANT_DELEGATION or CONCERT_TOUR operation (EconomicAIHelpers::IsTestStrategy_TradeWithCityState / _ConcertTour launch it
      *  for a loose Great Person with that directive): the target is FindBestMerchantTargetPlot / FindBestMusicianTargetPlot.
      */
-    private fun startOperation(unit: MapUnit, role: GreatPersonRole, isDangerous: (Tile) -> Boolean) {
+    private fun startOperation(unit: MapUnit, role: GreatPersonRole) {
         val target = if (role == GreatPersonRole.Merchant) findBestMerchantTargetPlot(unit) else findBestMusicianTargetPlot(unit)
-        if (target == null) return moveCivilianToSafety(unit, isDangerous)
+        if (target == null) {
+            CivilianSafety.moveToSafety(unit)
+            return
+        }
         unit.greatPersonTarget = target.position
-        continueOperation(unit, role, isDangerous)
+        continueOperation(unit, role)
     }
 
     /**
@@ -595,7 +592,7 @@ object GreatPersonAutomation {
      *  but unable to (the city-state was conquered, the borders closed), retarget; else move on. No target any more aborts the operation.
      *  Deviation: the operations' escort is not formed (the military operations are not ported).
      */
-    private fun continueOperation(unit: MapUnit, role: GreatPersonRole, isDangerous: (Tile) -> Boolean): Boolean {
+    private fun continueOperation(unit: MapUnit, role: GreatPersonRole): Boolean {
         val target = unit.greatPersonTarget?.let { unit.civ.gameInfo.tileMap[it] } ?: return false
         // The operation's army cannot reach its target any more: retarget, as when it cannot act there
         if (unit.currentTile != target && moveTo(unit, target)) {
@@ -605,7 +602,7 @@ object GreatPersonAutomation {
         // Can no longer act here: retarget (RetargetCivilian)
         val newTarget = if (role == GreatPersonRole.Merchant) findBestMerchantTargetPlot(unit) else findBestMusicianTargetPlot(unit)
         unit.greatPersonTarget = newTarget?.position
-        if (newTarget == null) moveCivilianToSafety(unit, isDangerous)
+        if (newTarget == null) CivilianSafety.moveToSafety(unit)
         return true
     }
 
@@ -703,40 +700,6 @@ object GreatPersonAutomation {
         return true
     }
 
-    /**
-     *  CvHomelandAI::MoveCivilianToSafety: among the tiles reachable this turn without visible enemies, the one with the best safety value:
-     *  +1 in our territory, an own city: its strength × (MAX_CITY_DEFENSE_DAMAGE - damage), else for each own unit there that can defend and
-     *  stays (fortified or out of moves): its defense × health; dangerous tiles last. Stays if the current tile is best.
-     *  Deviation: the original subtracts CvDangerPlots' danger value; Unciv has the dangerous tiles only, which rank below all safe ones.
-     */
-    fun moveCivilianToSafety(unit: MapUnit, isDangerous: (Tile) -> Boolean) {
-        val civ = unit.civ
-        var best: Tile? = null
-        var bestSafe = false
-        var bestValue = Int.MIN_VALUE
-        for (tile in unit.movement.getDistanceToTiles().keys) {
-            if (tile != unit.currentTile && !unit.movement.canMoveTo(tile)) continue
-            if (tile.getUnits().any { it.civ.isAtWarWith(civ) && it.isMilitary() }) continue
-            var value = 0
-            if (tile.getOwner() == civ) value += 1
-            val city = tile.getCity()
-            if (tile.isCityCenter() && city?.civ == civ)
-                value += CityCombatant(city).getCityStrength() * 100 * (MAX_CITY_DEFENSE_DAMAGE - (city.getMaxHealth() - city.health))
-            else for (defender in tile.getUnits()) {
-                if (defender == unit || defender.civ != civ || !defender.isMilitary()) continue
-                if (defender.isFortified() || !defender.hasMovement())
-                    value += defender.baseUnit.strength * defender.health
-            }
-            val safe = !isDangerous(tile)
-            if (best == null || safe && !bestSafe || safe == bestSafe && value > bestValue) {
-                best = tile
-                bestSafe = safe
-                bestValue = value
-            }
-        }
-        if (best != null && best != unit.currentTile) unit.movement.moveToTile(best)
-    }
-
     /** The game's water bodies: for each water tile, the size of its connected body of water (computed once per map) */
     private val waterBodySizes = WeakHashMap<TileMap, HashMap<Tile, Int>>()
 
@@ -756,8 +719,7 @@ object GreatPersonAutomation {
         return largest
     }
 
-    /** GC.getMAX_CITY_DEFENSE_DAMAGE: a city's damage at which its defense is gone (100 in the original's defines) */
-    private const val MAX_CITY_DEFENSE_DAMAGE = 100
+
     //endregion
 
     //region Free Great People (CvPlayerAI::AI_chooseFreeGreatPerson, CvPlayerTraits::ChooseMayaBoost)

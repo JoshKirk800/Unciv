@@ -7898,6 +7898,7 @@
     {
       "name": "Settler",
       "defaultUnitAi": "UNITAI_SETTLE",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH_EARLY_GAME_ONLY",
       "unitAiTypes": [
         "UNITAI_SETTLE"
       ]
@@ -7905,6 +7906,7 @@
     {
       "name": "Worker",
       "defaultUnitAi": "UNITAI_WORKER",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_LOW",
       "unitAiTypes": [
         "UNITAI_WORKER"
       ]
@@ -7912,6 +7914,7 @@
     {
       "name": "Work Boats",
       "defaultUnitAi": "UNITAI_WORKER_SEA",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_LOW",
       "unitAiTypes": [
         "UNITAI_WORKER_SEA"
       ]
@@ -7919,6 +7922,7 @@
     {
       "name": "Great Artist",
       "defaultUnitAi": "UNITAI_ARTIST",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_ARTIST"
       ]
@@ -7926,6 +7930,7 @@
     {
       "name": "Great Scientist",
       "defaultUnitAi": "UNITAI_SCIENTIST",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_SCIENTIST"
       ]
@@ -7933,6 +7938,7 @@
     {
       "name": "Great Merchant",
       "defaultUnitAi": "UNITAI_MERCHANT",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_MERCHANT"
       ]
@@ -7940,6 +7946,7 @@
     {
       "name": "Great Engineer",
       "defaultUnitAi": "UNITAI_ENGINEER",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_ENGINEER"
       ]
@@ -7947,6 +7954,7 @@
     {
       "name": "Great General",
       "defaultUnitAi": "UNITAI_GENERAL",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_GENERAL"
       ]
@@ -7954,6 +7962,7 @@
     {
       "name": "SS Stasis Chamber",
       "defaultUnitAi": "UNITAI_SPACESHIP_PART",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_SPACESHIP_PART"
       ]
@@ -7961,6 +7970,7 @@
     {
       "name": "SS Engine",
       "defaultUnitAi": "UNITAI_SPACESHIP_PART",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_SPACESHIP_PART"
       ]
@@ -7968,6 +7978,7 @@
     {
       "name": "SS Cockpit",
       "defaultUnitAi": "UNITAI_SPACESHIP_PART",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_SPACESHIP_PART"
       ]
@@ -7975,6 +7986,7 @@
     {
       "name": "SS Booster",
       "defaultUnitAi": "UNITAI_SPACESHIP_PART",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_SPACESHIP_PART"
       ]
@@ -8602,6 +8614,7 @@
     {
       "name": "Great Prophet",
       "defaultUnitAi": "UNITAI_PROPHET",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_PROPHET"
       ]
@@ -8685,6 +8698,7 @@
     {
       "name": "Missionary",
       "defaultUnitAi": "UNITAI_MISSIONARY",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_LOW",
       "unitAiTypes": [
         "UNITAI_MISSIONARY"
       ]
@@ -8803,6 +8817,7 @@
     {
       "name": "Inquisitor",
       "defaultUnitAi": "UNITAI_INQUISITOR",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_LOW",
       "unitAiTypes": [
         "UNITAI_INQUISITOR"
       ]
@@ -8810,6 +8825,7 @@
     {
       "name": "Great Admiral",
       "defaultUnitAi": "UNITAI_ADMIRAL",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_ADMIRAL"
       ]
@@ -8832,6 +8848,7 @@
     {
       "name": "Merchant of Venice",
       "defaultUnitAi": "UNITAI_MERCHANT",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_MERCHANT"
       ]
@@ -8848,16 +8865,19 @@
     {
       "name": "Cargo Ship",
       "defaultUnitAi": "UNITAI_TRADE_UNIT",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_LOW",
       "unitAiTypes": []
     },
     {
       "name": "Caravan",
       "defaultUnitAi": "UNITAI_TRADE_UNIT",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_LOW",
       "unitAiTypes": []
     },
     {
       "name": "Great Writer",
       "defaultUnitAi": "UNITAI_WRITER",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_WRITER"
       ]
@@ -8865,6 +8885,7 @@
     {
       "name": "Great Musician",
       "defaultUnitAi": "UNITAI_MUSICIAN",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_MUSICIAN"
       ]
@@ -8872,6 +8893,7 @@
     {
       "name": "Archaeologist",
       "defaultUnitAi": "UNITAI_ARCHAEOLOGIST",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_LOW",
       "unitAiTypes": [
         "UNITAI_ARCHAEOLOGIST"
       ]
@@ -8987,7 +9009,9 @@
         "AIFreeXPPercent": 0,
         "PolicyNumOptionsConsidered": 10,
         "TechNumOptionsConsidered": 10,
-        "CityProductionNumOptionsConsidered": 10
+        "CityProductionNumOptionsConsidered": 10,
+        "BarbarianLandTargetRange": 2,
+        "BarbarianSeaTargetRange": 4
       }
     },
     {
@@ -9019,7 +9043,9 @@
         "AIFreeXPPercent": 0,
         "PolicyNumOptionsConsidered": 4,
         "TechNumOptionsConsidered": 4,
-        "CityProductionNumOptionsConsidered": 4
+        "CityProductionNumOptionsConsidered": 4,
+        "BarbarianLandTargetRange": 3,
+        "BarbarianSeaTargetRange": 6
       }
     },
     {
@@ -9051,7 +9077,9 @@
         "AIFreeXPPercent": 0,
         "PolicyNumOptionsConsidered": 3,
         "TechNumOptionsConsidered": 3,
-        "CityProductionNumOptionsConsidered": 3
+        "CityProductionNumOptionsConsidered": 3,
+        "BarbarianLandTargetRange": 4,
+        "BarbarianSeaTargetRange": 8
       }
     },
     {
@@ -9083,7 +9111,9 @@
         "AIFreeXPPercent": 0,
         "PolicyNumOptionsConsidered": 2,
         "TechNumOptionsConsidered": 2,
-        "CityProductionNumOptionsConsidered": 2
+        "CityProductionNumOptionsConsidered": 2,
+        "BarbarianLandTargetRange": 5,
+        "BarbarianSeaTargetRange": 10
       }
     },
     {
@@ -9115,7 +9145,9 @@
         "AIFreeXPPercent": 0,
         "PolicyNumOptionsConsidered": 2,
         "TechNumOptionsConsidered": 2,
-        "CityProductionNumOptionsConsidered": 2
+        "CityProductionNumOptionsConsidered": 2,
+        "BarbarianLandTargetRange": 5,
+        "BarbarianSeaTargetRange": 12
       }
     },
     {
@@ -9147,7 +9179,9 @@
         "AIFreeXPPercent": 25,
         "PolicyNumOptionsConsidered": 2,
         "TechNumOptionsConsidered": 2,
-        "CityProductionNumOptionsConsidered": 2
+        "CityProductionNumOptionsConsidered": 2,
+        "BarbarianLandTargetRange": 6,
+        "BarbarianSeaTargetRange": 15
       }
     },
     {
@@ -9179,7 +9213,9 @@
         "AIFreeXPPercent": 50,
         "PolicyNumOptionsConsidered": 2,
         "TechNumOptionsConsidered": 2,
-        "CityProductionNumOptionsConsidered": 2
+        "CityProductionNumOptionsConsidered": 2,
+        "BarbarianLandTargetRange": 7,
+        "BarbarianSeaTargetRange": 18
       }
     },
     {
@@ -9211,7 +9247,9 @@
         "AIFreeXPPercent": 100,
         "PolicyNumOptionsConsidered": 2,
         "TechNumOptionsConsidered": 2,
-        "CityProductionNumOptionsConsidered": 2
+        "CityProductionNumOptionsConsidered": 2,
+        "BarbarianLandTargetRange": 8,
+        "BarbarianSeaTargetRange": 20
       }
     },
     {
@@ -9243,7 +9281,9 @@
         "AIFreeXPPercent": 0,
         "PolicyNumOptionsConsidered": 2,
         "TechNumOptionsConsidered": 2,
-        "CityProductionNumOptionsConsidered": 2
+        "CityProductionNumOptionsConsidered": 2,
+        "BarbarianLandTargetRange": 5,
+        "BarbarianSeaTargetRange": 10
       }
     }
   ],
@@ -9954,37 +9994,44 @@
         {
           "primaryUnitAi": "UNITAI_CITY_BOMBARD",
           "secondaryUnitAi": "UNITAI_RANGED",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_CITY_BOMBARD",
           "secondaryUnitAi": "UNITAI_RANGED",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_CITY_BOMBARD",
           "secondaryUnitAi": "UNITAI_CITY_BOMBARD",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_ATTACK",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_ATTACK",
           "secondaryUnitAi": "UNITAI_COUNTER",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_ATTACK",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_GENERAL",
           "secondaryUnitAi": "UNITAI_GENERAL",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_CIVILIAN_SUPPORT"
         }
       ]
     },
@@ -9994,57 +10041,68 @@
         {
           "primaryUnitAi": "UNITAI_CITY_BOMBARD",
           "secondaryUnitAi": "UNITAI_RANGED",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_CITY_BOMBARD",
           "secondaryUnitAi": "UNITAI_RANGED",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_CITY_BOMBARD",
           "secondaryUnitAi": "UNITAI_CITY_BOMBARD",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_ATTACK",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_ATTACK",
           "secondaryUnitAi": "UNITAI_COUNTER",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_ATTACK",
           "secondaryUnitAi": "UNITAI_COUNTER",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_ATTACK",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_ATTACK",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_GENERAL",
           "secondaryUnitAi": "UNITAI_GENERAL",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_CIVILIAN_SUPPORT"
         },
         {
           "primaryUnitAi": "UNITAI_RANGED",
           "secondaryUnitAi": "UNITAI_ATTACK",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_COUNTER",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         }
       ]
     },
@@ -10054,22 +10112,26 @@
         {
           "primaryUnitAi": "UNITAI_CITY_BOMBARD",
           "secondaryUnitAi": "UNITAI_RANGED",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_CITY_BOMBARD",
           "secondaryUnitAi": "UNITAI_CITY_BOMBARD",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_ATTACK",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_ATTACK",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_FRONT_LINE"
         }
       ]
     },
@@ -10079,7 +10141,8 @@
         {
           "primaryUnitAi": "UNITAI_FAST_ATTACK",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         }
       ]
     },
@@ -10089,12 +10152,14 @@
         {
           "primaryUnitAi": "UNITAI_RANGED",
           "secondaryUnitAi": "UNITAI_CITY_BOMBARD",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_FAST_ATTACK",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         }
       ]
     },
@@ -10104,22 +10169,26 @@
         {
           "primaryUnitAi": "UNITAI_COUNTER",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_RANGED",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_FAST_ATTACK",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_FAST_ATTACK",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_FRONT_LINE"
         }
       ]
     },
@@ -10129,22 +10198,26 @@
         {
           "primaryUnitAi": "UNITAI_COUNTER",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_COUNTER",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_RANGED",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_RANGED",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_BOMBARD"
         }
       ]
     },
@@ -10154,12 +10227,14 @@
         {
           "primaryUnitAi": "UNITAI_SETTLE",
           "secondaryUnitAi": "UNITAI_SETTLE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_CIVILIAN_SUPPORT"
         },
         {
           "primaryUnitAi": "UNITAI_DEFENSE",
           "secondaryUnitAi": "UNITAI_COUNTER",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_FRONT_LINE"
         }
       ]
     },
@@ -10169,12 +10244,14 @@
         {
           "primaryUnitAi": "UNITAI_MERCHANT",
           "secondaryUnitAi": "UNITAI_MERCHANT",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_CIVILIAN_SUPPORT"
         },
         {
           "primaryUnitAi": "UNITAI_DEFENSE",
           "secondaryUnitAi": "UNITAI_COUNTER",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_FRONT_LINE"
         }
       ]
     },
@@ -10184,42 +10261,50 @@
         {
           "primaryUnitAi": "UNITAI_CITY_BOMBARD",
           "secondaryUnitAi": "UNITAI_RANGED",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_CITY_BOMBARD",
           "secondaryUnitAi": "UNITAI_RANGED",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_CITY_BOMBARD",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_CITY_BOMBARD",
           "secondaryUnitAi": "UNITAI_CITY_BOMBARD",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_ATTACK",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_ATTACK",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_GENERAL",
           "secondaryUnitAi": "UNITAI_GENERAL",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_CIVILIAN_SUPPORT"
         },
         {
           "primaryUnitAi": "UNITAI_RANGED",
           "secondaryUnitAi": "UNITAI_ATTACK",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_FRONT_LINE"
         }
       ]
     },
@@ -10229,7 +10314,8 @@
         {
           "primaryUnitAi": "UNITAI_SETTLE",
           "secondaryUnitAi": "UNITAI_SETTLE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_CIVILIAN_SUPPORT"
         }
       ]
     },
@@ -10239,27 +10325,32 @@
         {
           "primaryUnitAi": "UNITAI_ATTACK_SEA",
           "secondaryUnitAi": "UNITAI_RESERVE_SEA",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_ATTACK_SEA",
           "secondaryUnitAi": "UNITAI_RESERVE_SEA",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_ASSAULT_SEA",
           "secondaryUnitAi": "UNITAI_RESERVE_SEA",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_ASSAULT_SEA",
           "secondaryUnitAi": "UNITAI_RESERVE_SEA",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_ADMIRAL",
           "secondaryUnitAi": "UNITAI_ASSAULT_SEA",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_CIVILIAN_SUPPORT"
         }
       ]
     },
@@ -10269,17 +10360,20 @@
         {
           "primaryUnitAi": "UNITAI_SETTLE",
           "secondaryUnitAi": "UNITAI_SETTLE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_CIVILIAN_SUPPORT"
         },
         {
           "primaryUnitAi": "UNITAI_DEFENSE",
           "secondaryUnitAi": "UNITAI_COUNTER",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_ESCORT_SEA",
           "secondaryUnitAi": "UNITAI_RESERVE_SEA",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_NAVAL_ESCORT"
         }
       ]
     },
@@ -10289,39 +10383,47 @@
         {
           "primaryUnitAi": "UNITAI_CITY_BOMBARD",
           "secondaryUnitAi": "UNITAI_RANGED",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_CITY_BOMBARD",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_ATTACK",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_ATTACK_SEA",
           "secondaryUnitAi": "UNITAI_RESERVE_SEA",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_NAVAL_ESCORT"
         },
         {
           "primaryUnitAi": "UNITAI_ASSAULT_SEA",
           "secondaryUnitAi": "UNITAI_RESERVE_SEA",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_NAVAL_ESCORT"
         },
         {
           "primaryUnitAi": "UNITAI_ADMIRAL",
           "secondaryUnitAi": "UNITAI_ADMIRAL",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_CIVILIAN_SUPPORT"
         },
         {
           "primaryUnitAi": "UNITAI_CARRIER_SEA",
           "secondaryUnitAi": "UNITAI_CARRIER_SEA",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_BOMBARD"
         }
-      ]
+      ],
+      "requiresNavalUnitConsistency": true
     },
     {
       "name": "MUFORMATION_CITY_STATE_INVASION",
@@ -10329,34 +10431,41 @@
         {
           "primaryUnitAi": "UNITAI_CITY_BOMBARD",
           "secondaryUnitAi": "UNITAI_RANGED",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_CITY_BOMBARD",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_ATTACK",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_ATTACK_SEA",
           "secondaryUnitAi": "UNITAI_RESERVE_SEA",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_NAVAL_ESCORT"
         },
         {
           "primaryUnitAi": "UNITAI_ASSAULT_SEA",
           "secondaryUnitAi": "UNITAI_RESERVE_SEA",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_NAVAL_ESCORT"
         },
         {
           "primaryUnitAi": "UNITAI_ADMIRAL",
           "secondaryUnitAi": "UNITAI_ADMIRAL",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_CIVILIAN_SUPPORT"
         }
-      ]
+      ],
+      "requiresNavalUnitConsistency": true
     },
     {
       "name": "MUFORMATION_NUKE_ATTACK",
@@ -10364,7 +10473,8 @@
         {
           "primaryUnitAi": "UNITAI_ICBM",
           "secondaryUnitAi": "UNITAI_ICBM",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         }
       ]
     },
@@ -10374,17 +10484,20 @@
         {
           "primaryUnitAi": "UNITAI_ATTACK",
           "secondaryUnitAi": "UNITAI_DEFENSE",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_CITY_BOMBARD",
           "secondaryUnitAi": "UNITAI_RANGED",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_GENERAL",
           "secondaryUnitAi": "UNITAI_GENERAL",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_CIVILIAN_SUPPORT"
         }
       ]
     },
@@ -10394,17 +10507,20 @@
         {
           "primaryUnitAi": "UNITAI_ASSAULT_SEA",
           "secondaryUnitAi": "UNITAI_ASSAULT_SEA",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_ASSAULT_SEA",
           "secondaryUnitAi": "UNITAI_ASSAULT_SEA",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_ADMIRAL",
           "secondaryUnitAi": "UNITAI_ASSAULT_SEA",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_CIVILIAN_SUPPORT"
         }
       ]
     },
@@ -10414,32 +10530,38 @@
         {
           "primaryUnitAi": "UNITAI_ATTACK_SEA",
           "secondaryUnitAi": "UNITAI_ATTACK_SEA",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_ATTACK_SEA",
           "secondaryUnitAi": "UNITAI_ASSAULT_SEA",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_FRONT_LINE"
         },
         {
           "primaryUnitAi": "UNITAI_ASSAULT_SEA",
           "secondaryUnitAi": "UNITAI_ASSAULT_SEA",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_ASSAULT_SEA",
           "secondaryUnitAi": "UNITAI_ATTACK_SEA",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_BOMBARD"
         },
         {
           "primaryUnitAi": "UNITAI_ADMIRAL",
           "secondaryUnitAi": "UNITAI_ADMIRAL",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_CIVILIAN_SUPPORT"
         },
         {
           "primaryUnitAi": "UNITAI_CARRIER_SEA",
           "secondaryUnitAi": "UNITAI_CARRIER_SEA",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_BOMBARD"
         }
       ]
     },
@@ -10449,14 +10571,289 @@
         {
           "primaryUnitAi": "UNITAI_MUSICIAN",
           "secondaryUnitAi": "UNITAI_MUSICIAN",
-          "required": true
+          "required": true,
+          "positionType": "MUPOSITION_CIVILIAN_SUPPORT"
         },
         {
           "primaryUnitAi": "UNITAI_DEFENSE",
           "secondaryUnitAi": "UNITAI_COUNTER",
-          "required": false
+          "required": false,
+          "positionType": "MUPOSITION_FRONT_LINE"
         }
       ]
+    }
+  ],
+  "tacticalMoves": [
+    {
+      "name": "TACTICAL_UNASSIGNED",
+      "priority": -1,
+      "operationsCanRecruit": true
+    },
+    {
+      "name": "TACTICAL_MOVE_NONCOMBATANTS_TO_SAFETY",
+      "priority": 0,
+      "operationsCanRecruit": true
+    },
+    {
+      "name": "TACTICAL_CAPTURE_CITY",
+      "priority": 150,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_DAMAGE_CITY",
+      "priority": 15,
+      "operationsCanRecruit": true,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_DESTROY_HIGH_UNIT",
+      "priority": 140,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_DESTROY_MEDIUM_UNIT",
+      "priority": 120,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_DESTROY_LOW_UNIT",
+      "priority": 110,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_TO_SAFETY",
+      "priority": 11,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_ATTRIT_HIGH_UNIT",
+      "priority": 17,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_ATTRIT_MEDIUM_UNIT",
+      "priority": 15,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_ATTRIT_LOW_UNIT",
+      "priority": 12,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_REPOSITION",
+      "priority": 1,
+      "operationsCanRecruit": true,
+      "offenseFlavorWeight": 50,
+      "defenseFlavorWeight": 50
+    },
+    {
+      "name": "TACTICAL_BARBARIAN_CAMP",
+      "priority": 10,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_PILLAGE",
+      "priority": 40,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_SAFE_BOMBARDS",
+      "priority": 60,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_HEAL",
+      "priority": 8,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_ANCIENT_RUINS",
+      "priority": 25,
+      "operationsCanRecruit": true,
+      "offenseFlavorWeight": 50,
+      "defenseFlavorWeight": 50
+    },
+    {
+      "name": "TACTICAL_GARRISON_TO_ALLOW_BOMBARD",
+      "priority": 20,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_BASTION_ALREADY_THERE",
+      "priority": 7,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_GARRISON_ALREADY_THERE",
+      "priority": 6,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_GUARD_IMPROVEMENT_ALREADY_THERE",
+      "priority": 3,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_BASTION_1_TURN",
+      "priority": 5,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_GARRISON_1_TURN",
+      "priority": 4,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_GUARD_IMPROVEMENT_1_TURN",
+      "priority": 2,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_AIR_SWEEP",
+      "priority": 135,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_AIR_INTERCEPT",
+      "priority": 130,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_AIR_REBASE",
+      "priority": 1,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_POSTURE_WITHDRAW",
+      "priority": 95,
+      "dominanceZoneMove": true
+    },
+    {
+      "name": "TACTICAL_POSTURE_HEDGEHOG",
+      "priority": 50,
+      "dominanceZoneMove": true
+    },
+    {
+      "name": "TACTICAL_POSTURE_SHORE_BOMBARDMENT",
+      "priority": 100,
+      "dominanceZoneMove": true
+    },
+    {
+      "name": "TACTICAL_CLOSE_ON_TARGET",
+      "priority": 45,
+      "dominanceZoneMove": true
+    },
+    {
+      "name": "TACTICAL_MOVE_OPERATIONS",
+      "priority": 80
+    },
+    {
+      "name": "TACTICAL_EMERGENCY_PURCHASES",
+      "priority": 200,
+      "dominanceZoneMove": true
+    },
+    {
+      "name": "TACTICAL_ATTACK_VERY_HIGH_PRIORITY_CIVILIAN",
+      "priority": 130,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_ATTACK_HIGH_PRIORITY_CIVILIAN",
+      "priority": 100,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_ATTACK_MEDIUM_PRIORITY_CIVILIAN",
+      "priority": 40,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_ATTACK_LOW_PRIORITY_CIVILIAN",
+      "priority": 30,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_ESCORT_EMBARKED_UNIT",
+      "priority": 10,
+      "operationsCanRecruit": true,
+      "defenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_PLUNDER_TRADE_UNIT",
+      "priority": 100
+    },
+    {
+      "name": "TACTICAL_PARK_ON_TRADE_ROUTE",
+      "priority": 8
+    },
+    {
+      "name": "TACTICAL_OFFENSIVE_POSTURE_MOVES",
+      "priority": 105,
+      "dominanceZoneMove": true
+    },
+    {
+      "name": "TACTICAL_POSTURE_SIT_AND_BOMBARD",
+      "priority": -1
+    },
+    {
+      "name": "TACTICAL_POSTURE_ATTRIT_FROM_RANGE",
+      "priority": -1
+    },
+    {
+      "name": "TACTICAL_POSTURE_EXPLOIT_FLANKS",
+      "priority": -1
+    },
+    {
+      "name": "TACTICAL_POSTURE_STEAMROLL",
+      "priority": -1
+    },
+    {
+      "name": "TACTICAL_POSTURE_SURGICAL_CITY_STRIKE",
+      "priority": -1
+    },
+    {
+      "name": "TACTICAL_POSTURE_COUNTERATTACK",
+      "priority": -1
+    },
+    {
+      "name": "TACTICAL_DEFENSIVE_AIRLIFT",
+      "priority": 42,
+      "dominanceZoneMove": true
+    },
+    {
+      "name": "TACTICAL_PILLAGE_CITADEL",
+      "priority": 125,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_PILLAGE_RESOURCE",
+      "priority": 35,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_PILLAGE_CITADEL_NEXT_TURN",
+      "priority": 25,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_PILLAGE_RESOURCE_NEXT_TURN",
+      "priority": 15,
+      "offenseFlavorWeight": 100
+    },
+    {
+      "name": "TACTICAL_PILLAGE_NEXT_TURN",
+      "priority": 10,
+      "offenseFlavorWeight": 100
     }
   ]
 }

@@ -1,11 +1,13 @@
 package com.unciv.logic.automation.civilization
 
+import com.unciv.logic.automation.AiDecisionLog
 import com.unciv.logic.automation.diplomacy.DisputeLevel
 import com.unciv.logic.automation.strategy.CityStrategyAi
 import com.unciv.logic.automation.strategy.EconomicAi
 import com.unciv.logic.automation.strategy.ProductionAi
 import com.unciv.logic.automation.strategy.PurchaseType
 import com.unciv.logic.automation.strategy.UnitAiType
+import com.unciv.models.ruleset.Building
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.mapunit.MapUnit
@@ -42,18 +44,23 @@ object UseGoldAutomation {
     fun maxUpgradesPerTurn(civ: Civilization): Int =
         max(1, civ.ai.personalityAndGrandStrategy(Flavor.MilitaryTraining) / 3) + max(0, EconomicAi.gameHandicapIndex(civ.gameInfo) - 5)
 
+    /** What [plotUpgradeMoves] did: the units it [upgraded], and the unit that is next in line but could not upgrade now ([waiting]) */
+    class UpgradeMoves(val upgraded: Int, val waiting: MapUnit?)
+
     /**
-     *  CvHomelandAI::PlotUpgradeMoves, gold side. Units whose upgrade the tech and resources allow are ranked: lowest unit power first,
+     *  CvHomelandAI::PlotUpgradeMoves, gold side, over [units] (the units the homeland AI has this turn; the original leaves out human
+     *  units and units in an army, [isInArmy]). Units whose upgrade the tech and resources allow are ranked: lowest unit power first,
      *  +[UPGRADE_THIS_TURN_PRIORITY_BOOST] if they can upgrade now (gold, movement, own territory), else +[UPGRADE_IN_TERRITORY_PRIORITY_BOOST]
      *  in own territory. Those that can upgrade now are upgraded in that order, at most [maxUpgradesPerTurn]. If none could, the gold for
-     *  the first is reserved at priority AI_GOLD_PRIORITY_UPGRADE_BASE + AI_GOLD_PRIORITY_UPGRADE_PER_FLAVOR_POINT x current MILITARY_TRAINING.
-     *  Moving that unit home is homeland movement (out of scope); Unciv's unit automation moves it.
-     *  @return the units upgraded
+     *  the first is reserved at priority AI_GOLD_PRIORITY_UPGRADE_BASE + AI_GOLD_PRIORITY_UPGRADE_PER_FLAVOR_POINT x current MILITARY_TRAINING,
+     *  and that unit is returned as [UpgradeMoves.waiting]: bringing it home when it stands outside our territory is the homeland AI's
+     *  ([com.unciv.logic.automation.unit.HomelandAi]).
      */
-    fun plotUpgradeMoves(civ: Civilization): Int {
+    fun plotUpgradeMoves(civ: Civilization, units: Sequence<MapUnit> = civ.units.getCivUnits(), isInArmy: (MapUnit) -> Boolean = { false }): UpgradeMoves {
         class Candidate(val unit: MapUnit, val upgrade: PossibleUpgrade, val canUpgradeNow: Boolean, val priority: Int)
         val candidates = ArrayList<Candidate>()
-        for (unit in civ.units.getCivUnits()) {
+        for (unit in units) {
+            if (unit.isDestroyed || isInArmy(unit)) continue
             val upgrade = upgradeFor(unit) ?: continue
             val canUpgradeNow = unit.upgrade.canPerformUpgrade(upgrade, isFree = false)
             var priority = UPGRADE_THIS_TURN_PRIORITY_BOOST - unit.baseUnit.getForceEvaluation()
@@ -62,7 +69,7 @@ object UseGoldAutomation {
             candidates.add(Candidate(unit, upgrade, canUpgradeNow, priority))
         }
         // The original cancels the request only when it is not saving for it, which changes nothing: no candidates, nothing to do
-        if (candidates.isEmpty()) return 0
+        if (candidates.isEmpty()) return UpgradeMoves(0, null)
         candidates.sortByDescending { it.priority } // stable, as std::stable_sort
 
         val maxUpgrades = maxUpgradesPerTurn(civ)
@@ -74,9 +81,9 @@ object UseGoldAutomation {
             if (!candidate.unit.upgrade.canPerformUpgrade(upgrade, isFree = false)) continue
             candidate.unit.upgrade.performUpgrade(upgrade, isFree = false)
             upgraded++
-            if (upgraded >= maxUpgrades) return upgraded
+            if (upgraded >= maxUpgrades) return UpgradeMoves(upgraded, null)
         }
-        if (upgraded > 0) return upgraded
+        if (upgraded > 0) return UpgradeMoves(upgraded, null)
 
         val amount = candidates.first().upgrade.goldCostOfUpgrade
         if (amount > 0) {
@@ -86,7 +93,7 @@ object UseGoldAutomation {
             civ.ai.purchaseSavings.cancelSaveForPurchase(PurchaseType.UnitUpgrade)
             civ.ai.purchaseSavings.startSaveForPurchase(PurchaseType.UnitUpgrade, amount, priority)
         }
-        return 0
+        return UpgradeMoves(0, candidates.first().unit)
     }
     //endregion
 
@@ -241,6 +248,7 @@ object UseGoldAutomation {
      *  CvMilitaryAI::BuyEmergencyUnit: buys the unit CvUnitProductionAI::RecommendUnit picks for [unitAi] in [city] - with gold if the
      *  purchase savings let its cost go at AI_GOLD_PRIORITY_UNIT, else with faith if it can be bought with faith. Not in puppets
      *  (unless the civilization may buy in puppets, the original's Venice exception). The unit has no movement left.
+     *  The unit is an extra one: it does not fill a slot its city committed to (the original's CreateUnit without bUseToSatisfyOperation).
      *  @return the unit bought, null if none
      */
     fun buyEmergencyUnit(civ: Civilization, unitAi: UnitAiType, city: City): MapUnit? {
@@ -258,9 +266,32 @@ object UseGoldAutomation {
         return null
     }
 
+    /**
+     *  CvMilitaryAI::BuyEmergencyBuilding: buys every building [city] can build now that adds to its defense (the original's DefenseModifier,
+     *  the city strength a building gives: walls, castle, ...), each for gold if the purchase savings let its cost go at
+     *  AI_GOLD_PRIORITY_DEFENSIVE_BUILDING. Not in puppets (unless the civilization may buy there).
+     *  @return the buildings bought
+     */
+    fun buyEmergencyBuilding(civ: Civilization, city: City): List<Building> {
+        val bought = ArrayList<Building>()
+        val constructions = city.cityConstructions
+        val priority = civ.gameInfo.ruleset.ai.define(AiDefine.AI_GOLD_PRIORITY_DEFENSIVE_BUILDING)
+        for (building in civ.gameInfo.ruleset.buildings.values) {
+            if (building.cityStrength <= 0.0 || !building.isBuildable(constructions)) continue
+            val goldCost = building.getStatBuyCost(city, Stat.Gold) ?: continue
+            if (!constructions.isConstructionPurchaseAllowed(building, Stat.Gold, goldCost)) continue
+            if (!civ.ai.purchaseSavings.canWithdrawMoneyForPurchase(civ, PurchaseType.Building, goldCost, priority)) continue
+            if (constructions.purchaseConstruction(building, -1, true, Stat.Gold)) {
+                AiDecisionLog.log(civ) { "Emergency building bought: ${building.name} in ${city.name} for $goldCost" }
+                bought.add(building)
+            }
+        }
+        return bought
+    }
+
     private fun purchase(city: City, unitType: BaseUnit, stat: Stat): MapUnit? {
         val before = city.civ.units.getCivUnitsSize()
-        if (!city.cityConstructions.purchaseConstruction(unitType, -1, true, stat)) return null
+        if (!city.cityConstructions.purchaseConstruction(unitType, -1, true, stat, useToSatisfyOperation = false)) return null
         if (city.civ.units.getCivUnitsSize() <= before) return null
         val unit = city.civ.units.getCivUnits().last()
         unit.currentMovement = 0f

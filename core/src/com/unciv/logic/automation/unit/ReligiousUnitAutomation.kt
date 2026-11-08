@@ -110,7 +110,7 @@ object ReligiousUnitAutomation {
                 best = center
             }
         }
-        if (best != null) unit.movement.headTowards(best)
+        if (best != null) unit.movement.tryHeadTowards(best)
     }
 
     /** CvHomelandAI's TurnsToReachTarget: 0 = this turn, [Int.MAX_VALUE] = unreachable */
@@ -152,7 +152,7 @@ object ReligiousUnitAutomation {
 
     /** Execute*Moves: move to [target]; act once there */
     private fun moveAndAct(unitView: MapUnitView, unit: MapUnit, target: Tile, action: UnitActionType) {
-        if (unit.getTile() != target) unit.movement.headTowards(target)
+        if (unit.getTile() != target) unit.movement.tryHeadTowards(target)
         if (unit.getTile() == target) unitView.tryInvokeUnitAction(action)
     }
 }

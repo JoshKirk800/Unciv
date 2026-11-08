@@ -806,6 +806,7 @@ class CityConstructions : IsPartOfGameInfoSerialization {
      *  @param stat             Stat object of the stat with which was paid for the construction
      *  @param tile             Supports [UniqueType.CreatesOneImprovement] the tile to place the improvement from that unique on.
      *                          Ignored when the [constructionName] does not have that unique. If null and the building has the unique, a tile is chosen automatically.
+     *  @param useToSatisfyOperation Passed to [BaseUnit.construct]
      *  @return                 Success (false e.g. unit cannot be placed)
      */
     fun purchaseConstruction(
@@ -813,7 +814,8 @@ class CityConstructions : IsPartOfGameInfoSerialization {
         queuePosition: Int,
         automatic: Boolean,
         stat: Stat = Stat.Gold,
-        tile: Tile? = null
+        tile: Tile? = null,
+        useToSatisfyOperation: Boolean = true
     ): Boolean {
         // Support UniqueType.CreatesOneImprovement: it is active when getImprovementToCreate returns an improvement
         val improvementToPlace = (construction as? Building)?.getImprovementToCreate(city.getRuleset(), city.civ)
@@ -828,7 +830,7 @@ class CityConstructions : IsPartOfGameInfoSerialization {
 
         if (construction is Building) construction.construct(this)
         else if (construction is BaseUnit) {
-            construction.construct(this, stat)
+            construction.construct(this, stat, useToSatisfyOperation)
                 ?: return false  // nothing built - no pay
         }
 

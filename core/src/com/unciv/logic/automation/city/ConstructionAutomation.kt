@@ -3,7 +3,8 @@ package com.unciv.logic.automation.city
 import com.unciv.UncivGame
 import com.unciv.logic.automation.AiDecisionLog
 import com.unciv.logic.automation.Timers.Companion.timeThis
-import com.unciv.logic.automation.diplomacy.WarAi
+import com.unciv.logic.automation.strategy.AiOperations
+import com.unciv.logic.automation.strategy.MilitaryOperations
 import com.unciv.logic.automation.strategy.ProductionAi
 import com.unciv.logic.automation.strategy.UnitAiType
 import com.unciv.logic.automation.strategy.UnitAiTypes
@@ -40,12 +41,13 @@ import java.util.WeakHashMap
  *  among the best HandicapInfos.CityProductionNumOptionsConsidered (ChooseFromTopChoices). The wonder city first rolls whether to start the
  *  next wonder desired.
  *
- *  Units for the found-city operations of settlers (CvCity::GetUnitForOperation) are candidates as in the original: weight
+ *  Units for the open slots of the operations (CvCity::GetUnitForOperation, CITY_BUILDABLE_UNIT_FOR_OPERATION: settler escorts, attack
+ *  armies, barbarian hunters ... see [com.unciv.logic.automation.strategy.AiOperations]) are candidates as in the original: weight
  *  AI_CITYSTRATEGY_OPERATION_UNIT_BASE_WEIGHT + AI_CITYSTRATEGY_OPERATION_UNIT_FLAVOR_MULTIPLIER × (OFFENSE + the number of times such a
- *  build was skipped over) (x5 in an operation unit provider city) + the unit's own weight; choosing it commits the city to train the escort.
- *  Units for an attack army (CvMilitaryAI::GetUnitForArmy) are candidates while an attack waits for units ([WarAi.unitForArmy]).
- *  Not ported: units for the other military operations - those operations of the military AI are out of scope, so no such requests exist;
- *  the "rush" flag of long builds, which BNW's DoHurry no longer spends gold on.
+ *  build was skipped over) (x5 in an operation unit provider city) + the unit's own weight; choosing it commits the city to train the unit
+ *  for the slot. Units for an attack army (CvMilitaryAI::GetUnitForArmy) are candidates while an attack waits for units
+ *  ([MilitaryOperations.unitForArmy]).
+ *  Not ported: the "rush" flag of long builds, which BNW's DoHurry no longer spends gold on.
  *  Unciv extras kept: items a human disabled in the city, the personality's "Will not build" uniques and the ruleset's AiChoiceWeight
  *  uniques (a multiplier on the weight, none in the base rulesets).
  */
@@ -55,7 +57,7 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
     private val civInfo = city.civ
 
     /** One candidate of ChooseProduction (CvCityBuildable with its weight) */
-    class Buildable(val construction: IConstruction, var weight: Int, val turns: Int, val escortFor: MapUnit? = null, val escortAi: UnitAiType? = null)
+    class Buildable(val construction: IConstruction, var weight: Int, val turns: Int, val slotOffer: AiOperations.SlotOffer? = null)
 
     private val constructionsToAvoid = civInfo.getPersonality().getMatchingUniques(UniqueType.WillNotBuild, city.state).map { it.params[0] }.toList()
 
@@ -99,8 +101,8 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
 
     /** CITY_BUILDABLE_UNIT_FOR_OPERATION chosen: CvCity::CommitToBuildingUnitForOperation, then the skipped-over count starts over */
     private fun commitToOperationUnit(picked: Buildable) {
-        val settler = picked.escortFor ?: return
-        SettlerAutomation.commitEscort(settler, city, picked.construction as BaseUnit, picked.escortAi!!)
+        val offer = picked.slotOffer ?: return
+        civInfo.ai.operations.commitToBuild(city, offer, picked.turns)
         civInfo.ai.military.numberOfTimesOpsBuildSkippedOver = 0
     }
 
@@ -199,14 +201,15 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
     }
 
     /**
-     *  The first block of CvCityStrategyAI::ChooseProduction: the unit CvCity::GetUnitForOperation names for an operation waiting on this
-     *  landmass, weighted AI_CITYSTRATEGY_OPERATION_UNIT_BASE_WEIGHT + AI_CITYSTRATEGY_OPERATION_UNIT_FLAVOR_MULTIPLIER × (OFFENSE of
+     *  The first block of CvCityStrategyAI::ChooseProduction: the unit CvCity::GetUnitForOperation names for the next open slot of an operation
+     *  on this landmass, weighted AI_CITYSTRATEGY_OPERATION_UNIT_BASE_WEIGHT + AI_CITYSTRATEGY_OPERATION_UNIT_FLAVOR_MULTIPLIER × (OFFENSE of
      *  personality and grand strategy + the times such a build was skipped over), x5 in an operation unit provider city, plus the weight
-     *  the unit has on its own. Offering it counts as one more skip (BumpNumberOfTimesOpsBuildSkippedOver); choosing it resets the count.
+     *  the unit has on its own; a settler is no candidate under ENOUGH_EXPANSION or without a good settle area. Offering it counts as one
+     *  more skip (BumpNumberOfTimesOpsBuildSkippedOver); choosing it resets the count.
      */
     private fun addOperationUnit(candidates: MutableList<Buildable>) {
-        val settler = SettlerAutomation.settlerAwaitingEscort(city) ?: return
-        val (unit, unitAi) = SettlerAutomation.escortUnitFor(city) ?: return
+        val offer = civInfo.ai.operations.nextUnitForOperationSlot(city) ?: return
+        val unit = offer.unit
         if (!isAllowed(unit)) return
         val rules = civInfo.gameInfo.ruleset.ai
         val military = civInfo.ai.military
@@ -215,8 +218,12 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
             (civInfo.ai.personalityAndGrandStrategy(Flavor.Offense) + military.numberOfTimesOpsBuildSkippedOver)
         if (city.ai.specializationDef()?.isOperationUnitProvider == true) weight *= 5
         weight += ProductionAi.unitWeight(city, unit)
+        if (UnitAiTypes.defaultOf(unit, rules) == UnitAiType.SETTLE) {
+            if (civInfo.ai.isEconomicStrategyActive("ECONOMICAISTRATEGY_ENOUGH_EXPANSION")) weight = 0
+            else if (SettleAreas.bestSettleAreas(civInfo, rules.define(AiDefine.AI_STRATEGY_MINIMUM_SETTLE_FERTILITY)).count == 0) weight = 0
+        }
         if (weight <= 0) return
-        candidates.add(Buildable(unit, weight, ProductionAi.turnsLeft(city, unit), settler, unitAi))
+        candidates.add(Buildable(unit, weight, ProductionAi.turnsLeft(city, unit), offer))
         military.numberOfTimesOpsBuildSkippedOver++
     }
 
@@ -226,7 +233,7 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
      *  grand strategy) × max(1, difficulty index - 5) plus the weight the unit has on its own.
      */
     private fun addArmyUnit(candidates: MutableList<Buildable>) {
-        val unit = WarAi.unitForArmy(city) ?: return
+        val unit = MilitaryOperations.unitForArmy(city) ?: return
         if (!isAllowed(unit)) return
         val rules = civInfo.gameInfo.ruleset.ai
         val difficultyIndex = civInfo.gameInfo.ruleset.difficulties.keys.indexOf(civInfo.gameInfo.difficulty).coerceAtLeast(0)

@@ -25,6 +25,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -271,6 +272,21 @@ class UnitMovementTests(private val pathfindingAlgorithm: PathfindingAlgorithm) 
         // Don't move him all the way to 1,3 - since there's a closer tile at 1,2
         assertTrue("Unit must be teleported to closest tile outside of civ's control",
             unit.currentTile.position.eq(1, 2))
+    }
+
+    @Test
+    fun `a unit heading for a tile it cannot reach does not move, and tells so`() {
+        assumeTrue(pathfindingAlgorithm == AStarPathfinding) // the classic path finder heads for the nearest reachable tile instead
+        testGame.makeHexagonalMap(5)
+        civInfo.tech.unitsCanEmbark = false
+        val start = testGame.tileMap[0, 0]
+        val island = testGame.tileMap[3, 0]
+        for (neighbor in island.neighbors) testGame.setTileTerrain(neighbor.position, Constants.ocean)
+        val warrior = testGame.addUnit("Warrior", civInfo, start)
+        assertFalse(warrior.movement.tryHeadTowards(island))
+        assertEquals(start, warrior.currentTile)
+        assertTrue(warrior.movement.tryHeadTowards(testGame.tileMap[-2, 0]))
+        assertNotEquals(start, warrior.currentTile)
     }
 
     @Test

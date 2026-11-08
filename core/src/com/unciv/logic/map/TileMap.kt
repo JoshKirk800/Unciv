@@ -23,6 +23,7 @@ import yairm210.purity.annotations.Readonly
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 import kotlin.math.max
+import kotlin.math.min
 
 /** An Unciv map with all properties as produced by the [map editor][com.unciv.ui.screens.mapeditorscreen.MapEditorScreen]
  * or [MapGenerator][com.unciv.logic.map.mapgenerator.MapGenerator]; or as part of a running [game][GameInfo].
@@ -488,13 +489,17 @@ class TileMap(initialCapacity: Int = 10) : IsPartOfGameInfoSerialization {
     /** @return List of tiles visible from location [position] for a unit with sight range [sightDistance] */
     @Readonly
     fun getViewableTiles(position: HexCoord, sightDistance: Int, forAttack: Boolean = false): List<Tile> {
-        val aUnitHeight = get(position).unitHeight
+        val origin = get(position)
+        val aUnitHeight = origin.unitHeight
         val viewableTiles = mutableListOf(ViewableTile(
-            get(position),
+            origin,
             aUnitHeight,
             isVisible = true,
             isAttackable = false
         ))
+        // maxHeightSeenToTile of the tiles of the layers done so far: a tile's neighbors nearer to us are all in the previous layer
+        val maxHeightSeen = HashMap<Tile, Int>()
+        maxHeightSeen[origin] = aUnitHeight
 
         for (i in 1..sightDistance+1) { // in each layer,
             // This is so we don't use tiles in the same distance to "see over",
@@ -518,9 +523,11 @@ class TileMap(initialCapacity: Int = 10) : IsPartOfGameInfoSerialization {
 
             This can all be summed up as "I can see c if a=>b || c>b"
             */
-                val bMinimumHighestSeenTerrainSoFar = viewableTiles
-                    .filter { it.tile.aerialDistanceTo(cTile) == 1 }
-                    .minOf { it.maxHeightSeenToTile }
+                var bMinimumHighestSeenTerrainSoFar = Int.MAX_VALUE
+                for (neighbor in cTile.neighbors) {
+                    val seen = maxHeightSeen[neighbor] ?: continue
+                    if (seen < bMinimumHighestSeenTerrainSoFar) bMinimumHighestSeenTerrainSoFar = seen
+                }
 
                 tilesToAddInDistanceI.add(ViewableTile(
                     cTile,
@@ -529,6 +536,8 @@ class TileMap(initialCapacity: Int = 10) : IsPartOfGameInfoSerialization {
                     aUnitHeight >= bMinimumHighestSeenTerrainSoFar || cTile.unitHeight > bMinimumHighestSeenTerrainSoFar,
                 ))
             }
+            // (on a small wrapped map a tile can be in two layers: the lower height counts, as for any two neighbors)
+            for (viewableTile in tilesToAddInDistanceI) maxHeightSeen.merge(viewableTile.tile, viewableTile.maxHeightSeenToTile) { a, b -> min(a, b) }
             viewableTiles.addAll(tilesToAddInDistanceI)
         }
 

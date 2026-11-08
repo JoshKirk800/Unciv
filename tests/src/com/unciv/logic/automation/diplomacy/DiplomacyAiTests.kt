@@ -1,6 +1,8 @@
 package com.unciv.logic.automation.diplomacy
 
 import com.unciv.logic.automation.civilization.DiplomacyAutomation
+import com.unciv.logic.automation.strategy.AiOperationType
+import com.unciv.logic.automation.strategy.MilitaryOperations
 import com.unciv.logic.automation.strategy.GrandStrategyAi
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
@@ -316,19 +318,19 @@ class DiplomacyAiTests {
 
     @Test
     fun `an attack is ready when the formation's required slots are filled by healthy non-scout units`() {
-        val formation = rules.multiUnitFormations.first { it.name == "MUFORMATION_BASIC_CITY_ATTACK_FORCE" }
+        val formation = "MUFORMATION_BASIC_CITY_ATTACK_FORCE"
         val tile = game.getTile(HexCoord(0, 0))
         game.addUnit("Swordsman", a, tile)
         game.addUnit("Catapult", a, game.getTile(HexCoord(1, 0)))
         // A Scout explores: it fills no slot
         game.addUnit("Scout", a, game.getTile(HexCoord(0, 1)))
-        assertFalse(WarAi.isAttackReady(a, formation, bySea = false, rules))
+        assertFalse(MilitaryOperations.isAttackReady(a, formation, AiOperationType.BASIC_CITY_ATTACK))
         // A Pikeman can explore too (Unit_AITypes) but its own AI type is not exploring: it fills the attack/counter slot
         val pikeman = game.addUnit("Pikeman", a, game.getTile(HexCoord(1, -1)))
-        assertTrue(WarAi.isAttackReady(a, formation, bySea = false, rules))
+        assertTrue(MilitaryOperations.isAttackReady(a, formation, AiOperationType.BASIC_CITY_ATTACK))
         // Below AI_OPERATIONAL_PERCENT_HEALTH_FOR_OPERATION (80) it does not count
         pikeman.health = 79
-        assertFalse(WarAi.isAttackReady(a, formation, bySea = false, rules))
+        assertFalse(MilitaryOperations.isAttackReady(a, formation, AiOperationType.BASIC_CITY_ATTACK))
     }
 
     //region Friendship and denouncements

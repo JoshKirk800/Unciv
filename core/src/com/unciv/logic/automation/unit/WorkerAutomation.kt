@@ -38,29 +38,30 @@ class WorkerAutomation(val civInfo: Civilization, val cachedForTurn: Int) {
      *  CvHomelandAI::ExecuteWorkerMoves for one builder: on a plot under immediate threat without a defender, move to safety; else follow
      *  the builder directive ([executeWorkerMove]); with nothing to do, move to the safest plot nearby (ignoring units).
      */
-    fun automateWorkerAction(unitView: MapUnitView, dangerousTiles: HashSet<TileView>): Unit =
+    fun automateWorkerAction(unitView: MapUnitView): Unit =
         timeThis("AI.WorkerMoves") {
             val unit = unitView.getUnit()
-            val tileMapView = unitView.getTile().getTileMap()
-            val isDangerous = { tile: Tile -> tileMapView.getTile(tile) in dangerousTiles }
             val tile = unit.getTile()
-            if (isDangerous(tile) && tile.militaryUnit?.civ != civInfo && moveCivilianToSafety(unit, isDangerous, ignoreUnits = false)) return@timeThis
-            if (executeWorkerMove(unit, isDangerous)) return@timeThis
+            if (civInfo.ai.plotDanger.isUnderImmediateThreat(tile) && tile.militaryUnit?.civ != civInfo && CivilianSafety.moveToSafety(unit)) {
+                unit.currentMovement = 0f
+                return@timeThis
+            }
+            if (executeWorkerMove(unit)) return@timeThis
 
             unitView.tryAddNotification("${unitView.shortDisplayName()} has no work to do.", NotificationCategory.Units, unitView.name, "OtherIcons/Sleep")
-            moveCivilianToSafety(unit, isDangerous, ignoreUnits = true)
+            if (CivilianSafety.moveToSafety(unit, ignoreUnits = true)) unit.currentMovement = 0f
         }
 
     /**
      *  CvHomelandAI::ExecuteWorkerMove: a builder already building keeps building; otherwise it builds the best directive's build when it
      *  stands on the plot, or moves there and ends its turn (it starts building on the next one). False if there is no directive.
      */
-    fun executeWorkerMove(unit: MapUnit, isDangerous: (Tile) -> Boolean): Boolean {
+    fun executeWorkerMove(unit: MapUnit): Boolean {
         if (isBuilding(unit)) return true
-        val directive = builderTaskingAi.evaluateBuilder(unit, isDangerous) ?: return false
+        val directive = builderTaskingAi.evaluateBuilder(unit) ?: return false
         builderTaskingAi.claim(directive.tile)
         if (unit.getTile() == directive.tile) startBuild(unit, directive.build)
-        else unit.movement.headTowards(directive.tile)
+        else unit.movement.tryHeadTowards(directive.tile)
         return true
     }
 
@@ -88,39 +89,6 @@ class WorkerAutomation(val civInfo: Civilization, val cachedForTurn: Int) {
     }
 
     /**
-     *  CvHomelandAI::MoveCivilianToSafety: the best plot [unit] can reach this turn without a visible enemy: +1 in our territory; our city
-     *  counts its defense strength × health; unless [ignoreUnits], our fortified or spent military units their defense strength × health;
-     *  a dangerous plot loses [DANGER_PENALTY] (the original subtracts its plot danger). Staying put counts. False if no plot qualifies.
-     */
-    fun moveCivilianToSafety(unit: MapUnit, isDangerous: (Tile) -> Boolean, ignoreUnits: Boolean): Boolean {
-        val current = unit.getTile()
-        var bestTile: Tile? = null
-        var bestValue = Int.MIN_VALUE
-        for (tile in unit.movement.getDistanceToTiles().keys) {
-            if (tile != current && !unit.movement.canMoveTo(tile)) continue
-            if (SettleAreas.isVisibleEnemyUnit(civInfo, tile)) continue
-            var value = 0
-            if (tile.getOwner() == civInfo) value += 1
-            val city = tile.getCity()
-            if (tile.isCityCenter() && city != null && city.civ == civInfo) {
-                value += CityCombatant(city).getDefendingStrength(null) * city.health
-            } else if (!ignoreUnits) {
-                val defender = tile.militaryUnit
-                if (defender != null && defender.civ == civInfo && defender != unit && (defender.isFortified() || !defender.hasMovement()))
-                    value += MapUnitCombatant(defender).getDefendingStrength(null) * defender.health
-            }
-            if (isDangerous(tile)) value -= DANGER_PENALTY
-            if (value > bestValue) {
-                bestValue = value
-                bestTile = tile
-            }
-        }
-        val target = bestTile ?: return false
-        if (target != current) unit.movement.moveToTile(target)
-        return true
-    }
-
-    /**
      *  CvHomelandAI::PlotWorkerSeaMoves for one work boat: the naval resource target it can build on that is fewest turns away; it moves
      *  there and creates the improvement when on the plot.
      *  @return whether the boat acted (moved or improved)
@@ -139,7 +107,7 @@ class WorkerAutomation(val civInfo: Civilization, val cachedForTurn: Int) {
             }
         }
         if (target == null) return@timeThis false
-        if (unitTile != target) unit.movement.headTowards(target)
+        if (unitTile != target) unit.movement.tryHeadTowards(target)
         if (unit.getTile() == target) unitView.tryInvokeUnitAction(UnitActionType.CreateImprovement)
         unitTile != unit.getTile() || target.improvement != null
     }

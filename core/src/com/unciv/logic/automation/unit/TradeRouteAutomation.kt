@@ -53,7 +53,7 @@ object TradeRouteAutomation {
             if (candidate.origin == here) {
                 manager.establish(unit, destination.city, destination.kind)
             } else if (unit.movement.canReach(candidate.origin.getCenterTile())) {
-                unit.movement.headTowards(candidate.origin.getCenterTile())
+                unit.movement.tryHeadTowards(candidate.origin.getCenterTile())
             }
             return@timeThis
         }

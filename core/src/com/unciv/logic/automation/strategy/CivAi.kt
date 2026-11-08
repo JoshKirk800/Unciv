@@ -5,6 +5,9 @@ import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.diplomacy.DiplomacyAi
 import com.unciv.logic.automation.diplomacy.DiplomacyTurn
+import com.unciv.logic.automation.unit.PlotDanger
+import com.unciv.logic.automation.unit.tactical.TacticalState
+import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.civilization.Civilization
 import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.ai.AiRuleset
@@ -110,12 +113,16 @@ class CivAi : IsPartOfGameInfoSerialization {
     var economic = EconomicAi()
     /** CvMilitaryAI state beyond the strategies, see [MilitaryAi] */
     var military = MilitaryAi()
+    /** CvPlayer's AI operations and armies, with the per-unit army and deploy turn, see [AiOperations] */
+    var operations = AiOperations()
     /** CvDiplomacyAI state towards other players (opinions, approaches, war goals, disputes, memories), see [DiplomacyAi] */
     var diplomacy = DiplomacyAi()
     /** CvMinorCivAI::m_eStatus of a city-state, updated each turn by [MinorCivStatusAi.status] */
     var minorCivStatus = MinorCivStatus.Normal
     /** Deal and city-state AI memory: deal statements sent, expired deals to renew (see [com.unciv.logic.automation.civilization.DealsAiState]) */
     var deals = com.unciv.logic.automation.civilization.DealsAiState()
+    /** CvTacticalAI state across turns (dominance zone postures, temporary zones), and the per-turn tactical analysis map, see [TacticalState] */
+    var tactical = TacticalState()
     //endregion
 
     //region Transients
@@ -132,6 +139,8 @@ class CivAi : IsPartOfGameInfoSerialization {
     @Transient private var militaryMightCache = 0
     @Transient private var tourismTurn = -1
     @Transient private var tourismCache = 0
+    @Transient private var plotDangerTurn = -1
+    @Transient private var plotDangerCache: PlotDanger? = null
     //endregion
 
     fun clone(): CivAi {
@@ -157,21 +166,56 @@ class CivAi : IsPartOfGameInfoSerialization {
         toReturn.unitAiOverrides.putAll(unitAiOverrides)
         toReturn.economic = economic.clone()
         toReturn.military = military.clone()
+        toReturn.operations = operations.clone()
         toReturn.diplomacy = diplomacy.clone()
         toReturn.minorCivStatus = minorCivStatus
         toReturn.deals = deals.clone()
+        toReturn.tactical = tactical.clone()
         return toReturn
     }
 
     fun setTransients(civ: Civilization) {
         this.civ = civ
         diplomacy.civ = civ
+        operations.setTransients(civ)
+        tactical.setTransients(civ)
+        plotDangerCache = null
         personalityVector = null
         activeFlavorVector = null
         strategyVersion++
     }
 
     internal val rules: AiRuleset get() = civ.gameInfo.ruleset.ai
+
+    /**
+     *  The danger this civilization sees on the map (CvPlayer's CvDangerPlots) for the current turn, built on first use and shared by
+     *  everything that reads it: city threat for operations and purchases, safety moves, workers. Code that changed units since (tests)
+     *  calls [invalidateTurnCaches].
+     */
+    val plotDanger: PlotDanger
+        get() {
+            val turn = civ.gameInfo.turns
+            plotDangerCache?.let { if (plotDangerTurn == turn) return it }
+            return PlotDanger(civ).also {
+                plotDangerCache = it
+                plotDangerTurn = turn
+            }
+        }
+
+    /** Forgets the danger map and the tactical analysis map of this turn, so the next read sees the current units, borders and wars */
+    fun invalidateTurnCaches() {
+        plotDangerCache = null
+        tactical.invalidateMap()
+    }
+
+    /**
+     *  CvArmyAI::CanTacticalAIInterruptUnit of the army the unit is in: false if the unit sits in an army the tactical AI must leave alone
+     *  (CvTacticalAI::CommandeerUnits). Units in no army can always be interrupted.
+     */
+    fun canTacticalAiInterrupt(unit: MapUnit): Boolean = operations.canTacticalAiInterrupt(unit)
+
+    /** CvUnit::GetDeployFromOperationTurn: the game turn an army released the unit at its target, -100 if it never did */
+    fun deployFromOperationTurn(unit: MapUnit): Int = operations.deployFromOperationTurn(unit.id)
 
     //region Personality (CvFlavorManager, CvDiplomacyAI personality)
 

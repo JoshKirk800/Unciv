@@ -88,7 +88,7 @@ class EconomicMilitaryAiTests {
         civ.addGold(10000)
         // max(1, 6 / 3) + max(0, Prince 3 - 5) = 2
         assertEquals(2, UseGoldAutomation.maxUpgradesPerTurn(civ))
-        assertEquals(2, UseGoldAutomation.plotUpgradeMoves(civ))
+        assertEquals(2, UseGoldAutomation.plotUpgradeMoves(civ).upgraded)
         assertEquals(2, civ.units.getCivUnits().count { it.name == "Pikeman" })
         assertEquals(2, civ.units.getCivUnits().count { it.name == "Spearman" })
     }
@@ -98,7 +98,7 @@ class EconomicMilitaryAiTests {
         val civ = neutralCiv()
         civ.ai.setPersonalityFlavor(Flavor.MilitaryTraining, 6)
         spearmenReadyToUpgrade(civ, 1)
-        assertEquals(0, UseGoldAutomation.plotUpgradeMoves(civ))
+        assertEquals(0, UseGoldAutomation.plotUpgradeMoves(civ).upgraded)
         val request = civ.ai.purchaseSavings.requests[PurchaseType.UnitUpgrade.name]!!
         // AI_GOLD_PRIORITY_UPGRADE_BASE 150 + AI_GOLD_PRIORITY_UPGRADE_PER_FLAVOR_POINT 25 x current MILITARY_TRAINING 6
         assertEquals(300, request.priority)

@@ -1,6 +1,7 @@
 package com.unciv.logic.automation.diplomacy
 
 import com.unciv.logic.automation.strategy.TargetValue
+import com.unciv.logic.automation.strategy.MilitaryOperations
 import com.unciv.logic.automation.strategy.WarStateAi
 import com.unciv.logic.civilization.Civilization
 import com.unciv.models.ruleset.ai.AiDefine
@@ -156,7 +157,9 @@ object CoopWarAi {
         partnerEntry.state = accepted
         if (accepted == CoopWarState.Accepted) {
             WarAi.declareWar(civ, target)
+            MilitaryOperations.requestBasicAttack(civ, target, 1)
             WarAi.declareWar(partner, target)
+            MilitaryOperations.requestBasicAttack(partner, target, 1)
             val locked = rules.define(AiDefine.COOP_WAR_LOCKED_LENGTH)
             civ.ai.diplomacy.memoryOf(target).turnsLockedIntoWar += locked
             partner.ai.diplomacy.memoryOf(target).turnsLockedIntoWar += locked
@@ -187,6 +190,7 @@ object CoopWarAi {
         }
         for (target in targets ?: return) {
             WarAi.declareWar(civ, target)
+            MilitaryOperations.requestShowOfForce(civ, target)
             civ.ai.diplomacy.memoryOf(target).turnsLockedIntoWar += rules.define(AiDefine.COOP_WAR_LOCKED_LENGTH)
         }
     }

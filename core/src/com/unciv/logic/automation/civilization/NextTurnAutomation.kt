@@ -10,9 +10,11 @@ import com.unciv.UncivGame
 import com.unciv.logic.automation.Automation
 import com.unciv.logic.automation.diplomacy.PromiseAi
 import com.unciv.logic.automation.Timers.Companion.timeThis
-import com.unciv.logic.automation.unit.SettlerAutomation
+import com.unciv.logic.automation.unit.HomelandAi
+import com.unciv.logic.automation.unit.tactical.OperationalMoves
 import com.unciv.logic.automation.unit.ArchaeologistAutomation
 import com.unciv.logic.automation.unit.EspionageAutomation
+import com.unciv.logic.automation.unit.tactical.TacticalAi
 import com.unciv.logic.automation.unit.UnitAutomation
 import com.unciv.logic.battle.*
 import com.unciv.logic.city.City
@@ -87,11 +89,11 @@ object NextTurnAutomation {
         }
 
         timeThis("AI.chooseTechToResearch") { TechAutomation.chooseTechToResearch(civInfo) }
-        timeThis("AI.automateCityBombardment") { automateCityBombardment(civView) }
         if (tradeAndChangeState) timeThis("AI.considerAnnex") { CityConquestAutomation.considerAnnex(civInfo) }
-        if (tradeAndChangeState) timeThis("AI.upgradeUnits") { UseGoldAutomation.plotUpgradeMoves(civInfo) }
         val cache = AutomationCache()
-        timeThis("AI.automateUnits") { automateUnits(civView, cache) }  // this is the most expensive part
+        // CvPlayer::doTurnUnits' operations: units that were lost, cities that stopped building for a slot, loose settlers; the armies move in the tactical AI
+        OperationalMoves.prepareTurn(civInfo)
+        timeThis("AI.automateUnits") { automateUnits(civView, cache, canUpgrade = tradeAndChangeState) }  // this is the most expensive part
 
         if (tradeAndChangeState && civInfo.isMajorCiv) {
             if (civView.isReligionEnabled()) {
@@ -213,7 +215,7 @@ object NextTurnAutomation {
     }
 
 
-    private fun automateUnits(civView: CivView, cache: AutomationCache) {
+    private fun automateUnits(civView: CivView, cache: AutomationCache, canUpgrade: Boolean) {
         val civInfo = civView.getCiv()
         val isAtWar = civView.isAtWar()
         // Instances present when the pass starts. addUnit/removeUnit replace UnitManager's list,
@@ -223,37 +225,32 @@ object NextTurnAutomation {
         val unitsAtStart = civView.getUnits()
         fun unitsInPriorityOrder() = unitsAtStart.sortedBy { unit -> getUnitPriority(unit, isAtWar, cache) }
 
-        val citiesRequiringManualPlacement = civInfo.getKnownCivs().filter { it.isAtWarWith(civInfo) }
-            .flatMap { it.cities }
-            .filter {
-                var count = 0
-                it.getCenterTile().forEachTileInDistance(4) { tile -> if (tile.militaryUnit?.civ == civInfo) count++ }
-                count > 4
-            }
-            .toList()
-
         for (unit in unitsInPriorityOrder()) {
             if (!isStillOurUnit(unit, civView)) continue
             applyPromotions(unit)
         }
+        HomelandAi.continueMissions(unitsAtStart.map { it.getUnit() })
+        // CvTacticalAI::Update runs before the homeland AI: the units near the enemy or in danger first (the attacks of units and cities
+        // included), the rest of the unit AI skips them
+        TacticalAi.automate(civInfo, unitsInPriorityOrder().map { it.getUnit() }, cache)
         for (unit in unitsInPriorityOrder()) {
-            // settlers need to move before automateSettlerEscorting(),
-            // move spaceship parts before that to make sure we're not blocking them
+            // move spaceship parts and settlers first, so we're not blocking them
             if (!unit.hasUnique(UniqueType.SpaceshipPart) && !unit.hasUnique(UniqueType.FoundCity)) continue
             if (!isStillOurUnit(unit, civView)) continue
             UnitAutomation.automateUnitMoves(unit, cache)
         }
 
-        if (civView.cities().isNotEmpty()) automateSettlerEscorting(civView)
-
-        for (city in citiesRequiringManualPlacement) automateCityConquer(civView, city, cache)
-
+        // CvHomelandAI::Update takes the military units that the tactical AI and the operations left, by the homeland move priorities
+        // (which include the upgrades); everyone else (civilians, aircraft) has the unit AI, first
+        val homelandUnits = HomelandAi.recruitUnits(civInfo, unitsAtStart.map { it.getUnit() }, cache).toSet()
         for (unit in unitsInPriorityOrder()) {
             // spaceship parts and settlers have already moved
             if (unit.hasUnique(UniqueType.SpaceshipPart) || unit.hasUnique(UniqueType.FoundCity)) continue
+            if (unit.getUnit() in homelandUnits) continue
             if (!isStillOurUnit(unit, civView)) continue
             UnitAutomation.automateUnitMoves(unit, cache)
         }
+        HomelandAi.doTurn(civInfo, homelandUnits, cache, canUpgrade)
     }
 
     /** False once an earlier action in this pass has captured or destroyed [unit]. */
@@ -289,88 +286,6 @@ object NextTurnAutomation {
         }
     }
 
-    /** All units will continue after this to the regular automation, so units not moved in this function will still move */
-    private fun automateCityConquer(civView: CivView, city: City, cache: AutomationCache){
-        val civInfo = civView.getCiv()
-        @Readonly fun ourUnitsInRange(range: Int) = city.getCenterTile().getTilesInDistance(range)
-            .mapNotNull { it.militaryUnit }.filter { it.civ == civInfo && (!it.baseUnit.isMelee() || it.health > 30) }.toList()
-        
-        
-        fun attackIfPossible(unit: MapUnit, tile: Tile){
-            val attackableTile = TargetHelper.getAttackableEnemies(unit,
-                unit.movement.getDistanceToTiles(), listOf(tile)).firstOrNull()
-            if (attackableTile != null)
-                Battle.moveAndAttack(MapUnitCombatant(unit), attackableTile)
-        }
-        
-        // Air units should do their thing before any of this
-        for (unit in ourUnitsInRange(7).filter { it.baseUnit.isAirUnit() })
-            UnitAutomation.automateUnitMoves(GameView(civInfo.gameInfo, civInfo).getMapUnitView(unit), cache)
-        
-        // First off, any siege unit that can attack the city, should - as long as it's not defeated
-        if (city.health != 1) {
-            val seigeUnits = ourUnitsInRange(4).filter { it.baseUnit.isProbablySiegeUnit() }
-            for (unit in seigeUnits) {
-                if (!unit.hasUnique(UniqueType.MustSetUp) || unit.isSetUpForSiege())
-                    attackIfPossible(unit, city.getCenterTile())
-            }
-        }
-        
-        // Melee units should focus on getting rid of enemy units that threaten the siege units
-        // If there are no units, this means attacking the city
-        val meleeUnits = ourUnitsInRange(5).filter { it.baseUnit.isMelee() }
-        for (unit in meleeUnits.sortedByDescending { it.baseUnit.getForceEvaluation() }) {
-            // We're so close, full speed ahead!
-            if (city.health < city.getMaxHealth() / 5) attackIfPossible(unit, city.getCenterTile())
-            
-            val tilesToTarget = city.getCenterTile().getTilesInDistance(4).toList()
-            
-            val attackableEnemies = TargetHelper.getAttackableEnemies(unit,
-                unit.movement.getDistanceToTiles(), tilesToTarget)
-            if (attackableEnemies.isEmpty()) continue
-            val mostSurroundedEnemy = attackableEnemies.maxBy {
-                var count = 0
-                it.tileToAttack.forEachTileAtDistance(1) { tile -> if (tile.militaryUnit?.civ == unit.civ) count++ }
-                count
-            } // aims to maximize flanking bonus and number of hits in order to get kills
-
-            Battle.moveAndAttack(MapUnitCombatant(unit), mostSurroundedEnemy)
-        }
-    }
-    
-    /**
-     *  Brings an escort to the settlers whose operation wants one (a CvAIOperationFoundCity, see [SettlerAutomation.wantsEscort]):
-     *  Unciv's stand-in for the operation's CvAIOperation::GrabUnitsFromTheReserves. Quick-colonize settlers travel alone.
-     */
-    @VisibleForTesting
-    fun automateSettlerEscorting(civView: CivView){
-        val civInfo = civView.getCiv()
-        val capitalTile = civInfo.getCapital()!!.getCenterTile()
-        @Readonly fun bestUnitInRange(tile: Tile, range: Int) = tile.getTilesInDistance(range)
-            .mapNotNull { it.militaryUnit }.filter {
-                it.civ == civInfo
-                    && it.type.isLandUnit() // a ship can reach a port, but the escort it swaps with cannot follow it to sea
-                    && it.health >= 100
-                    // only draft a unit from the core of the empire (at most as far from the capital as the settler), or it'll interfere with other anti-barb activities
-                    && (it.currentTile.aerialDistanceTo(capitalTile) <= tile.aerialDistanceTo(capitalTile))
-                    && it.movement.canReach(tile) 
-            }
-            .sortedBy { it.currentTile.aerialDistanceTo(tile) }
-            .maxByOrNull { it.baseUnit.strength } // could be more sophisticated based on promotions, movement speed etc.
-        
-        val settlersToAccompany = civInfo.units.getCivUnits()
-            .filter { it.isCivilian() && it.hasUnique(UniqueType.FoundCity) && SettlerAutomation.wantsEscort(it) }
-        
-        for (settler in settlersToAccompany) {
-            val escortUnit = bestUnitInRange(settler.currentTile, 3) ?: continue
-            escortUnit.movement.headTowards(settler.currentTile)
-            if (escortUnit.movement.canUnitSwapTo(settler.currentTile)) {
-                // check if we can swap to replace the current inferior (wounded) escort
-                escortUnit.movement.swapMoveToTile(settler.currentTile)
-            }
-        }
-    }
-
     /** Returns the priority of the unit, a lower value is higher priority **/
     fun getUnitPriority(unit: MapUnitView, isAtWar: Boolean, cache: AutomationCache): Int {
         val mapUnit = unit.getUnit()
@@ -393,6 +308,7 @@ object NextTurnAutomation {
         }
     }
 
+    /** Every city of a human player shoots at what it can (the end-of-turn setting, auto play); the AI's cities shoot as part of [TacticalAi]'s attacks */
     fun automateCityBombardment(civView: CivView) {
         for (city in civView.cities()) UnitAutomation.tryBombardEnemy(city)
     }
