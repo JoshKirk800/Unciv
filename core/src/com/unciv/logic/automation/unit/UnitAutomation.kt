@@ -98,6 +98,9 @@ object UnitAutomation {
             return AirUnitAutomation.automateBomber(unitView)
         }
 
+        // The escort trained for a settler's operation goes to the settler
+        if (unit.civ.isAI() && SettlerAutomation.tryJoinSettler(unit)) return
+
         // Accompany settlers
         if (tryAccompanySettlerOrGreatPerson(unitView)) return
 

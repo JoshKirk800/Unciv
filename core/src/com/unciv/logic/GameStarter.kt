@@ -3,6 +3,8 @@ package com.unciv.logic
 import com.unciv.Constants
 import com.unciv.UncivGame
 import com.unciv.logic.automation.strategy.FlavorManager
+import com.unciv.logic.automation.strategy.UnitAiType
+import com.unciv.logic.automation.strategy.UnitAiTypes
 import com.unciv.logic.civilization.AlertType
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.PlayerType
@@ -534,6 +536,18 @@ class GameStarter private constructor(
             val unitToAdd = getEquivalentUnit(civ, unit, eraUnitReplacement, settlerLikeUnits)
             if (unitToAdd != null) civ.units.placeUnitNearTile(startingLocation.position, unitToAdd)
         }
+        assignStartingExplorer(civ)
+    }
+
+    /**
+     *  The last step of CvPlayer::initFreeUnits: a player with no explorer (UNITAI_EXPLORE) sends its first defensive unit - the free military
+     *  unit of the era - exploring. Without it the capital's warrior never leaves the city, the civilization sees only its own surroundings,
+     *  finds no settle area and builds no settlers until a scout is trained.
+     */
+    private fun assignStartingExplorer(civ: Civilization) {
+        if (UnitAiTypes.numUnitsWithUnitAi(civ, UnitAiType.EXPLORE, includeBeingTrained = false) > 0) return
+        val defender = civ.units.getCivUnits().firstOrNull { it.isMilitary() && it.baseUnit.isLandUnit } ?: return
+        UnitAiTypes.set(defender, UnitAiType.EXPLORE)
     }
 
     private fun getCandidateLand(

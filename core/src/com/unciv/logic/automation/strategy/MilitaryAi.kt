@@ -15,6 +15,9 @@ import kotlin.math.min
 /** CvMilitaryAI DefenseState, best to worst (the original compares them by this order) */
 enum class DefenseState { Enough, Neutral, Needed, Critical }
 
+/** CvMilitaryAI ArmyType: what kind of army the cities are asked to supply units for */
+enum class ArmyType { Land, NavalInvasion }
+
 /**
  *  The strategic part of CvMilitaryAI beyond the strategy loop (`civ.ai.military`): threats, barbarian scan, unit counts by role,
  *  recommended army and navy sizes, defense states, offensive purchases and disbanding of obsolete units.
@@ -33,6 +36,13 @@ class MilitaryAi : IsPartOfGameInfoSerialization {
     var lastTurnMilitaryThreats = HashMap<String, String>()
     /** CvMilitaryAI::m_iTotalThreatWeight: starts at 1, "don't ever assume there is no threat at all" */
     var totalThreatWeight = 1
+    /** CvMilitaryAI::m_iNumberOfTimesOpsBuildSkippedOver: how often a city was offered a unit for an operation and chose another item; it raises that unit's weight */
+    var numberOfTimesOpsBuildSkippedOver = 0
+    /** CvMilitaryAI::m_eArmyTypeBeingBuilt: set when an attack was requested that the units at hand cannot form, never reset in the original */
+    var armyTypeBeingBuilt: ArmyType? = null
+    /** CvMilitaryAI::m_iNumLandAttacksRequested / m_iNumNavalAttacksRequested: the attacks that could not start for lack of units */
+    var numLandAttacksRequested = 0
+    var numNavalAttacksRequested = 0
 
     //region Per-turn data (CvMilitaryAI::UpdateBaseData, ScanForBarbarians, UpdateDefenseState), recomputed each turn
     @Transient private var dataTurn = -1
@@ -55,7 +65,17 @@ class MilitaryAi : IsPartOfGameInfoSerialization {
         val toReturn = MilitaryAi()
         toReturn.lastTurnMilitaryThreats.putAll(lastTurnMilitaryThreats)
         toReturn.totalThreatWeight = totalThreatWeight
+        toReturn.numberOfTimesOpsBuildSkippedOver = numberOfTimesOpsBuildSkippedOver
+        toReturn.armyTypeBeingBuilt = armyTypeBeingBuilt
+        toReturn.numLandAttacksRequested = numLandAttacksRequested
+        toReturn.numNavalAttacksRequested = numNavalAttacksRequested
         return toReturn
+    }
+
+    /** The unit-short branch of RequestSneakAttack / RequestCityStateAttack: one more attack by land or by sea waits for units, the larger count names the army */
+    fun requestArmy(bySea: Boolean) {
+        if (bySea) numNavalAttacksRequested++ else numLandAttacksRequested++
+        armyTypeBeingBuilt = if (numLandAttacksRequested > numNavalAttacksRequested) ArmyType.Land else ArmyType.NavalInvasion
     }
 
     /** What CvMilitaryAI::DoTurn does before its strategy loop: ScanForBarbarians, UpdateThreats, UpdateBaseData, UpdateDefenseState */

@@ -139,6 +139,11 @@ enum class AiDefine(val default: Float) {
     AI_PRODUCTION_WEIGHT_BASE_MOD(0.15f),
     AI_PRODUCTION_WEIGHT_MOD_PER_TURN_LEFT(0.015f),
 
+    // CvCityStrategyAI::ChooseProduction: units for operations (ConstructionAutomation)
+    AI_CITYSTRATEGY_OPERATION_UNIT_BASE_WEIGHT(1500f),
+    AI_CITYSTRATEGY_OPERATION_UNIT_FLAVOR_MULTIPLIER(250f),
+    AI_CITYSTRATEGY_ARMY_UNIT_BASE_WEIGHT(750f),
+
     // CvPlayerAI Great People directives (GreatPersonAi)
     AI_HOMELAND_GREAT_PERSON_TURNS_TO_WAIT(10f),
 

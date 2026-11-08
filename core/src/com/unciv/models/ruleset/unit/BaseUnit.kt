@@ -1,6 +1,7 @@
 package com.unciv.models.ruleset.unit
 
 import com.unciv.logic.automation.strategy.EconomicAi
+import com.unciv.logic.automation.unit.SettlerAutomation
 import com.unciv.Constants
 import com.unciv.logic.GameInfo
 import com.unciv.logic.MultiFilter
@@ -390,7 +391,8 @@ class BaseUnit : RulesetObject(), INonPerpetualConstruction {
             unit.currentMovement = 0f
 
         addConstructionBonuses(unit, cityConstructions)
-        EconomicAi.onUnitTrained(unit)
+        // CvCity::CreateUnit: a unit trained for an operation joins it, any other may be sent exploring
+        if (!SettlerAutomation.onUnitTrained(unit, cityConstructions.city)) EconomicAi.onUnitTrained(unit)
 
         return unit
     }
