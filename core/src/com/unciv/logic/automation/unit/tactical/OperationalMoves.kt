@@ -11,7 +11,6 @@ import com.unciv.logic.automation.strategy.ArmyState
 import com.unciv.logic.automation.strategy.OperationAbortReason
 import com.unciv.logic.automation.strategy.OperationMoveType
 import com.unciv.logic.automation.strategy.OperationState
-import com.unciv.logic.automation.unit.CivilianSafety
 import com.unciv.logic.automation.unit.SettlerAutomation
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.HexCoord
@@ -154,10 +153,8 @@ object OperationalMoves {
         val civilianMove = civilianPath.first()
         var saveMoves = civilianMove == target
         if (army.numSlotsFilled() == 1 || escort == null) {
-            // Without an escort the civilian's path avoids danger (the original's path finder does for civilians)
-            if (civilian.getTile().militaryUnit?.civ != civ && CivilianSafety.fleeIfThreatened(civilian)) { ctx.unitProcessed(civilian, false); return }
-            CivilianSafety.headTowardsAvoidingDanger(civilian, target)
-            ctx.unitProcessed(civilian, false)
+            // The original's path finder sees danger only for automated (human) units: the AI's civilian keeps to its path
+            Deployment.executeMoveToPlot(ctx, civilian, civilianMove, saveMoves)
             ctx.log { "moving ${civilian.name} without escort to ${civilian.getTile().position}" }
             return
         }

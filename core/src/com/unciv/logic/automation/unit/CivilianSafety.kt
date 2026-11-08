@@ -41,26 +41,6 @@ object CivilianSafety {
     }
 
     /**
-     *  A civilian's steps towards [target], as the original's path finder takes them for AI civilians (it does not path through plots with
-     *  danger unless told to), unless it travels with an escort: the unit takes the steps it can this turn, unless the tile it would end the turn on has danger - then it
-     *  stays where it is. Deviation: Unciv's path finder has no danger input, so the dangerous tile is not walked around.
-     *  @return whether the unit moved (or is already there)
-     */
-    fun headTowardsAvoidingDanger(unit: MapUnit, target: Tile): Boolean {
-        if (unit.getTile() == target) return true
-        if (unit.isEscorting()) { // the escort goes along: no danger to speak of
-            unit.movement.tryHeadTowards(target)
-            return true
-        }
-        val reachable = unit.movement.getDistanceToTiles()
-        val path = unit.movement.getShortestPath(target)
-        val endOfTurn = path.lastOrNull { it in reachable }
-        if (endOfTurn != null && unit.civ.ai.plotDanger.get(endOfTurn) > 0 && endOfTurn != target) return false
-        unit.movement.tryHeadTowards(target)
-        return true
-    }
-
-    /**
      *  CvHomelandAI::ExecuteMovesToSafestPlot: among the tiles the unit can reach this turn (and the one it stands on) the best by class -
      *  our city, a tile without danger in our territory, a tile without danger, a tile where one of our defenders covers it, a tile in our
      *  territory, any - and within a class the lowest danger; the nearest on ties.
