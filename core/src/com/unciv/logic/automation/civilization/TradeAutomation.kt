@@ -1,7 +1,11 @@
 package com.unciv.logic.automation.civilization
 
-import com.unciv.logic.civilization.Civilization
+import com.unciv.Constants
+import com.unciv.logic.automation.Timers.Companion.timeThis
+import com.unciv.logic.automation.diplomacy.DiplomacyTurn
+import com.unciv.logic.automation.strategy.PurchaseType
 import com.unciv.logic.city.GreatWorkFunctions
+import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.NotificationCategory
 import com.unciv.logic.civilization.NotificationIcon
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
@@ -10,13 +14,20 @@ import com.unciv.logic.trade.Trade
 import com.unciv.logic.trade.TradeEvaluation
 import com.unciv.logic.trade.TradeLogic
 import com.unciv.logic.trade.TradeOffer
-import com.unciv.logic.trade.TradeRequest
 import com.unciv.logic.trade.TradeOfferType
-import kotlin.math.min
+import com.unciv.logic.trade.TradeRequest
 
+/**
+ *  The trades an AI answers and the offers it makes (the deal part of CvDiplomacyAI::DoContactPlayer), all valued by [DealAi].
+ *  Between AIs an offer is balanced before it is made and then carried out at once, as the original does; a human gets a trade request.
+ */
 object TradeAutomation {
 
-
+    /**
+     *  The deals offered to an AI: from a human, CvDealAI::DoHumanOfferDealToThisAI (accepted when acceptable or a gift; otherwise a
+     *  counteroffer balanced by CvDealAI::DoEqualizeDealWithHuman keeping what the human asked for, if there is one); from another AI
+     *  (Great Work swaps), the AI rule of [DealAi.isAcceptableBetweenAIs].
+     */
     fun respondToTradeRequests(civInfo: Civilization, tradeAndChangeState: Boolean) {
         for (tradeRequest in civInfo.tradeRequests.toList()) {
             val otherCiv = civInfo.gameInfo.getCivilization(tradeRequest.requestingCiv)
@@ -32,146 +43,178 @@ object TradeAutomation {
              * the same resource to ANOTHER civ in this turn. Complicated!
              */
             civInfo.tradeRequests.remove(tradeRequest)
-            if (TradeEvaluation().isTradeAcceptable(tradeLogic.currentTrade, civInfo, otherCiv)) {
+            val accepted = if (otherCiv.isHuman()) {
+                val response = DealAi.respondToHumanDeal(civInfo, otherCiv, tradeLogic.currentTrade)
+                if (response == DealAi.DealResponse.Accepted) {
+                    // CvDealAI::DoAcceptedDeal: valued before the items move
+                    val value = DealAi.getDealValue(civInfo, otherCiv, tradeLogic.currentTrade, false)
+                    DealAi.onHumanDealAccepted(civInfo, otherCiv, tradeLogic.currentTrade, value)
+                    true
+                } else false
+            } else DealAi.isAcceptableBetweenAIs(civInfo, otherCiv, tradeLogic.currentTrade)
+            if (accepted) {
                 tradeLogic.acceptTrade()
                 otherCiv.addNotification("[${civInfo.civName}] has accepted your trade request", NotificationCategory.Trade, NotificationIcon.Trade, civInfo.civName)
+                continue
+            }
+            val counteroffer = if (otherCiv.isHuman() && tradeRequest.trade.ourOffers.none { it.type == TradeOfferType.GreatWork })
+                getCounteroffer(civInfo, otherCiv, tradeRequest.trade) else null
+            if (counteroffer != null) {
+                otherCiv.addNotification("[${civInfo.civName}] has made a counteroffer to your trade request", NotificationCategory.Trade, NotificationIcon.Trade, civInfo.civName)
+                otherCiv.tradeRequests.add(counteroffer)
             } else {
-                val counteroffer = if (tradeRequest.trade.ourOffers.any { it.type == TradeOfferType.GreatWork })
-                    null // A Great Work swap is an indivisible one-for-one exchange
-                else getCounteroffer(civInfo, tradeRequest)
-                if (counteroffer != null) {
-                    otherCiv.addNotification("[${civInfo.civName}] has made a counteroffer to your trade request", NotificationCategory.Trade, NotificationIcon.Trade, civInfo.civName)
-                    otherCiv.tradeRequests.add(counteroffer)
-                } else{
-                    otherCiv.addNotification("[${civInfo.civName}] has denied your trade request", NotificationCategory.Trade, civInfo.civName, NotificationIcon.Trade)
-                    tradeRequest.decline(civInfo)
-                }
-                    
+                otherCiv.addNotification("[${civInfo.civName}] has denied your trade request", NotificationCategory.Trade, civInfo.civName, NotificationIcon.Trade)
+                tradeRequest.decline(civInfo)
             }
         }
         civInfo.tradeRequests.clear()
     }
 
-    /** @return a TradeRequest with the same ourOffers as [tradeRequest] but with enough theirOffers
-     *  added to make the deal acceptable. Will find a valid counteroffer if any exist, but is not
-     *  guaranteed to find the best or closest one. */
-    private fun getCounteroffer(civInfo: Civilization, tradeRequest: TradeRequest): TradeRequest? {
-        val otherCiv = civInfo.gameInfo.getCivilization(tradeRequest.requestingCiv)
-        // AIs counteroffering each other could be problematic if they ping-pong back and forth forever
-        // If this happens, that means our trade automation doesn't settle into an equilibrium that's favourable to both parties, so that should be updated when observed
-        val evaluation = TradeEvaluation()
-        var deltaInOurFavor = evaluation.getTradeAcceptability(tradeRequest.trade, civInfo, otherCiv)
-        if (deltaInOurFavor > 0) deltaInOurFavor = (deltaInOurFavor / 1.1f).toInt() // They seem very interested in this deal, let's push it a bit.
-        val tradeLogic = TradeLogic(civInfo, otherCiv)
-
-        tradeLogic.currentTrade.set(tradeRequest.trade)
-
-        // What do they have that we would want?
-        // Linked: a TradeOffer's hash code includes its type, an enum, which is not the same in every run - and the order is used below
-        val potentialAsks = LinkedHashMap<TradeOffer, Int>()
-        val counterofferAsks = LinkedHashMap<TradeOffer, Int>()
-        val counterofferGifts = ArrayList<TradeOffer>()
-
-        for (offer in tradeLogic.theirAvailableOffers) {
-            if ((offer.type == TradeOfferType.Gold || offer.type == TradeOfferType.Gold_Per_Turn)
-                && tradeRequest.trade.ourOffers.any { it.type == offer.type })
-                continue // Don't want to counteroffer straight gold for gold, that's silly
-            if (!offer.isTradable())
-                continue // For example resources gained by trade or CS
-            if (offer.type == TradeOfferType.City || offer.type == TradeOfferType.GreatWork)
-                continue // Don't counteroffer with cities or an unpaired Great Work
-            if (offer.type == TradeOfferType.Luxury_Resource)
-                continue // Don't ask for luxuries as counteroffer, players likely don't want to sell them if they didn't offer them already
-            if (tradeLogic.currentTrade.theirOffers.any { it.type == offer.type && it.name == offer.name })
-                continue // So you don't get double offers of open borders declarations of war etc.
-            if (offer.type == TradeOfferType.Treaty)
-                continue // Don't try to counter with a defensive pact or research pact
-
-            val value = evaluation.evaluateBuyCostWithInflation(offer, civInfo, otherCiv, tradeRequest.trade)
-            if (value > 0)
-                potentialAsks[offer] = value
-        }
-
-        while (potentialAsks.isNotEmpty() && deltaInOurFavor < 0) {
-            // Keep adding their worst offer until we get above the threshold
-            val offerToAdd = potentialAsks.minByOrNull { it.value }!!
-            deltaInOurFavor += offerToAdd.value
-            counterofferAsks[offerToAdd.key] = offerToAdd.value
-            potentialAsks.remove(offerToAdd.key)
-        }
-        if (deltaInOurFavor < 0)
-            return null // We couldn't get a good enough deal
-
-        // At this point we are sure to find a good counteroffer
-        while (deltaInOurFavor > 0) {
-            // Now remove the best offer valued below delta until the deal is barely acceptable
-            val offerToRemove = counterofferAsks.filter { it.value <= deltaInOurFavor }.maxByOrNull { it.value }
-                ?: break  // Nothing more can be removed, at least en bloc
-            deltaInOurFavor -= offerToRemove.value
-            counterofferAsks.remove(offerToRemove.key)
-        }
-
-        // Only ask for enough of each resource to get maximum price
-        for (ask in counterofferAsks.keys.filter { it.type == TradeOfferType.Luxury_Resource || it.type == TradeOfferType.Strategic_Resource }) {
-            // Remove 1 amount as long as doing so does not change the price
-            val originalValue = counterofferAsks[ask]!!
-            while (ask.amount > 1
-                && originalValue == evaluation.evaluateBuyCostWithInflation(
-                    TradeOffer(ask.name, ask.type, ask.amount - 1, ask.duration),
-                    civInfo, otherCiv, tradeRequest.trade) ) {
-                ask.amount--
-            }
-        }
-
-        // Adjust any gold asked for
-        val toRemove = ArrayList<TradeOffer>()
-        for (goldAsk in counterofferAsks.keys
-            .filter { it.type == TradeOfferType.Gold_Per_Turn || it.type == TradeOfferType.Gold }
-            .sortedByDescending { it.type.ordinal }) { // Do GPT first
-            val valueOfOne = evaluation.evaluateBuyCostWithInflation(TradeOffer(goldAsk.name, goldAsk.type, 1, goldAsk.duration), civInfo, otherCiv, tradeRequest.trade)
-            val amountCanBeRemoved = deltaInOurFavor / valueOfOne
-            if (amountCanBeRemoved >= goldAsk.amount) {
-                deltaInOurFavor -= counterofferAsks[goldAsk]!!
-                toRemove.add(goldAsk)
-            } else {
-                deltaInOurFavor -= valueOfOne * amountCanBeRemoved
-                goldAsk.amount -= amountCanBeRemoved
-            }
-        }
-
-        // If the delta is still very in our favor consider sweetening the pot with some gold
-        if (deltaInOurFavor >= 100) {
-            deltaInOurFavor = (deltaInOurFavor * 2) / 3 // Only compensate some of it though, they're the ones asking us
-            // First give some GPT, then lump sum - but only if they're not already offering the same
-            for (ourGold in tradeLogic.ourAvailableOffers
-                .filter { it.isTradable() && (it.type == TradeOfferType.Gold || it.type == TradeOfferType.Gold_Per_Turn) }
-                .sortedByDescending { it.type.ordinal }) {
-                if (tradeLogic.currentTrade.theirOffers.none { it.type == ourGold.type } &&
-                    counterofferAsks.keys.none { it.type == ourGold.type } ) {
-                    val valueOfOne = evaluation.evaluateSellCostWithInflation(TradeOffer(ourGold.name, ourGold.type, 1, ourGold.duration), civInfo, otherCiv, tradeRequest.trade)
-                    val amountToGive = min(deltaInOurFavor / valueOfOne, ourGold.amount)
-                    deltaInOurFavor -= amountToGive * valueOfOne
-                    if (amountToGive > 0) {
-                        counterofferGifts.add(
-                            TradeOffer(
-                                ourGold.name,
-                                ourGold.type,
-                                amountToGive,
-                                ourGold.duration
-                            )
-                        )
-                    }
-                }
-            }
-        }
-
-        tradeLogic.currentTrade.theirOffers.addAll(counterofferAsks.keys)
-        tradeLogic.currentTrade.ourOffers.addAll(counterofferGifts)
-
-        // Trades reversed, because when *they* get it then the 'ouroffers' become 'theiroffers'
-        return TradeRequest(civInfo.civID, tradeLogic.currentTrade.reverse())
+    /**
+     *  The original's "What would make this deal work?": CvDealAI::DoEqualizeDealWithHuman on [trade] (seen from [civInfo]) without
+     *  touching what the human asked of us. Null when no balanced deal different from the proposal comes out.
+     */
+    private fun getCounteroffer(civInfo: Civilization, human: Civilization, trade: Trade): TradeRequest? {
+        val counter = trade.clone()
+        if (!DealAi.doEqualizeDealWithHuman(civInfo, human, counter, dontChangeMyExistingItems = true, dontChangeTheirExistingItems = false))
+            return null
+        if (counter.equalTrade(trade) || counter.theirOffers.isEmpty() && counter.ourOffers.isEmpty()) return null
+        if (!TradeEvaluation().isTradeValid(counter, civInfo, human)) return null
+        return TradeRequest(civInfo.civID, counter.reverse())
     }
 
+    /**
+     *  The offers of CvDiplomacyAI::DoContactPlayer, in its order, first one made per player and turn: DoLuxuryTrade, DoEmbassyExchange,
+     *  DoEmbassyOffer, DoOpenBordersExchange, DoOpenBordersOffer, DoResearchAgreementOffer, DoRenewExpiredDeal. Players at peace with us
+     *  that we have met before this turn and have not contacted yet this turn, AIs first. BNW's AI offers no defensive pact, war
+     *  declaration or third-party peace deal.
+     */
+    fun doOffers(civ: Civilization) = timeThis("AI.DealOffers") {
+        val players = DiplomacyTurn.validPlayers(civ).filter { it.isMajorCiv && it != civ }.sortedBy { it.isHuman() }
+        for (other in players) {
+            if (civ.isAtWarWith(other) || !canContact(civ, other) || civ.ai.diplomacy.hasMadeStatementThisTurn(other)) continue
+            val trade = Trade()
+            val statement = chooseOffer(civ, other, trade) ?: continue
+            sendOffer(civ, other, statement, trade)
+        }
+    }
+
+    /** DoContactPlayer waits until the turn after meeting */
+    private fun canContact(civ: Civilization, other: Civilization): Boolean {
+        val met = civ.ai.diplomacy.memoryOf(other).turnMet
+        return met < 0 || civ.gameInfo.turns - met > 0
+    }
+
+    private fun turnsSince(civ: Civilization, other: Civilization, statement: DealStatement) =
+        civ.ai.deals.turnsSince(other.civID, statement, civ.gameInfo.turns)
+
+    private fun log(civ: Civilization, other: Civilization, statement: DealStatement) =
+        civ.ai.deals.log(other.civID, statement, civ.gameInfo.turns)
+
+    /** The offer statements of DoContactPlayer in order: the first one that wants to be sent fills [trade] */
+    fun chooseOffer(civ: Civilization, other: Civilization, trade: Trade): DealStatement? {
+        val turnsBetween = 20
+        val logic = TradeLogic(civ, other)
+        val dealDuration = civ.gameInfo.speed.dealDuration
+        val emptyTrade = Trade()
+
+        // DoLuxuryTrade
+        if (DealAi.isMakeOfferForLuxuryResource(civ, other, trade)) {
+            if (turnsSince(civ, other, DealStatement.LuxuryTrade) >= turnsBetween) return DealStatement.LuxuryTrade
+        } else clear(trade)
+
+        // DoEmbassyExchange
+        val embassy = TradeOffer(Constants.acceptEmbassy, TradeOfferType.Embassy, speed = civ.gameInfo.speed)
+        if (DealAi.isPossibleToTradeItem(emptyTrade, civ, other, embassy, true, logic.ourAvailableOffers)
+            && DealAi.isPossibleToTradeItem(emptyTrade, other, civ, embassy, false, logic.theirAvailableOffers)
+            && DealAi.isEmbassyExchangeAcceptable(civ, other)
+            && turnsSince(civ, other, DealStatement.EmbassyExchange) >= turnsBetween
+            && turnsSince(civ, other, DealStatement.EmbassyOffer) >= 10) {
+            var send = other.isHuman() || DealAi.isEmbassyExchangeAcceptable(other, civ)
+            if (50 < civ.ai.random("DiplomacyAI.EmbassyExchange" + other.civID).nextInt(100)) send = false
+            if (send) {
+                trade.ourOffers.add(embassy.copy())
+                trade.theirOffers.add(embassy.copy())
+                return DealStatement.EmbassyExchange
+            }
+            log(civ, other, DealStatement.EmbassyExchange)
+        }
+
+        // DoEmbassyOffer
+        if (DealAi.makeOfferForEmbassy(civ, other, trade)) {
+            if (turnsSince(civ, other, DealStatement.EmbassyOffer) >= turnsBetween
+                && turnsSince(civ, other, DealStatement.EmbassyExchange) >= 10) return DealStatement.EmbassyOffer
+        } else clear(trade)
+
+        // DoOpenBordersExchange
+        val openBorders = TradeOffer(Constants.openBorders, TradeOfferType.Agreement, 1, dealDuration)
+        if (DealAi.isPossibleToTradeItem(emptyTrade, civ, other, openBorders, true, logic.ourAvailableOffers)
+            && DealAi.isPossibleToTradeItem(emptyTrade, other, civ, openBorders, false, logic.theirAvailableOffers)
+            && DealAi.isOpenBordersExchangeAcceptable(civ, other)
+            && turnsSince(civ, other, DealStatement.OpenBordersExchange) >= turnsBetween) {
+            var send = other.isHuman() || DealAi.isOpenBordersExchangeAcceptable(other, civ)
+            if (50 < civ.ai.random("DiplomacyAI.OpenBordersExchange" + other.civID).nextInt(100)) send = false
+            if (send) {
+                trade.ourOffers.add(openBorders.copy())
+                trade.theirOffers.add(openBorders.copy())
+                return DealStatement.OpenBordersExchange
+            }
+            log(civ, other, DealStatement.OpenBordersExchange)
+        }
+
+        // DoOpenBordersOffer
+        if (DealAi.isMakeOfferForOpenBorders(civ, other, trade)) {
+            if (turnsSince(civ, other, DealStatement.OpenBordersOffer) >= turnsBetween) return DealStatement.OpenBordersOffer
+        } else clear(trade)
+
+        // DoResearchAgreementOffer
+        if (isCanMakeResearchAgreementRightNow(civ, other)) {
+            if (DealAi.isMakeOfferForResearchAgreement(civ, other, trade)) {
+                if (turnsSince(civ, other, DealStatement.ResearchAgreementOffer) >= turnsBetween) return DealStatement.ResearchAgreementOffer
+            } else clear(trade)
+        }
+
+        // DoRenewExpiredDeal
+        if (DealAi.doRenewExpiredDeal(civ, other, trade)) return DealStatement.RenewDeal
+        clear(trade)
+        return null
+    }
+
+    private fun clear(trade: Trade) {
+        trade.ourOffers.clear()
+        trade.theirOffers.clear()
+    }
+
+    /**
+     *  CvDiplomacyAI::IsCanMakeResearchAgreementRightNow: we want one (DoUpdatePlanningExchanges), have none, may sign one, and both
+     *  sides can pay for it
+     */
+    fun isCanMakeResearchAgreementRightNow(civ: Civilization, other: Civilization): Boolean {
+        if (civ.tech.allTechsAreResearched() || other.tech.allTechsAreResearched()) return false
+        if (!civ.ai.diplomacy.wantsResearchAgreementWith(other)) return false
+        // Unciv's rule (the technology, embassies, a Declaration of Friendship, no agreement yet, both able to pay)
+        return civ.diplomacyFunctions.canSignResearchAgreementWith(other)
+    }
+
+    /**
+     *  CvDiplomacyAI::DoSendStatementToPlayer for the offers: an AI gets the deal carried out (it was checked for both sides before),
+     *  a human gets a trade request. The statement is logged for its 20-turn interval and counts as this turn's contact.
+     */
+    private fun sendOffer(civ: Civilization, other: Civilization, statement: DealStatement, trade: Trade) {
+        log(civ, other, statement)
+        civ.ai.diplomacy.markStatementMade(other)
+        if (!TradeEvaluation().isTradeValid(trade, civ, other)) return
+        if (other.isHuman()) {
+            if (other.tradeRequests.none { it.requestingCiv == civ.civID })
+                other.tradeRequests.add(TradeRequest(civ.civID, trade.reverse()))
+            return
+        }
+        val logic = TradeLogic(civ, other)
+        logic.currentTrade.set(trade)
+        logic.acceptTrade()
+        if (statement == DealStatement.ResearchAgreementOffer)
+            civ.ai.purchaseSavings.cancelSaveForPurchase(PurchaseType.MajorCivTrade)
+    }
 
     /** Offer an exact same-kind swap that improves our theming without damaging theirs. */
     fun exchangeGreatWorks(civInfo: Civilization) {
@@ -202,58 +245,4 @@ object TradeAutomation {
             }
         }
     }
-
-     fun exchangeLuxuries(civInfo: Civilization) {
-        val knownCivs = civInfo.getKnownCivs()
-
-        // Player trades are... more complicated.
-        // When the AI offers a trade, it's not immediately accepted,
-        // so what if it thinks that it has a spare luxury and offers it to two human players?
-        // What's to stop the AI "nagging" the player to accept a luxury trade?
-        // We should A. add some sort of timer (20? 30 turns?) between luxury trade requests if they're denied - see DeclinedLuxExchange
-        // B. have a way for the AI to keep track of the "pending offers" - see DiplomacyManager.resourcesFromTrade
-
-        for (otherCiv in knownCivs.filter {
-            it.isMajorCiv && !it.isAtWarWith(civInfo)
-                && !civInfo.getDiplomacyManager(it)!!.hasFlag(DiplomacyFlags.DeclinedLuxExchange)
-        }) {
-
-            val isEnemy = civInfo.getDiplomacyManager(otherCiv)!!.isRelationshipLevelLE(RelationshipLevel.Enemy)
-            if (isEnemy || otherCiv.tradeRequests.any { it.requestingCiv == civInfo.civID })
-                continue
-
-            val trades = potentialLuxuryTrades(civInfo, otherCiv)
-            for (trade in trades) {
-                val tradeRequest = TradeRequest(civInfo.civID, trade.reverse())
-                otherCiv.tradeRequests.add(tradeRequest)
-            }
-        }
-    }
-
-    private fun potentialLuxuryTrades(civInfo: Civilization, otherCivInfo: Civilization): ArrayList<Trade> {
-        val tradeLogic = TradeLogic(civInfo, otherCivInfo)
-        val ourTradableLuxuryResources = tradeLogic.ourAvailableOffers
-            .filter { it.type == TradeOfferType.Luxury_Resource && it.amount > 1 }
-        val theirTradableLuxuryResources = tradeLogic.theirAvailableOffers
-            .filter { it.type == TradeOfferType.Luxury_Resource && it.amount > 1 }
-        val weHaveTheyDont = ourTradableLuxuryResources
-            .filter { resource ->
-                tradeLogic.theirAvailableOffers
-                    .none { it.name == resource.name && it.type == TradeOfferType.Luxury_Resource }
-            }
-        val theyHaveWeDont = theirTradableLuxuryResources
-            .filter { resource ->
-                tradeLogic.ourAvailableOffers
-                    .none { it.name == resource.name && it.type == TradeOfferType.Luxury_Resource }
-            }.sortedByDescending { civInfo.cities.count { city -> city.demandedResource == it.name } } // Prioritize resources that get WLTKD
-        val trades = ArrayList<Trade>()
-        for (i in 0..min(weHaveTheyDont.lastIndex, theyHaveWeDont.lastIndex)) {
-            val trade = Trade()
-            trade.ourOffers.add(weHaveTheyDont[i].copy(amount = 1))
-            trade.theirOffers.add(theyHaveWeDont[i].copy(amount = 1))
-            trades.add(trade)
-        }
-        return trades
-    }
-
 }

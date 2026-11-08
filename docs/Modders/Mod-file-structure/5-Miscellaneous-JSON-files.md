@@ -338,7 +338,6 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | leagueProjectTier1Threshold              | Float  | 0.5                           | Contribution tier 1 of a World Congress project begins at this multiple of a civilization's share of the project cost |
 | leagueProjectTier2Threshold              | Float  | 1                             | The same for tier 2. Tier 3 goes to the highest contributor, who must have at least this much |
 | leagueProjectProgressWarningPercent      | Int    | 33                            | Percent of its cost at which the civilizations are told how far a project is |
-| goldGiftDegradationMultiplier            | Float  | 1.0                           | [^V]  |
 
 Legend:
 
@@ -378,7 +377,6 @@ Legend:
 - [^Q]: The number of turns before a revolt is spawned
 - [^R]: The number of turns between city-state elections
 - [^S]: If set, the Improvement picker will silently skip improvements whose tech requirement is more advanced than your current Era + this value. Example: With a 0, Trade posts will not show until the Medieval Era, with a 1 they will already show in the CLassical Era.
-- [^V]: Modifies how quickly the GaveUsGifts dimplomacy modifier runs out. A higher value makes it run out quicker. Normally the gifts reduced by ~2.5% per turn depending on the diplomatic relations with the default value.
 - [^W]: Number of air units that can be stationed in a city, not including carried/transported air units.
 
 #### UnitUpgradeCost

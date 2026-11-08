@@ -108,7 +108,6 @@ object DealAi {
             }
             TradeOfferType.PeaceProposal -> getThirdPartyPeaceValue(us, them, us.gameInfo.getCivilization(offer.name), fromMe)
             TradeOfferType.WarDeclaration -> getThirdPartyWarValue(us, them, us.gameInfo.getCivilization(offer.name), fromMe)
-            TradeOfferType.VoteCommitment -> getVoteCommitmentValue(us, them, offer, fromMe, useEvenValue)
             TradeOfferType.GreatWork, TradeOfferType.Technology, TradeOfferType.Introduction, TradeOfferType.Stockpiled_Resource ->
                 getUncivItemValue(us, them, offer, fromMe, useEvenValue, trade)
         }
@@ -258,7 +257,8 @@ object DealAi {
             if (distance > 3) continue
             if (distance > 1) plotsValue += goldPerPlot
             if (tile.improvement != null) improvedValue += goldPerPlot * 25L
-            val resource = tile.tileResource.takeIf { tile.resource != null && us.tech.isRevealed(it) } ?: continue
+            val resource = tile.tileResource ?: continue
+            if (!us.tech.isRevealed(resource)) continue
             when (resource.resourceType) {
                 ResourceType.Luxury -> {
                     resourceValue += tile.resourceAmount.toLong() * LUXURY_HAPPINESS * 120 * 2
@@ -337,8 +337,7 @@ object DealAi {
     /**
      *  CvDealAI::GetOpenBordersValue. A Friendly approach makes it 50 both ways. Giving: by approach (Hostile 1000, Guarded 100, Afraid 20,
      *  Neutral 75) × opinion (Ally 0, Friend 35%, Favorable 70%, Competitor 150%, Enemy 400%, Unforgivable 10000), ×10% / ×25% if they fight
-     *  two / one of our enemies, then the culture factor. Receiving: by proximity (5/10/15/30), halved if they have one city, then the
-     *  culture factor (CultureAutomation.openBordersValuePercent).
+     *  two / one of our enemies. Receiving: by proximity (5/10/15/30), halved if they have one city.
      */
     fun getOpenBordersValue(us: Civilization, them: Civilization, fromMe: Boolean, useEvenValue: Boolean): Int {
         val approach = us.ai.diplomacy.approachTowards(them, true)
@@ -374,7 +373,6 @@ object DealAi {
             }
             if (them.cities.size == 1) value = value * 50 / 100
         }
-        value = value * CultureAutomation.openBordersValuePercent(us, them, receiving = !fromMe) / 100
         if (useEvenValue) {
             value += getOpenBordersValue(them, us, !fromMe, false)
             value /= 2
@@ -492,62 +490,6 @@ object DealAi {
             else -> {}
         }
         return value
-    }
-
-    /**
-     *  CvDealAI::GetVoteCommitmentValue, per vote. Votes we give: by how much we like the proposal (50-300, [NEVER] when we strongly
-     *  dislike it), by our alignment with [them] (-50..+50, [NEVER] for enemies or war), [NEVER] if we are Hostile or planning war on them.
-     *  Votes we receive: by how much we like it (50-200, -100000 if not at least weakly), less 20/40 when they keep many votes in hand.
-     */
-    fun getVoteCommitmentValue(us: Civilization, them: Civilization, offer: TradeOffer, fromMe: Boolean, useEvenValue: Boolean): Int {
-        val commitment = VoteCommitmentItem.parse(offer) ?: return 0
-        val votes = offer.amount
-        var value = 0
-        val desire = LeagueAutomation.evaluateVoteForTrade(us, commitment.proposalId, commitment.choice, votes, commitment.repeal)
-        if (fromMe) {
-            value += when (desire) {
-                LeagueDesire.NEVER, LeagueDesire.STRONG_DISLIKE -> NEVER
-                LeagueDesire.DISLIKE -> 300
-                LeagueDesire.WEAK_DISLIKE -> 200
-                LeagueDesire.NEUTRAL, LeagueDesire.WEAK_LIKE, LeagueDesire.LIKE -> 150
-                LeagueDesire.STRONG_LIKE, LeagueDesire.ALWAYS -> 50
-            }
-            val league = us.gameInfo.league
-            if (league != null) {
-                value += when (LeagueEvaluator(us, league).evaluateAlignment(them)) {
-                    LeagueAlignment.LIBERATOR, LeagueAlignment.LEADER -> -50
-                    LeagueAlignment.ALLY -> -35
-                    LeagueAlignment.CONFIDANT, LeagueAlignment.FRIEND -> -25
-                    LeagueAlignment.RIVAL -> 25
-                    LeagueAlignment.HATRED -> 50
-                    LeagueAlignment.ENEMY, LeagueAlignment.WAR -> NEVER
-                    else -> 0
-                }
-            }
-            val approach = us.ai.diplomacy.approachTowards(them, false)
-            if (approach == MajorCivApproach.Hostile || approach == MajorCivApproach.War) value += NEVER
-        } else {
-            value += when (desire) {
-                LeagueDesire.WEAK_LIKE -> 50
-                LeagueDesire.LIKE -> 100
-                LeagueDesire.STRONG_LIKE -> 150
-                LeagueDesire.ALWAYS -> 200
-                else -> -NEVER
-            }
-            val league = us.gameInfo.league
-            if (league != null) {
-                val startingVotes = league.getDelegates(them)
-                val ratio = if (startingVotes > 0) votes.toFloat() / startingVotes else 1f
-                if (ratio <= 0.25f) value -= 40
-                else if (ratio <= 0.5f) value -= 20
-            }
-        }
-        var total = max(value, 0).toLong() * votes
-        if (useEvenValue) {
-            total += getVoteCommitmentValue(them, us, offer, !fromMe, false)
-            total /= 2
-        }
-        return clamp(total)
     }
 
     /** Unciv items without a CvDealAI counterpart: Unciv's own prices (no gold inflation) */
@@ -674,7 +616,7 @@ object DealAi {
 
     /**
      *  CvDealAI::DoEqualizeDealWithAI: with even values, a deal within ±25% of its total size is fine as it is. Otherwise items are added
-     *  and removed (vote commitments, resources, GPT, gold, then trimming GPT and gold; open borders are never added between AIs), and the
+     *  and removed (resources, GPT, gold, then trimming GPT and gold; open borders are never added between AIs), and the
      *  result is acceptable only if each side, by its own valuation, receives at least 75% of what it gives.
      */
     fun doEqualizeDealWithAI(us: Civilization, them: Civilization, trade: Trade): Boolean {
@@ -686,8 +628,6 @@ object DealAi {
         if (even.total in amountUnder..amountOver) return true
 
         val eq = Equalizer(us, them, trade, true, even)
-        eq.addVoteCommitmentToThem(false, amountOver)
-        eq.addVoteCommitmentToUs(false, amountUnder)
         eq.addResourceToThem(false, amountOver, dealDuration)
         eq.addResourceToUs(false, amountUnder, dealDuration)
         // DoAddOpenBordersToThem/ToUs are called with bDontChange...ExistingItems = true here, so they never add anything
@@ -724,7 +664,7 @@ object DealAi {
 
     /**
      *  CvDealAI::DoEqualizeDealWithHuman: a peace deal is replaced by the treaty we want (IsOfferPeace); otherwise, unless already
-     *  acceptable, items are added in the original's order (votes, embassies, resources, open borders, GPT, gold, cities when we
+     *  acceptable, items are added in the original's order (embassies, resources, open borders, GPT, gold, cities when we
      *  surrender) and trimmed. Returns whether the resulting [trade] is acceptable to us.
      */
     fun doEqualizeDealWithHuman(us: Civilization, human: Civilization, trade: Trade,
@@ -741,8 +681,6 @@ object DealAi {
         val over = check.amountOverWeWillRequest
         val under = check.amountUnderWeWillOffer
         val eq = Equalizer(us, human, trade, false, check.value)
-        eq.addVoteCommitmentToThem(dontChangeTheirExistingItems, over)
-        eq.addVoteCommitmentToUs(dontChangeMyExistingItems, under)
         eq.addEmbassyToThem(dontChangeTheirExistingItems, over)
         eq.addEmbassyToUs(dontChangeMyExistingItems, under)
         eq.addResourceToThem(dontChangeTheirExistingItems, over, dealDuration)
@@ -787,34 +725,6 @@ object DealAi {
 
         private fun isPossible(fromUs: Boolean, offer: TradeOffer) =
             isPossibleToTradeItem(trade, if (fromUs) us else them, if (fromUs) them else us, offer, fromUs, if (fromUs) ourAvailable else theirAvailable)
-
-        fun addVoteCommitmentToThem(dontChange: Boolean, amountOver: Int) {
-            if (dontChange || total >= 0) return
-            if (trade.ourOffers.any { it.type == TradeOfferType.VoteCommitment } || trade.theirOffers.any { it.type == TradeOfferType.VoteCommitment }) return
-            if (!LeagueAutomation.canCommitVote(them, us)) return
-            for (commitment in LeagueAutomation.desiredVoteCommitments(us, them)) {
-                val offer = VoteCommitmentItem.offer(commitment, us.gameInfo.speed)
-                if (!isPossible(false, offer)) continue
-                if (item(false, offer) + total <= amountOver) {
-                    trade.theirOffers.add(offer)
-                    recompute()
-                }
-            }
-        }
-
-        fun addVoteCommitmentToUs(dontChange: Boolean, amountUnder: Int) {
-            if (dontChange || total <= 0) return
-            if (trade.ourOffers.any { it.type == TradeOfferType.VoteCommitment } || trade.theirOffers.any { it.type == TradeOfferType.VoteCommitment }) return
-            if (!LeagueAutomation.canCommitVote(us, them)) return
-            for (commitment in LeagueAutomation.desiredVoteCommitments(them, us)) {
-                val offer = VoteCommitmentItem.offer(commitment, us.gameInfo.speed)
-                if (!isPossible(true, offer)) continue
-                if (-item(true, offer) + total >= amountUnder) {
-                    trade.ourOffers.add(offer)
-                    recompute()
-                }
-            }
-        }
 
         /** CvDeal::ChangeResourceTrade then AddResourceTrade: an existing item is changed in place without re-evaluating, as in the original */
         private fun addOrChangeResource(list: TradeOffersList, offer: TradeOffer) {
@@ -1042,7 +952,6 @@ object DealAi {
                 if (receiverGives.any { it.name == offer.name && it.type == offer.type }) return false
                 return available.any { it.name == offer.name && it.type == offer.type }
             }
-            TradeOfferType.VoteCommitment -> return !from.isAtWarWith(to) && LeagueAutomation.canCommitVote(from, to)
             else -> return available.any { it.name == offer.name && it.type == offer.type && it.amount >= offer.amount }
         }
     }
@@ -1263,11 +1172,10 @@ object DealAi {
     }
 
     /**
-     *  CvDiplomacyAI::IsWantsOpenBordersWithPlayer: the culture branch (CultureAutomation.wantsOpenBordersWith), else only with neighbours
+     *  CvDiplomacyAI::IsWantsOpenBordersWithPlayer without its culture branch: only with neighbours
      *  we are not Hostile, Guarded or Afraid toward and who are not stronger than us.
      */
     fun wantsOpenBordersWith(us: Civilization, them: Civilization): Boolean {
-        if (CultureAutomation.wantsOpenBordersWith(us, them)) return true
         if (us.getProximity(them) != Proximity.Neighbors) return false
         val approach = us.ai.diplomacy.approachTowards(them, true)
         if (approach == MajorCivApproach.Hostile || approach == MajorCivApproach.Guarded || approach == MajorCivApproach.Afraid) return false
@@ -1289,7 +1197,7 @@ object DealAi {
 
     /** CvDealAI::IsMakeOfferForResearchAgreement: a research agreement on both sides, balanced (we may not change our side with a human) */
     fun isMakeOfferForResearchAgreement(us: Civilization, them: Civilization, trade: Trade): Boolean {
-        if (!us.diplomacyFunctions.canSignResearchAgreementsWith(them)) return false
+        if (!us.diplomacyFunctions.canSignResearchAgreementWith(them)) return false
         val cost = us.diplomacyFunctions.getResearchAgreementCost(them)
         val duration = us.gameInfo.speed.dealDuration
         trade.ourOffers.add(TradeOffer(Constants.researchAgreement, TradeOfferType.Treaty, cost, duration))
@@ -1310,9 +1218,74 @@ object DealAi {
         return approach == MajorCivApproach.Friendly || approach == MajorCivApproach.Afraid
     }
 
-    /** Whether [us] already has the resource-trade-cut-short distrust flag against [them] (Unciv rule kept for deals with humans) */
-    @Suppress("unused")
-    private fun distrusts(us: Civilization, them: Civilization) =
-        us.getDiplomacyManager(them)?.hasFlag(DiplomacyFlags.ResourceTradesCutShort) == true
+    /** CvDeal::GetItemTradeableState */
+    private enum class RenewStatus { Renewable, NonRenewable, Supplemental }
+
+    private fun renewStatus(offer: TradeOffer): RenewStatus = when (offer.type) {
+        TradeOfferType.Gold_Per_Turn, TradeOfferType.Luxury_Resource, TradeOfferType.Strategic_Resource -> RenewStatus.Renewable
+        TradeOfferType.Agreement -> if (offer.name == Constants.openBorders) RenewStatus.Renewable else RenewStatus.NonRenewable
+        TradeOfferType.Treaty -> when (offer.name) {
+            Constants.defensivePact -> RenewStatus.Renewable
+            Constants.researchAgreement -> RenewStatus.Supplemental
+            else -> RenewStatus.NonRenewable
+        }
+        TradeOfferType.Gold -> RenewStatus.Supplemental
+        else -> RenewStatus.NonRenewable
+    }
+
+    /** CvDeal::IsPotentiallyRenewable: at least one renewable item (GPT, resources, open borders, defensive pact) and no non-renewable one */
+    fun isPotentiallyRenewable(trade: Trade): Boolean {
+        var hasRenewable = false
+        for (offer in trade.ourOffers.asSequence() + trade.theirOffers.asSequence()) {
+            when (renewStatus(offer)) {
+                RenewStatus.NonRenewable -> return false
+                RenewStatus.Renewable -> hasRenewable = true
+                RenewStatus.Supplemental -> {}
+            }
+        }
+        return hasRenewable
+    }
+
+    /** CvGameDeals::DoUpdateCurrentDeals moving an ended deal to the historic deals: an AI major keeps a renewable deal with a major for renewal */
+    fun onDealEnded(civ: Civilization, other: Civilization, trade: Trade) {
+        if (civ.isHuman() || !civ.isMajorCiv || !other.isMajorCiv || !isPotentiallyRenewable(trade)) return
+        civ.ai.deals.expiredDeals.getOrPut(other.civID) { ArrayList() }.add(trade.clone())
+    }
+
+    /**
+     *  CvDiplomacyAI::DoRenewExpiredDeal: not while a coop war with [them] is coming; the first ended deal with them whose every item can be
+     *  traded again is put into [trade] (timed items for a new deal duration) and taken off the list (m_bCheckedForRenewal). With an AI it
+     *  must then balance (DoEqualizeDealWithAI); with a human it is offered as it is.
+     */
+    fun doRenewExpiredDeal(us: Civilization, them: Civilization, trade: Trade): Boolean {
+        if (us.ai.diplomacy.isCoopWarSoon(them)) return false
+        val deals = us.ai.deals.expiredDeals[them.civID] ?: return false
+        if (deals.isEmpty()) return false
+        val logic = TradeLogic(us, them)
+        val duration = us.gameInfo.speed.dealDuration
+        val empty = Trade()
+        for (old in deals) {
+            val candidate = Trade()
+            for (offer in old.ourOffers) candidate.ourOffers.add(renewed(offer, duration))
+            for (offer in old.theirOffers) candidate.theirOffers.add(renewed(offer, duration))
+            if (candidate.ourOffers.any { !isPossibleToTradeItem(empty, us, them, it, true, logic.ourAvailableOffers) }) continue
+            if (candidate.theirOffers.any { !isPossibleToTradeItem(empty, them, us, it, false, logic.theirAvailableOffers) }) continue
+            deals.remove(old)
+            trade.set(candidate)
+            if (!them.isHuman() && !doEqualizeDealWithAI(us, them, trade)) {
+                trade.ourOffers.clear()
+                trade.theirOffers.clear()
+                return false
+            }
+            return true
+        }
+        return false
+    }
+
+    private fun renewed(offer: TradeOffer, duration: Int): TradeOffer {
+        val copy = offer.copy()
+        if (offer.duration >= 0 && offer.type != TradeOfferType.Gold) copy.duration = duration
+        return copy
+    }
     //endregion
 }

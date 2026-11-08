@@ -241,6 +241,7 @@ object DiplomacyTurnManager {
 
             if (trade.ourOffers.all { it.duration <= 0 } && trade.theirOffers.all { it.duration <= 0 }) {
                 trades.remove(trade)
+                com.unciv.logic.automation.civilization.DealAi.onDealEnded(civInfo, otherCiv, trade)
                 for (offer in trade.ourOffers.union(trade.theirOffers).filter { it.duration == 0 }) { // this was a timed trade
                     val direction = if (offer in trade.theirOffers) "from" else "to"
                     civInfo.addNotification("[${offer.name}] $direction [${otherCiv.civName}] has ended",

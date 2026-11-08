@@ -470,12 +470,6 @@
           "type": ["integer", "null"],
           "default": null,
           "description": "Improvement picker skips improvements whose tech requirement is more advanced than current Era + this value."
-        },
-        "goldGiftDegradationMultiplier": {
-          "title": "Gold Gift Degradation Multiplier",
-          "type": "number",
-          "default": 1.0,
-          "description": "Multiplier for how quickly the GaveUsGifts diplomacy modifier runs out."
         }
       },
       "additionalProperties": false

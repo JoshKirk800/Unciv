@@ -48,6 +48,7 @@ object DiplomacyTurn {
         DisputeAi.updatePlotBuyingPostures(civ, others, rules)
         OpinionAi.updateOpinions(civ, others, rules)
         ApproachAi.updateApproaches(civ, others, rules)
+        com.unciv.logic.automation.civilization.CityStateAi.updateMinorCivApproaches(civ)
         civ.ai.diplomacy.lastTotalLandDisputeLevel = DisputeAi.totalLandDisputeLevel(civ, others, rules)
     }
 

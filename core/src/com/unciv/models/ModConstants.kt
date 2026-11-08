@@ -56,10 +56,6 @@ class ModConstants {
     // Number of air units that can be stationed in a city
     var cityAirUnitCapacity = 6
 
-    // Modifies how quickly the GaveUsGifts dimplomacy modifier runs out. A higher value makes it run out quicker.
-    // Normally the gifts reduced by ~2.5% per turn depending on the diplomatic relations with the default value.
-    var goldGiftDegradationMultiplier = 1f
-
     // Constants used to calculate Unit Upgrade gold Cost (can only be modded all-or-nothing)
     // This is a data class for one reason only: The equality implementation enables Gdx Json to omit it when default (otherwise only the individual fields are omitted)
     data class UnitUpgradeCost(

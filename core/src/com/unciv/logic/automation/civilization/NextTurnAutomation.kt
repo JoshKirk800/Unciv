@@ -27,13 +27,10 @@ import com.unciv.logic.map.tile.Tile
 import com.unciv.models.ruleset.MilestoneType
 import com.unciv.models.ruleset.Policy
 import com.unciv.models.ruleset.PolicyBranch
-import com.unciv.models.ruleset.nation.PersonalityValue
 import com.unciv.models.ruleset.tech.Technology
-import com.unciv.models.ruleset.tile.ResourceType
 import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.models.ruleset.unit.BaseUnit
-import com.unciv.models.stats.Stat
 import com.unciv.ui.screens.victoryscreen.RankingType
 import com.unciv.utils.randomWeighted
 import com.unciv.view.CivView
@@ -60,12 +57,14 @@ object NextTurnAutomation {
             // CvPlayerAI::AI_doTurnPostDiplomacy order: CvDiplomacyAI::DoTurn (war, demands, planning), then the contacts, the deals, the requests
             val relationshipsCanChange = !civView.ruleset.modOptions.hasUnique(UniqueType.DiplomaticRelationshipsCannotChange)
             if (relationshipsCanChange) timeThis("AI.DiplomacyActions") { DiplomacyAutomation.doTurn(civInfo) }
+            // CvDiplomacyAI::DoTurn: DoContactMinorCivs before DoContactMajorCivs
+            if (relationshipsCanChange) CityStateAi.contactMinorCivs(civInfo)
             if (civView.isReligionEnabled()) {
                 timeThis("AI.spendFaithOnReligion") { ReligionAutomation.spendFaithOnReligion(civInfo) }
             }
 
             if (relationshipsCanChange) DiplomacyAutomation.contactMajorCivs(civInfo)
-            timeThis("AI.exchangeLuxuries") { TradeAutomation.exchangeLuxuries(civInfo) }
+            if (relationshipsCanChange) TradeAutomation.doOffers(civInfo)
             if (relationshipsCanChange) {
                 DiplomacyAutomation.contactMajorCivsAfterOffers(civInfo)
                 DiplomacyAutomation.checkMilitaryPresenceNearBorder(civInfo)
@@ -87,10 +86,6 @@ object NextTurnAutomation {
         timeThis("AI.automateCityBombardment") { automateCityBombardment(civView) }
         if (tradeAndChangeState) timeThis("AI.considerAnnex") { CityConquestAutomation.considerAnnex(civInfo) }
         if (tradeAndChangeState) timeThis("AI.upgradeUnits") { UseGoldAutomation.plotUpgradeMoves(civInfo) }
-        if (tradeAndChangeState && !civView.isCityState) timeThis("AI.cityStates") {
-            protectCityStates(civView)
-            bullyCityStates(civView)
-        }
         val cache = AutomationCache()
         timeThis("AI.automateUnits") { automateUnits(civView, cache) }  // this is the most expensive part
 
@@ -164,98 +159,6 @@ object NextTurnAutomation {
         } else {
             diploManager.otherCivDiplomacy().setFlag(DiplomacyFlags.DeclinedDeclarationOfFriendship, 10)
             requestingCiv.addNotification("[${civView.civName}] has denied our Declaration of Friendship!", NotificationCategory.Diplomacy, NotificationIcon.Diplomacy, civView.civName)
-        }
-    }
-
-    @Readonly
-    internal fun valueCityStateAlliance(civView: CivView, cityState: Civilization, includeQuests: Boolean = false): Int {
-        val civInfo = civView.getCiv()
-        if (!cityState.isCityState) return 0
-        var value = 0
-
-        val bonuses = CityStateFunctions.getCityStateBonuses(cityState.cityStateType, RelationshipLevel.Ally).toList()
-        
-        // Optimized version of canProvideStat so we don't need to fetch bonuses multiple times
-        @Readonly fun canProvideStat(stat: Stat) = bonuses.any { it.stats[stat] > 0 }
-        
-        if (canProvideStat(Stat.Culture)) {
-            value += civView.getPersonalityValue(PersonalityValue.Culture).toInt() - 5
-        }
-        if (canProvideStat(Stat.Faith)) {
-            value += civView.getPersonalityValue(PersonalityValue.Faith).toInt() - 5
-        }
-        if (canProvideStat(Stat.Production)) {
-            value += civView.getPersonalityValue(PersonalityValue.Production).toInt() - 5
-        }
-        if (canProvideStat(Stat.Science)) {
-            // In case someone mods this in
-            value += civView.getPersonalityValue(PersonalityValue.Science).toInt() - 5
-        }
-        if (canProvideStat(Stat.Happiness)) {
-            if (civView.getHappiness() < 10)
-                value += 10 - civView.getHappiness()
-            value += civView.getPersonalityValue(PersonalityValue.Happiness).toInt() - 5
-        }
-        if (canProvideStat(Stat.Food)) {
-            value += 5
-            value += civView.getPersonalityValue(PersonalityValue.Food).toInt() - 5
-        }
-
-        if (!cityState.isAlive() || cityState.cities.isEmpty() || civView.cities().isEmpty())
-            return value
-
-        // The more we have invested into the city-state the more the alliance is worth
-        val ourInfluence = if (civInfo.knows(cityState))
-            cityState.getDiplomacyManager(civInfo)!!.getInfluence().toInt()
-        else 0
-        value += minOf(10, ourInfluence / 10) // don't let this spiral out of control
-
-        if (ourInfluence < 30) {
-            // Consider bullying for cash
-            value -= 5
-        }
-
-        if (cityState.allyCiv != null && cityState.allyCiv != civInfo) {
-            // easier not to compete if a third civ has this locked down
-            val thirdCivInfluence = cityState.getDiplomacyManager(cityState.allyCiv!!)!!.getInfluence().toInt()
-            value -= (thirdCivInfluence - 30) / 10
-        }
-
-        // Bonus for luxury resources we can get from them
-        value += cityState.detailedCivResources.count {
-            it.resource.resourceType == ResourceType.Luxury
-            && it.resource !in civInfo.detailedCivResources.map { supply -> supply.resource }
-        }
-
-        if (includeQuests) {
-            // Investing is better if there is an investment bonus quest active.
-            value += (cityState.questManager.getInvestmentMultiplier(civInfo) * 10).toInt() - 10
-        }
-
-        return value
-    }
-
-    private fun protectCityStates(civView: CivView) {
-        val civInfo = civView.getCiv()
-        for (state in civInfo.getKnownCivs().filter { !it.isDefeated() && it.isCityState }) {
-            if (state.cityStateFunctions.otherCivCanPledgeProtection(civInfo))
-                state.cityStateFunctions.addProtectorCiv(civInfo) 
-            //Always pledge to protect, as it makes it harder for others to demand tribute, and grants +10 resting Influence
-        }
-    }
-
-    private fun bullyCityStates(civView: CivView) {
-        val civInfo = civView.getCiv()
-        for (state in civInfo.getKnownCivs().filter { !it.isDefeated() && it.isCityState }.toList()) {
-            val diplomacyManager = state.getDiplomacyManager(civInfo)!!
-            if (!diplomacyManager.isRelationshipLevelLT(RelationshipLevel.Friend)) continue
-            if (diplomacyManager.diplomaticStatus != DiplomaticStatus.Peace) continue
-            if (valueCityStateAlliance(civView, state) > 0) continue
-            if (state.cityStateFunctions.getTributeWillingness(civInfo) < 0) continue
-            if (state.cityStateFunctions.getTributeWillingness(civInfo, demandingWorker = true) > 0)
-                state.cityStateFunctions.tributeWorker(civInfo)
-            else
-                state.cityStateFunctions.tributeGold(civInfo)
         }
     }
 
