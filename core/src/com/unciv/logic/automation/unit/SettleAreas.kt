@@ -4,6 +4,7 @@ import com.unciv.Constants
 import com.unciv.logic.GameInfo
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.civilization.Civilization
+import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
 import com.unciv.logic.map.MapType
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.mapunit.actions.UnitActionsFromUniques
@@ -431,6 +432,9 @@ private const val UNSET = Int.MIN_VALUE
  *  and kept for the rest of the turn, as in the original.
  */
 object SettleAreas {
+    /** The radius around the other civilization's cities that a no-settle promise blocks (CvDiplomacyAI::SetPlayerNoSettleRequestAccepted) */
+    private const val PROMISED_NO_SETTLE_RANGE = 6
+
     /** A player's found values of one turn: by [Tile.zeroBasedIndex], -1 for unrevealed plots; sum per continent of the values at least
      *  AI_STRATEGY_MINIMUM_SETTLE_FERTILITY (CvArea::getTotalFoundValue) */
     class FoundValues(val turn: Int, val values: IntArray, val areaTotals: Map<Int, Int>)
@@ -540,9 +544,24 @@ object SettleAreas {
         return false
     }
 
-    /** CvUnit::canFound: [unit] can found a city and the plot allows one (CvCitySiteEvaluator::CanFound via [Tile.canBeSettled]) */
+    /**
+     *  CvUnit::canFound: [unit] can found a city and the plot allows one (CvCitySiteEvaluator::CanFound via [Tile.canBeSettled]); and
+     *  CvPlayer::canFound's first test, the plot is not one the civilization agreed not to settle ([isPromisedNotToSettle])
+     */
     fun canFound(unit: MapUnit, tile: Tile): Boolean =
-        UnitActionsFromUniques.getFoundCityAction(unit, tile) != null && tile.canBeSettled(unit.civ)
+        UnitActionsFromUniques.getFoundCityAction(unit, tile) != null && tile.canBeSettled(unit.civ) && !isPromisedNotToSettle(unit.civ, tile)
+
+    /**
+     *  CvPlot::IsNoSettling as CvDiplomacyAI::SetPlayerNoSettleRequestAccepted sets it: [tile] is within 6 of a city of a civilization that
+     *  [civ] agreed not to settle near ([DiplomacyFlags.AgreedToNotSettleNearUs], which a war ends). Not for city-states or barbarians.
+     */
+    fun isPromisedNotToSettle(civ: Civilization, tile: Tile): Boolean {
+        if (!civ.isMajorCiv) return false
+        return civ.getKnownCivs().any { other ->
+            other.isMajorCiv && !civ.isAtWarWith(other) && other.getDiplomacyManager(civ)!!.hasFlag(DiplomacyFlags.AgreedToNotSettleNearUs) &&
+                other.cities.any { it.getCenterTile().aerialDistanceTo(tile) <= PROMISED_NO_SETTLE_RANGE }
+        }
+    }
 
     /**
      *  CvPlayer::GetBestSettlePlot: the best revealed plot in the world for [unit] to settle, unowned or ours, that it can found on,

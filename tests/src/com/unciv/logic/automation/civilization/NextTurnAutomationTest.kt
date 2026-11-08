@@ -7,6 +7,7 @@ import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.models.metadata.GameSettings.PathfindingAlgorithm
 import com.unciv.models.metadata.GameSettings.PathfindingAlgorithm.AStarPathfinding
+import com.unciv.models.ruleset.ai.PromotionAiDef
 import com.unciv.testing.TestGame
 import com.unciv.testing.TestRunnerFactory
 import org.junit.Assert.assertEquals
@@ -54,6 +55,8 @@ class NextTurnAutomationTest(private val algorithm: PathfindingAlgorithm) {
         val doom = testGame.createUnitPromotion("[This Unit] is destroyed")
         val lead = testGame.createUnitPromotion("[${victimBase.name}] units gain the [${doom.name}] promotion")
         lead.unitTypes = listOf("Civilian")
+        // The promotion AI takes only what the original rates: give Lead an extra attack (200)
+        testGame.ruleset.ai.promotionAi.add(PromotionAiDef().apply { name = lead.name; type = "PROMOTION_TEST_LEAD"; extraAttacks = 1 })
 
         val actor = testGame.addUnit(actorBase.name, civInfo, testGame.getTile(1, 0))
         val victim = testGame.addUnit(victimBase.name, civInfo, testGame.getTile(0, 1))

@@ -113,6 +113,13 @@ object WarStateAi {
         updateWarStates(civ, memory, rules)
     }
 
+    /** CvDiplomacyAI::DoFirstContactInitRelationship: DoUpdateOnePlayerMilitaryStrength then DoUpdateOnePlayerTargetValue for the new contact [other] */
+    fun updateOnContact(civ: Civilization, other: Civilization) {
+        val rules = civ.gameInfo.ruleset.ai
+        civ.ai.warStates.militaryStrengths[other.civID] = militaryStrengthOf(civ, other, rules)
+        civ.ai.warStates.targetValues[other.civID] = targetValueOf(civ, other, getPower(civ).coerceAtLeast(1), rules)
+    }
+
     //region CvDiplomacyAI::DoUpdateOnePlayerMilitaryStrength
 
     private fun militaryStrengthOf(civ: Civilization, other: Civilization, rules: AiRuleset): StrengthLevel {

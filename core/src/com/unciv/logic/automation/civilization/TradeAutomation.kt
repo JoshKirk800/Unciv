@@ -23,7 +23,8 @@ object TradeAutomation {
     /**
      *  The deals offered to an AI: from a human, CvDealAI::DoHumanOfferDealToThisAI (accepted when acceptable or a gift; otherwise a
      *  counteroffer balanced by CvDealAI::DoEqualizeDealWithHuman keeping what the human asked for, if there is one); from another AI
-     *  (Great Work swaps), the AI rule of [DealAi.isAcceptableBetweenAIs].
+     *  (Great Work swaps), the AI rule of [DealAi.isAcceptableBetweenAIs]; a demand of an AI ([TradeRequest.isDemand]) is always given in to,
+     *  as CvDiplomacyAI::DoSendStatementToPlayer does for an AI receiver.
      */
     fun respondToTradeRequests(civInfo: Civilization, tradeAndChangeState: Boolean) {
         for (tradeRequest in civInfo.tradeRequests.toList()) {
@@ -48,7 +49,7 @@ object TradeAutomation {
                     DealAi.onHumanDealAccepted(civInfo, otherCiv, tradeLogic.currentTrade, value)
                     true
                 } else false
-            } else DealAi.isAcceptableBetweenAIs(civInfo, otherCiv, tradeLogic.currentTrade)
+            } else tradeRequest.isDemand || DealAi.isAcceptableBetweenAIs(civInfo, otherCiv, tradeLogic.currentTrade)
             if (accepted) {
                 tradeLogic.acceptTrade()
                 otherCiv.addNotification("[${civInfo.civName}] has accepted your trade request", NotificationCategory.Trade, NotificationIcon.Trade, civInfo.civName)

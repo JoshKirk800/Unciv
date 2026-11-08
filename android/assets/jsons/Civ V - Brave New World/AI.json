@@ -7808,6 +7808,10 @@
     {
       "name": "Bowman",
       "defaultUnitAi": "UNITAI_RANGED",
+      "combatClass": "UNITCOMBAT_ARCHER",
+      "freePromotions": [
+        "PROMOTION_SMALL_CITY_PENALTY"
+      ],
       "unitAiTypes": [
         "UNITAI_RANGED"
       ]
@@ -7815,6 +7819,11 @@
     {
       "name": "Keshik",
       "defaultUnitAi": "UNITAI_RANGED",
+      "combatClass": "UNITCOMBAT_ARCHER",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING"
+      ],
       "unitAiTypes": [
         "UNITAI_RANGED",
         "UNITAI_DEFENSE",
@@ -7824,6 +7833,9 @@
     {
       "name": "Khan",
       "defaultUnitAi": "UNITAI_GENERAL",
+      "freePromotions": [
+        "PROMOTION_MEDIC_GENERAL"
+      ],
       "unitAiTypes": [
         "UNITAI_GENERAL"
       ]
@@ -7831,6 +7843,8 @@
     {
       "name": "Slinger",
       "defaultUnitAi": "UNITAI_RANGED",
+      "combatClass": "UNITCOMBAT_ARCHER",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_RANGED"
       ]
@@ -7838,6 +7852,10 @@
     {
       "name": "Tercio",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [
+        "PROMOTION_ANTI_MOUNTED_I"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_COUNTER",
@@ -7847,6 +7865,12 @@
     {
       "name": "Conquistador",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_MOUNTED",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING",
+        "PROMOTION_EXTRA_SIGHT_II"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -7856,6 +7880,8 @@
     {
       "name": "Maori Warrior",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -7865,6 +7891,10 @@
     {
       "name": "Berserker",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [
+        "PROMOTION_AMPHIBIOUS"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE"
@@ -7873,6 +7903,10 @@
     {
       "name": "Norwegian Ski Infantry",
       "defaultUnitAi": "UNITAI_DEFENSE",
+      "combatClass": "UNITCOMBAT_GUN",
+      "freePromotions": [
+        "PROMOTION_SKI_INFANTRY"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -7882,6 +7916,8 @@
     {
       "name": "Turtle Ship",
       "defaultUnitAi": "UNITAI_ATTACK_SEA",
+      "combatClass": "UNITCOMBAT_NAVAL",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK_SEA",
         "UNITAI_RESERVE_SEA",
@@ -7891,6 +7927,11 @@
     {
       "name": "Hwach'a",
       "defaultUnitAi": "UNITAI_RANGED",
+      "combatClass": "UNITCOMBAT_SIEGE",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_SMALL_CITY_PENALTY"
+      ],
       "unitAiTypes": [
         "UNITAI_RANGED"
       ]
@@ -7899,6 +7940,7 @@
       "name": "Settler",
       "defaultUnitAi": "UNITAI_SETTLE",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH_EARLY_GAME_ONLY",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_SETTLE"
       ]
@@ -7907,6 +7949,7 @@
       "name": "Worker",
       "defaultUnitAi": "UNITAI_WORKER",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_LOW",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_WORKER"
       ]
@@ -7915,6 +7958,7 @@
       "name": "Work Boats",
       "defaultUnitAi": "UNITAI_WORKER_SEA",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_LOW",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_WORKER_SEA"
       ]
@@ -7923,6 +7967,7 @@
       "name": "Great Artist",
       "defaultUnitAi": "UNITAI_ARTIST",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ARTIST"
       ]
@@ -7931,6 +7976,7 @@
       "name": "Great Scientist",
       "defaultUnitAi": "UNITAI_SCIENTIST",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_SCIENTIST"
       ]
@@ -7939,6 +7985,7 @@
       "name": "Great Merchant",
       "defaultUnitAi": "UNITAI_MERCHANT",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_MERCHANT"
       ]
@@ -7947,6 +7994,7 @@
       "name": "Great Engineer",
       "defaultUnitAi": "UNITAI_ENGINEER",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ENGINEER"
       ]
@@ -7955,6 +8003,7 @@
       "name": "Great General",
       "defaultUnitAi": "UNITAI_GENERAL",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_GENERAL"
       ]
@@ -7963,6 +8012,7 @@
       "name": "SS Stasis Chamber",
       "defaultUnitAi": "UNITAI_SPACESHIP_PART",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_SPACESHIP_PART"
       ]
@@ -7971,6 +8021,7 @@
       "name": "SS Engine",
       "defaultUnitAi": "UNITAI_SPACESHIP_PART",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_SPACESHIP_PART"
       ]
@@ -7979,6 +8030,7 @@
       "name": "SS Cockpit",
       "defaultUnitAi": "UNITAI_SPACESHIP_PART",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_SPACESHIP_PART"
       ]
@@ -7987,6 +8039,7 @@
       "name": "SS Booster",
       "defaultUnitAi": "UNITAI_SPACESHIP_PART",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_SPACESHIP_PART"
       ]
@@ -7994,6 +8047,8 @@
     {
       "name": "Missile Cruiser",
       "defaultUnitAi": "UNITAI_ASSAULT_SEA",
+      "combatClass": "UNITCOMBAT_NAVALRANGED",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ASSAULT_SEA",
         "UNITAI_RESERVE_SEA",
@@ -8004,6 +8059,10 @@
     {
       "name": "Nuclear Submarine",
       "defaultUnitAi": "UNITAI_ASSAULT_SEA",
+      "combatClass": "UNITCOMBAT_SUBMARINE",
+      "freePromotions": [
+        "PROMOTION_EXTRA_SIGHT_I"
+      ],
       "unitAiTypes": [
         "UNITAI_ASSAULT_SEA",
         "UNITAI_RESERVE_SEA",
@@ -8014,6 +8073,8 @@
     {
       "name": "Carrier",
       "defaultUnitAi": "UNITAI_CARRIER_SEA",
+      "combatClass": "UNITCOMBAT_CARRIER",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_CARRIER_SEA"
       ]
@@ -8021,6 +8082,10 @@
     {
       "name": "Battleship",
       "defaultUnitAi": "UNITAI_ASSAULT_SEA",
+      "combatClass": "UNITCOMBAT_NAVALRANGED",
+      "freePromotions": [
+        "PROMOTION_INDIRECT_FIRE"
+      ],
       "unitAiTypes": [
         "UNITAI_ASSAULT_SEA",
         "UNITAI_RESERVE_SEA",
@@ -8030,6 +8095,8 @@
     {
       "name": "Submarine",
       "defaultUnitAi": "UNITAI_ASSAULT_SEA",
+      "combatClass": "UNITCOMBAT_SUBMARINE",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ASSAULT_SEA",
         "UNITAI_RESERVE_SEA",
@@ -8039,6 +8106,8 @@
     {
       "name": "Destroyer",
       "defaultUnitAi": "UNITAI_ATTACK_SEA",
+      "combatClass": "UNITCOMBAT_NAVALMELEE",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK_SEA",
         "UNITAI_RESERVE_SEA",
@@ -8049,6 +8118,11 @@
     {
       "name": "Ironclad",
       "defaultUnitAi": "UNITAI_ATTACK_SEA",
+      "combatClass": "UNITCOMBAT_NAVALMELEE",
+      "freePromotions": [
+        "PROMOTION_STEAM_POWERED",
+        "PROMOTION_FIRE_SUPPORT"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK_SEA",
         "UNITAI_RESERVE_SEA",
@@ -8058,6 +8132,8 @@
     {
       "name": "Frigate",
       "defaultUnitAi": "UNITAI_ASSAULT_SEA",
+      "combatClass": "UNITCOMBAT_NAVALRANGED",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ASSAULT_SEA",
         "UNITAI_RESERVE_SEA",
@@ -8067,6 +8143,10 @@
     {
       "name": "Ship of the Line",
       "defaultUnitAi": "UNITAI_ASSAULT_SEA",
+      "combatClass": "UNITCOMBAT_NAVALRANGED",
+      "freePromotions": [
+        "PROMOTION_EXTRA_SIGHT_I"
+      ],
       "unitAiTypes": [
         "UNITAI_ASSAULT_SEA",
         "UNITAI_RESERVE_SEA",
@@ -8076,6 +8156,10 @@
     {
       "name": "Caravel",
       "defaultUnitAi": "UNITAI_EXPLORE_SEA",
+      "combatClass": "UNITCOMBAT_NAVALMELEE",
+      "freePromotions": [
+        "PROMOTION_EXTRA_SIGHT_I"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK_SEA",
         "UNITAI_RESERVE_SEA",
@@ -8086,6 +8170,8 @@
     {
       "name": "Trireme",
       "defaultUnitAi": "UNITAI_ATTACK_SEA",
+      "combatClass": "UNITCOMBAT_NAVALMELEE",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK_SEA",
         "UNITAI_RESERVE_SEA",
@@ -8096,6 +8182,11 @@
     {
       "name": "Giant Death Robot",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_ARMOR",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_FAST_ATTACK"
@@ -8104,6 +8195,7 @@
     {
       "name": "Nuclear Missile",
       "defaultUnitAi": "UNITAI_ICBM",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ICBM"
       ]
@@ -8111,6 +8203,8 @@
     {
       "name": "Stealth Bomber",
       "defaultUnitAi": "UNITAI_ATTACK_AIR",
+      "combatClass": "UNITCOMBAT_BOMBER",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK_AIR"
       ]
@@ -8118,6 +8212,11 @@
     {
       "name": "Jet Fighter",
       "defaultUnitAi": "UNITAI_DEFENSE_AIR",
+      "combatClass": "UNITCOMBAT_FIGHTER",
+      "freePromotions": [
+        "PROMOTION_AIR_SWEEP",
+        "PROMOTION_ANTI_AIR_II"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE_AIR",
         "UNITAI_CARRIER_AIR"
@@ -8126,6 +8225,7 @@
     {
       "name": "Guided Missile",
       "defaultUnitAi": "UNITAI_MISSILE_AIR",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_MISSILE_AIR"
       ]
@@ -8133,6 +8233,11 @@
     {
       "name": "Modern Armor",
       "defaultUnitAi": "UNITAI_FAST_ATTACK",
+      "combatClass": "UNITCOMBAT_ARMOR",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_FAST_ATTACK"
@@ -8141,6 +8246,11 @@
     {
       "name": "Helicopter Gunship",
       "defaultUnitAi": "UNITAI_FAST_ATTACK",
+      "combatClass": "UNITCOMBAT_HELICOPTER",
+      "freePromotions": [
+        "PROMOTION_ANTI_TANK",
+        "PROMOTION_NO_DEFENSIVE_BONUSES"
+      ],
       "unitAiTypes": [
         "UNITAI_FAST_ATTACK"
       ]
@@ -8148,6 +8258,10 @@
     {
       "name": "Mobile SAM",
       "defaultUnitAi": "UNITAI_COUNTER",
+      "combatClass": "UNITCOMBAT_GUN",
+      "freePromotions": [
+        "PROMOTION_ANTI_AIR"
+      ],
       "unitAiTypes": [
         "UNITAI_COUNTER",
         "UNITAI_CITY_SPECIAL"
@@ -8156,6 +8270,13 @@
     {
       "name": "Rocket Artillery",
       "defaultUnitAi": "UNITAI_CITY_BOMBARD",
+      "combatClass": "UNITCOMBAT_SIEGE",
+      "freePromotions": [
+        "PROMOTION_INDIRECT_FIRE",
+        "PROMOTION_CITY_SIEGE",
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_SIGHT_PENALTY"
+      ],
       "unitAiTypes": [
         "UNITAI_CITY_BOMBARD",
         "UNITAI_RANGED"
@@ -8164,6 +8285,8 @@
     {
       "name": "Mechanized Infantry",
       "defaultUnitAi": "UNITAI_DEFENSE",
+      "combatClass": "UNITCOMBAT_GUN",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8174,6 +8297,7 @@
     {
       "name": "Atomic Bomb",
       "defaultUnitAi": "UNITAI_ICBM",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ICBM"
       ]
@@ -8181,6 +8305,8 @@
     {
       "name": "Bomber",
       "defaultUnitAi": "UNITAI_ATTACK_AIR",
+      "combatClass": "UNITCOMBAT_BOMBER",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK_AIR"
       ]
@@ -8188,6 +8314,11 @@
     {
       "name": "B17",
       "defaultUnitAi": "UNITAI_ATTACK_AIR",
+      "combatClass": "UNITCOMBAT_BOMBER",
+      "freePromotions": [
+        "PROMOTION_EVASION",
+        "PROMOTION_AIR_SIEGE_1"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK_AIR"
       ]
@@ -8195,6 +8326,11 @@
     {
       "name": "Fighter",
       "defaultUnitAi": "UNITAI_DEFENSE_AIR",
+      "combatClass": "UNITCOMBAT_FIGHTER",
+      "freePromotions": [
+        "PROMOTION_AIR_SWEEP",
+        "PROMOTION_ANTI_AIR_II"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE_AIR",
         "UNITAI_CARRIER_AIR"
@@ -8203,6 +8339,11 @@
     {
       "name": "Zero",
       "defaultUnitAi": "UNITAI_DEFENSE_AIR",
+      "combatClass": "UNITCOMBAT_FIGHTER",
+      "freePromotions": [
+        "PROMOTION_AIR_SWEEP",
+        "PROMOTION_ANTI_AIR_II"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE_AIR",
         "UNITAI_CARRIER_AIR"
@@ -8211,6 +8352,8 @@
     {
       "name": "Paratrooper",
       "defaultUnitAi": "UNITAI_PARADROP",
+      "combatClass": "UNITCOMBAT_GUN",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_PARADROP"
       ]
@@ -8218,6 +8361,11 @@
     {
       "name": "Tank",
       "defaultUnitAi": "UNITAI_FAST_ATTACK",
+      "combatClass": "UNITCOMBAT_ARMOR",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_FAST_ATTACK"
@@ -8226,6 +8374,11 @@
     {
       "name": "Panzer",
       "defaultUnitAi": "UNITAI_FAST_ATTACK",
+      "combatClass": "UNITCOMBAT_ARMOR",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_FAST_ATTACK"
@@ -8234,6 +8387,13 @@
     {
       "name": "Artillery",
       "defaultUnitAi": "UNITAI_CITY_BOMBARD",
+      "combatClass": "UNITCOMBAT_SIEGE",
+      "freePromotions": [
+        "PROMOTION_INDIRECT_FIRE",
+        "PROMOTION_CITY_SIEGE",
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_SIGHT_PENALTY"
+      ],
       "unitAiTypes": [
         "UNITAI_CITY_BOMBARD",
         "UNITAI_RANGED"
@@ -8242,6 +8402,10 @@
     {
       "name": "Anti-Aircraft Gun",
       "defaultUnitAi": "UNITAI_COUNTER",
+      "combatClass": "UNITCOMBAT_GUN",
+      "freePromotions": [
+        "PROMOTION_ANTI_AIR"
+      ],
       "unitAiTypes": [
         "UNITAI_COUNTER",
         "UNITAI_CITY_SPECIAL"
@@ -8250,6 +8414,10 @@
     {
       "name": "Anti-Tank Gun",
       "defaultUnitAi": "UNITAI_COUNTER",
+      "combatClass": "UNITCOMBAT_GUN",
+      "freePromotions": [
+        "PROMOTION_ANTI_TANK"
+      ],
       "unitAiTypes": [
         "UNITAI_COUNTER",
         "UNITAI_DEFENSE"
@@ -8258,6 +8426,8 @@
     {
       "name": "Infantry",
       "defaultUnitAi": "UNITAI_DEFENSE",
+      "combatClass": "UNITCOMBAT_GUN",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8267,6 +8437,8 @@
     {
       "name": "Foreign Legion",
       "defaultUnitAi": "UNITAI_DEFENSE",
+      "combatClass": "UNITCOMBAT_GUN",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8276,6 +8448,12 @@
     {
       "name": "Cavalry",
       "defaultUnitAi": "UNITAI_FAST_ATTACK",
+      "combatClass": "UNITCOMBAT_MOUNTED",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING",
+        "PROMOTION_CITY_PENALTY"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_FAST_ATTACK"
@@ -8284,6 +8462,13 @@
     {
       "name": "Cossack",
       "defaultUnitAi": "UNITAI_FAST_ATTACK",
+      "combatClass": "UNITCOMBAT_MOUNTED",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING",
+        "PROMOTION_STRONGER_VS_DAMAGED",
+        "PROMOTION_CITY_PENALTY"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_FAST_ATTACK"
@@ -8292,6 +8477,8 @@
     {
       "name": "Rifleman",
       "defaultUnitAi": "UNITAI_DEFENSE",
+      "combatClass": "UNITCOMBAT_GUN",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8301,6 +8488,13 @@
     {
       "name": "Lancer",
       "defaultUnitAi": "UNITAI_FAST_ATTACK",
+      "combatClass": "UNITCOMBAT_MOUNTED",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING",
+        "PROMOTION_CITY_PENALTY",
+        "PROMOTION_FORMATION_1"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_FAST_ATTACK"
@@ -8309,6 +8503,14 @@
     {
       "name": "Sipahi",
       "defaultUnitAi": "UNITAI_FAST_ATTACK",
+      "combatClass": "UNITCOMBAT_MOUNTED",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_EXTRA_SIGHT_I",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING",
+        "PROMOTION_CITY_PENALTY",
+        "PROMOTION_FORMATION_1"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_FAST_ATTACK"
@@ -8317,6 +8519,12 @@
     {
       "name": "Cannon",
       "defaultUnitAi": "UNITAI_CITY_BOMBARD",
+      "combatClass": "UNITCOMBAT_SIEGE",
+      "freePromotions": [
+        "PROMOTION_CITY_SIEGE",
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_SIGHT_PENALTY"
+      ],
       "unitAiTypes": [
         "UNITAI_CITY_BOMBARD",
         "UNITAI_RANGED"
@@ -8325,6 +8533,8 @@
     {
       "name": "Musketman",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_GUN",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8334,6 +8544,10 @@
     {
       "name": "Minuteman",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_GUN",
+      "freePromotions": [
+        "PROMOTION_DRILL_1"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8343,6 +8557,8 @@
     {
       "name": "Musketeer",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_GUN",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8352,6 +8568,8 @@
     {
       "name": "Janissary",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_GUN",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8361,6 +8579,8 @@
     {
       "name": "Longswordsman",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE"
@@ -8369,6 +8589,10 @@
     {
       "name": "Samurai",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [
+        "PROMOTION_SHOCK_1"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8378,6 +8602,12 @@
     {
       "name": "Trebuchet",
       "defaultUnitAi": "UNITAI_CITY_BOMBARD",
+      "combatClass": "UNITCOMBAT_SIEGE",
+      "freePromotions": [
+        "PROMOTION_CITY_SIEGE",
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_SIGHT_PENALTY"
+      ],
       "unitAiTypes": [
         "UNITAI_CITY_BOMBARD",
         "UNITAI_RANGED"
@@ -8386,6 +8616,12 @@
     {
       "name": "Knight",
       "defaultUnitAi": "UNITAI_FAST_ATTACK",
+      "combatClass": "UNITCOMBAT_MOUNTED",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING",
+        "PROMOTION_CITY_PENALTY"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_FAST_ATTACK"
@@ -8394,6 +8630,11 @@
     {
       "name": "Camel Archer",
       "defaultUnitAi": "UNITAI_RANGED",
+      "combatClass": "UNITCOMBAT_ARCHER",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING"
+      ],
       "unitAiTypes": [
         "UNITAI_RANGED",
         "UNITAI_FAST_ATTACK"
@@ -8402,6 +8643,13 @@
     {
       "name": "Naresuan's Elephant",
       "defaultUnitAi": "UNITAI_FAST_ATTACK",
+      "combatClass": "UNITCOMBAT_MOUNTED",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_ANTI_MOUNTED_I",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING",
+        "PROMOTION_CITY_PENALTY"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_FAST_ATTACK"
@@ -8410,6 +8658,11 @@
     {
       "name": "Mandekalu Cavalry",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_MOUNTED",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8419,6 +8672,8 @@
     {
       "name": "Crossbowman",
       "defaultUnitAi": "UNITAI_RANGED",
+      "combatClass": "UNITCOMBAT_ARCHER",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_RANGED"
       ]
@@ -8426,6 +8681,10 @@
     {
       "name": "Chu-Ko-Nu",
       "defaultUnitAi": "UNITAI_RANGED",
+      "combatClass": "UNITCOMBAT_ARCHER",
+      "freePromotions": [
+        "PROMOTION_SECOND_ATTACK"
+      ],
       "unitAiTypes": [
         "UNITAI_RANGED"
       ]
@@ -8433,6 +8692,10 @@
     {
       "name": "Longbowman",
       "defaultUnitAi": "UNITAI_RANGED",
+      "combatClass": "UNITCOMBAT_ARCHER",
+      "freePromotions": [
+        "PROMOTION_RANGE"
+      ],
       "unitAiTypes": [
         "UNITAI_RANGED"
       ]
@@ -8440,6 +8703,10 @@
     {
       "name": "Pikeman",
       "defaultUnitAi": "UNITAI_COUNTER",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [
+        "PROMOTION_ANTI_MOUNTED_I"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8450,6 +8717,10 @@
     {
       "name": "Landsknecht",
       "defaultUnitAi": "UNITAI_COUNTER",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [
+        "PROMOTION_ANTI_MOUNTED_I"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8460,6 +8731,12 @@
     {
       "name": "Catapult",
       "defaultUnitAi": "UNITAI_CITY_BOMBARD",
+      "combatClass": "UNITCOMBAT_SIEGE",
+      "freePromotions": [
+        "PROMOTION_CITY_SIEGE",
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_SIGHT_PENALTY"
+      ],
       "unitAiTypes": [
         "UNITAI_CITY_BOMBARD",
         "UNITAI_RANGED"
@@ -8468,6 +8745,12 @@
     {
       "name": "Ballista",
       "defaultUnitAi": "UNITAI_CITY_BOMBARD",
+      "combatClass": "UNITCOMBAT_SIEGE",
+      "freePromotions": [
+        "PROMOTION_CITY_SIEGE",
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_SIGHT_PENALTY"
+      ],
       "unitAiTypes": [
         "UNITAI_CITY_BOMBARD",
         "UNITAI_RANGED"
@@ -8476,6 +8759,12 @@
     {
       "name": "Horseman",
       "defaultUnitAi": "UNITAI_FAST_ATTACK",
+      "combatClass": "UNITCOMBAT_MOUNTED",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING",
+        "PROMOTION_CITY_PENALTY"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_FAST_ATTACK"
@@ -8484,6 +8773,12 @@
     {
       "name": "Companion Cavalry",
       "defaultUnitAi": "UNITAI_FAST_ATTACK",
+      "combatClass": "UNITCOMBAT_MOUNTED",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING",
+        "PROMOTION_CITY_PENALTY"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_FAST_ATTACK"
@@ -8492,6 +8787,8 @@
     {
       "name": "Swordsman",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE"
@@ -8500,6 +8797,10 @@
     {
       "name": "Mohawk Warrior",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [
+        "PROMOTION_MOHAWK"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE"
@@ -8508,6 +8809,8 @@
     {
       "name": "Legion",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8517,6 +8820,10 @@
     {
       "name": "Chariot Archer",
       "defaultUnitAi": "UNITAI_RANGED",
+      "combatClass": "UNITCOMBAT_ARCHER",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES"
+      ],
       "unitAiTypes": [
         "UNITAI_RANGED"
       ]
@@ -8524,6 +8831,10 @@
     {
       "name": "War Chariot",
       "defaultUnitAi": "UNITAI_RANGED",
+      "combatClass": "UNITCOMBAT_ARCHER",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES"
+      ],
       "unitAiTypes": [
         "UNITAI_RANGED"
       ]
@@ -8531,6 +8842,10 @@
     {
       "name": "War Elephant",
       "defaultUnitAi": "UNITAI_RANGED",
+      "combatClass": "UNITCOMBAT_ARCHER",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES"
+      ],
       "unitAiTypes": [
         "UNITAI_RANGED"
       ]
@@ -8538,6 +8853,10 @@
     {
       "name": "Spearman",
       "defaultUnitAi": "UNITAI_COUNTER",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [
+        "PROMOTION_ANTI_MOUNTED_I"
+      ],
       "unitAiTypes": [
         "UNITAI_COUNTER",
         "UNITAI_DEFENSE",
@@ -8547,6 +8866,10 @@
     {
       "name": "Hoplite",
       "defaultUnitAi": "UNITAI_COUNTER",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [
+        "PROMOTION_ANTI_MOUNTED_I"
+      ],
       "unitAiTypes": [
         "UNITAI_COUNTER",
         "UNITAI_ATTACK",
@@ -8557,6 +8880,11 @@
     {
       "name": "Persian Immortal",
       "defaultUnitAi": "UNITAI_COUNTER",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [
+        "PROMOTION_ANTI_MOUNTED_I",
+        "PROMOTION_FASTER_HEAL"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_COUNTER",
@@ -8567,6 +8895,8 @@
     {
       "name": "Archer",
       "defaultUnitAi": "UNITAI_RANGED",
+      "combatClass": "UNITCOMBAT_ARCHER",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_RANGED"
       ]
@@ -8574,6 +8904,8 @@
     {
       "name": "Scout",
       "defaultUnitAi": "UNITAI_EXPLORE",
+      "combatClass": "UNITCOMBAT_RECON",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_EXPLORE"
       ]
@@ -8581,6 +8913,8 @@
     {
       "name": "Warrior",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8590,6 +8924,11 @@
     {
       "name": "Jaguar",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [
+        "PROMOTION_JAGUAR",
+        "PROMOTION_WOODSMAN"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8599,11 +8938,15 @@
     {
       "name": "Brute",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [],
       "unitAiTypes": []
     },
     {
       "name": "Galley",
       "defaultUnitAi": "UNITAI_ATTACK_SEA",
+      "combatClass": "UNITCOMBAT_NAVALMELEE",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK_SEA",
         "UNITAI_RESERVE_SEA",
@@ -8615,6 +8958,9 @@
       "name": "Great Prophet",
       "defaultUnitAi": "UNITAI_PROPHET",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
+      "freePromotions": [
+        "PROMOTION_SIGHT_PENALTY"
+      ],
       "unitAiTypes": [
         "UNITAI_PROPHET"
       ]
@@ -8622,6 +8968,8 @@
     {
       "name": "Pictish Warrior",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8631,6 +8979,8 @@
     {
       "name": "Atlatlist",
       "defaultUnitAi": "UNITAI_RANGED",
+      "combatClass": "UNITCOMBAT_ARCHER",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_RANGED"
       ]
@@ -8638,6 +8988,10 @@
     {
       "name": "Dromon",
       "defaultUnitAi": "UNITAI_ASSAULT_SEA",
+      "combatClass": "UNITCOMBAT_NAVALRANGED",
+      "freePromotions": [
+        "PROMOTION_NAVAL_BONUS"
+      ],
       "unitAiTypes": [
         "UNITAI_ASSAULT_SEA",
         "UNITAI_RESERVE_SEA",
@@ -8648,6 +9002,11 @@
     {
       "name": "Cataphract",
       "defaultUnitAi": "UNITAI_FAST_ATTACK",
+      "combatClass": "UNITCOMBAT_MOUNTED",
+      "freePromotions": [
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING",
+        "PROMOTION_SMALL_CITY_PENALTY"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_FAST_ATTACK"
@@ -8656,6 +9015,12 @@
     {
       "name": "African Forest Elephant",
       "defaultUnitAi": "UNITAI_FAST_ATTACK",
+      "combatClass": "UNITCOMBAT_MOUNTED",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING",
+        "PROMOTION_CITY_PENALTY"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_FAST_ATTACK"
@@ -8664,6 +9029,8 @@
     {
       "name": "Quinquereme",
       "defaultUnitAi": "UNITAI_ATTACK_SEA",
+      "combatClass": "UNITCOMBAT_NAVALMELEE",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK_SEA",
         "UNITAI_RESERVE_SEA",
@@ -8674,6 +9041,11 @@
     {
       "name": "Horse Archer",
       "defaultUnitAi": "UNITAI_RANGED",
+      "combatClass": "UNITCOMBAT_ARCHER",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_ACCURACY_1"
+      ],
       "unitAiTypes": [
         "UNITAI_RANGED"
       ]
@@ -8681,6 +9053,14 @@
     {
       "name": "Hussar",
       "defaultUnitAi": "UNITAI_FAST_ATTACK",
+      "combatClass": "UNITCOMBAT_MOUNTED",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING",
+        "PROMOTION_CITY_PENALTY",
+        "PROMOTION_EXTRA_SIGHT_I",
+        "PROMOTION_FLANK_ATTACK_BONUS"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_FAST_ATTACK"
@@ -8689,6 +9069,10 @@
     {
       "name": "Mehal Sefari",
       "defaultUnitAi": "UNITAI_DEFENSE",
+      "combatClass": "UNITCOMBAT_GUN",
+      "freePromotions": [
+        "PROMOTION_DRILL_1"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8699,6 +9083,9 @@
       "name": "Missionary",
       "defaultUnitAi": "UNITAI_MISSIONARY",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_LOW",
+      "freePromotions": [
+        "PROMOTION_SIGHT_PENALTY"
+      ],
       "unitAiTypes": [
         "UNITAI_MISSIONARY"
       ]
@@ -8706,6 +9093,8 @@
     {
       "name": "Composite Bowman",
       "defaultUnitAi": "UNITAI_RANGED",
+      "combatClass": "UNITCOMBAT_ARCHER",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_RANGED"
       ]
@@ -8713,6 +9102,8 @@
     {
       "name": "Galleass",
       "defaultUnitAi": "UNITAI_ASSAULT_SEA",
+      "combatClass": "UNITCOMBAT_NAVALRANGED",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ASSAULT_SEA",
         "UNITAI_RESERVE_SEA",
@@ -8723,6 +9114,8 @@
     {
       "name": "Great War Infantry",
       "defaultUnitAi": "UNITAI_DEFENSE",
+      "combatClass": "UNITCOMBAT_GUN",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8732,6 +9125,10 @@
     {
       "name": "Marine",
       "defaultUnitAi": "UNITAI_DEFENSE",
+      "combatClass": "UNITCOMBAT_GUN",
+      "freePromotions": [
+        "PROMOTION_AMPHIBIOUS"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8741,6 +9138,11 @@
     {
       "name": "Triplane",
       "defaultUnitAi": "UNITAI_DEFENSE_AIR",
+      "combatClass": "UNITCOMBAT_FIGHTER",
+      "freePromotions": [
+        "PROMOTION_AIR_SWEEP",
+        "PROMOTION_ANTI_AIR_II"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE_AIR",
         "UNITAI_CARRIER_AIR"
@@ -8749,6 +9151,8 @@
     {
       "name": "Great War Bomber",
       "defaultUnitAi": "UNITAI_ATTACK_AIR",
+      "combatClass": "UNITCOMBAT_BOMBER",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK_AIR"
       ]
@@ -8756,6 +9160,11 @@
     {
       "name": "Landship",
       "defaultUnitAi": "UNITAI_DEFENSE",
+      "combatClass": "UNITCOMBAT_ARMOR",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_FAST_ATTACK"
@@ -8764,6 +9173,8 @@
     {
       "name": "Machine Gun",
       "defaultUnitAi": "UNITAI_DEFENSE",
+      "combatClass": "UNITCOMBAT_ARCHER",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_RANGED"
       ]
@@ -8771,6 +9182,10 @@
     {
       "name": "Carolean",
       "defaultUnitAi": "UNITAI_DEFENSE",
+      "combatClass": "UNITCOMBAT_GUN",
+      "freePromotions": [
+        "PROMOTION_MARCH"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8780,6 +9195,13 @@
     {
       "name": "Hakkapeliitta",
       "defaultUnitAi": "UNITAI_FAST_ATTACK",
+      "combatClass": "UNITCOMBAT_MOUNTED",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING",
+        "PROMOTION_CITY_PENALTY",
+        "PROMOTION_FORMATION_1"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_FAST_ATTACK"
@@ -8788,6 +9210,14 @@
     {
       "name": "Battering Ram",
       "defaultUnitAi": "UNITAI_CITY_BOMBARD",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [
+        "PROMOTION_CITY_ASSAULT",
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_DEFENSE_PENALTY",
+        "PROMOTION_SIGHT_PENALTY",
+        "PROMOTION_COVER_1"
+      ],
       "unitAiTypes": [
         "UNITAI_CITY_BOMBARD"
       ]
@@ -8795,6 +9225,10 @@
     {
       "name": "Privateer",
       "defaultUnitAi": "UNITAI_PIRATE_SEA",
+      "combatClass": "UNITCOMBAT_NAVALMELEE",
+      "freePromotions": [
+        "PROMOTION_COASTAL_RAIDER_1"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK_SEA",
         "UNITAI_RESERVE_SEA",
@@ -8806,6 +9240,12 @@
     {
       "name": "Sea Beggar",
       "defaultUnitAi": "UNITAI_PIRATE_SEA",
+      "combatClass": "UNITCOMBAT_NAVALMELEE",
+      "freePromotions": [
+        "PROMOTION_COASTAL_RAIDER_1",
+        "PROMOTION_COASTAL_RAIDER_2",
+        "PROMOTION_SUPPLY"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK_SEA",
         "UNITAI_RESERVE_SEA",
@@ -8818,6 +9258,9 @@
       "name": "Inquisitor",
       "defaultUnitAi": "UNITAI_INQUISITOR",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_LOW",
+      "freePromotions": [
+        "PROMOTION_EXTRA_SIGHT_I"
+      ],
       "unitAiTypes": [
         "UNITAI_INQUISITOR"
       ]
@@ -8826,6 +9269,7 @@
       "name": "Great Admiral",
       "defaultUnitAi": "UNITAI_ADMIRAL",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ADMIRAL"
       ]
@@ -8833,11 +9277,18 @@
     {
       "name": "Gatling Gun",
       "defaultUnitAi": "UNITAI_RANGED",
+      "combatClass": "UNITCOMBAT_ARCHER",
+      "freePromotions": [],
       "unitAiTypes": []
     },
     {
       "name": "Impi",
       "defaultUnitAi": "UNITAI_COUNTER",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [
+        "PROMOTION_ANTI_MOUNTED_I",
+        "PROMOTION_ANTI_GUNPOWDER"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8849,6 +9300,7 @@
       "name": "Merchant of Venice",
       "defaultUnitAi": "UNITAI_MERCHANT",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_MERCHANT"
       ]
@@ -8856,6 +9308,14 @@
     {
       "name": "Winged Hussar",
       "defaultUnitAi": "UNITAI_FAST_ATTACK",
+      "combatClass": "UNITCOMBAT_MOUNTED",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING",
+        "PROMOTION_CITY_PENALTY",
+        "PROMOTION_SHOCK_1",
+        "PROMOTION_FORMATION_1"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_ATTACK",
@@ -8866,18 +9326,25 @@
       "name": "Cargo Ship",
       "defaultUnitAi": "UNITAI_TRADE_UNIT",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_LOW",
+      "freePromotions": [
+        "PROMOTION_SIGHT_PENALTY"
+      ],
       "unitAiTypes": []
     },
     {
       "name": "Caravan",
       "defaultUnitAi": "UNITAI_TRADE_UNIT",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_LOW",
+      "freePromotions": [
+        "PROMOTION_SIGHT_PENALTY"
+      ],
       "unitAiTypes": []
     },
     {
       "name": "Great Writer",
       "defaultUnitAi": "UNITAI_WRITER",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_WRITER"
       ]
@@ -8886,6 +9353,7 @@
       "name": "Great Musician",
       "defaultUnitAi": "UNITAI_MUSICIAN",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_MUSICIAN"
       ]
@@ -8894,6 +9362,7 @@
       "name": "Archaeologist",
       "defaultUnitAi": "UNITAI_ARCHAEOLOGIST",
       "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_LOW",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ARCHAEOLOGIST"
       ]
@@ -8901,6 +9370,13 @@
     {
       "name": "Siege Tower",
       "defaultUnitAi": "UNITAI_CITY_BOMBARD",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [
+        "PROMOTION_CITY_SIEGE",
+        "PROMOTION_COVER_1",
+        "PROMOTION_EXTRA_SIGHT_I",
+        "PROMOTION_NO_DEFENSIVE_BONUSES"
+      ],
       "unitAiTypes": [
         "UNITAI_CITY_BOMBARD"
       ]
@@ -8908,6 +9384,8 @@
     {
       "name": "Pracinha",
       "defaultUnitAi": "UNITAI_DEFENSE",
+      "combatClass": "UNITCOMBAT_GUN",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE",
@@ -8917,6 +9395,10 @@
     {
       "name": "Nau",
       "defaultUnitAi": "UNITAI_EXPLORE_SEA",
+      "combatClass": "UNITCOMBAT_NAVALMELEE",
+      "freePromotions": [
+        "PROMOTION_EXTRA_SIGHT_I"
+      ],
       "unitAiTypes": [
         "UNITAI_ATTACK_SEA",
         "UNITAI_RESERVE_SEA",
@@ -8927,6 +9409,13 @@
     {
       "name": "Berber Cavalry",
       "defaultUnitAi": "UNITAI_FAST_ATTACK",
+      "combatClass": "UNITCOMBAT_MOUNTED",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING",
+        "PROMOTION_CITY_PENALTY",
+        "PROMOTION_DESERT_WARRIOR"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_FAST_ATTACK"
@@ -8935,6 +9424,8 @@
     {
       "name": "Great Galleass",
       "defaultUnitAi": "UNITAI_ASSAULT_SEA",
+      "combatClass": "UNITCOMBAT_NAVALRANGED",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ASSAULT_SEA",
         "UNITAI_RESERVE_SEA",
@@ -8945,6 +9436,8 @@
     {
       "name": "Pathfinder",
       "defaultUnitAi": "UNITAI_EXPLORE",
+      "combatClass": "UNITCOMBAT_RECON",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_FAST_ATTACK",
         "UNITAI_DEFENSE"
@@ -8953,6 +9446,13 @@
     {
       "name": "Comanche Riders",
       "defaultUnitAi": "UNITAI_FAST_ATTACK",
+      "combatClass": "UNITCOMBAT_MOUNTED",
+      "freePromotions": [
+        "PROMOTION_NO_DEFENSIVE_BONUSES",
+        "PROMOTION_CAN_MOVE_AFTER_ATTACKING",
+        "PROMOTION_CITY_PENALTY",
+        "PROMOTION_MOON_STRIKER"
+      ],
       "unitAiTypes": [
         "UNITAI_DEFENSE",
         "UNITAI_FAST_ATTACK"
@@ -8961,11 +9461,15 @@
     {
       "name": "Bazooka",
       "defaultUnitAi": "UNITAI_DEFENSE",
+      "combatClass": "UNITCOMBAT_ARCHER",
+      "freePromotions": [],
       "unitAiTypes": []
     },
     {
       "name": "Kris Swordsman",
       "defaultUnitAi": "UNITAI_ATTACK",
+      "combatClass": "UNITCOMBAT_MELEE",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_ATTACK",
         "UNITAI_DEFENSE"
@@ -8974,6 +9478,8 @@
     {
       "name": "XCOM Squad",
       "defaultUnitAi": "UNITAI_PARADROP",
+      "combatClass": "UNITCOMBAT_GUN",
+      "freePromotions": [],
       "unitAiTypes": [
         "UNITAI_PARADROP"
       ]
@@ -10854,6 +11360,837 @@
       "name": "TACTICAL_PILLAGE_NEXT_TURN",
       "priority": 10,
       "offenseFlavorWeight": 100
+    }
+  ],
+  "promotionAi": [
+    {
+      "name": "PROMOTION_MEDIC_GENERAL",
+      "type": "PROMOTION_MEDIC_GENERAL",
+      "enemyHealChange": 2,
+      "neutralHealChange": 2,
+      "friendlyHealChange": 2,
+      "adjacentTileHealChange": 2
+    },
+    {
+      "name": "PROMOTION_SKI_INFANTRY",
+      "type": "PROMOTION_SKI_INFANTRY",
+      "terrains": {
+        "TERRAIN_SNOW": {
+          "attack": 25,
+          "defense": 25,
+          "doubleMove": true
+        },
+        "TERRAIN_TUNDRA": {
+          "attack": 25,
+          "defense": 25,
+          "doubleMove": true
+        },
+        "TERRAIN_HILL": {
+          "attack": 25,
+          "defense": 25
+        }
+      }
+    },
+    {
+      "name": "PROMOTION_STATUE_ZEUS",
+      "type": "PROMOTION_STATUE_ZEUS",
+      "cityAttack": 15
+    },
+    {
+      "name": "Heal Instantly",
+      "type": "PROMOTION_INSTA_HEAL",
+      "instaHeal": true
+    },
+    {
+      "name": "Shock I",
+      "type": "PROMOTION_SHOCK_1",
+      "openAttack": 15,
+      "openDefense": 15
+    },
+    {
+      "name": "Shock II",
+      "type": "PROMOTION_SHOCK_2",
+      "openAttack": 15,
+      "openDefense": 15
+    },
+    {
+      "name": "Shock III",
+      "type": "PROMOTION_SHOCK_3",
+      "openAttack": 15,
+      "openDefense": 15
+    },
+    {
+      "name": "Drill I",
+      "type": "PROMOTION_DRILL_1",
+      "roughAttack": 15,
+      "roughDefense": 15
+    },
+    {
+      "name": "Drill II",
+      "type": "PROMOTION_DRILL_2",
+      "roughAttack": 15,
+      "roughDefense": 15
+    },
+    {
+      "name": "Drill III",
+      "type": "PROMOTION_DRILL_3",
+      "roughAttack": 15,
+      "roughDefense": 15
+    },
+    {
+      "name": "Accuracy I",
+      "type": "PROMOTION_ACCURACY_1",
+      "openRangedAttackMod": 15
+    },
+    {
+      "name": "Accuracy II",
+      "type": "PROMOTION_ACCURACY_2",
+      "openRangedAttackMod": 15
+    },
+    {
+      "name": "Accuracy III",
+      "type": "PROMOTION_ACCURACY_3",
+      "openRangedAttackMod": 15
+    },
+    {
+      "name": "Barrage I",
+      "type": "PROMOTION_BARRAGE_1",
+      "roughRangedAttackMod": 15
+    },
+    {
+      "name": "Barrage II",
+      "type": "PROMOTION_BARRAGE_2",
+      "roughRangedAttackMod": 15
+    },
+    {
+      "name": "Barrage III",
+      "type": "PROMOTION_BARRAGE_3",
+      "roughRangedAttackMod": 15
+    },
+    {
+      "name": "Targeting I",
+      "type": "PROMOTION_TARGETING_1",
+      "domainModifiers": {
+        "DOMAIN_SEA": 15
+      }
+    },
+    {
+      "name": "Targeting II",
+      "type": "PROMOTION_TARGETING_2",
+      "domainModifiers": {
+        "DOMAIN_SEA": 15
+      }
+    },
+    {
+      "name": "Targeting III",
+      "type": "PROMOTION_TARGETING_3",
+      "domainModifiers": {
+        "DOMAIN_SEA": 15
+      }
+    },
+    {
+      "name": "Sentry",
+      "type": "PROMOTION_SENTRY",
+      "visibilityChange": 1
+    },
+    {
+      "name": "Besiege",
+      "type": "PROMOTION_SIEGE",
+      "cityAttack": 50
+    },
+    {
+      "name": "Volley",
+      "type": "PROMOTION_VOLLEY",
+      "cityAttack": 50,
+      "attackFortifiedMod": 50
+    },
+    {
+      "name": "Medic",
+      "type": "PROMOTION_MEDIC",
+      "adjacentTileHealChange": 5
+    },
+    {
+      "name": "Amphibious",
+      "type": "PROMOTION_AMPHIBIOUS",
+      "amphib": true,
+      "river": true
+    },
+    {
+      "name": "Cover I",
+      "type": "PROMOTION_COVER_1",
+      "rangedDefenseMod": 33
+    },
+    {
+      "name": "Cover II",
+      "type": "PROMOTION_COVER_2",
+      "rangedDefenseMod": 33
+    },
+    {
+      "name": "Indirect Fire",
+      "type": "PROMOTION_INDIRECT_FIRE",
+      "rangeAttackIgnoreLOS": true
+    },
+    {
+      "name": "Charge",
+      "type": "PROMOTION_CHARGE",
+      "attackWoundedMod": 33
+    },
+    {
+      "name": "Formation I",
+      "type": "PROMOTION_FORMATION_1",
+      "unitCombatModifiers": {
+        "UNITCOMBAT_MOUNTED": 33
+      }
+    },
+    {
+      "name": "Formation II",
+      "type": "PROMOTION_FORMATION_2",
+      "unitCombatModifiers": {
+        "UNITCOMBAT_MOUNTED": 33
+      }
+    },
+    {
+      "name": "Ambush I",
+      "type": "PROMOTION_AMBUSH_1",
+      "unitCombatModifiers": {
+        "UNITCOMBAT_ARMOR": 33
+      }
+    },
+    {
+      "name": "Ambush II",
+      "type": "PROMOTION_AMBUSH_2",
+      "unitCombatModifiers": {
+        "UNITCOMBAT_ARMOR": 33
+      }
+    },
+    {
+      "name": "Supply",
+      "type": "PROMOTION_SUPPLY",
+      "enemyHealChange": 5,
+      "neutralHealChange": 5,
+      "healOutsideFriendly": true
+    },
+    {
+      "name": "March",
+      "type": "PROMOTION_MARCH",
+      "alwaysHeal": true
+    },
+    {
+      "name": "Blitz",
+      "type": "PROMOTION_BLITZ",
+      "extraAttacks": 1,
+      "canMoveAfterAttacking": true
+    },
+    {
+      "name": "Woodsman",
+      "type": "PROMOTION_WOODSMAN",
+      "features": {
+        "FEATURE_JUNGLE": {
+          "doubleMove": true
+        },
+        "FEATURE_FOREST": {
+          "doubleMove": true
+        }
+      }
+    },
+    {
+      "name": "Logistics",
+      "type": "PROMOTION_LOGISTICS",
+      "extraAttacks": 1,
+      "canMoveAfterAttacking": true
+    },
+    {
+      "name": "Extended Range",
+      "type": "PROMOTION_RANGE",
+      "rangeChange": 1
+    },
+    {
+      "name": "Mobility",
+      "type": "PROMOTION_MOBILITY",
+      "movesChange": 1
+    },
+    {
+      "name": "Interception I",
+      "type": "PROMOTION_INTERCEPTION_1",
+      "interceptionCombatModifier": 33
+    },
+    {
+      "name": "Interception II",
+      "type": "PROMOTION_INTERCEPTION_2",
+      "interceptionCombatModifier": 33
+    },
+    {
+      "name": "Interception III",
+      "type": "PROMOTION_INTERCEPTION_3",
+      "interceptionCombatModifier": 34
+    },
+    {
+      "name": "Dogfighting I",
+      "type": "PROMOTION_DOGFIGHTING_1",
+      "airSweepCombatModifier": 33
+    },
+    {
+      "name": "Dogfighting II",
+      "type": "PROMOTION_DOGFIGHTING_2",
+      "airSweepCombatModifier": 33
+    },
+    {
+      "name": "Dogfighting III",
+      "type": "PROMOTION_DOGFIGHTING_3",
+      "airSweepCombatModifier": 34
+    },
+    {
+      "name": "Siege I",
+      "type": "PROMOTION_AIR_SIEGE_1",
+      "cityAttack": 33
+    },
+    {
+      "name": "Siege II",
+      "type": "PROMOTION_AIR_SIEGE_2",
+      "cityAttack": 33
+    },
+    {
+      "name": "Siege III",
+      "type": "PROMOTION_AIR_SIEGE_3",
+      "cityAttack": 34
+    },
+    {
+      "name": "Bombardment I",
+      "type": "PROMOTION_BOMBARDMENT_1",
+      "domainModifiers": {
+        "DOMAIN_LAND": 33
+      }
+    },
+    {
+      "name": "Bombardment II",
+      "type": "PROMOTION_BOMBARDMENT_2",
+      "domainModifiers": {
+        "DOMAIN_LAND": 33
+      }
+    },
+    {
+      "name": "Bombardment III",
+      "type": "PROMOTION_BOMBARDMENT_3",
+      "domainModifiers": {
+        "DOMAIN_LAND": 34
+      }
+    },
+    {
+      "name": "Air Targeting I",
+      "type": "PROMOTION_AIR_TARGETING_1",
+      "domainModifiers": {
+        "DOMAIN_SEA": 33
+      }
+    },
+    {
+      "name": "Air Targeting II",
+      "type": "PROMOTION_AIR_TARGETING_2",
+      "domainModifiers": {
+        "DOMAIN_SEA": 33
+      }
+    },
+    {
+      "name": "PROMOTION_AIR_AMBUSH_1",
+      "type": "PROMOTION_AIR_AMBUSH_1",
+      "unitCombatModifiers": {
+        "UNITCOMBAT_ARMOR": 33
+      }
+    },
+    {
+      "name": "PROMOTION_AIR_AMBUSH_2",
+      "type": "PROMOTION_AIR_AMBUSH_2",
+      "unitCombatModifiers": {
+        "UNITCOMBAT_ARMOR": 33
+      }
+    },
+    {
+      "name": "Operational Range",
+      "type": "PROMOTION_AIR_RANGE",
+      "rangeChange": 2
+    },
+    {
+      "name": "Sortie",
+      "type": "PROMOTION_SORTIE",
+      "numInterceptionChange": 1
+    },
+    {
+      "name": "PROMOTION_REPAIR",
+      "type": "PROMOTION_REPAIR",
+      "alwaysHeal": true
+    },
+    {
+      "name": "Air Repair",
+      "type": "PROMOTION_AIR_REPAIR",
+      "alwaysHeal": true
+    },
+    {
+      "name": "PROMOTION_AIR_LOGISTICS",
+      "type": "PROMOTION_AIR_LOGISTICS",
+      "extraAttacks": 1,
+      "canMoveAfterAttacking": true
+    },
+    {
+      "name": "Evasion",
+      "type": "PROMOTION_EVASION",
+      "interceptionDefenseDamageModifier": -50
+    },
+    {
+      "name": "Scouting I",
+      "type": "PROMOTION_SCOUTING_1",
+      "visibilityChange": 1
+    },
+    {
+      "name": "Scouting II",
+      "type": "PROMOTION_SCOUTING_2",
+      "visibilityChange": 1
+    },
+    {
+      "name": "Scouting III",
+      "type": "PROMOTION_SCOUTING_3",
+      "movesChange": 1
+    },
+    {
+      "name": "Survivalism I",
+      "type": "PROMOTION_SURVIVALISM_1",
+      "enemyHealChange": 5,
+      "neutralHealChange": 5,
+      "defenseMod": 25
+    },
+    {
+      "name": "Survivalism II",
+      "type": "PROMOTION_SURVIVALISM_2",
+      "enemyHealChange": 5,
+      "neutralHealChange": 5,
+      "defenseMod": 25
+    },
+    {
+      "name": "Survivalism III",
+      "type": "PROMOTION_SURVIVALISM_3",
+      "alwaysHeal": true
+    },
+    {
+      "name": "Anti-Armor I",
+      "type": "PROMOTION_HELI_AMBUSH_1",
+      "unitCombatModifiers": {
+        "UNITCOMBAT_ARMOR": 25
+      }
+    },
+    {
+      "name": "Anti-Armor II",
+      "type": "PROMOTION_HELI_AMBUSH_2",
+      "unitCombatModifiers": {
+        "UNITCOMBAT_ARMOR": 25
+      }
+    },
+    {
+      "name": "Mobility I",
+      "type": "PROMOTION_HELI_MOBILITY_1",
+      "movesChange": 1
+    },
+    {
+      "name": "Mobility II",
+      "type": "PROMOTION_HELI_MOBILITY_2",
+      "movesChange": 1
+    },
+    {
+      "name": "PROMOTION_HELI_REPAIR",
+      "type": "PROMOTION_HELI_REPAIR",
+      "alwaysHeal": true
+    },
+    {
+      "name": "PROMOTION_NAVAL_TRADITION",
+      "type": "PROMOTION_NAVAL_TRADITION",
+      "visibilityChange": 1,
+      "movesChange": 1
+    },
+    {
+      "name": "PROMOTION_GREAT_LIGHTHOUSE",
+      "type": "PROMOTION_GREAT_LIGHTHOUSE",
+      "visibilityChange": 1,
+      "movesChange": 1
+    },
+    {
+      "name": "PROMOTION_EXTRA_MOVES_I",
+      "type": "PROMOTION_EXTRA_MOVES_I",
+      "movesChange": 1
+    },
+    {
+      "name": "PROMOTION_EXTRA_SIGHT_I",
+      "type": "PROMOTION_EXTRA_SIGHT_I",
+      "visibilityChange": 1
+    },
+    {
+      "name": "PROMOTION_EXTRA_SIGHT_II",
+      "type": "PROMOTION_EXTRA_SIGHT_II",
+      "visibilityChange": 2
+    },
+    {
+      "name": "PROMOTION_EXTRA_SIGHT_III",
+      "type": "PROMOTION_EXTRA_SIGHT_III",
+      "visibilityChange": 3
+    },
+    {
+      "name": "PROMOTION_EXTRA_SIGHT_IV",
+      "type": "PROMOTION_EXTRA_SIGHT_IV",
+      "visibilityChange": 4
+    },
+    {
+      "name": "PROMOTION_SIGHT_PENALTY",
+      "type": "PROMOTION_SIGHT_PENALTY",
+      "visibilityChange": -1
+    },
+    {
+      "name": "PROMOTION_ANTI_MOUNTED_I",
+      "type": "PROMOTION_ANTI_MOUNTED_I",
+      "unitCombatModifiers": {
+        "UNITCOMBAT_MOUNTED": 50
+      }
+    },
+    {
+      "name": "PROMOTION_ANTI_MOUNTED_II",
+      "type": "PROMOTION_ANTI_MOUNTED_II",
+      "unitCombatModifiers": {
+        "UNITCOMBAT_MOUNTED": 100
+      }
+    },
+    {
+      "name": "PROMOTION_CITY_SIEGE",
+      "type": "PROMOTION_CITY_SIEGE",
+      "cityAttack": 200
+    },
+    {
+      "name": "PROMOTION_CITY_ASSAULT",
+      "type": "PROMOTION_CITY_ASSAULT",
+      "cityAttack": 300
+    },
+    {
+      "name": "PROMOTION_DEFENSE_PENALTY",
+      "type": "PROMOTION_DEFENSE_PENALTY",
+      "defenseMod": -33
+    },
+    {
+      "name": "PROMOTION_MOUNTED_PENALTY",
+      "type": "PROMOTION_MOUNTED_PENALTY",
+      "unitCombatModifiers": {
+        "UNITCOMBAT_MOUNTED": -33
+      }
+    },
+    {
+      "name": "PROMOTION_CITY_PENALTY",
+      "type": "PROMOTION_CITY_PENALTY",
+      "cityAttack": -33
+    },
+    {
+      "name": "PROMOTION_SMALL_CITY_PENALTY",
+      "type": "PROMOTION_SMALL_CITY_PENALTY",
+      "cityAttack": -25
+    },
+    {
+      "name": "PROMOTION_AIR_SWEEP",
+      "type": "PROMOTION_AIR_SWEEP",
+      "airSweepCapable": true
+    },
+    {
+      "name": "PROMOTION_ANTI_AIR",
+      "type": "PROMOTION_ANTI_AIR",
+      "unitCombatModifiers": {
+        "UNITCOMBAT_FIGHTER": 150,
+        "UNITCOMBAT_BOMBER": 150,
+        "UNITCOMBAT_HELICOPTER": 150
+      }
+    },
+    {
+      "name": "PROMOTION_ANTI_TANK",
+      "type": "PROMOTION_ANTI_TANK",
+      "unitCombatModifiers": {
+        "UNITCOMBAT_ARMOR": 100
+      }
+    },
+    {
+      "name": "PROMOTION_NAVAL_PENALTY",
+      "type": "PROMOTION_NAVAL_PENALTY",
+      "unitCombatModifiers": {
+        "UNITCOMBAT_NAVALRANGED": -50,
+        "UNITCOMBAT_NAVALMELEE": -50,
+        "UNITCOMBAT_SUBMARINE": -50,
+        "UNITCOMBAT_CARRIER": -50
+      }
+    },
+    {
+      "name": "PROMOTION_NO_DEFENSIVE_BONUSES",
+      "type": "PROMOTION_NO_DEFENSIVE_BONUSES",
+      "noDefensiveBonus": true
+    },
+    {
+      "name": "PROMOTION_CAN_MOVE_AFTER_ATTACKING",
+      "type": "PROMOTION_CAN_MOVE_AFTER_ATTACKING",
+      "canMoveAfterAttacking": true
+    },
+    {
+      "name": "PROMOTION_OPEN_TERRAIN",
+      "type": "PROMOTION_OPEN_TERRAIN",
+      "openAttack": 30,
+      "openDefense": 30
+    },
+    {
+      "name": "PROMOTION_SECOND_ATTACK",
+      "type": "PROMOTION_SECOND_ATTACK",
+      "extraAttacks": 1,
+      "canMoveAfterAttacking": true
+    },
+    {
+      "name": "PROMOTION_MOHAWK",
+      "type": "PROMOTION_MOHAWK",
+      "features": {
+        "FEATURE_FOREST": {
+          "attack": 33,
+          "defense": 33
+        },
+        "FEATURE_JUNGLE": {
+          "attack": 33,
+          "defense": 33
+        }
+      }
+    },
+    {
+      "name": "PROMOTION_JAGUAR",
+      "type": "PROMOTION_JAGUAR",
+      "features": {
+        "FEATURE_FOREST": {
+          "attack": 33,
+          "defense": 33
+        },
+        "FEATURE_JUNGLE": {
+          "attack": 33,
+          "defense": 33
+        }
+      }
+    },
+    {
+      "name": "PROMOTION_FASTER_HEAL",
+      "type": "PROMOTION_FASTER_HEAL",
+      "enemyHealChange": 10,
+      "neutralHealChange": 10,
+      "friendlyHealChange": 10
+    },
+    {
+      "name": "PROMOTION_STRONGER_VS_DAMAGED",
+      "type": "PROMOTION_STRONGER_VS_DAMAGED",
+      "attackWoundedMod": 33
+    },
+    {
+      "name": "Medic II",
+      "type": "PROMOTION_MEDIC_II",
+      "enemyHealChange": 5,
+      "neutralHealChange": 5,
+      "adjacentTileHealChange": 5
+    },
+    {
+      "name": "Coastal Raider I",
+      "type": "PROMOTION_COASTAL_RAIDER_1",
+      "cityAttack": 20
+    },
+    {
+      "name": "Coastal Raider II",
+      "type": "PROMOTION_COASTAL_RAIDER_2",
+      "cityAttack": 20
+    },
+    {
+      "name": "Coastal Raider III",
+      "type": "PROMOTION_COASTAL_RAIDER_3",
+      "cityAttack": 20
+    },
+    {
+      "name": "Boarding Party I",
+      "type": "PROMOTION_BOARDING_PARTY_1",
+      "domainModifiers": {
+        "DOMAIN_SEA": 15
+      }
+    },
+    {
+      "name": "Boarding Party II",
+      "type": "PROMOTION_BOARDING_PARTY_2",
+      "domainModifiers": {
+        "DOMAIN_SEA": 15
+      }
+    },
+    {
+      "name": "Boarding Party III",
+      "type": "PROMOTION_BOARDING_PARTY_3",
+      "domainModifiers": {
+        "DOMAIN_SEA": 15
+      }
+    },
+    {
+      "name": "Armor Plating I",
+      "type": "PROMOTION_ARMOR_PLATING_1",
+      "defenseMod": 25
+    },
+    {
+      "name": "Armor Plating II",
+      "type": "PROMOTION_ARMOR_PLATING_2",
+      "defenseMod": 25
+    },
+    {
+      "name": "Armor Plating III",
+      "type": "PROMOTION_ARMOR_PLATING_3",
+      "defenseMod": 25
+    },
+    {
+      "name": "PROMOTION_FAST_GENERAL",
+      "type": "PROMOTION_FAST_GENERAL",
+      "movesChange": 3
+    },
+    {
+      "name": "PROMOTION_FAST_ADMIRAL",
+      "type": "PROMOTION_FAST_ADMIRAL",
+      "movesChange": 2
+    },
+    {
+      "name": "PROMOTION_ANTI_AIR_II",
+      "type": "PROMOTION_ANTI_AIR_II",
+      "unitCombatModifiers": {
+        "UNITCOMBAT_BOMBER": 150,
+        "UNITCOMBAT_HELICOPTER": 150
+      }
+    },
+    {
+      "name": "PROMOTION_HEAVY_PAYLOAD",
+      "type": "PROMOTION_HEAVY_PAYLOAD",
+      "cityAttack": 50
+    },
+    {
+      "name": "PROMOTION_FIRE_SUPPORT",
+      "type": "PROMOTION_FIRE_SUPPORT",
+      "cityAttack": 33
+    },
+    {
+      "name": "PROMOTION_STEAM_POWERED",
+      "type": "PROMOTION_STEAM_POWERED",
+      "terrains": {
+        "TERRAIN_COAST": {
+          "doubleMove": true
+        }
+      }
+    },
+    {
+      "name": "PROMOTION_NAVAL_BONUS",
+      "type": "PROMOTION_NAVAL_BONUS",
+      "unitCombatModifiers": {
+        "UNITCOMBAT_NAVALRANGED": 50,
+        "UNITCOMBAT_NAVALMELEE": 50
+      }
+    },
+    {
+      "name": "PROMOTION_FLANK_ATTACK_BONUS",
+      "type": "PROMOTION_FLANK_ATTACK_BONUS",
+      "flankAttackModifier": 50
+    },
+    {
+      "name": "Buffalo Chest",
+      "type": "PROMOTION_BUFFALO_CHEST",
+      "openAttack": 10,
+      "openDefense": 10,
+      "rangedDefenseMod": 10,
+      "flankAttackModifier": 25
+    },
+    {
+      "name": "Buffalo Loins",
+      "type": "PROMOTION_BUFFALO_LOINS",
+      "openAttack": 10,
+      "openDefense": 10,
+      "roughAttack": 10,
+      "roughDefense": 10,
+      "rangedDefenseMod": 10,
+      "flankAttackModifier": 25
+    },
+    {
+      "name": "Buffalo Horns",
+      "type": "PROMOTION_BUFFALO_HORNS",
+      "rangedDefenseMod": 10,
+      "flankAttackModifier": 25,
+      "movesChange": 1
+    },
+    {
+      "name": "PROMOTION_ANTI_GUNPOWDER",
+      "type": "PROMOTION_ANTI_GUNPOWDER",
+      "unitCombatModifiers": {
+        "UNITCOMBAT_GUN": 25
+      }
+    },
+    {
+      "name": "PROMOTION_CITY_SIEGE_II",
+      "type": "PROMOTION_CITY_SIEGE_II",
+      "cityAttack": 250
+    },
+    {
+      "name": "PROMOTION_DESERT_WARRIOR",
+      "type": "PROMOTION_DESERT_WARRIOR",
+      "terrains": {
+        "TERRAIN_DESERT": {
+          "attack": 50,
+          "defense": 50
+        }
+      }
+    },
+    {
+      "name": "PROMOTION_MOON_STRIKER",
+      "type": "PROMOTION_MOON_STRIKER",
+      "movesChange": 1
+    },
+    {
+      "name": "Altitude Training",
+      "type": "PROMOTION_ALTITUDE_TRAINING",
+      "terrains": {
+        "TERRAIN_HILL": {
+          "attack": 10,
+          "defense": 10
+        }
+      }
+    },
+    {
+      "name": "Invulnerability",
+      "type": "PROMOTION_INVULNERABIILITY",
+      "openDefense": 30,
+      "roughDefense": 30,
+      "enemyHealChange": 20,
+      "neutralHealChange": 20,
+      "friendlyHealChange": 20
+    },
+    {
+      "name": "Sneak Attack",
+      "type": "PROMOTION_SNEAK_ATTACK",
+      "flankAttackModifier": 50
+    },
+    {
+      "name": "Ambition",
+      "type": "PROMOTION_AMBITION",
+      "openAttack": 50,
+      "openDefense": -20,
+      "roughAttack": 50,
+      "roughDefense": -20
+    },
+    {
+      "name": "Restlessness",
+      "type": "PROMOTION_RESTLESSNESS",
+      "movesChange": 1,
+      "extraAttacks": 1,
+      "canMoveAfterAttacking": true
+    },
+    {
+      "name": "Evil Spirits",
+      "type": "PROMOTION_EVIL_SPIRITS",
+      "openAttack": -10,
+      "openDefense": -30,
+      "roughAttack": -10,
+      "roughDefense": -30
+    },
+    {
+      "name": "PROMOTION_LIGHTNING_WARFARE",
+      "type": "PROMOTION_LIGHTNING_WARFARE",
+      "openAttack": 15,
+      "roughAttack": 15,
+      "movesChange": 1
     }
   ]
 }

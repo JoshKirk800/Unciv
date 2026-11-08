@@ -111,6 +111,67 @@ class UnitAiTypesDef : INamed {
     /** CvUnitEntry::GetCivilianAttackPriority: `CIVILIAN_ATTACK_PRIORITY_HIGH`, `_HIGH_EARLY_GAME_ONLY` or `_LOW`, null for none */
     var civilianAttackPriority: String? = null
     var unitAiTypes = ArrayList<String>()
+    /** Units.CombatClass (`UNITCOMBAT_*`), CvUnit::getUnitCombatType; null for units without one (Great People, workers) */
+    var combatClass: String? = null
+    /** Unit_FreePromotions the unit starts with that [PromotionAiDef] has data for, by promotion type (`PROMOTION_*`) */
+    var freePromotions = ArrayList<String>()
+}
+
+/** What a terrain or feature does for a promotion: UnitPromotions_Terrains / UnitPromotions_Features columns Attack, Defense and DoubleMove */
+class PromotionTerrainAiDef {
+    var attack = 0
+    var defense = 0
+    var doubleMove = false
+}
+
+/**
+ *  The UnitPromotions columns CvUnit::AI_promotionValue reads, by Unciv promotion [name] ([type] when Unciv has no promotion of it: such rows
+ *  only describe what units start with, see [UnitAiTypesDef.freePromotions]). [type] is the `PROMOTION_*` type of the XML, the rows are in the
+ *  original's order. Terrains and features are keyed by XML type (`TERRAIN_HILL`, `FEATURE_FOREST`), unit combat classes by `UNITCOMBAT_*`
+ *  and domains by `DOMAIN_*`.
+ */
+class PromotionAiDef : INamed {
+    override var name = ""
+    var type = ""
+    var openAttack = 0
+    var openDefense = 0
+    var roughAttack = 0
+    var roughDefense = 0
+    var openRangedAttackMod = 0
+    var roughRangedAttackMod = 0
+    var visibilityChange = 0
+    var cityAttack = 0
+    var cityDefense = 0
+    var attackFortifiedMod = 0
+    var enemyHealChange = 0
+    var neutralHealChange = 0
+    var friendlyHealChange = 0
+    var adjacentTileHealChange = 0
+    var rangedDefenseMod = 0
+    var attackWoundedMod = 0
+    var flankAttackModifier = 0
+    var movesChange = 0
+    var extraAttacks = 0
+    var rangeChange = 0
+    var interceptionCombatModifier = 0
+    var airSweepCombatModifier = 0
+    var numInterceptionChange = 0
+    var interceptionDefenseDamageModifier = 0
+    var defenseMod = 0
+    var instaHeal = false
+    var amphib = false
+    var river = false
+    var rangeAttackIgnoreLOS = false
+    var healOutsideFriendly = false
+    var alwaysHeal = false
+    var blitz = false
+    var canMoveAfterAttacking = false
+    var noDefensiveBonus = false
+    var airSweepCapable = false
+    var terrains = LinkedHashMap<String, PromotionTerrainAiDef>()
+    var features = LinkedHashMap<String, PromotionTerrainAiDef>()
+    var unitCombatModifiers = LinkedHashMap<String, Int>()
+    var domainModifiers = LinkedHashMap<String, Int>()
 }
 
 /** The AI columns of HandicapInfos, by Unciv difficulty name */

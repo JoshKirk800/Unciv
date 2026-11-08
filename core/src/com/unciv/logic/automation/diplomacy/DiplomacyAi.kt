@@ -7,6 +7,7 @@ import com.unciv.logic.automation.strategy.WarStateAi
 import com.unciv.logic.civilization.Civilization
 import org.jetbrains.annotations.VisibleForTesting
 import yairm210.purity.annotations.Readonly
+import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.ai.MajorCivApproach
 
 /** A coop war agreement with one partner against one target (CvDiplomacyAI::m_ppaacCoopWarAcceptedState / m_ppaaiCoopWarCounter) */
@@ -328,15 +329,37 @@ class DiplomacyAi : IsPartOfGameInfoSerialization {
         memoryOf(other).lastContactTurn = civ.gameInfo.turns
     }
 
-    /** CvDiplomacyAI::ChangeRecentTradeValue: what a deal with [from] was worth to us (CvDealAI::DoAcceptedDeal: in full if generous, else half) */
+    /**
+     *  CvDiplomacyAI::ChangeRecentTradeValue: what a deal with [from] was worth to us (CvDealAI::DoAcceptedDeal: in full if generous, else half),
+     *  kept between 0 and the most the opinion can use (DEAL_VALUE_PER_OPINION_WEIGHT × -OPINION_WEIGHT_TRADE_MAX)
+     */
     fun changeRecentTradeValue(from: Civilization, value: Int) {
+        val rules = civ.gameInfo.ruleset.ai
         val memory = memoryOf(from)
-        memory.recentTradeValue = maxOf(0, memory.recentTradeValue + value)
+        memory.recentTradeValue = (memory.recentTradeValue + value)
+            .coerceIn(0, rules.define(AiDefine.DEAL_VALUE_PER_OPINION_WEIGHT) * -rules.define(AiDefine.OPINION_WEIGHT_TRADE_MAX))
     }
 
-    /** CvDiplomacyAI::ChangeRecentAssistValue: negative = [from] helped us, positive = they refused */
+    /**
+     *  CvDiplomacyAI::ChangeCommonFoeValue: damage [from] did to a foe of ours, kept between 0 and the most the opinion can use
+     *  (COMMON_FOE_VALUE_PER_OPINION_WEIGHT × -OPINION_WEIGHT_COMMON_FOE_MAX)
+     */
+    fun changeCommonFoeValue(from: Civilization, value: Int) {
+        val rules = civ.gameInfo.ruleset.ai
+        val memory = memoryOf(from)
+        memory.commonFoeValue = (memory.commonFoeValue + value)
+            .coerceIn(0, rules.define(AiDefine.COMMON_FOE_VALUE_PER_OPINION_WEIGHT) * -rules.define(AiDefine.OPINION_WEIGHT_COMMON_FOE_MAX))
+    }
+
+    /**
+     *  CvDiplomacyAI::ChangeRecentAssistValue: negative = [from] helped us, positive = they refused, kept within
+     *  ±(DEAL_VALUE_PER_OPINION_WEIGHT × OPINION_WEIGHT_ASSIST_MAX)
+     */
     fun changeRecentAssistValue(from: Civilization, value: Int) {
-        memoryOf(from).recentAssistValue += value
+        val rules = civ.gameInfo.ruleset.ai
+        val memory = memoryOf(from)
+        val max = rules.define(AiDefine.DEAL_VALUE_PER_OPINION_WEIGHT) * rules.define(AiDefine.OPINION_WEIGHT_ASSIST_MAX)
+        memory.recentAssistValue = (memory.recentAssistValue + value).coerceIn(-max, max)
     }
 
     /** Sets the approach towards [other] directly (scenario setup and tests) */

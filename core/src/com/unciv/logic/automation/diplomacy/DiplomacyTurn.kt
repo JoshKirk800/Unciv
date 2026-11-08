@@ -205,21 +205,24 @@ object DiplomacyTurn {
 
     //region Strengths and threats
 
-    /** CvDiplomacyAI::DoUpdateOnePlayerEconomicStrength */
+    /** CvDiplomacyAI::DoUpdateOnePlayerEconomicStrength for every player in [others] */
     private fun updateEconomicStrengths(civ: Civilization, others: List<Civilization>, rules: AiRuleset) {
         val ours = WarStateAi.economicMight(civ)
+        for (other in others) updateEconomicStrength(civ, other, ours, rules)
+    }
+
+    /** CvDiplomacyAI::DoUpdateOnePlayerEconomicStrength: [other]'s economic might against [ours] (the economic might of [civ]) */
+    fun updateEconomicStrength(civ: Civilization, other: Civilization, ours: Int, rules: AiRuleset) {
         val multiplier = rules.define(AiDefine.ECONOMIC_STRENGTH_RATIO_MULTIPLIER)
-        for (other in others) {
-            val ratio = if (ours > 0) WarStateAi.economicMight(other) * multiplier / ours else multiplier * 5
-            civ.ai.diplomacy.memoryOf(other).economicStrength = when {
-                ratio >= rules.define(AiDefine.ECONOMIC_STRENGTH_IMMENSE_THRESHOLD) -> StrengthLevel.Immense
-                ratio >= rules.define(AiDefine.ECONOMIC_STRENGTH_POWERFUL_THRESHOLD) -> StrengthLevel.Powerful
-                ratio >= rules.define(AiDefine.ECONOMIC_STRENGTH_STRONG_THRESHOLD) -> StrengthLevel.Strong
-                ratio >= rules.define(AiDefine.ECONOMIC_STRENGTH_AVERAGE_THRESHOLD) -> StrengthLevel.Average
-                ratio >= rules.define(AiDefine.ECONOMIC_STRENGTH_POOR_THRESHOLD) -> StrengthLevel.Poor
-                ratio >= rules.define(AiDefine.ECONOMIC_STRENGTH_WEAK_THRESHOLD) -> StrengthLevel.Weak
-                else -> StrengthLevel.Pathetic
-            }
+        val ratio = if (ours > 0) WarStateAi.economicMight(other) * multiplier / ours else multiplier * 5
+        civ.ai.diplomacy.memoryOf(other).economicStrength = when {
+            ratio >= rules.define(AiDefine.ECONOMIC_STRENGTH_IMMENSE_THRESHOLD) -> StrengthLevel.Immense
+            ratio >= rules.define(AiDefine.ECONOMIC_STRENGTH_POWERFUL_THRESHOLD) -> StrengthLevel.Powerful
+            ratio >= rules.define(AiDefine.ECONOMIC_STRENGTH_STRONG_THRESHOLD) -> StrengthLevel.Strong
+            ratio >= rules.define(AiDefine.ECONOMIC_STRENGTH_AVERAGE_THRESHOLD) -> StrengthLevel.Average
+            ratio >= rules.define(AiDefine.ECONOMIC_STRENGTH_POOR_THRESHOLD) -> StrengthLevel.Poor
+            ratio >= rules.define(AiDefine.ECONOMIC_STRENGTH_WEAK_THRESHOLD) -> StrengthLevel.Weak
+            else -> StrengthLevel.Pathetic
         }
     }
 
