@@ -164,8 +164,12 @@ object CoopWarAi {
         if (accepted != CoopWarState.Rejected) entry(civ, partner, target).state = accepted
     }
 
-    /** The coop war part of CvDiplomacyAI::MakeWar: counters advance; AI partners who agreed to "soon" go to war at COOP_WAR_SOON_COUNTER */
+    /**
+     *  The coop war part of CvDiplomacyAI::MakeWar: counters advance; AI partners who agreed to "soon" go to war at COOP_WAR_SOON_COUNTER.
+     *  The wars are declared after the walk over the memories: declaring creates memories (ours of the target, the observers' events).
+     */
     fun doCoopWarCounters(civ: Civilization, rules: AiRuleset) {
+        var targets: ArrayList<Civilization>? = null
         for ((partnerId, memory) in civ.ai.diplomacy.memories) {
             val partner = civ.gameInfo.getCivilizationOrNull(partnerId) ?: continue
             if (!partner.isMajorCiv || !WarStateAi.isPlayerValid(civ, partner)) continue
@@ -177,10 +181,13 @@ object CoopWarAi {
                 if (!partner.isHuman() && entry.state == CoopWarState.Soon && entry.counter == rules.define(AiDefine.COOP_WAR_SOON_COUNTER)) {
                     entry.state = CoopWarState.Accepted
                     entry.counter = 0
-                    WarAi.declareWar(civ, target)
-                    civ.ai.diplomacy.memoryOf(target).turnsLockedIntoWar += rules.define(AiDefine.COOP_WAR_LOCKED_LENGTH)
+                    (targets ?: ArrayList<Civilization>().also { targets = it }).add(target)
                 }
             }
+        }
+        for (target in targets ?: return) {
+            WarAi.declareWar(civ, target)
+            civ.ai.diplomacy.memoryOf(target).turnsLockedIntoWar += rules.define(AiDefine.COOP_WAR_LOCKED_LENGTH)
         }
     }
 }
