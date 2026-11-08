@@ -32,6 +32,7 @@ import java.util.UUID
  * Where [ParitySim] compares two source versions over a fixed number of turns, this one checks a single version over a whole
  * game, and reports what happened to the late-game systems (eras, ideologies, public opinion, tourism and influence, the
  * World Congress, religion). Skipped unless the environment variable FULL_SIM_OUT is set; `tools/full_sim.py` runs it.
+ * The report also follows, per civilization, the specialists, Great People and Great Works behind its culture ([GreatPeopleTrace]).
  *
  * Environment: FULL_SIM_OUT = report file, FULL_SIM_START = the starting game (generated and saved there when missing),
  * FULL_SIM_MAX_TURNS (default 700), FULL_SIM_WALL_MINUTES (default 150), FULL_SIM_PLAY_ON (any value: keep playing after a victory),
@@ -44,6 +45,10 @@ import java.util.UUID
  * (or `all`) with FULL_SIM_DUMP_DIR writes the full state JSON, gzipped, after those turns, so that two runs can be diffed.
  *
  * FULL_SIM_PERTURB_HASH = n: ask for n identity hash codes before the game starts (see the comment in `play`).
+ *
+ * Performance ([SimPerformance]): every turn's wall time, CPU time, allocation, garbage collection and heap go to `<report>.perf.csv`
+ * and into the report. FULL_SIM_SPANS (any value) also times every `timeThis` span, into `<report>.spans.csv`; this slows the hottest
+ * spans, so compare runs with spans only with runs with spans. `tools/perf_compare.py` compares two runs.
  *
  * The report is rewritten every 25 turns so that a hang or a crash still leaves the story up to that point. The state of the
  * last 25-turn mark is saved to `<report>.checkpoint.save` (and, on a crash, the exception is in the report), so that the turn
@@ -108,6 +113,8 @@ class FullGameSim {
 
     private val violations = LinkedHashMap<String, Int>()
     private val violationSamples = ArrayList<String>()
+    private var performance: SimPerformance? = null
+    private var trace: GreatPeopleTrace? = null
 
     private fun violation(turn: Int, text: String) {
         val key = text.substringBefore(':')
@@ -181,6 +188,8 @@ class FullGameSim {
             violationSamples.forEach { text.appendLine("  e.g. $it") }
         }
         text.appendLine()
+        trace?.let { text.append(it.report()).appendLine() }
+        performance?.let { text.append(it.report()).appendLine() }
         text.appendLine("## Snapshots")
         text.append(out)
         File(System.getenv("FULL_SIM_OUT")!!).writeText(text.toString())
@@ -200,6 +209,11 @@ class FullGameSim {
         // between runs. A game whose course depends on them (iterating a hash set of objects that do not define hashCode) is not
         // reproducible; with this the checker asks for a number of them first, to see whether the course changes.
         repeat(env("FULL_SIM_PERTURB_HASH", "0").toInt()) { System.identityHashCode(Any()) }
+        val trace = GreatPeopleTrace(game).also { this.trace = it }
+        val outPath = System.getenv("FULL_SIM_OUT")!!
+        val spans = System.getenv("FULL_SIM_SPANS") != null
+        val performance = SimPerformance(game, spans, File("$outPath.perf.csv"), if (spans) File("$outPath.spans.csv") else null)
+            .also { this.performance = it }
         val out = StringBuilder()
         val events = ArrayList<String>()
         val checkpoint = File(System.getenv("FULL_SIM_OUT")!! + ".checkpoint.save")
@@ -225,7 +239,9 @@ class FullGameSim {
 
         for (turn in 1..maxTurns) {
             try {
+                performance.beforeTurn()
                 game.nextTurn()
+                performance.afterTurn(turn)
             } catch (ex: Throwable) {
                 event(turn, "EXCEPTION in nextTurn: $ex")
                 ex.stackTrace.take(25).forEach { events.add("    at $it") }
@@ -233,6 +249,7 @@ class FullGameSim {
                 break
             }
             checkInvariants(game, turn)
+            trace.afterTurn()
             val dump = dumpDir != null && (dumpAll || turn in dumpTurns)
             if (digestFile != null || dump) {
                 val state = stateJson(game)
@@ -275,6 +292,7 @@ class FullGameSim {
         val turn = game.turns
         summary(game, turn, (System.currentTimeMillis() - startedAt) / 1000, out)
         report(out, events, game, ended)
+        performance.close()
         Assert.assertFalse("The game threw: see the report", ended.startsWith("exception"))
     }
 }
