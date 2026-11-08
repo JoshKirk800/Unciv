@@ -1,6 +1,7 @@
 package com.unciv.logic.civilization.diplomacy
 
 import com.unciv.Constants
+import com.unciv.logic.automation.diplomacy.DiplomacyEvents
 import com.unciv.logic.automation.strategy.GrandStrategyAi
 import com.unciv.logic.civilization.AlertType
 import com.unciv.logic.civilization.Civilization
@@ -8,7 +9,6 @@ import com.unciv.logic.civilization.DiplomacyAction
 import com.unciv.logic.civilization.NotificationCategory
 import com.unciv.logic.civilization.NotificationIcon
 import com.unciv.logic.civilization.PopupAlert
-import com.unciv.models.ruleset.nation.PersonalityValue
 import com.unciv.models.ruleset.unique.UniqueTriggerActivation
 import com.unciv.models.ruleset.unique.UniqueType
 
@@ -40,10 +40,12 @@ object DeclareWar {
         onWarDeclared(otherCivDiplomacy, false, declareWarReason.warType)
         // What the other majors' grand strategy AI remembers (CvTeam::declareWar)
         GrandStrategyAi.onWarDeclared(civInfo, otherCiv, isDefensivePact = declareWarReason.warType == WarType.DefensivePactWar)
+        // What every diplomacy AI makes of it (CvTeam::declareWar), before the friendship flags go
+        DiplomacyEvents.onWarDeclared(civInfo, otherCiv, isDefensivePact = declareWarReason.warType == WarType.DefensivePactWar)
         if (otherCiv.isCityState) civInfo.cache.updateCivResources()
         if (civInfo.isCityState) otherCiv.cache.updateCivResources()
 
-        changeOpinions(diplomacyManager, declareWarReason)
+        forgetLandmarks(diplomacyManager)
 
         breakTreaties(diplomacyManager)
 
@@ -82,9 +84,6 @@ object DeclareWar {
         if (otherCiv.allyCiv == civInfo) {
             otherCiv.cityStateFunctions.updateAllyCivForCityState()
             otherCivDiplomacy.setInfluence(-120f)
-            for (knownCiv in civInfo.getKnownCivs()) {
-                knownCiv.getDiplomacyManager(civInfo)!!.addModifier(DiplomaticModifiers.BetrayedDeclarationOfFriendship, -10f)
-            }
         }
     }
 
@@ -196,7 +195,6 @@ object DeclareWar {
             diplomacyManager.civInfo.cityStateFunctions.removeProtectorCiv(civAtWarWith, forced = true)
         }
 
-        diplomacyManager.removeModifier(DiplomaticModifiers.YearsOfPeace)
         diplomacyManager.setFlag(DiplomacyFlags.DeclinedPeace, diplomacyManager.civInfo.gameInfo.ruleset.modOptions.constants.minimumWarDuration) // AI won't propose peace for 10 turns
         diplomacyManager.setFlag(DiplomacyFlags.DeclaredWar, diplomacyManager.civInfo.gameInfo.ruleset.modOptions.constants.minimumWarDuration) // AI won't agree to trade for 10 turns
         diplomacyManager.removeFlag(DiplomacyFlags.BorderConflict)
@@ -205,83 +203,19 @@ object DeclareWar {
         diplomacyManager.civInfo.diplomacyFunctions.removeEmbassies(civAtWarWith)
     }
 
-    private fun changeOpinions(diplomacyManager: DiplomacyManager, declareWarReason: DeclareWarReason) {
-        val civInfo = diplomacyManager.civInfo
-        val otherCiv = diplomacyManager.otherCiv
-        val otherCivDiplomacy = diplomacyManager.otherCivDiplomacy()
-        val warType = declareWarReason.warType
-
-        otherCivDiplomacy.addDiminishingModifier(DiplomaticModifiers.DeclaredWarOnUs, -20f)
-        otherCivDiplomacy.removeModifier(DiplomaticModifiers.ReturnedCapturedUnits)
-        // CvDiplomacyAI::DoWarDeclaration forgets Landmarks built for either party, regardless of who declared war.
+    /** CvDiplomacyAI::DoPlayerDeclaredWarOnSomeone forgets the Landmarks built for either party (the other opinions follow from the AI's memory) */
+    private fun forgetLandmarks(diplomacyManager: DiplomacyManager) {
         diplomacyManager.landmarksBuiltForUs = 0
-        diplomacyManager.removeModifier(DiplomaticModifiers.BuiltLandmarksForUs)
-        otherCivDiplomacy.landmarksBuiltForUs = 0
-        otherCivDiplomacy.removeModifier(DiplomaticModifiers.BuiltLandmarksForUs)
-
-        // Apply warmongering
-        if (warType == WarType.DirectWar || warType == WarType.JoinWar || warType == WarType.TeamWar) {
-            for (thirdCiv in civInfo.getKnownCivs()) {
-                if (!thirdCiv.isAtWarWith(otherCiv)
-                    && thirdCiv.getDiplomacyManager(otherCiv)?.isRelationshipLevelGT(RelationshipLevel.Competitor) != false
-                    && thirdCiv != declareWarReason.allyCiv) {
-                    // We don't want this modify to stack if there is a defensive pact
-                    thirdCiv.getDiplomacyManager(civInfo)!!
-                        .addModifier(DiplomaticModifiers.WarMongerer, -5f)
-                }
-            }
-        }
-
-        // Apply shared enemy modifiers
-        for (thirdCiv in diplomacyManager.getCommonKnownCivs()) {
-            if ((thirdCiv.isAtWarWith(otherCiv) || thirdCiv == declareWarReason.allyCiv) && !thirdCiv.isAtWarWith(civInfo)) {
-                // Improve our relations
-                if (thirdCiv.isCityState) thirdCiv.getDiplomacyManager(civInfo)!!.addInfluence(10f)
-                else thirdCiv.getDiplomacyManager(civInfo)!!.addModifier(DiplomaticModifiers.SharedEnemy, 5f * civInfo.getPersonality().modifierFocus(PersonalityValue.Loyal, .3f))
-            } else if (thirdCiv.isAtWarWith(civInfo)) {
-                // Improve their relations
-                if (thirdCiv.isCityState) thirdCiv.getDiplomacyManager(otherCiv)!!.addInfluence(10f)
-                else thirdCiv.getDiplomacyManager(otherCiv)!!.addModifier(DiplomaticModifiers.SharedEnemy, 5f * civInfo.getPersonality().modifierFocus(PersonalityValue.Loyal, .3f))
-            }
-        }
+        diplomacyManager.otherCivDiplomacy().landmarksBuiltForUs = 0
     }
 
     private fun breakTreaties(diplomacyManager: DiplomacyManager) {
-        val otherCiv = diplomacyManager.otherCiv
         val otherCivDiplomacy = diplomacyManager.otherCivDiplomacy()
 
-        var betrayedFriendship = false
-        var betrayedDefensivePact = false
-        if (diplomacyManager.hasFlag(DiplomacyFlags.DeclarationOfFriendship)) {
-            betrayedFriendship = true
-            diplomacyManager.removeFlag(DiplomacyFlags.DeclarationOfFriendship)
-            otherCivDiplomacy.removeModifier(DiplomaticModifiers.DeclarationOfFriendship)
-        }
+        diplomacyManager.removeFlag(DiplomacyFlags.DeclarationOfFriendship)
         otherCivDiplomacy.removeFlag(DiplomacyFlags.DeclarationOfFriendship)
-
-        if (diplomacyManager.hasFlag(DiplomacyFlags.DefensivePact)) {
-            betrayedDefensivePact = true
-            diplomacyManager.removeFlag(DiplomacyFlags.DefensivePact)
-            otherCivDiplomacy.removeModifier(DiplomaticModifiers.DefensivePact)
-        }
+        diplomacyManager.removeFlag(DiplomacyFlags.DefensivePact)
         otherCivDiplomacy.removeFlag(DiplomacyFlags.DefensivePact)
-
-        if (betrayedFriendship || betrayedDefensivePact) {
-            for (knownCiv in diplomacyManager.civInfo.getKnownCivs()) {
-                val diploManager = knownCiv.getDiplomacyManager(diplomacyManager.civInfo)!!
-                if (betrayedFriendship) {
-                    val amount = if (knownCiv == otherCiv) -40f else -20f
-                    diploManager.addModifier(DiplomaticModifiers.BetrayedDeclarationOfFriendship, amount * knownCiv.getPersonality().modifierFocus(PersonalityValue.Loyal, .3f))
-                }
-                if (betrayedDefensivePact) {
-                    //Note: this stacks with Declaration of Friendship
-                    val amount = if (knownCiv == otherCiv) -20f else -10f
-                    diploManager.addModifier(DiplomaticModifiers.BetrayedDefensivePact, amount * knownCiv.getPersonality().modifierFocus(PersonalityValue.Loyal, .3f))
-                }
-                diploManager.removeModifier(DiplomaticModifiers.DeclaredFriendshipWithOurAllies) // obviously this guy's declarations of friendship aren't worth much.
-                diploManager.removeModifier(DiplomaticModifiers.SignedDefensivePactWithOurAllies)
-            }
-        }
 
         if (diplomacyManager.hasFlag(DiplomacyFlags.ResearchAgreement)) {
             diplomacyManager.removeFlag(DiplomacyFlags.ResearchAgreement)
@@ -289,10 +223,6 @@ object DeclareWar {
             otherCivDiplomacy.totalOfScienceDuringRA = 0
         }
         otherCivDiplomacy.removeFlag(DiplomacyFlags.ResearchAgreement)
-
-        // The other civ should keep any gifts we gave them
-        // But we should not nesessarily take away their gifts
-        otherCivDiplomacy.removeModifier(DiplomaticModifiers.GaveUsGifts)
     }
 
     /**

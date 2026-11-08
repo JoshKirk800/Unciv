@@ -5,7 +5,6 @@ import com.unciv.view.GameView
 import com.unciv.GUI
 import com.unciv.UncivGame
 import com.unciv.logic.automation.unit.UnitAutomation
-import com.unciv.logic.civilization.diplomacy.DiplomaticModifiers
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.UnitAction
@@ -241,8 +240,7 @@ object UnitActions {
                 }
 
                 recipient.getDiplomacyManager(unit.civ)!!.addInfluence(5f)
-            } else recipient.getDiplomacyManager(unit.civ)!!
-                .addModifier(DiplomaticModifiers.GaveUsUnits, 5f)
+            }
 
             if (recipient.isCityState && unit.isGreatPerson())
                 unit.destroy()  // City states don't get GPs

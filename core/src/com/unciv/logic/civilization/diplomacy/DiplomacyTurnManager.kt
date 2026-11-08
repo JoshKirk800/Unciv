@@ -11,7 +11,6 @@ import com.unciv.logic.trade.TradeOfferType
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.ui.components.extensions.toPercent
 import yairm210.purity.annotations.Readonly
-import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
 
@@ -21,12 +20,10 @@ object DiplomacyTurnManager {
         nextTurnTrades()
         removeUntenableTrades()
         updateHasOpenBorders()
-        nextTurnDiplomaticModifiers()
+        nextTurnCityStateUnitGifts()
         nextTurnFlags()
         if (civInfo.isCityState && otherCiv.isMajorCiv)
             nextTurnCityStateInfluence()
-        if (civInfo.isMajorCiv)
-            saveSmoothedOpinionOfOtherCiv()
     }
 
     private fun DiplomacyManager.removeUntenableTrades() {
@@ -194,18 +191,6 @@ object DiplomacyTurnManager {
             if (flag == DiplomacyFlags.ResearchAgreement.name)
                 totalOfScienceDuringRA += civInfo.stats.statsForNextTurn.science.toInt()
 
-            // These modifiers decrease slightly @ 50
-            if (flagsCountdown[flag] == 50) {
-                when (flag) {
-                    DiplomacyFlags.RememberAttackedProtectedMinor.name -> {
-                        addModifier(DiplomaticModifiers.AttackedProtectedMinor, 5f)
-                    }
-                    DiplomacyFlags.RememberBulliedProtectedMinor.name -> {
-                        addModifier(DiplomaticModifiers.BulliedProtectedMinor, 5f)
-                    }
-                }
-            }
-
             // Only when flag is expired
             if (flagsCountdown[flag] == 0) {
                 when (flag) {
@@ -228,30 +213,11 @@ object DiplomacyTurnManager {
                     DiplomacyFlags.RecentlyAttacked.name -> {
                         civInfo.cityStateFunctions.askForUnitGifts(otherCiv)
                     }
-                    // These modifiers don't tick down normally, instead there is a threshold number of turns
-                    DiplomacyFlags.RememberDestroyedProtectedMinor.name -> {    // 125
-                        removeModifier(DiplomaticModifiers.DestroyedProtectedMinor)
-                    }
-                    DiplomacyFlags.RememberAttackedProtectedMinor.name -> {     // 75
-                        removeModifier(DiplomaticModifiers.AttackedProtectedMinor)
-                    }
-                    DiplomacyFlags.RememberBulliedProtectedMinor.name -> {      // 75
-                        removeModifier(DiplomaticModifiers.BulliedProtectedMinor)
-                    }
-                    DiplomacyFlags.RememberSidedWithProtectedMinor.name -> {      // 25
-                        removeModifier(DiplomaticModifiers.SidedWithProtectedMinor)
-                    }
-                    else -> {
-                        for (demand in Demand.entries){
-                            if (demand.agreedToDemand.name == flag) demand.fulfilledPromiseDiplomacyModifier?.let { addModifier(it, 10f) }
-                        }
-                    }
                 }
 
                 flagsCountdown.remove(flag)
             } else if (flag == DiplomacyFlags.WaryOf.name && flagsCountdown[flag]!! < -10) {
-                // Used in DeclareWarTargetAutomation.declarePlannedWar to count the number of turns preparing
-                // If we have been preparing for over 10 turns then cancel our attack plan
+                // City-states stay wary of an aggressor for 10 turns
                 flagsCountdown.remove(flag)
             }
         }
@@ -302,77 +268,9 @@ object DiplomacyTurnManager {
         }
     }
 
-    private fun DiplomacyManager.nextTurnDiplomaticModifiers() {
+    /** The military units city-states give their friends (the opinion of majors is recomputed each turn by the diplomacy AI) */
+    private fun DiplomacyManager.nextTurnCityStateUnitGifts() {
         val rng = state.stateBasedRandom("DiplomacyManager.nextTurnDiplomaticModifiers")
-        if (diplomaticStatus == DiplomaticStatus.Peace)
-            accumulateToAtMost(DiplomaticModifiers.YearsOfPeace, 0.5f, 30f)
-        else
-            revertToZero(DiplomaticModifiers.YearsOfPeace, 0.5f) // war makes you forget the good ol' days
-
-        var openBorders = 0
-        if (hasOpenBorders) openBorders += 1
-        if (otherCivDiplomacy().hasOpenBorders) openBorders += 1
-        if (openBorders > 0) accumulateToAtMost(DiplomaticModifiers.OpenBorders, openBorders / 8f) // so if we both have open borders it'll grow by 0.25 per turn
-        else revertToZero(DiplomaticModifiers.OpenBorders, 1 / 8f)
-
-        // Negatives
-        revertToZero(DiplomaticModifiers.DeclaredWarOnUs, 1 / 8f) // this disappears real slow - it'll take 160 turns to really forget, this is war declaration we're talking about
-        revertToZero(DiplomaticModifiers.WarMongerer, 1 / 2f) // warmongering gives a big negative boost when it happens but they're forgotten relatively quickly, like WWII amirite
-        revertToZero(DiplomaticModifiers.CapturedOurCities, 1 / 4f) // if you captured our cities, though, that's harder to forget
-        revertToZero(DiplomaticModifiers.BetrayedDeclarationOfFriendship, 1 / 8f) // That's a bastardly thing to do
-        revertToZero(DiplomaticModifiers.BetrayedDefensivePact, 1 / 16f) // That's an outrageous thing to do
-        revertToZero(DiplomaticModifiers.RefusedToNotSettleCitiesNearUs, 1 / 4f)
-        revertToZero(DiplomaticModifiers.RefusedToPromiseNotToAttackUs, 1 / 2f)
-        revertToZero(DiplomaticModifiers.BulliedProtectedMinor, 1 / 2f) // Decays at same rate as warmongering
-        revertToZero(DiplomaticModifiers.AttackedProtectedMinor, 1 / 2f) // Decays at same rate as warmongering
-        revertToZero(DiplomaticModifiers.DestroyedProtectedMinor, 1 / 4f) // Decays slower, similar to capturing cities
-        for (demand in Demand.entries) {
-            revertToZero(demand.betrayedPromiseDiplomacyModifier, 1 / 8f)
-        }
-        revertToZero(DiplomaticModifiers.BetrayedPromiseToNotAttackOtherCiv, 1 / 8f) // betrayals are remembered for a long time
-        revertToZero(DiplomaticModifiers.UnacceptableDemands, 1 / 4f)
-        revertToZero(DiplomaticModifiers.StealingTerritory, 1 / 4f)
-        revertToZero(DiplomaticModifiers.DenouncedOurAllies, 1 / 4f)
-        revertToZero(DiplomaticModifiers.DenouncedOurEnemies, 1 / 4f)
-        revertToZero(DiplomaticModifiers.Denunciation, 1 / 8f) // That's personal, it'll take a long time to fade
-        revertToZero(DiplomaticModifiers.SpiedOnUs, 1 / 4f)
-        revertToZero(DiplomaticModifiers.StoleOurAlly, 1 / 2f) // Fair enough, don't like it but not directly against us per se
-
-        // Positives
-        revertToZero(DiplomaticModifiers.GaveUsUnits, 1 / 4f)
-        revertToZero(DiplomaticModifiers.LiberatedCity, 1 / 8f)
-        if (hasModifier(DiplomaticModifiers.GaveUsGifts)) {
-            val giftLoss = when (relationshipLevel()) {
-                RelationshipLevel.Ally -> 1f
-                RelationshipLevel.Friend -> 1.5f
-                RelationshipLevel.Favorable -> 2f
-                RelationshipLevel.Neutral -> 2.5f
-                RelationshipLevel.Competitor -> 5f
-                RelationshipLevel.Enemy -> 7.5f
-                RelationshipLevel.Unforgivable -> 10f
-                else -> 2.5f
-            } * civInfo.gameInfo.ruleset.modOptions.constants.goldGiftDegradationMultiplier
-            // We should subtract a certain amount from this balanced each turn
-            // Assuming neutral relations we will subtract the higher of either:
-            //  2.5% of the total amount or roughly 50 gold per turn (a value of ~.5 without inflation)
-            // This ensures that the amount can be reduced to zero but scales with larger numbers
-            val amountLost = (getModifier(DiplomaticModifiers.GaveUsGifts).absoluteValue * giftLoss / 100)
-                .coerceAtLeast(giftLoss / 5)
-            revertToZero(DiplomaticModifiers.GaveUsGifts, amountLost)
-        }
-
-        setFriendshipBasedModifier()
-
-        setDefensivePactBasedModifier()
-
-        setReligionBasedModifier()
-
-        if (!hasFlag(DiplomacyFlags.DeclarationOfFriendship))
-            revertToZero(DiplomaticModifiers.DeclarationOfFriendship, 1 / 2f) //decreases slowly and will revert to full if it is declared later
-
-        if (!hasFlag(DiplomacyFlags.DefensivePact))
-            revertToZero(DiplomaticModifiers.DefensivePact, 1f)
-
         if (!otherCiv.isCityState) return
 
         if (isRelationshipLevelLT(RelationshipLevel.Friend)) {
@@ -394,35 +292,5 @@ object DiplomacyTurnManager {
                 setFlag(DiplomacyFlags.ProvideMilitaryUnit, unique.params[0].toInt() + variance)
             }
         }
-    }
-
-    /**
-     * Uses Quick speed as baseline for turn based adjustment of diplomatic modifiers.
-     * This way, the values set in [nextTurnDiplomaticModifiers] will apply 1:1 to Quick speed, which is the most popular speed.
-     */
-    private const val SPEED_ADJUSTMENT_NORMALIZATION_FACTOR = 0.67f
-
-    /** @param amount always positive, so you don't need to think about it */
-    private fun DiplomacyManager.revertToZero(modifier: DiplomaticModifiers, amount: Float) {
-        if (!hasModifier(modifier)) return
-        val currentAmount = getModifier(modifier)
-        val speedAdjustedAmount = SPEED_ADJUSTMENT_NORMALIZATION_FACTOR * amount / civInfo.gameInfo.speed.modifier
-        if (speedAdjustedAmount >= currentAmount.absoluteValue) diplomaticModifiers.remove(modifier.name)
-        else if (currentAmount > 0) addModifier(modifier, -speedAdjustedAmount)
-        else addModifier(modifier, speedAdjustedAmount)
-    }
-
-    /**
-     * @param amount should always be positive
-     * @param maxAmount modifier value will not increase beyond this value
-     */
-    private fun DiplomacyManager.accumulateToAtMost(modifier: DiplomaticModifiers, amount: Float, maxAmount: Float = Float.MAX_VALUE) {
-        val currentAmount = getModifier(modifier)
-        // no effect if >= max
-        if (currentAmount >= maxAmount) return
-        val speedAdjustedAmount = SPEED_ADJUSTMENT_NORMALIZATION_FACTOR * amount / civInfo.gameInfo.speed.modifier
-        // do not increase beyond max
-        if (speedAdjustedAmount >= maxAmount - currentAmount) setModifier(modifier, maxAmount)
-        else addModifier(modifier, speedAdjustedAmount)
     }
 }

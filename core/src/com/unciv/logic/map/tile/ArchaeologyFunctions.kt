@@ -1,10 +1,10 @@
 package com.unciv.logic.map.tile
 
+import com.unciv.models.ruleset.ai.MinorCivApproach
 import com.unciv.logic.GameInfo
 import com.unciv.logic.civilization.AlertType
 import com.unciv.logic.civilization.PopupAlert
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
-import com.unciv.logic.civilization.diplomacy.DiplomaticModifiers
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.civilization.Civilization
@@ -233,12 +233,11 @@ object ArchaeologyFunctions {
             noSlot -> if (isWriting) ArchaeologyChoice.CultureBoost else ArchaeologyChoice.Landmark
             tile.getOwner() != civ -> {
                 // CvPlayerCulture::GetArchaeologyChoice: diplomatic strategy favors a city-state
-                // Landmark unless our available diplomacy state says we are targeting it for conquest.
+                // Landmark unless our approach towards it is conquest.
                 val owner = tile.getOwner()
                 if (owner?.isCityState == true && civ.ai.isGoingForDiploVictory()
                     && !civ.isAtWarWith(owner)) {
-                    val diplomacy = civ.getDiplomacyManager(owner)
-                    if (diplomacy?.hasFlag(DiplomacyFlags.WaryOf) == true && diplomacy.getFlag(DiplomacyFlags.WaryOf) < 0)
+                    if (civ.ai.minorCivApproaches[owner.civID] == MinorCivApproach.Conquest)
                         ArchaeologyChoice.ArtifactOfFirst
                     else ArchaeologyChoice.Landmark
                 } else ArchaeologyChoice.ArtifactOfFirst
@@ -274,12 +273,8 @@ object ArchaeologyFunctions {
                     owner.getDiplomacyManager(civ)?.addInfluence(constants.landmarkInfluenceWithCityStates.toFloat())
                 else if (owner != null && owner != civ && owner.isMajorCiv && owner.isAI()) {
                     val diplomacy = owner.getDiplomacyManager(civ)
-                    if (diplomacy != null) {
-                        diplomacy.landmarksBuiltForUs++
-                        // CvDiplomacyAI::GetLandmarksBuiltForMeScore: first +20, subsequent +6 each.
-                        diplomacy.setModifier(DiplomaticModifiers.BuiltLandmarksForUs,
-                            (20 + (diplomacy.landmarksBuiltForUs - 1) * (20 / 3)).toFloat())
-                    }
+                    // CvPlayerCulture: ChangeNumLandmarksBuiltForMe (the opinion is CvDiplomacyAI::GetLandmarksBuiltForMeScore)
+                    if (diplomacy != null) diplomacy.landmarksBuiltForUs++
                 }
             }
             ArchaeologyChoice.ArtifactOfFirst, ArchaeologyChoice.ArtifactOfSecond, ArchaeologyChoice.Writing -> {

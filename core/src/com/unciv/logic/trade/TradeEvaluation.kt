@@ -1,10 +1,8 @@
 package com.unciv.logic.trade
 
-import com.unciv.view.GameView
 import com.unciv.Constants
-import com.unciv.logic.automation.civilization.DiplomacyAutomation
-import com.unciv.logic.automation.civilization.MotivationToAttackAutomation
-import com.unciv.logic.automation.civilization.DeclareWarPlanEvaluator
+import com.unciv.logic.automation.diplomacy.MajorCivOpinion
+import com.unciv.models.ruleset.ai.MajorCivApproach
 import com.unciv.logic.city.City
 import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.civilization.Civilization
@@ -117,11 +115,11 @@ class TradeEvaluation {
 
     @Readonly
     fun isTradeAcceptable(trade: Trade, evaluator: Civilization, tradePartner: Civilization): Boolean {
-        return getTradeAcceptability(trade, evaluator, tradePartner, true) >= 0
+        return getTradeAcceptability(trade, evaluator, tradePartner) >= 0
     }
 
     @Readonly
-    fun getTradeAcceptability(trade: Trade, evaluator: Civilization, tradePartner: Civilization, includeDiplomaticGifts:Boolean = false): Int {
+    fun getTradeAcceptability(trade: Trade, evaluator: Civilization, tradePartner: Civilization): Int {
         if ((trade.ourOffers.any { it.type == TradeOfferType.GreatWork }
                 || trade.theirOffers.any { it.type == TradeOfferType.GreatWork })
             && !isTradeValid(trade, evaluator, tradePartner)) return Int.MIN_VALUE
@@ -161,8 +159,7 @@ class TradeEvaluation {
                 return Int.MIN_VALUE
             }
         }
-        val diplomaticGifts: Int = if (includeDiplomaticGifts) evaluator.getDiplomacyManager(tradePartner)!!.getGoldGifts() else 0
-        return (sumOfTheirOffers - sumOfOurOffers + diplomaticGifts)
+        return (sumOfTheirOffers - sumOfOurOffers)
             .coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong()).toInt()
     }
 
@@ -265,8 +262,8 @@ class TradeEvaluation {
                     // Team war is handled in the selling method
                     return 0
                 } else if (civInfo.isAtWarWith(civToDeclareWarOn)) {
-                    // We shouldn't require them to pay us to join our war (no negative values)
-                    return (20 * DeclareWarPlanEvaluator.evaluateJoinOurWarPlan(civInfo, civToDeclareWarOn, tradePartner, null)).toInt().coerceAtLeast(0)
+                    // Interim until the deal AI's CvDealAI::GetThirdPartyWarValue: we don't pay for help in our wars
+                    return 0
                 } else {
                     // Why should we pay you to go fight someone else?
                     return 0
@@ -405,8 +402,8 @@ class TradeEvaluation {
                 return when (offer.name) {
                     // Since it will be evaluated twice, once when they evaluate our offer and once when they evaluate theirs
                     Constants.peaceTreaty -> evaluatePeaceCostForThem(civInfo, tradePartner)
-                    Constants.defensivePact -> if (DiplomacyAutomation.wantsToSignDefensivePact(GameView(civInfo.gameInfo, civInfo).civView, tradePartner)) 0
-                        else 100000
+                    // CvDealAI::GetDefensivePactValue
+                    Constants.defensivePact -> if (civInfo.ai.diplomacy.opinionOf(tradePartner) >= MajorCivOpinion.Favorable) 100 else 100000
                     Constants.researchAgreement -> -offer.amount
                     else -> 1000
                     //Todo:AddDefensiveTreatyHere
@@ -480,24 +477,8 @@ class TradeEvaluation {
             TradeOfferType.Introduction -> return introductionValue(civInfo.gameInfo.ruleset)
             TradeOfferType.WarDeclaration -> {
                 val civToDeclareWarOn = civInfo.gameInfo.getCivilization(offer.name)
-                val motivation = when {
-                    // Joint war
-                    trade.theirOffers.any { it.type == TradeOfferType.WarDeclaration && it.name == offer.name }
-                            && trade.ourOffers.any {it.type == TradeOfferType.WarDeclaration && it.name == offer.name} ->
-                        DeclareWarPlanEvaluator.evaluateTeamWarPlan(civInfo, civToDeclareWarOn, tradePartner, null)
-                    tradePartner.isAtWarWith(civToDeclareWarOn) ->
-                        DeclareWarPlanEvaluator.evaluateJoinWarPlan(civInfo, civToDeclareWarOn, tradePartner, null)
-                    else ->
-                        DeclareWarPlanEvaluator.evaluateDeclareWarPlan(civInfo, civToDeclareWarOn, null)
-                }
-
-                // No amount of gold will make us declare a war we're this against - never accept
-                if (motivation < -10f) return Int.MAX_VALUE
-
-                // Missing motivation costs 1000 gold per point, so 1000 min (-1 motivation) to 10000 max (-10 motivation)
-                if (motivation < 0f) return (-motivation * 1000).toInt().coerceAtMost(10000)
-
-                // If we already want to declare this war then thanks for the extra money I guess!
+                // Interim until the deal AI's CvDealAI::GetThirdPartyWarValue: only a war our diplomacy AI wants anyway
+                if (civInfo.ai.diplomacy.approachTowards(civToDeclareWarOn) != MajorCivApproach.War) return Int.MAX_VALUE
                 return 1000
             }
             TradeOfferType.PeaceProposal -> {
@@ -563,7 +544,7 @@ class TradeEvaluation {
         if (ourCombatStrength * 1.5f >= theirCombatStrength && theirCombatStrength * 1.5f >= ourCombatStrength)
             return 0 // we're roughly equal, there's no huge power imbalance
         if (ourCombatStrength > theirCombatStrength) {
-            if (MotivationToAttackAutomation.hasAtLeastMotivationToAttack(ourCiv, GameView(ourCiv.gameInfo, ourCiv).getForeignCivView(otherCiv), 0f) <= 0) return 0
+            if (ourCiv.ai.diplomacy.approachTowards(otherCiv) != MajorCivApproach.War) return 0
             val absoluteAdvantage = ourCombatStrength - theirCombatStrength
             val percentageAdvantage = absoluteAdvantage / theirCombatStrength.toFloat()
             // We don't add the same constraint here. We should not make peace easily if we're

@@ -1,5 +1,6 @@
 {
   "defines": {
+    "AGGRESSIVE_ANNEX": 0.75,
     "AI_ATTEMPT_RUSH_OVER_X_TURNS_TO_BUILD": 15,
     "AI_BUY_PLOT_TEST_PROBES": 5,
     "AI_CAN_DISBAND_UNITS": 1,
@@ -623,6 +624,7 @@
     "MINOR_APPROACH_WAR_TARGET_IMPOSSIBLE": 10,
     "MINOR_APPROACH_WAR_TARGET_SOFT": 130,
     "MINOR_BULLY_GOLD": 50,
+    "MINOR_CIV_AGGRESSOR_THRESHOLD": 2,
     "MINOR_CIV_BUYOUT_COST": 500,
     "MINOR_CIV_BUYOUT_TURNS": 5,
     "MINOR_CIV_CONTACT_GOLD_FIRST": 30,
@@ -678,6 +680,7 @@
     "MINOR_CIV_SCIENCE_BONUS_MULTIPLIER": 25,
     "MINOR_CIV_THREATENED_BY_BARBS_NOTIF_THRESHOLD": 2,
     "MINOR_CIV_TILE_IMPROVEMENT_GIFT_COST": 200,
+    "MINOR_CIV_WARMONGER_THRESHOLD": 4,
     "MINOR_FRIENDSHIP_AT_WAR": -60,
     "MINOR_FRIENDSHIP_CLOSE_AMOUNT": 8,
     "MINOR_FRIENDSHIP_DROP_BULLY_GOLD_SUCCESS": -1500,
@@ -912,6 +915,7 @@
     "REQUEST_PEACE_TURN_THRESHOLD": 4,
     "RESEARCH_AGREEMENT_BOOST_DIVISOR": 6,
     "SETTLER_BUILD_ON_COAST_PERCENT": 25,
+    "SETTLER_DISTANCE_DROPOFF_MODIFIER": 67,
     "SETTLER_EVALUATION_DISTANCE": 24,
     "SETTLER_FAITH_MULTIPLIER": 1,
     "SETTLER_FOOD_MULTIPLIER": 15,
@@ -954,7 +958,10 @@
     "TARGET_MINOR_BACKUP_STRONG": 25,
     "TARGET_MINOR_BACKUP_WEAK": 0,
     "TARGET_NEIGHBORS": -10,
+    "TECH_PRIORITY_MAYA_CALENDAR_BONUS": 50,
+    "TECH_PRIORITY_UNIQUE_ITEM": 5,
     "TECH_WEIGHT_PROPAGATION_LEVELS": 3,
+    "TECH_WEIGHT_PROPAGATION_PERCENT": 50,
     "TURNS_SINCE_PEACE_WEIGHT_DAMPENER": 25,
     "UNIT_SPAWN_BIAS_MULTIPLIER": 50,
     "VICTORY_DISPUTE_FIERCE_THRESHOLD": 80,
@@ -982,6 +989,7 @@
     "WARMONGER_THREAT_PER_TURN_DECAY": -5,
     "WARMONGER_THREAT_SEVERE_PERCENT_THRESHOLD": 25,
     "WARMONGER_THREAT_SEVERE_THRESHOLD": 150,
+    "WAR_DAMAGE_LEVEL_CITY_WEIGHT": 150,
     "WAR_DAMAGE_LEVEL_INVOLVED_CITY_POP_MULTIPLIER": 150,
     "WAR_DAMAGE_LEVEL_THRESHOLD_CRIPPLED": 67,
     "WAR_DAMAGE_LEVEL_THRESHOLD_MAJOR": 25,
@@ -1025,7 +1033,8 @@
     "WAR_STATE_THRESHOLD_STALEMATE": 42,
     "WONDER_DISPUTE_FIERCE_THRESHOLD": 10,
     "WONDER_DISPUTE_STRONG_THRESHOLD": 7,
-    "WONDER_DISPUTE_WEAK_THRESHOLD": 5
+    "WONDER_DISPUTE_WEAK_THRESHOLD": 5,
+    "WOUNDED_DAMAGE_MULTIPLIER": 33
   },
   "postDefines": {
     "AI_HANDICAP": "Chieftain",
@@ -7997,6 +8006,1165 @@
         "TechNumOptionsConsidered": 2,
         "CityProductionNumOptionsConsidered": 2
       }
+    }
+  ],
+  "policyBranches": [
+    {
+      "name": "Tradition"
+    },
+    {
+      "name": "Liberty"
+    },
+    {
+      "name": "Honor"
+    },
+    {
+      "name": "Piety",
+      "aiDelayNoReligion": true
+    },
+    {
+      "name": "Patronage",
+      "aiDelayNoCityStates": true
+    },
+    {
+      "name": "Commerce"
+    },
+    {
+      "name": "Rationalism",
+      "aiDelayNoScience": true
+    },
+    {
+      "name": "Freedom"
+    },
+    {
+      "name": "Order"
+    },
+    {
+      "name": "Autocracy"
+    }
+  ],
+  "techPrereqs": [
+    {
+      "name": "Pottery",
+      "prereqs": [
+        "Agriculture"
+      ]
+    },
+    {
+      "name": "Animal Husbandry",
+      "prereqs": [
+        "Agriculture"
+      ]
+    },
+    {
+      "name": "Archery",
+      "prereqs": [
+        "Agriculture"
+      ]
+    },
+    {
+      "name": "Mining",
+      "prereqs": [
+        "Agriculture"
+      ]
+    },
+    {
+      "name": "Sailing",
+      "prereqs": [
+        "Pottery"
+      ]
+    },
+    {
+      "name": "Calendar",
+      "prereqs": [
+        "Pottery"
+      ]
+    },
+    {
+      "name": "Writing",
+      "prereqs": [
+        "Pottery"
+      ]
+    },
+    {
+      "name": "Trapping",
+      "prereqs": [
+        "Animal Husbandry"
+      ]
+    },
+    {
+      "name": "The Wheel",
+      "prereqs": [
+        "Animal Husbandry",
+        "Archery"
+      ]
+    },
+    {
+      "name": "Masonry",
+      "prereqs": [
+        "Mining"
+      ]
+    },
+    {
+      "name": "Bronze Working",
+      "prereqs": [
+        "Mining"
+      ]
+    },
+    {
+      "name": "Optics",
+      "prereqs": [
+        "Sailing"
+      ]
+    },
+    {
+      "name": "Horseback Riding",
+      "prereqs": [
+        "The Wheel",
+        "Trapping"
+      ]
+    },
+    {
+      "name": "Mathematics",
+      "prereqs": [
+        "The Wheel"
+      ]
+    },
+    {
+      "name": "Construction",
+      "prereqs": [
+        "Masonry",
+        "The Wheel"
+      ]
+    },
+    {
+      "name": "Philosophy",
+      "prereqs": [
+        "Calendar",
+        "Writing"
+      ]
+    },
+    {
+      "name": "Drama and Poetry",
+      "prereqs": [
+        "Writing"
+      ]
+    },
+    {
+      "name": "Currency",
+      "prereqs": [
+        "Mathematics"
+      ]
+    },
+    {
+      "name": "Engineering",
+      "prereqs": [
+        "Mathematics",
+        "Construction"
+      ]
+    },
+    {
+      "name": "Iron Working",
+      "prereqs": [
+        "Bronze Working"
+      ]
+    },
+    {
+      "name": "Theology",
+      "prereqs": [
+        "Philosophy",
+        "Drama and Poetry"
+      ]
+    },
+    {
+      "name": "Civil Service",
+      "prereqs": [
+        "Drama and Poetry",
+        "Horseback Riding",
+        "Currency"
+      ]
+    },
+    {
+      "name": "Guilds",
+      "prereqs": [
+        "Currency"
+      ]
+    },
+    {
+      "name": "Metal Casting",
+      "prereqs": [
+        "Engineering",
+        "Iron Working"
+      ]
+    },
+    {
+      "name": "Compass",
+      "prereqs": [
+        "Optics",
+        "Theology"
+      ]
+    },
+    {
+      "name": "Education",
+      "prereqs": [
+        "Theology",
+        "Civil Service"
+      ]
+    },
+    {
+      "name": "Chivalry",
+      "prereqs": [
+        "Civil Service",
+        "Guilds"
+      ]
+    },
+    {
+      "name": "Machinery",
+      "prereqs": [
+        "Engineering",
+        "Guilds"
+      ]
+    },
+    {
+      "name": "Physics",
+      "prereqs": [
+        "Metal Casting"
+      ]
+    },
+    {
+      "name": "Steel",
+      "prereqs": [
+        "Metal Casting"
+      ]
+    },
+    {
+      "name": "Astronomy",
+      "prereqs": [
+        "Compass",
+        "Education"
+      ]
+    },
+    {
+      "name": "Acoustics",
+      "prereqs": [
+        "Education"
+      ]
+    },
+    {
+      "name": "Banking",
+      "prereqs": [
+        "Education",
+        "Chivalry"
+      ]
+    },
+    {
+      "name": "Printing Press",
+      "prereqs": [
+        "Machinery",
+        "Physics",
+        "Chivalry"
+      ]
+    },
+    {
+      "name": "Gunpowder",
+      "prereqs": [
+        "Physics",
+        "Steel"
+      ]
+    },
+    {
+      "name": "Navigation",
+      "prereqs": [
+        "Astronomy"
+      ]
+    },
+    {
+      "name": "Architecture",
+      "prereqs": [
+        "Acoustics",
+        "Banking"
+      ]
+    },
+    {
+      "name": "Economics",
+      "prereqs": [
+        "Banking",
+        "Printing Press"
+      ]
+    },
+    {
+      "name": "Metallurgy",
+      "prereqs": [
+        "Gunpowder",
+        "Printing Press"
+      ]
+    },
+    {
+      "name": "Chemistry",
+      "prereqs": [
+        "Gunpowder"
+      ]
+    },
+    {
+      "name": "Archaeology",
+      "prereqs": [
+        "Navigation",
+        "Architecture"
+      ]
+    },
+    {
+      "name": "Scientific Theory",
+      "prereqs": [
+        "Economics",
+        "Architecture"
+      ]
+    },
+    {
+      "name": "Industrialization",
+      "prereqs": [
+        "Economics"
+      ]
+    },
+    {
+      "name": "Rifling",
+      "prereqs": [
+        "Economics",
+        "Metallurgy"
+      ]
+    },
+    {
+      "name": "Military Science",
+      "prereqs": [
+        "Chemistry",
+        "Metallurgy"
+      ]
+    },
+    {
+      "name": "Fertilizer",
+      "prereqs": [
+        "Chemistry"
+      ]
+    },
+    {
+      "name": "Biology",
+      "prereqs": [
+        "Archaeology",
+        "Scientific Theory"
+      ]
+    },
+    {
+      "name": "Electricity",
+      "prereqs": [
+        "Scientific Theory"
+      ]
+    },
+    {
+      "name": "Steam Power",
+      "prereqs": [
+        "Rifling",
+        "Industrialization",
+        "Scientific Theory"
+      ]
+    },
+    {
+      "name": "Dynamite",
+      "prereqs": [
+        "Fertilizer",
+        "Military Science"
+      ]
+    },
+    {
+      "name": "Refrigeration",
+      "prereqs": [
+        "Electricity",
+        "Biology"
+      ]
+    },
+    {
+      "name": "Radio",
+      "prereqs": [
+        "Electricity"
+      ]
+    },
+    {
+      "name": "Replaceable Parts",
+      "prereqs": [
+        "Steam Power",
+        "Electricity"
+      ]
+    },
+    {
+      "name": "Flight",
+      "prereqs": [
+        "Steam Power"
+      ]
+    },
+    {
+      "name": "Railroads",
+      "prereqs": [
+        "Steam Power",
+        "Dynamite"
+      ]
+    },
+    {
+      "name": "Plastics",
+      "prereqs": [
+        "Radio",
+        "Replaceable Parts"
+      ]
+    },
+    {
+      "name": "Electronics",
+      "prereqs": [
+        "Replaceable Parts",
+        "Flight"
+      ]
+    },
+    {
+      "name": "Ballistics",
+      "prereqs": [
+        "Railroads",
+        "Flight"
+      ]
+    },
+    {
+      "name": "Combustion",
+      "prereqs": [
+        "Railroads"
+      ]
+    },
+    {
+      "name": "Pharmaceuticals",
+      "prereqs": [
+        "Refrigeration",
+        "Plastics"
+      ]
+    },
+    {
+      "name": "Atomic Theory",
+      "prereqs": [
+        "Plastics",
+        "Electronics"
+      ]
+    },
+    {
+      "name": "Radar",
+      "prereqs": [
+        "Electronics",
+        "Ballistics"
+      ]
+    },
+    {
+      "name": "Combined Arms",
+      "prereqs": [
+        "Ballistics",
+        "Combustion"
+      ]
+    },
+    {
+      "name": "Ecology",
+      "prereqs": [
+        "Atomic Theory",
+        "Pharmaceuticals"
+      ]
+    },
+    {
+      "name": "Nuclear Fission",
+      "prereqs": [
+        "Atomic Theory",
+        "Radar"
+      ]
+    },
+    {
+      "name": "Rocketry",
+      "prereqs": [
+        "Radar"
+      ]
+    },
+    {
+      "name": "Computers",
+      "prereqs": [
+        "Radar",
+        "Combined Arms"
+      ]
+    },
+    {
+      "name": "Telecommunications",
+      "prereqs": [
+        "Ecology"
+      ]
+    },
+    {
+      "name": "Mobile Tactics",
+      "prereqs": [
+        "Ecology",
+        "Nuclear Fission"
+      ]
+    },
+    {
+      "name": "Advanced Ballistics",
+      "prereqs": [
+        "Nuclear Fission",
+        "Rocketry"
+      ]
+    },
+    {
+      "name": "Satellites",
+      "prereqs": [
+        "Rocketry"
+      ]
+    },
+    {
+      "name": "Robotics",
+      "prereqs": [
+        "Rocketry",
+        "Computers"
+      ]
+    },
+    {
+      "name": "Lasers",
+      "prereqs": [
+        "Computers"
+      ]
+    },
+    {
+      "name": "Globalization",
+      "prereqs": [
+        "Telecommunications"
+      ]
+    },
+    {
+      "name": "Particle Physics",
+      "prereqs": [
+        "Telecommunications",
+        "Mobile Tactics",
+        "Advanced Ballistics"
+      ]
+    },
+    {
+      "name": "Nuclear Fusion",
+      "prereqs": [
+        "Advanced Ballistics",
+        "Satellites",
+        "Robotics"
+      ]
+    },
+    {
+      "name": "Nanotechnology",
+      "prereqs": [
+        "Robotics"
+      ]
+    },
+    {
+      "name": "Stealth",
+      "prereqs": [
+        "Robotics",
+        "Lasers"
+      ]
+    },
+    {
+      "name": "Future Tech",
+      "prereqs": [
+        "Globalization",
+        "Particle Physics",
+        "Nuclear Fusion",
+        "Nanotechnology",
+        "Stealth"
+      ]
+    }
+  ],
+  "coastalCivilizations": [
+    "Carthage",
+    "Denmark",
+    "England",
+    "Polynesia",
+    "Spain",
+    "The Ottomans"
+  ],
+  "featureStartingLocationWeights": {
+    "Jungle": -10,
+    "Marsh": -10
+  },
+  "eraDiplomacy": [
+    {
+      "name": "Ancient era",
+      "diploEmphasisReligion": 0,
+      "diploEmphasisLatePolicies": 0
+    },
+    {
+      "name": "Classical era",
+      "diploEmphasisReligion": 2,
+      "diploEmphasisLatePolicies": 0
+    },
+    {
+      "name": "Medieval era",
+      "diploEmphasisReligion": 5,
+      "diploEmphasisLatePolicies": 0
+    },
+    {
+      "name": "Renaissance era",
+      "diploEmphasisReligion": 5,
+      "diploEmphasisLatePolicies": 0
+    },
+    {
+      "name": "Industrial era",
+      "diploEmphasisReligion": 2,
+      "diploEmphasisLatePolicies": 4
+    },
+    {
+      "name": "Modern era",
+      "diploEmphasisReligion": 0,
+      "diploEmphasisLatePolicies": 6
+    },
+    {
+      "name": "Atomic era",
+      "diploEmphasisReligion": 0,
+      "diploEmphasisLatePolicies": 4
+    },
+    {
+      "name": "Information era",
+      "diploEmphasisReligion": 0,
+      "diploEmphasisLatePolicies": 2
+    },
+    {
+      "name": "Future era",
+      "diploEmphasisReligion": 0,
+      "diploEmphasisLatePolicies": 2
+    }
+  ],
+  "gameSpeedDiplomacy": [
+    {
+      "name": "Marathon",
+      "relationshipDuration": 150,
+      "opinionDurationPercent": 300
+    },
+    {
+      "name": "Epic",
+      "relationshipDuration": 75,
+      "opinionDurationPercent": 150
+    },
+    {
+      "name": "Standard",
+      "relationshipDuration": 50,
+      "opinionDurationPercent": 100
+    },
+    {
+      "name": "Quick",
+      "relationshipDuration": 50,
+      "opinionDurationPercent": 67
+    }
+  ],
+  "worldSizes": [
+    {
+      "name": "Duel",
+      "estimatedNumCities": 0
+    },
+    {
+      "name": "Tiny",
+      "estimatedNumCities": 0
+    },
+    {
+      "name": "Small",
+      "estimatedNumCities": 0
+    },
+    {
+      "name": "Medium",
+      "estimatedNumCities": 0
+    },
+    {
+      "name": "Large",
+      "estimatedNumCities": 0
+    },
+    {
+      "name": "Huge",
+      "estimatedNumCities": 0
+    }
+  ],
+  "multiUnitFormations": [
+    {
+      "name": "MUFORMATION_BASIC_CITY_ATTACK_FORCE",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_RANGED",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_RANGED",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_COUNTER",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_GENERAL",
+          "secondaryUnitAi": "UNITAI_GENERAL",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_BIGGER_CITY_ATTACK_FORCE",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_RANGED",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_RANGED",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_COUNTER",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_COUNTER",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_GENERAL",
+          "secondaryUnitAi": "UNITAI_GENERAL",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_RANGED",
+          "secondaryUnitAi": "UNITAI_ATTACK",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_COUNTER",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_CITY_STATE_ATTACK_FORCE",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_RANGED",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_FAST_PILLAGERS",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_FAST_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_ANTI_BARBARIAN_TEAM",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_RANGED",
+          "secondaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_FAST_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_RAPID_RESPONSE_FORCE",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_COUNTER",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_RANGED",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_FAST_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_FAST_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_CLOSE_CITY_DEFENSE",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_COUNTER",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_COUNTER",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_RANGED",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_RANGED",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_SETTLER_ESCORT",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_SETTLE",
+          "secondaryUnitAi": "UNITAI_SETTLE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_DEFENSE",
+          "secondaryUnitAi": "UNITAI_COUNTER",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_MERCHANT_ESCORT",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_MERCHANT",
+          "secondaryUnitAi": "UNITAI_MERCHANT",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_DEFENSE",
+          "secondaryUnitAi": "UNITAI_COUNTER",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_SMALL_CITY_ATTACK_FORCE",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_RANGED",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_RANGED",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_GENERAL",
+          "secondaryUnitAi": "UNITAI_GENERAL",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_RANGED",
+          "secondaryUnitAi": "UNITAI_ATTACK",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_QUICK_COLONY_SETTLER",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_SETTLE",
+          "secondaryUnitAi": "UNITAI_SETTLE",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_NAVAL_SQUADRON",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_ATTACK_SEA",
+          "secondaryUnitAi": "UNITAI_RESERVE_SEA",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK_SEA",
+          "secondaryUnitAi": "UNITAI_RESERVE_SEA",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_ASSAULT_SEA",
+          "secondaryUnitAi": "UNITAI_RESERVE_SEA",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ASSAULT_SEA",
+          "secondaryUnitAi": "UNITAI_RESERVE_SEA",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_COLONIZATION_PARTY",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_SETTLE",
+          "secondaryUnitAi": "UNITAI_SETTLE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_DEFENSE",
+          "secondaryUnitAi": "UNITAI_COUNTER",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ESCORT_SEA",
+          "secondaryUnitAi": "UNITAI_RESERVE_SEA",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_NAVAL_INVASION",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_RANGED",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK_SEA",
+          "secondaryUnitAi": "UNITAI_RESERVE_SEA",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ASSAULT_SEA",
+          "secondaryUnitAi": "UNITAI_RESERVE_SEA",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ADMIRAL",
+          "secondaryUnitAi": "UNITAI_ADMIRAL",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_CARRIER_SEA",
+          "secondaryUnitAi": "UNITAI_CARRIER_SEA",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_CITY_STATE_INVASION",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_RANGED",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK_SEA",
+          "secondaryUnitAi": "UNITAI_RESERVE_SEA",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ASSAULT_SEA",
+          "secondaryUnitAi": "UNITAI_RESERVE_SEA",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ADMIRAL",
+          "secondaryUnitAi": "UNITAI_ADMIRAL",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_NUKE_ATTACK",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_ICBM",
+          "secondaryUnitAi": "UNITAI_ICBM",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_EARLY_RUSH",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_ATTACK",
+          "secondaryUnitAi": "UNITAI_DEFENSE",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_CITY_BOMBARD",
+          "secondaryUnitAi": "UNITAI_RANGED",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_GENERAL",
+          "secondaryUnitAi": "UNITAI_GENERAL",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_NAVAL_BOMBARDMENT",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_ASSAULT_SEA",
+          "secondaryUnitAi": "UNITAI_ASSAULT_SEA",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ASSAULT_SEA",
+          "secondaryUnitAi": "UNITAI_ASSAULT_SEA",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "MUFORMATION_PURE_NAVAL_CITY_ATTACK",
+      "slots": [
+        {
+          "primaryUnitAi": "UNITAI_ATTACK_SEA",
+          "secondaryUnitAi": "UNITAI_ATTACK_SEA",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ATTACK_SEA",
+          "secondaryUnitAi": "UNITAI_ASSAULT_SEA",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ASSAULT_SEA",
+          "secondaryUnitAi": "UNITAI_ASSAULT_SEA",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ASSAULT_SEA",
+          "secondaryUnitAi": "UNITAI_ATTACK_SEA",
+          "required": true
+        },
+        {
+          "primaryUnitAi": "UNITAI_ADMIRAL",
+          "secondaryUnitAi": "UNITAI_ADMIRAL",
+          "required": false
+        },
+        {
+          "primaryUnitAi": "UNITAI_CARRIER_SEA",
+          "secondaryUnitAi": "UNITAI_CARRIER_SEA",
+          "required": false
+        }
+      ]
     }
   ]
 }

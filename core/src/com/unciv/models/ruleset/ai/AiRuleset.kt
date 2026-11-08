@@ -14,6 +14,7 @@ import com.unciv.models.ruleset.unit.BaseUnit
 import com.unciv.models.stats.INamed
 import com.unciv.models.stats.Stat
 import com.unciv.models.stats.Stats
+import yairm210.purity.annotations.Readonly
 import kotlin.math.max
 
 /**
@@ -36,6 +37,10 @@ class AiRuleset {
     var itemFlavors = ArrayList<ItemFlavors>()
     var unitAiTypes = ArrayList<UnitAiTypesDef>()
     var handicaps = ArrayList<HandicapDef>()
+    var eraDiplomacy = ArrayList<EraDiplomacyDef>()
+    var gameSpeedDiplomacy = ArrayList<GameSpeedDiplomacyDef>()
+    var worldSizes = ArrayList<WorldSizeDef>()
+    var multiUnitFormations = ArrayList<MultiUnitFormationDef>()
 
     /** The ruleset this belongs to - needed to derive flavors of objects without a table entry */
     @Transient lateinit var ruleset: Ruleset
@@ -79,6 +84,10 @@ class AiRuleset {
         mergeByName(minorCivFlavors, other.minorCivFlavors)
         mergeByName(unitAiTypes, other.unitAiTypes)
         mergeByName(handicaps, other.handicaps)
+        mergeByName(eraDiplomacy, other.eraDiplomacy)
+        mergeByName(gameSpeedDiplomacy, other.gameSpeedDiplomacy)
+        mergeByName(worldSizes, other.worldSizes)
+        mergeByName(multiUnitFormations, other.multiUnitFormations)
         for (entry in other.itemFlavors) {
             val index = itemFlavors.indexOfFirst { it.kind == entry.kind && it.name == entry.name }
             if (index >= 0) itemFlavors[index] = entry else itemFlavors.add(entry)
@@ -98,6 +107,10 @@ class AiRuleset {
         itemFlavors.clear()
         unitAiTypes.clear()
         handicaps.clear()
+        eraDiplomacy.clear()
+        gameSpeedDiplomacy.clear()
+        worldSizes.clear()
+        multiUnitFormations.clear()
         clearCaches()
     }
 
@@ -117,8 +130,21 @@ class AiRuleset {
 
     //region Lookups
 
-    fun define(define: AiDefine): Int = (defines[define.name] ?: define.default).toInt()
+    @Readonly fun define(define: AiDefine): Int = (defines[define.name] ?: define.default).toInt()
     fun defineFloat(define: AiDefine): Float = defines[define.name] ?: define.default
+
+    /** Diplomacy emphasis of an era; an era without an entry has none (the XML's default 0) */
+    fun eraDiplomacy(eraName: String): EraDiplomacyDef = eraDiplomacy.firstOrNull { it.name == eraName } ?: defaultEraDiplomacy
+
+    /** Relationship and opinion durations of a game speed; standard speed's for a speed without an entry */
+    fun gameSpeedDiplomacy(speedName: String): GameSpeedDiplomacyDef = gameSpeedDiplomacy.firstOrNull { it.name == speedName } ?: defaultGameSpeedDiplomacy
+
+    /** EstimatedNumCities of a map size; a standard map's for a size without an entry (custom sizes) */
+    fun worldSize(mapSizeName: String): WorldSizeDef = worldSizes.firstOrNull { it.name == mapSizeName } ?: defaultWorldSize
+
+    @Transient private val defaultEraDiplomacy = EraDiplomacyDef()
+    @Transient private val defaultGameSpeedDiplomacy = GameSpeedDiplomacyDef()
+    @Transient private val defaultWorldSize = WorldSizeDef()
 
     /** The four grand strategies of the original, without flavors, for a ruleset without AI.json */
     @delegate:Transient

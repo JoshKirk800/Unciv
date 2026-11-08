@@ -1,5 +1,6 @@
 package com.unciv.logic.civilization.diplomacy
 
+import com.unciv.logic.automation.diplomacy.DiplomacyEvents
 import com.unciv.UncivGame
 import com.unciv.logic.civilization.AlertType
 import com.unciv.logic.civilization.Civilization
@@ -26,6 +27,9 @@ class DiplomacyFunctions(val civInfo: Civilization) {
     fun makeCivilizationsMeet(otherCiv: Civilization, warOnContact: Boolean = false) {
         meetCiv(otherCiv, warOnContact)
         otherCiv.diplomacyFunctions.meetCiv(civInfo, warOnContact)
+        // CvTeam::meet -> CvDiplomacyAI::DoFirstContact on both sides
+        DiplomacyEvents.onMeet(civInfo, otherCiv)
+        DiplomacyEvents.onMeet(otherCiv, civInfo)
     }
 
     private fun meetCiv(otherCiv: Civilization, warOnContact: Boolean = false) {

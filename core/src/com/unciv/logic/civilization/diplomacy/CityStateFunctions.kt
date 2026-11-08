@@ -2,6 +2,7 @@ package com.unciv.logic.civilization.diplomacy
 
 import com.unciv.Constants
 import com.unciv.logic.automation.civilization.NextTurnAutomation
+import com.unciv.logic.automation.diplomacy.DiplomacyEvents
 import com.unciv.logic.battle.CityCombatant
 import com.unciv.logic.city.managers.SpyFleeReason
 import com.unciv.logic.civilization.*
@@ -337,10 +338,6 @@ class CityStateFunctions(val civInfo: Civilization) {
                 NotificationCategory.Diplomacy, civInfo.civName,
                 NotificationIcon.Diplomacy
             )
-            if (newAlly != null && oldAlly.knows(newAlly)){
-                val diplomacyManager = oldAlly.getDiplomacyManager(newAlly)!!
-                diplomacyManager.addModifier(DiplomaticModifiers.StoleOurAlly, -10f)
-            }
             oldAlly.cache.updateViewableTiles()
             oldAlly.cache.updateCivResources()
         }
@@ -621,17 +618,11 @@ class CityStateFunctions(val civInfo: Civilization) {
     private fun cityStateBullied(bully: Civilization) {
         if (!civInfo.isCityState) return // What are we doing here?
 
+        // What the protectors' diplomacy AI remembers (CvDiplomacyAI::DoPlayerBulliedSomeone)
+        DiplomacyEvents.onCityStateBullied(bully, civInfo)
         for (protector in civInfo.cityStateFunctions.getProtectorCivs()) {
             if (!protector.knows(bully)) // Who?
                 continue
-            val protectorDiplomacy = protector.getDiplomacyManager(bully)!!
-            if (protectorDiplomacy.hasModifier(DiplomaticModifiers.BulliedProtectedMinor)
-                && protectorDiplomacy.getFlag(DiplomacyFlags.RememberBulliedProtectedMinor) > 50)
-                protectorDiplomacy.addModifier(DiplomaticModifiers.BulliedProtectedMinor, -10f, limit = -100f) // Penalty less severe for second offence
-            else
-                protectorDiplomacy.addModifier(DiplomaticModifiers.BulliedProtectedMinor, -15f, limit = -100f)
-            protectorDiplomacy.setFlag(DiplomacyFlags.RememberBulliedProtectedMinor, 75)    // Reset their memory
-
             if (protector.playerType != PlayerType.Human)   // Humans can have their own emotions
                 bully.addNotification("[${protector.civName}] is upset that you demanded tribute from [${civInfo.civName}], whom they have pledged to protect!",
                     NotificationCategory.Diplomacy, NotificationIcon.Diplomacy, protector.civName)
@@ -723,14 +714,8 @@ class CityStateFunctions(val civInfo: Civilization) {
 
     private fun triggerProtectorCivs(attacker: Civilization) {
         for (protector in civInfo.cityStateFunctions.getProtectorCivs()) {
-            val protectorDiplomacy = protector.getDiplomacyManager(attacker) ?: continue // Who?
-            if (protectorDiplomacy.hasModifier(DiplomaticModifiers.AttackedProtectedMinor)
-                && protectorDiplomacy.getFlag(DiplomacyFlags.RememberAttackedProtectedMinor) > 50)
-                protectorDiplomacy.addModifier(DiplomaticModifiers.AttackedProtectedMinor, -15f, limit = -100f) // Penalty less severe for second offence
-            else
-                protectorDiplomacy.addModifier(DiplomaticModifiers.AttackedProtectedMinor, -20f, limit = -100f)
-            protectorDiplomacy.setFlag(DiplomacyFlags.RememberAttackedProtectedMinor, 75)   // Reset their memory
-
+            // The protector's diplomacy AI remembers through the war declaration (CvDiplomacyAI::DoPlayerDeclaredWarOnSomeone)
+            if (!protector.knows(attacker)) continue // Who?
             if (protector.playerType != PlayerType.Human)   // Humans can have their own emotions
                 attacker.addNotification(
                     "[${protector.civName}] is upset that you attacked [${civInfo.civName}], whom they have pledged to protect!",
@@ -749,10 +734,6 @@ class CityStateFunctions(val civInfo: Civilization) {
     private fun triggerAllyCivs(attacker: Civilization) {
         val allyCiv = civInfo.allyCiv
         if (allyCiv != null && allyCiv !in civInfo.cityStateFunctions.getProtectorCivs() && allyCiv.knows(attacker)) {
-            val allyDiplomacy = allyCiv.getDiplomacyManager(attacker)!!
-            // Less than if we were protectors
-            allyDiplomacy.addModifier(DiplomaticModifiers.AttackedAlliedMinor, -10f)
-
             if (allyCiv.playerType != PlayerType.Human)   // Humans can have their own emotions
                 attacker.addNotification(
                     "[${allyCiv.civName}] is upset that you attacked [${civInfo.civName}], whom they are allied with!",
@@ -773,16 +754,11 @@ class CityStateFunctions(val civInfo: Civilization) {
     fun cityStateDestroyed(attacker: Civilization) {
         if (!civInfo.isCityState) return // What are we doing here?
 
+        // What the protectors' diplomacy AI remembers (CvDiplomacyAI::DoPlayerKilledSomeone)
+        DiplomacyEvents.onCivDestroyed(attacker, civInfo)
         for (protector in civInfo.cityStateFunctions.getProtectorCivs()) {
             if (!protector.knows(attacker)) // Who?
                 continue
-            val protectorDiplomacy = protector.getDiplomacyManager(attacker)!!
-            if (protectorDiplomacy.hasModifier(DiplomaticModifiers.DestroyedProtectedMinor))
-                protectorDiplomacy.addModifier(DiplomaticModifiers.DestroyedProtectedMinor, -10f, limit = -100f) // Penalty less severe for second offence
-            else
-                protectorDiplomacy.addModifier(DiplomaticModifiers.DestroyedProtectedMinor, -40f, limit = -100f) // Oof
-            protectorDiplomacy.setFlag(DiplomacyFlags.RememberDestroyedProtectedMinor, 125)   // Reset their memory
-
             if (protector.playerType != PlayerType.Human)   // Humans can have their own emotions
                 attacker.addNotification("[${protector.civName}] is outraged that you destroyed [${civInfo.civName}], whom they had pledged to protect!",
                     NotificationCategory.Diplomacy, NotificationIcon.Diplomacy, protector.civName)

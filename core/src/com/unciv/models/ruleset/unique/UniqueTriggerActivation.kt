@@ -9,7 +9,7 @@ import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.map.tile.ArchaeologyFunctions
 import com.unciv.logic.civilization.*
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
-import com.unciv.logic.civilization.diplomacy.DiplomaticModifiers
+import com.unciv.logic.automation.diplomacy.DiplomacyEvents
 import com.unciv.logic.civilization.managers.PolicyManager
 import com.unciv.logic.civilization.managers.ReligionState
 import com.unciv.logic.map.HexCoord
@@ -1528,8 +1528,7 @@ object UniqueTriggerActivation {
                     for (tileToTakeOver in tilesToTakeOver) {
                         val otherCiv = tileToTakeOver.getOwner()
                         if (otherCiv != null) {
-                            // decrease relations for -10 pt/tile
-                            otherCiv.getDiplomacyManagerOrMeet(civInfo).addModifier(DiplomaticModifiers.StealingTerritory, -10f)
+                            otherCiv.getDiplomacyManagerOrMeet(civInfo)
                             civsToNotify.add(otherCiv)
                         }
                         // check if civ has stolen a tile from a citystate
@@ -1546,9 +1545,12 @@ object UniqueTriggerActivation {
                         cityToAddTo.expansion.takeOwnership(tileToTakeOver)
                     }
 
-                    for (otherCiv in civsToNotify)
+                    for (otherCiv in civsToNotify) {
                         otherCiv.addNotification("Your territory has been stolen by [$civInfo]!",
                             tile.position, NotificationCategory.Cities, civInfo.civName, NotificationIcon.War)
+                        // CvUnit culture bomb: each major hit remembers it once (CvDiplomacyAI::ChangeNumTimesCultureBombed)
+                        DiplomacyEvents.onCultureBombed(otherCiv, civInfo)
+                    }
 
                     true
                 }
