@@ -11,6 +11,7 @@ import com.unciv.models.ruleset.ai.AiRuleset
 import com.unciv.models.ruleset.ai.DiplomacyPersonality
 import com.unciv.models.ruleset.ai.Flavor
 import com.unciv.models.ruleset.ai.MajorCivApproach
+import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.testing.GdxTestRunner
 import com.unciv.testing.TestGame
 import org.junit.Assert.assertEquals
@@ -291,6 +292,19 @@ class DiplomacyAiTests {
         assertEquals(WarGoal.Conquest, a.ai.diplomacy.warGoal(b))
         assertEquals(PeaceTreatyType.None, a.ai.diplomacy.treatyWillingToOffer(b))
         assertEquals(PeaceTreatyType.None, a.ai.diplomacy.treatyWillingToAccept(b))
+    }
+
+    @Test
+    fun `a coop war agreed for soon is declared at the soon counter and locks the war`() {
+        // partner b, target c; a has no memory of c yet, so locking the war creates it while the memories are being walked
+        // (memories of civilizations that no longer exist follow b in the walk and are skipped)
+        repeat(30) { a.ai.diplomacy.memories["gone-$it"] = MajorCivMemory() }
+        a.ai.diplomacy.memories.remove(c.civID)
+        a.ai.diplomacy.memoryOf(b).coopWars[c.civID] = CoopWarEntry(CoopWarState.Soon, rules.define(AiDefine.COOP_WAR_SOON_COUNTER) - 1)
+        CoopWarAi.doCoopWarCounters(a, rules)
+        assertTrue(a.isAtWarWith(c))
+        assertEquals(CoopWarState.Accepted, a.ai.diplomacy.memoryOf(b).coopWars[c.civID]!!.state)
+        assertEquals(rules.define(AiDefine.COOP_WAR_LOCKED_LENGTH), a.ai.diplomacy.memoryOf(c).turnsLockedIntoWar)
     }
 
     @Test
