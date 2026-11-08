@@ -57,6 +57,7 @@ object StrategyTests {
  *  Adopting stores the game turn; the flavor deltas of active strategies are applied by [CivAi.flavors] and [CityAi.flavors].
  *
  *  @param active the strategies in use, by name, with the game turn they were adopted (changed in place)
+ *  @param onChange called right after each single strategy was adopted or dropped (the original's flavor broadcast)
  *  @return whether [active] changed
  */
 internal fun <D : StrategyDef> runStrategyLoop(
@@ -64,6 +65,7 @@ internal fun <D : StrategyDef> runStrategyLoop(
     active: LinkedHashMap<String, Int>,
     civ: Civilization,
     checkFirstTurn: Boolean,
+    onChange: () -> Unit = {},
     test: (D) -> Boolean,
 ): Boolean {
     val turn = civ.gameInfo.turns
@@ -96,9 +98,11 @@ internal fun <D : StrategyDef> runStrategyLoop(
         if (testStart && shouldBeActive) {
             active[def.name] = turn
             changed = true
+            onChange()
         } else if (testEnd && !shouldBeActive) {
             active.remove(def.name)
             changed = true
+            onChange()
         }
     }
     return changed
