@@ -726,6 +726,7 @@
     "PLOT_VISIBILITY_RANGE": 1,
     "POLICY_WEIGHT_PERCENT_DROP_NEW_BRANCH": 78,
     "POLICY_WEIGHT_PROPAGATION_LEVELS": 2,
+    "POLICY_WEIGHT_PROPAGATION_PERCENT": 25,
     "QUEST_DISABLED_CONNECT_RESOURCE": 0,
     "QUEST_DISABLED_CONSTRUCT_WONDER": 0,
     "QUEST_DISABLED_FIND_PLAYER": 0,
@@ -775,7 +776,9 @@
     "TARGET_MINOR_BACKUP_STRONG": 25,
     "TARGET_MINOR_BACKUP_WEAK": 0,
     "TARGET_NEIGHBORS": -10,
+    "TECH_PRIORITY_UNIQUE_ITEM": 5,
     "TECH_WEIGHT_PROPAGATION_LEVELS": 3,
+    "TECH_WEIGHT_PROPAGATION_PERCENT": 50,
     "TURNS_SINCE_PEACE_WEIGHT_DAMPENER": 25,
     "UNIT_SPAWN_BIAS_MULTIPLIER": 50,
     "VICTORY_DISPUTE_FIERCE_THRESHOLD": 80,
@@ -6051,7 +6054,10 @@
         "AIUnitUpgradePercent": 50,
         "AIInflationPercent": 100,
         "AIPerEraModifier": 0,
-        "AIAdvancedStartPercent": 100
+        "AIAdvancedStartPercent": 100,
+        "PolicyNumOptionsConsidered": 10,
+        "TechNumOptionsConsidered": 10,
+        "CityProductionNumOptionsConsidered": 10
       }
     },
     {
@@ -6078,7 +6084,10 @@
         "AIUnitUpgradePercent": 50,
         "AIInflationPercent": 100,
         "AIPerEraModifier": 0,
-        "AIAdvancedStartPercent": 100
+        "AIAdvancedStartPercent": 100,
+        "PolicyNumOptionsConsidered": 4,
+        "TechNumOptionsConsidered": 4,
+        "CityProductionNumOptionsConsidered": 4
       }
     },
     {
@@ -6105,7 +6114,10 @@
         "AIUnitUpgradePercent": 50,
         "AIInflationPercent": 100,
         "AIPerEraModifier": 0,
-        "AIAdvancedStartPercent": 100
+        "AIAdvancedStartPercent": 100,
+        "PolicyNumOptionsConsidered": 3,
+        "TechNumOptionsConsidered": 3,
+        "CityProductionNumOptionsConsidered": 3
       }
     },
     {
@@ -6132,7 +6144,10 @@
         "AIUnitUpgradePercent": 50,
         "AIInflationPercent": 100,
         "AIPerEraModifier": 0,
-        "AIAdvancedStartPercent": 100
+        "AIAdvancedStartPercent": 100,
+        "PolicyNumOptionsConsidered": 2,
+        "TechNumOptionsConsidered": 2,
+        "CityProductionNumOptionsConsidered": 2
       }
     },
     {
@@ -6159,7 +6174,10 @@
         "AIUnitUpgradePercent": 50,
         "AIInflationPercent": 100,
         "AIPerEraModifier": -2,
-        "AIAdvancedStartPercent": 120
+        "AIAdvancedStartPercent": 120,
+        "PolicyNumOptionsConsidered": 2,
+        "TechNumOptionsConsidered": 2,
+        "CityProductionNumOptionsConsidered": 2
       }
     },
     {
@@ -6186,7 +6204,10 @@
         "AIUnitUpgradePercent": 50,
         "AIInflationPercent": 100,
         "AIPerEraModifier": -3,
-        "AIAdvancedStartPercent": 135
+        "AIAdvancedStartPercent": 135,
+        "PolicyNumOptionsConsidered": 2,
+        "TechNumOptionsConsidered": 2,
+        "CityProductionNumOptionsConsidered": 2
       }
     },
     {
@@ -6213,7 +6234,10 @@
         "AIUnitUpgradePercent": 50,
         "AIInflationPercent": 100,
         "AIPerEraModifier": -4,
-        "AIAdvancedStartPercent": 150
+        "AIAdvancedStartPercent": 150,
+        "PolicyNumOptionsConsidered": 2,
+        "TechNumOptionsConsidered": 2,
+        "CityProductionNumOptionsConsidered": 2
       }
     },
     {
@@ -6240,8 +6264,520 @@
         "AIUnitUpgradePercent": 50,
         "AIInflationPercent": 100,
         "AIPerEraModifier": -5,
-        "AIAdvancedStartPercent": 170
+        "AIAdvancedStartPercent": 170,
+        "PolicyNumOptionsConsidered": 2,
+        "TechNumOptionsConsidered": 2,
+        "CityProductionNumOptionsConsidered": 2
       }
+    }
+  ],
+  "policyBranches": [
+    {
+      "name": "Tradition"
+    },
+    {
+      "name": "Liberty"
+    },
+    {
+      "name": "Honor"
+    },
+    {
+      "name": "Piety"
+    },
+    {
+      "name": "Patronage"
+    },
+    {
+      "name": "Commerce"
+    },
+    {
+      "name": "Rationalism"
+    },
+    {
+      "name": "Freedom"
+    },
+    {
+      "name": "Order"
+    },
+    {
+      "name": "Autocracy"
+    }
+  ],
+  "techPrereqs": [
+    {
+      "name": "Pottery",
+      "prereqs": [
+        "Agriculture"
+      ]
+    },
+    {
+      "name": "Animal Husbandry",
+      "prereqs": [
+        "Agriculture"
+      ]
+    },
+    {
+      "name": "Archery",
+      "prereqs": [
+        "Agriculture"
+      ]
+    },
+    {
+      "name": "Mining",
+      "prereqs": [
+        "Agriculture"
+      ]
+    },
+    {
+      "name": "Sailing",
+      "prereqs": [
+        "Pottery"
+      ]
+    },
+    {
+      "name": "Calendar",
+      "prereqs": [
+        "Pottery"
+      ]
+    },
+    {
+      "name": "Writing",
+      "prereqs": [
+        "Pottery"
+      ]
+    },
+    {
+      "name": "Trapping",
+      "prereqs": [
+        "Animal Husbandry"
+      ]
+    },
+    {
+      "name": "The Wheel",
+      "prereqs": [
+        "Animal Husbandry"
+      ]
+    },
+    {
+      "name": "Masonry",
+      "prereqs": [
+        "Mining"
+      ]
+    },
+    {
+      "name": "Bronze Working",
+      "prereqs": [
+        "Mining"
+      ]
+    },
+    {
+      "name": "Optics",
+      "prereqs": [
+        "Sailing"
+      ]
+    },
+    {
+      "name": "Philosophy",
+      "prereqs": [
+        "Writing"
+      ]
+    },
+    {
+      "name": "Horseback Riding",
+      "prereqs": [
+        "The Wheel"
+      ]
+    },
+    {
+      "name": "Mathematics",
+      "prereqs": [
+        "The Wheel",
+        "Archery"
+      ]
+    },
+    {
+      "name": "Construction",
+      "prereqs": [
+        "Masonry"
+      ]
+    },
+    {
+      "name": "Iron Working",
+      "prereqs": [
+        "Bronze Working"
+      ]
+    },
+    {
+      "name": "Theology",
+      "prereqs": [
+        "Calendar",
+        "Philosophy"
+      ]
+    },
+    {
+      "name": "Civil Service",
+      "prereqs": [
+        "Philosophy",
+        "Trapping"
+      ]
+    },
+    {
+      "name": "Currency",
+      "prereqs": [
+        "Mathematics"
+      ]
+    },
+    {
+      "name": "Engineering",
+      "prereqs": [
+        "Mathematics",
+        "Construction"
+      ]
+    },
+    {
+      "name": "Metal Casting",
+      "prereqs": [
+        "Construction",
+        "Iron Working"
+      ]
+    },
+    {
+      "name": "Compass",
+      "prereqs": [
+        "Optics"
+      ]
+    },
+    {
+      "name": "Education",
+      "prereqs": [
+        "Theology",
+        "Civil Service"
+      ]
+    },
+    {
+      "name": "Chivalry",
+      "prereqs": [
+        "Civil Service",
+        "Horseback Riding",
+        "Currency"
+      ]
+    },
+    {
+      "name": "Machinery",
+      "prereqs": [
+        "Engineering"
+      ]
+    },
+    {
+      "name": "Physics",
+      "prereqs": [
+        "Engineering",
+        "Metal Casting"
+      ]
+    },
+    {
+      "name": "Steel",
+      "prereqs": [
+        "Metal Casting"
+      ]
+    },
+    {
+      "name": "Astronomy",
+      "prereqs": [
+        "Compass",
+        "Education"
+      ]
+    },
+    {
+      "name": "Acoustics",
+      "prereqs": [
+        "Education",
+        "Chivalry"
+      ]
+    },
+    {
+      "name": "Banking",
+      "prereqs": [
+        "Education",
+        "Chivalry"
+      ]
+    },
+    {
+      "name": "Printing Press",
+      "prereqs": [
+        "Machinery",
+        "Physics"
+      ]
+    },
+    {
+      "name": "Gunpowder",
+      "prereqs": [
+        "Physics",
+        "Steel"
+      ]
+    },
+    {
+      "name": "Navigation",
+      "prereqs": [
+        "Astronomy"
+      ]
+    },
+    {
+      "name": "Economics",
+      "prereqs": [
+        "Banking",
+        "Printing Press"
+      ]
+    },
+    {
+      "name": "Chemistry",
+      "prereqs": [
+        "Gunpowder"
+      ]
+    },
+    {
+      "name": "Metallurgy",
+      "prereqs": [
+        "Gunpowder"
+      ]
+    },
+    {
+      "name": "Archaeology",
+      "prereqs": [
+        "Navigation"
+      ]
+    },
+    {
+      "name": "Scientific Theory",
+      "prereqs": [
+        "Economics",
+        "Navigation",
+        "Acoustics"
+      ]
+    },
+    {
+      "name": "Military Science",
+      "prereqs": [
+        "Economics",
+        "Chemistry"
+      ]
+    },
+    {
+      "name": "Fertilizer",
+      "prereqs": [
+        "Chemistry"
+      ]
+    },
+    {
+      "name": "Rifling",
+      "prereqs": [
+        "Metallurgy"
+      ]
+    },
+    {
+      "name": "Biology",
+      "prereqs": [
+        "Archaeology",
+        "Scientific Theory"
+      ]
+    },
+    {
+      "name": "Steam Power",
+      "prereqs": [
+        "Scientific Theory",
+        "Military Science"
+      ]
+    },
+    {
+      "name": "Electricity",
+      "prereqs": [
+        "Biology",
+        "Steam Power"
+      ]
+    },
+    {
+      "name": "Replaceable Parts",
+      "prereqs": [
+        "Steam Power"
+      ]
+    },
+    {
+      "name": "Railroads",
+      "prereqs": [
+        "Steam Power",
+        "Dynamite"
+      ]
+    },
+    {
+      "name": "Dynamite",
+      "prereqs": [
+        "Fertilizer",
+        "Military Science",
+        "Rifling"
+      ]
+    },
+    {
+      "name": "Refrigeration",
+      "prereqs": [
+        "Electricity"
+      ]
+    },
+    {
+      "name": "Telegraph",
+      "prereqs": [
+        "Electricity"
+      ]
+    },
+    {
+      "name": "Radio",
+      "prereqs": [
+        "Electricity"
+      ]
+    },
+    {
+      "name": "Flight",
+      "prereqs": [
+        "Replaceable Parts"
+      ]
+    },
+    {
+      "name": "Combustion",
+      "prereqs": [
+        "Replaceable Parts",
+        "Railroads"
+      ]
+    },
+    {
+      "name": "Plastics",
+      "prereqs": [
+        "Refrigeration"
+      ]
+    },
+    {
+      "name": "Pharmaceuticals",
+      "prereqs": [
+        "Refrigeration"
+      ]
+    },
+    {
+      "name": "Electronics",
+      "prereqs": [
+        "Telegraph"
+      ]
+    },
+    {
+      "name": "Mass Media",
+      "prereqs": [
+        "Radio"
+      ]
+    },
+    {
+      "name": "Radar",
+      "prereqs": [
+        "Radio",
+        "Combustion",
+        "Flight"
+      ]
+    },
+    {
+      "name": "Atomic Theory",
+      "prereqs": [
+        "Combustion"
+      ]
+    },
+    {
+      "name": "Ecology",
+      "prereqs": [
+        "Plastics",
+        "Pharmaceuticals"
+      ]
+    },
+    {
+      "name": "Computers",
+      "prereqs": [
+        "Electronics",
+        "Mass Media",
+        "Radar"
+      ]
+    },
+    {
+      "name": "Rocketry",
+      "prereqs": [
+        "Radar"
+      ]
+    },
+    {
+      "name": "Lasers",
+      "prereqs": [
+        "Radar"
+      ]
+    },
+    {
+      "name": "Nuclear Fission",
+      "prereqs": [
+        "Atomic Theory"
+      ]
+    },
+    {
+      "name": "Globalization",
+      "prereqs": [
+        "Ecology",
+        "Computers"
+      ]
+    },
+    {
+      "name": "Robotics",
+      "prereqs": [
+        "Computers"
+      ]
+    },
+    {
+      "name": "Satellites",
+      "prereqs": [
+        "Rocketry"
+      ]
+    },
+    {
+      "name": "Stealth",
+      "prereqs": [
+        "Lasers"
+      ]
+    },
+    {
+      "name": "Advanced Ballistics",
+      "prereqs": [
+        "Lasers",
+        "Nuclear Fission"
+      ]
+    },
+    {
+      "name": "Particle Physics",
+      "prereqs": [
+        "Robotics",
+        "Satellites"
+      ]
+    },
+    {
+      "name": "Nuclear Fusion",
+      "prereqs": [
+        "Satellites",
+        "Stealth",
+        "Advanced Ballistics"
+      ]
+    },
+    {
+      "name": "Nanotechnology",
+      "prereqs": [
+        "Particle Physics"
+      ]
+    },
+    {
+      "name": "Future Tech",
+      "prereqs": [
+        "Nanotechnology",
+        "Nuclear Fusion",
+        "Globalization"
+      ]
     }
   ]
 }

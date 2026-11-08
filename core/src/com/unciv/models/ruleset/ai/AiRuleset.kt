@@ -34,6 +34,8 @@ class AiRuleset {
     var citySpecializations = ArrayList<CitySpecializationDef>()
     var minorCivFlavors = ArrayList<NamedFlavors>()
     var itemFlavors = ArrayList<ItemFlavors>()
+    /** Technology_PrereqTechs in XML row order, by Unciv tech name - see [TechPrereqsDef] */
+    var techPrereqs = ArrayList<TechPrereqsDef>()
     var unitAiTypes = ArrayList<UnitAiTypesDef>()
     var handicaps = ArrayList<HandicapDef>()
 
@@ -78,6 +80,7 @@ class AiRuleset {
         mergeByName(citySpecializations, other.citySpecializations)
         mergeByName(minorCivFlavors, other.minorCivFlavors)
         mergeByName(unitAiTypes, other.unitAiTypes)
+        mergeByName(techPrereqs, other.techPrereqs)
         mergeByName(handicaps, other.handicaps)
         for (entry in other.itemFlavors) {
             val index = itemFlavors.indexOfFirst { it.kind == entry.kind && it.name == entry.name }
@@ -96,6 +99,7 @@ class AiRuleset {
         citySpecializations.clear()
         minorCivFlavors.clear()
         itemFlavors.clear()
+        techPrereqs.clear()
         unitAiTypes.clear()
         handicaps.clear()
         clearCaches()
@@ -145,6 +149,10 @@ class AiRuleset {
         val index = itemFlavorIndex ?: itemFlavors.associateByTo(HashMap()) { it.kind + "/" + it.name }.also { itemFlavorIndex = it }
         return index["$kind/$name"]
     }
+
+    /** A HandicapInfos column (AI*, *NumOptionsConsidered) of the difficulty named [difficulty], null if the ruleset has none */
+    fun handicapValue(difficulty: String, column: String): Int? =
+        handicaps.firstOrNull { it.name == difficulty }?.values?.get(column)
     //endregion
 
     //region Item flavors

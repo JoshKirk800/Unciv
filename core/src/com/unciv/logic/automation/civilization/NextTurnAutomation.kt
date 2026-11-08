@@ -28,7 +28,6 @@ import com.unciv.models.ruleset.MilestoneType
 import com.unciv.models.ruleset.Policy
 import com.unciv.models.ruleset.PolicyBranch
 import com.unciv.models.ruleset.nation.PersonalityValue
-import com.unciv.models.ruleset.tech.Technology
 import com.unciv.models.ruleset.tile.ResourceType
 import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unique.UniqueType
@@ -89,7 +88,7 @@ object NextTurnAutomation {
             civInfo.cityStateFunctions.updateDiplomaticRelationshipForCityState()
         }
 
-        timeThis("AI.chooseTechToResearch") { chooseTechToResearch(civView) }
+        timeThis("AI.chooseTechToResearch") { TechAutomation.chooseTechToResearch(civInfo) }
         timeThis("AI.automateCityBombardment") { automateCityBombardment(civView) }
         if (tradeAndChangeState) timeThis("AI.useGold") { UseGoldAutomation.useGold(civInfo) }
         if (tradeAndChangeState && !civView.isCityState) timeThis("AI.cityStates") {
@@ -261,52 +260,6 @@ object NextTurnAutomation {
                 state.cityStateFunctions.tributeWorker(civInfo)
             else
                 state.cityStateFunctions.tributeGold(civInfo)
-        }
-    }
-
-    private fun chooseTechToResearch(civView: CivView) {
-        val civInfo = civView.getCiv()
-        val rng = civInfo.state.stateBasedRandom("NextTurnAutomation.chooseTechToResearch")
-
-        @Readonly
-        fun getGroupedResearchableTechs(): List<List<Technology>> {
-            val researchableTechs = civInfo.gameInfo.ruleset.technologies.values
-                .asSequence()
-                .filter { civInfo.tech.canBeResearched(it.name) }
-                .groupBy { it.cost }
-            return researchableTechs.toSortedMap().values.toList()
-        }
-
-        val stateForConditionals = civInfo.state
-        while (civInfo.tech.freeTechs > 0) {
-            val costs = getGroupedResearchableTechs()
-            if (costs.isEmpty()) return
-            
-            val mostExpensiveTechs = costs.lastOrNull{ 
-                // Ignore rows where all techs have 0 weight
-                it.any { it.getWeightForAiDecision(stateForConditionals) > 0 }
-            } ?: costs.last()
-            val chosenTech = mostExpensiveTechs.randomWeighted(rng) { it.getWeightForAiDecision(stateForConditionals) }
-            civInfo.tech.getFreeTechnology(chosenTech.name)
-        }
-        if (civInfo.tech.techsToResearch.isEmpty()) {
-            val costs = getGroupedResearchableTechs()
-            if (costs.isEmpty()) return
-
-            val cheapestTechs = costs.firstOrNull{
-                // Ignore rows where all techs have 0 weight
-                it.any { it.getWeightForAiDecision(stateForConditionals) > 0 } }?: costs.first()
-            //Do not consider advanced techs if only one tech left in cheapest group
-            val techToResearch: Technology =
-                if (cheapestTechs.size == 1 || costs.size == 1) {
-                    cheapestTechs.randomWeighted(rng) { it.getWeightForAiDecision(stateForConditionals) }
-                } else {
-                    //Choose randomly between cheapest and second cheapest group
-                    val techsAdvanced = costs[1]
-                    (cheapestTechs + techsAdvanced).randomWeighted(rng) { it.getWeightForAiDecision(stateForConditionals) }
-                }
-
-            civInfo.tech.techsToResearch.add(techToResearch.name)
         }
     }
 

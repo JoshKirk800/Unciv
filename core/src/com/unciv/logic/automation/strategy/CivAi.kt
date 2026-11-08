@@ -367,6 +367,7 @@ class CivAi : IsPartOfGameInfoSerialization {
             if (runStrategyLoop(rules.militaryStrategies, militaryStrategies, civ, checkFirstTurn = true) { StrategyTests.test(civ, it) })
                 onStrategiesChanged()
         }
+        timeThis("AI.TechFlavors") { com.unciv.logic.automation.civilization.TechAutomation.updateFlavorWeights(civ) }
         timeThis("AI.CityStrategies") {
             for (city in civ.cities) city.ai.doTurn()
         }
