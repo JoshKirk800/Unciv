@@ -7,6 +7,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table
 import com.unciv.logic.automation.civilization.AutomationCache
 import com.unciv.logic.automation.civilization.NextTurnAutomation
 import com.unciv.logic.automation.unit.UnitAutomation
+import com.unciv.logic.automation.unit.tactical.TacticalAi
 import com.unciv.logic.civilization.managers.TurnManager
 import com.unciv.ui.components.input.KeyboardBinding
 import com.unciv.ui.popups.AnimatedMenuPopup
@@ -70,6 +71,8 @@ class AutoPlayMenu(
             val isAtWar = civInfo.isAtWar()
             val cache = AutomationCache()
             val sortedUnits = civInfo.units.getCivUnits().filter { it.isMilitary() }.sortedBy { unit -> NextTurnAutomation.getUnitPriority(worldScreen.selectedGameView.getMapUnitView(unit), isAtWar, cache) }
+            // The attacks of the units are the tactical AI's; the rest of the unit AI skips the units it commanded
+            TacticalAi.automate(civInfo, sortedUnits.toList(), cache)
             for (unit in sortedUnits) UnitAutomation.automateUnitMoves(worldScreen.selectedGameView.getMapUnitView(unit), cache)
 
             for (city in worldScreen.selectedGameView.civView.cities()) UnitAutomation.tryBombardEnemy(city)

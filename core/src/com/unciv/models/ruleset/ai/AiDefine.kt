@@ -770,6 +770,11 @@ enum class AiDefine(val default: Float) {
     AI_TACTICAL_MAP_UNIT_STRENGTH_MULTIPLIER(10f),
     AI_TACTICAL_MAP_DOMINANCE_PERCENTAGE(25f),
     AI_TACTICAL_MAP_TEMP_ZONE_TURNS(4f),
+    // CvTacticalAI target moves (ExecuteAttack, PlotPillageMoves, PlotRepositionMoves, FindUnitsWithinStrikingDistance)
+    AI_TACTICAL_OVERKILL_PERCENT(25f),
+    AI_TACTICAL_REPOSITION_RANGE(10f),
+    PILLAGE_HEAL_AMOUNT(25f),
+    MAX_HIT_POINTS(100f),
     AI_GOLD_PRIORITY_DEFENSIVE_BUILDING(400f),
     AI_MILITARY_CITY_THREAT_WEIGHT_CAPITAL(125f),
     // CvReligionAI

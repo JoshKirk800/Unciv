@@ -54,6 +54,7 @@ class TacticalState : IsPartOfGameInfoSerialization {
     @Transient private lateinit var civ: Civilization
     @Transient private var cachedMap: TacticalMap? = null
     @Transient private var cachedMapTurn = -1
+    @Transient private val garrisonAssignedTurns = HashMap<String, Int>()
 
     fun clone(): TacticalState {
         val toReturn = TacticalState()
@@ -126,4 +127,12 @@ class TacticalState : IsPartOfGameInfoSerialization {
     /** CvTacticalAI::FindPosture: the posture last chosen for the zone of this owner, water flag and city, [TacticalPosture.None] if none */
     fun findPosture(ownerId: String?, isWater: Boolean, cityId: String?): TacticalPosture =
         postures.firstOrNull { it.ownerId == ownerId && it.isWater == isWater && it.cityId == cityId }?.posture ?: TacticalPosture.None
+
+    /** CvCity::GetLastTurnGarrisonAssigned: the turn a unit was last sent to garrison the city (tactical or homeland), -1 if not this session */
+    fun lastTurnGarrisonAssigned(city: City): Int = garrisonAssignedTurns[city.id] ?: -1
+
+    /** CvCity::SetLastTurnGarrisonAssigned. It is only compared with the current turn, so it is not saved. */
+    fun setLastTurnGarrisonAssigned(city: City, turn: Int) {
+        garrisonAssignedTurns[city.id] = turn
+    }
 }

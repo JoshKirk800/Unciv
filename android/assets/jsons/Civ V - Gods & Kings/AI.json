@@ -6847,6 +6847,7 @@
     {
       "name": "Settler",
       "defaultUnitAi": "UNITAI_SETTLE",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH_EARLY_GAME_ONLY",
       "unitAiTypes": [
         "UNITAI_SETTLE"
       ]
@@ -6854,6 +6855,7 @@
     {
       "name": "Worker",
       "defaultUnitAi": "UNITAI_WORKER",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_LOW",
       "unitAiTypes": [
         "UNITAI_WORKER"
       ]
@@ -6861,6 +6863,7 @@
     {
       "name": "Work Boats",
       "defaultUnitAi": "UNITAI_WORKER_SEA",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_LOW",
       "unitAiTypes": [
         "UNITAI_WORKER_SEA"
       ]
@@ -6868,6 +6871,7 @@
     {
       "name": "Great Artist",
       "defaultUnitAi": "UNITAI_ARTIST",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_ARTIST"
       ]
@@ -6875,6 +6879,7 @@
     {
       "name": "Great Scientist",
       "defaultUnitAi": "UNITAI_SCIENTIST",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_SCIENTIST"
       ]
@@ -6882,6 +6887,7 @@
     {
       "name": "Great Merchant",
       "defaultUnitAi": "UNITAI_MERCHANT",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_MERCHANT"
       ]
@@ -6889,6 +6895,7 @@
     {
       "name": "Great Engineer",
       "defaultUnitAi": "UNITAI_ENGINEER",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_ENGINEER"
       ]
@@ -6896,6 +6903,7 @@
     {
       "name": "Great General",
       "defaultUnitAi": "UNITAI_GENERAL",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_GENERAL"
       ]
@@ -6903,6 +6911,7 @@
     {
       "name": "SS Stasis Chamber",
       "defaultUnitAi": "UNITAI_SPACESHIP_PART",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_SPACESHIP_PART"
       ]
@@ -6910,6 +6919,7 @@
     {
       "name": "SS Engine",
       "defaultUnitAi": "UNITAI_SPACESHIP_PART",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_SPACESHIP_PART"
       ]
@@ -6917,6 +6927,7 @@
     {
       "name": "SS Cockpit",
       "defaultUnitAi": "UNITAI_SPACESHIP_PART",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_SPACESHIP_PART"
       ]
@@ -6924,6 +6935,7 @@
     {
       "name": "SS Booster",
       "defaultUnitAi": "UNITAI_SPACESHIP_PART",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_SPACESHIP_PART"
       ]
@@ -7550,6 +7562,7 @@
     {
       "name": "Great Prophet",
       "defaultUnitAi": "UNITAI_PROPHET",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_PROPHET"
       ]
@@ -7633,6 +7646,7 @@
     {
       "name": "Missionary",
       "defaultUnitAi": "UNITAI_MISSIONARY",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_LOW",
       "unitAiTypes": [
         "UNITAI_MISSIONARY"
       ]
@@ -7751,6 +7765,7 @@
     {
       "name": "Inquisitor",
       "defaultUnitAi": "UNITAI_INQUISITOR",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_LOW",
       "unitAiTypes": [
         "UNITAI_INQUISITOR"
       ]
@@ -7758,6 +7773,7 @@
     {
       "name": "Great Admiral",
       "defaultUnitAi": "UNITAI_ADMIRAL",
+      "civilianAttackPriority": "CIVILIAN_ATTACK_PRIORITY_HIGH",
       "unitAiTypes": [
         "UNITAI_ADMIRAL"
       ]

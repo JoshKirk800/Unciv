@@ -9,7 +9,7 @@ import com.unciv.models.ruleset.Building
 /**
  *  CvTacticalAI::PlotEmergencyPurchases: in the zone around one of our cities, on our own land, where enemy units are and we do not
  *  dominate, buy defenses with gold (or faith). Not for city-states. Unless it is our capital, a city the enemy can take next turn is
- *  given up: the money is saved for elsewhere (a high priority target - [CityAttackers] - in the zone, or within 2 tiles of the city).
+ *  given up: the money is saved for elsewhere (a high priority target - [TacticalTargets] - in the zone, or within 2 tiles of the city).
  *
  *  Then the city's defensive buildings ([UseGoldAutomation.buyEmergencyBuilding]), and, with fewer than two defenders there, a city bombard
  *  (else ranged) unit if it has no defender or a ship for one, a ship (assault) if it is coastal and has none at sea, and an
@@ -21,7 +21,7 @@ object EmergencyPurchases {
     class Result(val buildings: List<Building>, val units: List<MapUnit>)
 
     /**
-     *  @param highPriorityUnits the enemy units that threaten our cities ([CityAttackers.highPriorityUnits]), asked for only if needed
+     *  @param highPriorityUnits the enemy units that threaten our cities ([TacticalTargetType.HighPriorityUnit] targets), asked for only if needed
      */
     fun plot(civ: Civilization, zone: DominanceZone, map: TacticalMap, highPriorityUnits: () -> Set<MapUnit>): Result? {
         if (civ.isCityState) return null

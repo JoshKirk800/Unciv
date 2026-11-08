@@ -73,8 +73,8 @@ class DominanceZone(
  *  - enemy territory is where the owner is at war with us (the original compares the plot's team with itself, so never sets it);
  *  - "an enemy can reach the plot" is the hex distance within the unit's base moves on its landmass or body of water instead of the
  *    ignore-units path finder (as in [PlotDanger]); the not-visible-to-enemy flag is not kept;
- *  - the dynamic flags (within range of target, flank bonus, safe for deployment, deployment score) belong to the attack and deployment
- *    code that sets them and are not here.
+ *  - the dynamic flags of the attack routines (friendly turn end tile, within range of target, flank bonus) are here; the deployment
+ *    ones (safe for deployment, deployment score) belong to the deployment code and are not.
  */
 class TacticalMap(private val civ: Civilization, state: TacticalState) {
     private val rules = civ.gameInfo.ruleset.ai
@@ -98,6 +98,9 @@ class TacticalMap(private val civ: Civilization, state: TacticalState) {
     private val zoneIds = IntArray(numTiles) { -1 }
     private val areas = IntArray(numTiles)
     private val reach = ByteArray(numTiles)
+    private val turnEndTiles = BooleanArray(numTiles)
+    private val withinRangeOfTarget = BooleanArray(numTiles)
+    private val flankBonus = BooleanArray(numTiles)
     private val friendlyMilitary = arrayOfNulls<MapUnit>(numTiles)
     private val friendlyCivilian = arrayOfNulls<MapUnit>(numTiles)
     private val enemyMilitary = arrayOfNulls<MapUnit>(numTiles)
@@ -188,6 +191,52 @@ class TacticalMap(private val civ: Civilization, state: TacticalState) {
 
     /** CvTacticalAnalysisCell::IsEnemyCanMovePast: an enemy unit can reach the tile and still have movement left (or is on it) */
     fun enemyCanMovePast(tile: Tile): Boolean = reachOf(tile) and CAN_MOVE_PAST != 0
+
+    //endregion
+    //region Dynamic cell data of the attack routines
+
+    /** CvTacticalAnalysisCell::IsFriendlyTurnEndTile: one of our units finished its moves here this turn (set by [markFriendlyTurnEnd]) */
+    fun isFriendlyTurnEndTile(tile: Tile) = turnEndTiles[tile.zeroBasedIndex]
+
+    /** CvTacticalAI::UnitProcessed's marking of the cell, so that later routines do not plan onto a tile a unit has settled on */
+    fun markFriendlyTurnEnd(tile: Tile) {
+        turnEndTiles[tile.zeroBasedIndex] = true
+    }
+
+    /** CvTacticalAnalysisCell::IsWithinRangeOfTarget, set by [setTargetBombardCells] */
+    fun isWithinRangeOfTarget(tile: Tile) = withinRangeOfTarget[tile.zeroBasedIndex]
+
+    /** CvTacticalAnalysisCell::IsHelpsProvidesFlankBonus, set by [setTargetFlankBonusCells] */
+    fun helpsProvideFlankBonus(tile: Tile) = flankBonus[tile.zeroBasedIndex]
+
+    /** CvTacticalAnalysisMap::ClearDynamicFlags (the safe-for-deployment and deployment-score flags belong to the deployment code) */
+    fun clearDynamicFlags() {
+        withinRangeOfTarget.fill(false)
+        flankBonus.fill(false)
+    }
+
+    /**
+     *  CvTacticalAnalysisMap::SetTargetBombardCells: the revealed, passable tiles within [range] of [target], not enemy or neutral cities,
+     *  with a line of sight to it (unless [ignoreLineOfSight]) from where a ranged unit could shoot at it.
+     */
+    fun setTargetBombardCells(target: Tile, range: Int, ignoreLineOfSight: Boolean) {
+        for (tile in target.getTilesInDistance(range)) {
+            if (tile == target || !isRevealed(tile) || isImpassableTerrain(tile) || isImpassableTerritory(tile)) continue
+            if (isEnemyCity(tile) || isNeutralCity(tile)) continue
+            if (ignoreLineOfSight || target in tile.tileMap.getViewableTiles(tile.position, range, true))
+                withinRangeOfTarget[tile.zeroBasedIndex] = true
+        }
+    }
+
+    /** CvTacticalAnalysisMap::SetTargetFlankBonusCells: the free tiles around a land [target] where a unit of ours would add a flank bonus */
+    fun setTargetFlankBonusCells(target: Tile) {
+        if (target.isWater) return
+        for (tile in target.neighbors) {
+            if (!isRevealed(tile) || isImpassableTerrain(tile) || isImpassableTerritory(tile)) continue
+            if (isFriendlyCity(tile) || isEnemyCity(tile) || isNeutralCity(tile)) continue
+            if (!isFriendlyTurnEndTile(tile) && enemyMilitaryUnit(tile) == null) flankBonus[tile.zeroBasedIndex] = true
+        }
+    }
 
     //endregion
 

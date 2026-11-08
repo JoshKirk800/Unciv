@@ -3,20 +3,21 @@ package com.unciv.logic.automation.unit.tactical
 import com.unciv.logic.automation.AiDecisionLog
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.civilization.AutomationCache
-import com.unciv.logic.automation.unit.PlotDanger
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.ruleset.ai.AiDefine
 
 /**
- *  CvTacticalAI::Update for one civilization's turn: the units under tactical control ([commandeerUnits]), then the moves of the tactical
- *  priority list (`tacticalMoves` of AI.json, [com.unciv.models.ruleset.ai.TacticalMoveDef.priority] first) that this port has: emergency
- *  purchases (once per dominance zone), withdrawing from zones the enemy dominates, moves to safety and healing. A unit a move commands is
- *  added to [AutomationCache.processedUnits]; the other units, tactical or not, go on to the rest of the unit AI.
+ *  CvTacticalAI::Update for one civilization's turn: the units under tactical control ([commandeerUnits]), the targets
+ *  ([TacticalTargets]), then the moves of the tactical priority list (`tacticalMoves` of AI.json, [com.unciv.models.ruleset.ai.TacticalMoveDef.priority]
+ *  first, in the XML order among equals): emergency purchases (once per dominance zone), the attack moves (capture and damage cities, destroy
+ *  and attrition attacks on units, civilians, camps, pillaging, safe bombards - [TacticalMoves], [TacticalAttacks], [TacticalBombards]),
+ *  withdrawing from zones the enemy dominates, moves to safety and healing, garrisons, bastions, guarding improvements, repositioning.
+ *  A unit a move commands is added to [AutomationCache.processedUnits]; the other units, tactical or not, go on to the rest of the unit AI.
  *
- *  Not ported yet (their rows of AI.json's `tacticalMoves` have no code behind them): the attack moves, hedgehog/close-on-target/posture moves
- *  and operation moves; [attackStage] stands in for the attack moves with the unit AI's own attack.
+ *  Not ported yet (their rows of AI.json's `tacticalMoves` have no code behind them): the posture moves (offensive postures, hedgehog,
+ *  shore bombardment, close on target), operation moves, air moves and trade moves.
  */
 object TacticalAi {
 
@@ -24,8 +25,6 @@ object TacticalAi {
     private const val POSTURE_WITHDRAW = "TACTICAL_POSTURE_WITHDRAW"
     private const val TO_SAFETY = "TACTICAL_TO_SAFETY"
     private const val HEAL = "TACTICAL_HEAL"
-    /** The attack moves of the original (priorities 105 to 150) all run before WITHDRAW: [attackStage] takes the place of the last of them */
-    private const val ATTACK_STAGE = "TACTICAL_OFFENSIVE_POSTURE_MOVES"
 
     /**
      *  CvTacticalAI::CommandeerUnits: the units that are the tactical AI's this turn. Not units that cannot move, are processed or have no
@@ -71,22 +70,18 @@ object TacticalAi {
     private fun nearAny(tile: Tile, others: List<Tile>, range: Int): Boolean = others.any { it.aerialDistanceTo(tile) <= range }
 
     /**
-     *  The tactical turn. [attackStage] is called with each commandeered unit when the attack moves would run, and returns whether the unit's
-     *  turn is over (CvTacticalAI's attacks are not ported: this is where the unit AI's own attack plugs in).
+     *  The tactical turn (CvTacticalAI::Update, ProcessDominanceZones): find the targets, then run the moves of the priority list one after
+     *  the other, each commanding the units it needs. [units] are the civilization's units in the order they would move.
      */
-    fun automate(civ: Civilization, units: List<MapUnit>, cache: AutomationCache, attackStage: (MapUnit) -> Boolean) = timeThis("AI.Tactical") {
+    fun automate(civ: Civilization, units: List<MapUnit>, cache: AutomationCache) = timeThis("AI.Tactical") {
         val state = civ.ai.tactical
-        val tacticalUnits = commandeerUnits(civ, units, cache).toMutableList()
+        val tacticalUnits = commandeerUnits(civ, units, cache)
         val commandeered = tacticalUnits.size
         val map = state.map
         PostureSelection.updatePostures(civ, state, map)
         val danger = civ.ai.plotDanger
-        val highPriority by lazy { CityAttackers.highPriorityUnits(civ) }
-
-        fun finished(unit: MapUnit) {
-            cache.processedUnits.add(unit)
-            tacticalUnits.remove(unit)
-        }
+        val ctx = TacticalContext(civ, map, danger, cache, tacticalUnits, TacticalTargets.find(civ, map, danger))
+        val highPriority by lazy { ctx.targets.all.filter { it.type == TacticalTargetType.HighPriorityUnit }.mapNotNullTo(HashSet()) { it.unit } }
 
         class Step(val name: String, val run: () -> Unit)
         val steps = listOf(
@@ -95,28 +90,56 @@ object TacticalAi {
                     if (zone.dominance != TacticalDominance.Friendly && zone.territory == TacticalTerritory.Friendly && PostureSelection.useThisZone(civ, state, zone))
                         EmergencyPurchases.plot(civ, zone, map) { highPriority }
             },
-            Step(ATTACK_STAGE) {
-                for (unit in tacticalUnits.toList()) if (!unit.isDestroyed && unit.civ == civ && attackStage(unit)) finished(unit)
-            },
+            Step("TACTICAL_CAPTURE_CITY") { TacticalMoves.plotCaptureCityMoves(ctx) },
+            Step("TACTICAL_DESTROY_HIGH_UNIT") { TacticalMoves.plotDestroyUnitMoves(ctx, TacticalTargetType.HighPriorityUnit, true) },
+            Step("TACTICAL_ATTACK_VERY_HIGH_PRIORITY_CIVILIAN") { TacticalMoves.plotCivilianAttackMoves(ctx, TacticalTargetType.VeryHighPriorityCivilian) },
+            Step("TACTICAL_PILLAGE_CITADEL") { TacticalMoves.plotPillageMoves(ctx, TacticalTargetType.Citadel, true) },
+            Step("TACTICAL_DESTROY_MEDIUM_UNIT") { TacticalMoves.plotDestroyUnitMoves(ctx, TacticalTargetType.MediumPriorityUnit, true) },
+            Step("TACTICAL_DESTROY_LOW_UNIT") { TacticalMoves.plotDestroyUnitMoves(ctx, TacticalTargetType.LowPriorityUnit, true) },
+            Step("TACTICAL_ATTACK_HIGH_PRIORITY_CIVILIAN") { TacticalMoves.plotCivilianAttackMoves(ctx, TacticalTargetType.HighPriorityCivilian) },
             Step(POSTURE_WITHDRAW) {
                 for (zone in map.zones) {
                     val posture = state.findPosture(zone.owner?.civName, zone.isWater, zone.closestCity?.id)
-                    if (posture == TacticalPosture.Withdraw && !zone.isWater && PostureSelection.useThisZone(civ, state, zone))
-                        for (unit in withdrawMoves(civ, zone, tacticalUnits, map, danger)) finished(unit)
+                    // CvTacticalAI::ProcessDominanceZones: the zone must have targets, or be a temporary zone or enemy land
+                    if (posture == TacticalPosture.Withdraw && !zone.isWater && PostureSelection.useThisZone(civ, state, zone)
+                        && (zone.territory == TacticalTerritory.TempZone || zone.territory == TacticalTerritory.Enemy || ctx.targets.forZone(zone).isNotEmpty()))
+                        withdrawMoves(ctx, zone)
                 }
             },
+            Step("TACTICAL_SAFE_BOMBARDS") { TacticalMoves.plotSafeBombardMoves(ctx) },
+            Step("TACTICAL_PILLAGE") { TacticalMoves.plotPillageMoves(ctx, TacticalTargetType.Improvement, true) },
+            Step("TACTICAL_ATTACK_MEDIUM_PRIORITY_CIVILIAN") { TacticalMoves.plotCivilianAttackMoves(ctx, TacticalTargetType.MediumPriorityCivilian) },
+            Step("TACTICAL_PILLAGE_RESOURCE") { TacticalMoves.plotPillageMoves(ctx, TacticalTargetType.ImprovementResource, true) },
+            Step("TACTICAL_ATTACK_LOW_PRIORITY_CIVILIAN") { TacticalMoves.plotCivilianAttackMoves(ctx, TacticalTargetType.LowPriorityCivilian) },
+            Step("TACTICAL_ANCIENT_RUINS") { TacticalMoves.plotAncientRuinMoves(ctx, 1) },
+            Step("TACTICAL_PILLAGE_CITADEL_NEXT_TURN") { TacticalMoves.plotPillageMoves(ctx, TacticalTargetType.Citadel, false) },
+            Step("TACTICAL_GARRISON_TO_ALLOW_BOMBARD") { TacticalMoves.plotGarrisonMoves(ctx, 1, true) },
+            Step("TACTICAL_ATTRIT_HIGH_UNIT") { TacticalMoves.plotDestroyUnitMoves(ctx, TacticalTargetType.HighPriorityUnit, false) },
+            Step("TACTICAL_DAMAGE_CITY") { TacticalMoves.plotDamageCityMoves(ctx) },
+            Step("TACTICAL_ATTRIT_MEDIUM_UNIT") { TacticalMoves.plotDestroyUnitMoves(ctx, TacticalTargetType.MediumPriorityUnit, false) },
+            Step("TACTICAL_PILLAGE_RESOURCE_NEXT_TURN") { TacticalMoves.plotPillageMoves(ctx, TacticalTargetType.ImprovementResource, false) },
+            Step("TACTICAL_ATTRIT_LOW_UNIT") { TacticalMoves.plotDestroyUnitMoves(ctx, TacticalTargetType.LowPriorityUnit, false) },
             Step(TO_SAFETY) {
-                for (unit in tacticalUnits.toList()) if (unit.hasMovement() && TacticalSafety.moveToSafety(unit, danger)) finished(unit)
+                for (unit in ctx.liveUnits()) if (unit.hasMovement() && TacticalSafety.moveToSafety(unit, danger)) ctx.unitProcessed(unit)
             },
+            Step("TACTICAL_BARBARIAN_CAMP") { TacticalMoves.plotBarbarianCampMoves(ctx) },
+            Step("TACTICAL_PILLAGE_NEXT_TURN") { TacticalMoves.plotPillageMoves(ctx, TacticalTargetType.Improvement, false) },
             Step(HEAL) {
-                for (unit in tacticalUnits.toList()) if (unit.hasMovement() && TacticalSafety.heal(unit)) finished(unit)
+                for (unit in ctx.liveUnits()) if (unit.hasMovement() && TacticalSafety.heal(unit)) ctx.unitProcessed(unit)
             },
+            Step("TACTICAL_BASTION_ALREADY_THERE") { TacticalMoves.plotBastionMoves(ctx, 0) },
+            Step("TACTICAL_GARRISON_ALREADY_THERE") { TacticalMoves.plotGarrisonMoves(ctx, 0) },
+            Step("TACTICAL_BASTION_1_TURN") { TacticalMoves.plotBastionMoves(ctx, 1) },
+            Step("TACTICAL_GARRISON_1_TURN") { TacticalMoves.plotGarrisonMoves(ctx, 1) },
+            Step("TACTICAL_GUARD_IMPROVEMENT_ALREADY_THERE") { TacticalMoves.plotGuardImprovementMoves(ctx, 0) },
+            Step("TACTICAL_GUARD_IMPROVEMENT_1_TURN") { TacticalMoves.plotGuardImprovementMoves(ctx, 1) },
+            Step("TACTICAL_REPOSITION") { TacticalMoves.plotRepositionMoves(ctx) },
         )
         // CvTacticalAI::EstablishTacticalPriorities: every move with a priority of 0 or more, the highest first, stable in XML order
-        val priorities = civ.gameInfo.ruleset.ai.tacticalMoves.associate { it.name to it.priority }
-        for (step in steps.filter { (priorities[it.name] ?: -1) >= 0 }.sortedByDescending { priorities[it.name] }) step.run()
+        val stepByName = steps.associateBy { it.name }
+        for (move in civ.gameInfo.ruleset.ai.tacticalMoves.filter { it.priority >= 0 }.sortedByDescending { it.priority }) stepByName[move.name]?.run()
         AiDecisionLog.log(civ) {
-            "Tactical: $commandeered units commandeered, ${commandeered - tacticalUnits.size} commanded; postures " +
+            "Tactical: $commandeered units commandeered, ${commandeered - ctx.units.size} commanded, ${ctx.targets.all.size} targets; postures " +
                 state.postures.filter { it.posture != TacticalPosture.None }.joinToString { "${it.posture}${if (it.isWater) " (sea)" else ""}" }.ifEmpty { "-" }
         }
     }
@@ -124,14 +147,16 @@ object TacticalAi {
     /**
      *  CvTacticalAI::PlotWithdrawMoves / ExecuteWithdrawMoves for one zone: units of the right domain that stand in the zone, or within the
      *  tactical recruit range of its city on a tile that is in danger and not ours, or (in unclaimed land) in danger outside our land,
-     *  fall back to the nearest of our cities on their landmass, the nearest to it first, onto an empty tile next to the city. Only land zones:
-     *  the original runs a zone move only if the zone has targets, or is a temporary zone or enemy land, and the targets are not ported.
+     *  fall back to the nearest of our cities on their landmass, the nearest to it first, onto an empty tile next to the city. Only land zones.
      *  @return the units that moved
      */
-    fun withdrawMoves(civ: Civilization, zone: DominanceZone, units: List<MapUnit>, map: TacticalMap, danger: PlotDanger): List<MapUnit> {
+    fun withdrawMoves(ctx: TacticalContext, zone: DominanceZone): List<MapUnit> {
+        val civ = ctx.civ
+        val map = ctx.map
+        val danger = ctx.danger
         val recruitRange = civ.gameInfo.ruleset.ai.define(AiDefine.AI_TACTICAL_RECRUIT_RANGE)
         val withdrawing = ArrayList<MapUnit>()
-        for (unit in units) {
+        for (unit in ctx.liveUnits()) {
             if (zone.isWater && !unit.baseUnit.isWaterUnit || !zone.isWater && !unit.baseUnit.isLandUnit) continue
             val tile = unit.getTile()
             val city = zone.closestCity
@@ -156,10 +181,11 @@ object TacticalAi {
         val moved = ArrayList<MapUnit>()
         for (withdrawal in plan.sortedBy { it.turns }) {
             val unit = withdrawal.unit
-            val target = emptyTileNextTo(unit, withdrawal.city) ?: continue
+            val target = TacticalMoves.emptyTileNextTo(unit, withdrawal.city) ?: continue
             AiDecisionLog.log(civ) { "Tactical: ${unit.name} withdraws from zone ${zone.id} (${zone.closestCity?.name}) toward ${target.position}" }
             unit.movement.headTowards(target)
             unit.currentMovement = 0f
+            ctx.unitProcessed(unit)
             moved.add(unit)
         }
         return moved
@@ -181,17 +207,5 @@ object TacticalAi {
             }
         }
         return best
-    }
-
-    /** CvTacticalAI::MoveToEmptySpaceNearTarget: the first tile next to [target], on the unit's domain, with no unit and no city but our own, that it can reach */
-    private fun emptyTileNextTo(unit: MapUnit, target: Tile): Tile? {
-        val land = !unit.baseUnit.isWaterUnit
-        for (neighbor in target.neighbors) {
-            if (neighbor.isWater == land) continue
-            if (neighbor.militaryUnit != null) continue
-            if (neighbor.isCityCenter() && neighbor.getOwner() != unit.civ) continue
-            if (unit.movement.canReach(neighbor)) return neighbor
-        }
-        return null
     }
 }
