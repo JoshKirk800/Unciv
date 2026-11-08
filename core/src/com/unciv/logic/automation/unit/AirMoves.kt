@@ -14,7 +14,8 @@ import com.unciv.models.ruleset.unique.UniqueType
 /**
  *  The air moves of the original: CvMilitaryAI::WillAirUnitRebase, GetNumEnemyAirUnitsInRange and GetBestAirSweepTarget; the tactical moves
  *  PlotAirSweepMoves / ExecuteAirSweepMoves and PlotAirInterceptMoves; CvHomelandAI::PlotAircraftMoves / ExecuteAircraftMoves (rebasing
- *  to the base with the highest plot danger, with the carriers' free slots).
+ *  to the base with the highest plot danger, with the carriers' free slots). Aircraft strikes are not here: combat-ready aircraft are strikers of
+ *  [com.unciv.logic.automation.unit.tactical.TacticalAttacks] like any shooter, and what the tactical AI leaves of an aircraft is only [plotAircraftMove].
  *
  *  Deviations, with the reason: Unciv has no air patrol action - interception is automatic for a fighter that still has its movement -
  *  so the intercept move only keeps the fighter where it is, unmoved, for the turn; a carrier's free slot is [MapUnit.canTransport] (the
@@ -29,6 +30,12 @@ object AirMoves {
 
     /** The share of hit points a base may lose before the aircraft in it want to leave (MAX_HIT_POINTS / 5) */
     private const val BASE_DAMAGE_DIVISOR = 5
+
+    /** Half the hit points: an aircraft with this many or fewer is not combat ready (CvUnit::getDamage() * 2 < MAX_HIT_POINTS) */
+    private const val HALF_HEALTH = 50
+
+    /** An aircraft with more than half its hit points: the tactical AI commandeers it, uses it for strikes and sweeps, and the homeland AI rebases it */
+    fun isCombatReady(unit: MapUnit) = unit.health > HALF_HEALTH
 
     /** CvUnit::IsAirSweepCapable */
     fun isAirSweepCapable(unit: MapUnit) = unit.hasUnique(UniqueType.CanAirsweep)
@@ -152,15 +159,13 @@ object AirMoves {
      *  turn. @return whether the aircraft was commanded
      */
     fun plotAircraftMove(unit: MapUnit): Boolean {
-        if (unit.health <= HALF_HEALTH || !unit.hasMovement() || !willAirUnitRebase(unit)) return false
+        if (!isCombatReady(unit) || !unit.hasMovement() || !willAirUnitRebase(unit)) return false
         val target = rebaseTarget(unit)
         if (target != unit.getTile()) unit.movement.moveToTile(target)
         AiDecisionLog.log(unit.civ) { "Air: ${unit.name} rebases to ${target.position}" }
         unit.currentMovement = 0f
         return true
     }
-
-    private const val HALF_HEALTH = 50
 
     //region Tactical moves
 
@@ -176,7 +181,7 @@ object AirMoves {
      */
     fun plotAirSweepMoves(ctx: TacticalContext) {
         for (unit in ctx.liveUnits()) {
-            if (!unit.baseUnit.isAirUnit() || unit.health <= HALF_HEALTH) continue
+            if (!unit.baseUnit.isAirUnit() || !isCombatReady(unit)) continue
             if (!canAirSweep(unit) || willAirUnitRebase(unit)) continue
             val target = bestAirSweepTarget(ctx.civ, unit) ?: continue
             val inCity = unit.getTile().isCityCenter()

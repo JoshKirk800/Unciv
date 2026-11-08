@@ -1,6 +1,7 @@
 package com.unciv.logic.automation.unit.tactical
 
 import com.unciv.Constants
+import com.unciv.logic.automation.unit.AirMoves
 import com.unciv.logic.battle.AttackableTile
 import com.unciv.logic.battle.Battle
 import com.unciv.logic.battle.BattleDamage
@@ -70,7 +71,9 @@ class AttackSeries(val target: TacticalTarget) {
  *  - the series is made one attack at a time as the fights resolve (they do at once in Unciv, so there is no queue to wait on): a
  *    unit's melee move up to its attack tile happens when its turn in the series comes, not when the series is planned, so units whose
  *    attack is no longer needed do not move;
- *  - an attacker whose attack turns out to be impossible when its turn comes (the target is hidden, it is blocked) simply stays unused.
+ *  - an attacker whose attack turns out to be impossible when its turn comes (the target is hidden, it is blocked) simply stays unused;
+ *  - an aircraft strikes through [Battle.moveAndAttack] like any shooter (the original sends it on a move-to mission): interception is Unciv's
+ *    [com.unciv.logic.battle.AirInterception], and the damage its strike costs it is not part of the expected damage, as in the original.
  */
 object TacticalAttacks {
 
@@ -78,8 +81,11 @@ object TacticalAttacks {
 
     //region Reach
 
-    /** CvUnit::IsCanAttack: units that fight (the unit AI of air units is elsewhere) */
-    fun canAttack(unit: MapUnit) = unit.isMilitary() && !unit.baseUnit.isAirUnit() && !unit.hasUnique(UniqueType.CannotAttack)
+    /**
+     *  CvUnit::IsCanAttack: units that fight, aircraft by their ranged strike. Nuclear weapons have no attack strength in the original (the nuke
+     *  operation sets them off), so they never are strikers.
+     */
+    fun canAttack(unit: MapUnit) = unit.isMilitary() && !unit.isNuclearWeapon() && !unit.hasUnique(UniqueType.CannotAttack)
 
     /** CvUnit::isOutOfAttacks */
     fun isOutOfAttacks(unit: MapUnit) = unit.attacksThisTurn >= unit.maxAttacksPerTurn()
@@ -138,6 +144,10 @@ object TacticalAttacks {
      *  movement to spare; @param includeBlocked also units that could strike if units of ours made room, at half strength;
      *  @param willPillage the unit pillages the tile (shooters do not); @param targetUndefended the tile has nobody to fight, units just move
      *  onto it (half strength)
+     *
+     *  An aircraft strikes only as a shooter: more than half its health ([AirMoves.isCombatReady]), the target within its range (line of sight is
+     *  no matter), a defender it is expected to damage. The original's other ways to a target (move onto it, move beside it) path-find, which it
+     *  never does for aircraft, so aircraft are left out when [noRanged], [willPillage] or [targetUndefended] ask for those.
      */
     fun findUnits(
         ctx: TacticalContext, tile: Tile, turns: Int, preferredDamage: Int = 0, noRanged: Boolean = false, navalOnly: Boolean = false,
@@ -149,6 +159,8 @@ object TacticalAttacks {
         for (unit in ctx.liveUnits()) {
             if (navalOnly && !unit.baseUnit.isWaterUnit) continue
             if (!canAttack(unit) || isOutOfAttacks(unit) || !unit.hasMovement()) continue
+            val air = unit.baseUnit.isAirUnit()
+            if (air && (noRanged || willPillage || targetUndefended)) continue
             if (!isCityTarget && isCityAttackOnly(unit)) continue
             if (willPillage && !UnitActionsPillage.canPillage(unit, tile)) continue
             val ranged = unit.baseUnit.isRanged()
@@ -164,7 +176,7 @@ object TacticalAttacks {
                 if (canMoveOnto(unit, tile, turns)) result.add(Striker(unit, strength / 2, health))
             } else if (!noRanged && !willPillage && ranged) {
                 // Want ranged units to attack first, so inflate this; they take no damage from bombarding, so they show as fully healthy
-                if (hasEnemy && isExpectedToDamageWithRangedAttack(unit, tile) && attackOptions(unit, tile, true).isNotEmpty())
+                if (hasEnemy && (!air || AirMoves.isCombatReady(unit)) && isExpectedToDamageWithRangedAttack(unit, tile) && attackOptions(unit, tile, true).isNotEmpty())
                     result.add(Striker(unit, 100 * unit.baseUnit.rangedStrength, 100, unit.getTile()))
             } else if (hasEnemy && !willPillage) {
                 val option = attackOptions(unit, tile, false).let { bestOption(it, null) }
@@ -214,8 +226,8 @@ object TacticalAttacks {
             val attacker = MapUnitCombatant(striker.unit)
             val from = striker.attackFrom ?: striker.unit.getTile()
             striker.expectedTargetDamage = BattleDamage.calculateDamageToDefender(attacker, defender, from, TacticalTargets.EXPECTED_RANDOMNESS)
-            // Shooting costs nothing (CvTacticalAI sets the self damage of ranged attacks to 0)
-            striker.expectedSelfDamage = BattleDamage.calculateDamageToAttacker(attacker, defender, from, TacticalTargets.EXPECTED_RANDOMNESS)
+            // Shooting costs nothing (CvTacticalAI sets the self damage of ranged attacks to 0), aircraft included: what Unciv's air strikes cost them is not weighed
+            striker.expectedSelfDamage = if (striker.unit.baseUnit.isRanged()) 0 else BattleDamage.calculateDamageToAttacker(attacker, defender, from, TacticalTargets.EXPECTED_RANDOMNESS)
             total += striker.expectedTargetDamage
         }
         return total

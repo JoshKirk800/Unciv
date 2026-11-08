@@ -61,26 +61,23 @@ object UnitAutomation {
             return
         }
 
-        // Note that not all nukes have to be air units
+        // Note that not all nukes have to be air units. The nuke attack operation sets a nuke off; until then it only rebases
         if (unitView.isNuclearWeapon()) {
-            return AirUnitAutomation.automateNukes(unitView)
-        }
-
-        if (unitView.isAirUnit()) {
-            if (unit.canIntercept())
-                return AirUnitAutomation.automateFighter(unitView, cache)
-
-            if (unitView.hasUnique(UniqueType.SelfDestructs))
-                return AirUnitAutomation.automateMissile(unitView)
-
-            return AirUnitAutomation.automateBomber(unitView)
+            AirMoves.plotAircraftMove(unit)
+            return
         }
 
         // A human's automated unit has no tactical turn of its own before this (NextTurnAutomation.automateUnits gives AI and auto play one):
-        // the tactical AI commands it on its own, for its attacks, safety and garrison duty
+        // the tactical AI commands it on its own, for its attacks (aircraft strike as tactical attacks), safety and garrison duty
         if (isHumanAndNotAutoplaying && unit.isMilitary()) {
             TacticalAi.automate(unit.civ, listOf(unit), cache)
             if (unit in cache.processedUnits) return
+        }
+
+        // What the tactical AI leaves of an aircraft is CvHomelandAI::PlotAircraftMoves: rebase if it wants to, else wait
+        if (unitView.isAirUnit()) {
+            AirMoves.plotAircraftMove(unit)
+            return
         }
 
         // What is left of the unit's turn is CvHomelandAI's: explore, garrison, sentry, patrol, ... (the civilization's whole military goes through

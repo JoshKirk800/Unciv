@@ -26,7 +26,6 @@ import com.unciv.models.ruleset.unique.UniqueType
  */
 object TacticalAi {
 
-    private const val AIR_COMBAT_READY_HEALTH = 50
     private const val EMERGENCY_PURCHASES = "TACTICAL_EMERGENCY_PURCHASES"
     private const val MOVE_OPERATIONS = "TACTICAL_MOVE_OPERATIONS"
     private const val POSTURE_WITHDRAW = "TACTICAL_POSTURE_WITHDRAW"
@@ -55,7 +54,7 @@ object TacticalAi {
             if (unitAi == UnitAiType.UNKNOWN || unitAi == UnitAiType.EXPLORE) continue
             // CommandeerUnits: air units that are combat ready (more than half health) and not about to rebase
             if (unit.baseUnit.isAirUnit()) {
-                if (unit.health > AIR_COMBAT_READY_HEALTH && !AirMoves.willAirUnitRebase(unit)) result.add(unit)
+                if (AirMoves.isCombatReady(unit) && !AirMoves.willAirUnitRebase(unit)) result.add(unit)
                 continue
             }
             if (!unit.isMilitary() && !unit.isGreatPersonOfType("War")) continue
