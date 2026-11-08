@@ -11,6 +11,7 @@ import com.unciv.logic.automation.Automation
 import com.unciv.logic.automation.diplomacy.PromiseAi
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.unit.HomelandAi
+import com.unciv.logic.automation.unit.PromotionAi
 import com.unciv.logic.automation.unit.tactical.OperationalMoves
 import com.unciv.logic.automation.unit.ArchaeologistAutomation
 import com.unciv.logic.automation.unit.EspionageAutomation
@@ -37,7 +38,6 @@ import com.unciv.models.ruleset.tech.Technology
 import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unit.BaseUnit
 import com.unciv.ui.screens.victoryscreen.RankingType
-import com.unciv.utils.randomWeighted
 import com.unciv.view.CivView
 import com.unciv.view.GameView
 import com.unciv.view.MapUnitView
@@ -182,10 +182,8 @@ object NextTurnAutomation {
         // The original walks the units in unit-id order for every subsystem (CvTacticalAI::CommandeerUnits, CvHomelandAI::RecruitUnits)
         val unitsAtStart = civView.getUnits().sortedBy { it.getUnit().id }
 
-        for (unit in unitsAtStart) {
-            if (!isStillOurUnit(unit, civView)) continue
-            applyPromotions(unit)
-        }
+        // CvPlayer::doTurnUnits ends with CvPlayerAI::AI_doTurnUnitsPost: the promotions, before the units move
+        PromotionAi.promoteUnits(civInfo)
         HomelandAi.continueMissions(unitsAtStart.map { it.getUnit() })
         // CvTacticalAI::Update runs before the homeland AI: the units near the enemy or in danger first (the attacks of units and cities
         // included), the rest of the unit AI skips them
@@ -216,31 +214,12 @@ object NextTurnAutomation {
         return !unit.isDestroyed() && unit.civ() == civView
     }
 
-    internal fun applyPromotions(unitView: MapUnitView) {
+    /** The automatic promotions of a human's unit (the setting, or auto play) take the choice of [PromotionAi] */
+    fun applyPromotions(unitView: MapUnitView) {
         val unit = unitView.getUnit()
         // Humans only auto-promote when the setting is not Off (AI always does)
         if (!unit.civ.isAI() && UncivGame.Current.settings.automaticPromotions == GameSettings.AutomaticPromotions.Off) return
-        val rng = unit.cache.state.stateBasedRandom("NextTurnAutomation.automateUnits")
-        val stateForConditionals = unit.cache.state
-        while (unitView.canBePromoted()) {
-            val promotions = unit.promotions.getAvailablePromotions()
-            val availablePromotions = if (unitView.unitHealth <= 60
-                && promotions.any { it.hasUnique(UniqueType.OneTimeUnitHeal) }
-                && !(unitView.isAirUnit() || unitView.hasUnique(UniqueType.CanMoveAfterAttacking))
-            ) {
-                promotions.filter { it.hasUnique(UniqueType.OneTimeUnitHeal) }
-            } else promotions.filterNot { it.hasUnique(UniqueType.SkipPromotion) }
-
-            if (availablePromotions.none()) break
-            val freePromotions = availablePromotions.filter { it.hasUnique(UniqueType.FreePromotion) }.toList()
-            val chosenPromotion =
-                if (freePromotions.isNotEmpty()) freePromotions.randomWeighted(rng) {
-                    it.getWeightForAiDecision(stateForConditionals)
-                }
-                else availablePromotions.toList()
-                    .randomWeighted(rng) { it.getWeightForAiDecision(stateForConditionals) }
-            unitView.tryAddPromotion(chosenPromotion.name)
-        }
+        PromotionAi.promote(unit, unit.civ.ai.random("UnitAI.Promote"))
     }
 
     /** Every city of a human player shoots at what it can (the end-of-turn setting, [TurnManager.endTurn]); the cities of the AI and of auto play shoot as part of [TacticalAi]'s attacks */
