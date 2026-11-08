@@ -34,6 +34,8 @@ class AiRuleset {
     var citySpecializations = ArrayList<CitySpecializationDef>()
     var minorCivFlavors = ArrayList<NamedFlavors>()
     var itemFlavors = ArrayList<ItemFlavors>()
+    /** Technology_PrereqTechs in XML row order, by Unciv tech name - see [TechPrereqsDef] */
+    var techPrereqs = ArrayList<TechPrereqsDef>()
     var unitAiTypes = ArrayList<UnitAiTypesDef>()
     var handicaps = ArrayList<HandicapDef>()
     /** Nation names of CvCivilizationInfo::isCoastalCiv (Civilization_Start_Along_Ocean), read by CvCitySiteEvaluator::PlotFoundValue */
@@ -84,6 +86,7 @@ class AiRuleset {
         mergeByName(citySpecializations, other.citySpecializations)
         mergeByName(minorCivFlavors, other.minorCivFlavors)
         mergeByName(unitAiTypes, other.unitAiTypes)
+        mergeByName(techPrereqs, other.techPrereqs)
         mergeByName(handicaps, other.handicaps)
         for (name in other.coastalCivilizations) if (name !in coastalCivilizations) coastalCivilizations.add(name)
         featureStartingLocationWeights.putAll(other.featureStartingLocationWeights)
@@ -104,6 +107,7 @@ class AiRuleset {
         citySpecializations.clear()
         minorCivFlavors.clear()
         itemFlavors.clear()
+        techPrereqs.clear()
         unitAiTypes.clear()
         handicaps.clear()
         coastalCivilizations.clear()

@@ -408,6 +408,7 @@ class CivAi : IsPartOfGameInfoSerialization {
                 onStrategiesChanged()
         }
         if (!civ.isHuman()) timeThis("AI.MilitaryDoTurn") { military.doTurnAfterStrategies(civ) }
+        timeThis("AI.TechFlavors") { com.unciv.logic.automation.civilization.TechAutomation.updateFlavorWeights(civ) }
         timeThis("AI.CitySpecialization") { CitySpecializationAi.doTurn(civ) }
         timeThis("AI.CityStrategies") {
             CityStrategyAi.clearTurnCache(civ)
