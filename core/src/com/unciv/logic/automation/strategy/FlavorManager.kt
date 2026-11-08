@@ -1,6 +1,7 @@
 package com.unciv.logic.automation.strategy
 
 import com.unciv.logic.GameInfo
+import com.unciv.logic.automation.civilization.CityStateAi
 import com.unciv.logic.civilization.Civilization
 import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.ai.DiplomacyPersonality
@@ -53,6 +54,7 @@ object FlavorManager {
             val leaderFlavors = Flavor.vectorOf(source ?: emptyMap(), default)
             randomizeWeights(leaderFlavors, civ.ai.random("CvFlavorManager::RandomizeWeights", 0), rules.define(AiDefine.FLAVOR_RANDOMIZATION_RANGE),
                 rules.define(AiDefine.PERSONALITY_FLAVOR_MIN_VALUE), rules.define(AiDefine.PERSONALITY_FLAVOR_MAX_VALUE))
+            if (civ.isCityState) CityStateAi.pickInitialFlavors(civ, leaderFlavors, civ.ai.random("CvMinorCivAI::DoPickPersonality", 0))
             leaderFlavors
         }
         ai.personalityFlavors.clear()

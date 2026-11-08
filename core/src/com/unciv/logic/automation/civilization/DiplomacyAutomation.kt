@@ -9,9 +9,9 @@ import com.unciv.logic.automation.diplomacy.DiplomacyTurn
 import com.unciv.logic.automation.diplomacy.MajorCivMemory
 import com.unciv.logic.automation.diplomacy.MajorCivOpinion
 import com.unciv.logic.automation.diplomacy.OpinionAi
-import com.unciv.logic.automation.diplomacy.PeaceTreatyType
 import com.unciv.logic.automation.diplomacy.WarAi
 import com.unciv.logic.automation.diplomacy.WarGoal
+import com.unciv.logic.automation.strategy.PurchaseType
 import com.unciv.logic.automation.strategy.StrengthLevel
 import com.unciv.logic.automation.strategy.TargetValue
 import com.unciv.logic.automation.strategy.WarStateAi
@@ -20,7 +20,6 @@ import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.PopupAlert
 import com.unciv.logic.civilization.diplomacy.Demand
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
-import com.unciv.logic.trade.TradeEvaluation
 import com.unciv.logic.trade.TradeLogic
 import com.unciv.logic.trade.TradeOffer
 import com.unciv.logic.trade.TradeOfferType
@@ -112,28 +111,12 @@ object DiplomacyAutomation {
         if (memory.turnsLockedIntoWar != 0 || other.ai.diplomacy.memoryOf(civ).turnsLockedIntoWar != 0) return
         if (!ai.isWantsPeaceWith(other)) return
         if (turnsSinceStatement(civ, memory, DiploStatement.RequestPeace) < 10) return
-        if (!isOfferPeace(civ, other)) return
-        sendStatement(civ, other, DiploStatement.RequestPeace)
+        // CvDealAI::IsOfferPeace: the treaty both sides accept, with the surrender items of DoAddItemsToDealForPeaceTreaty
         val tradeLogic = TradeLogic(civ, other)
-        val peace = TradeOffer(Constants.peaceTreaty, TradeOfferType.Treaty, speed = civ.gameInfo.speed)
-        tradeLogic.currentTrade.ourOffers.add(peace)
-        tradeLogic.currentTrade.theirOffers.add(peace)
+        if (!DealAi.isOfferPeace(civ, other, tradeLogic.currentTrade)) return
+        sendStatement(civ, other, DiploStatement.RequestPeace)
         if (other.isHuman()) other.tradeRequests.add(TradeRequest(civ.civID, tradeLogic.currentTrade.reverse()))
-        else tradeLogic.acceptTrade(applyGifts = false)
-    }
-
-    /**
-     *  The treaty part of CvDealAI::IsOfferPeace: between AIs, what each offers must cover what the other accepts. The deal holds the peace
-     *  treaty; the surrender items (CvDealAI::DoAddItemsToDealForPeaceTreaty) are the deal AI's.
-     */
-    fun isOfferPeace(civ: Civilization, other: Civilization): Boolean {
-        val ours = civ.ai.diplomacy
-        if (ours.treatyWillingToOffer(other) == PeaceTreatyType.None) return false
-        if (other.isHuman()) return true
-        val theirs = other.ai.diplomacy
-        if (ours.treatyWillingToOffer(other) < theirs.treatyWillingToAccept(civ)) return false
-        if (theirs.treatyWillingToOffer(civ) < ours.treatyWillingToAccept(other)) return false
-        return true
+        else tradeLogic.acceptTrade()
     }
 
     /** CvDiplomacyAI::DoCoopWarStatement: only while at war with no major, ask [other] to join a war on our best target */
@@ -403,7 +386,7 @@ object DiplomacyAutomation {
         sendStatement(civ, other, DiploStatement.Demand)
         val tradeLogic = TradeLogic(other, civ)
         tradeLogic.currentTrade.ourOffers.add(TradeOffer(Constants.flatGold, TradeOfferType.Gold, gold, civ.gameInfo.speed))
-        tradeLogic.acceptTrade(applyGifts = false)
+        tradeLogic.acceptTrade()
         // CvDiplomacyAI::DoDemandMade: the victim remembers (the original's "too soon" timer only matters for demands humans make)
         other.ai.diplomacy.memoryOf(civ).demandCounter = 0
         // The demand is done: stand down
@@ -430,8 +413,8 @@ object DiplomacyAutomation {
         val tradeLogic = TradeLogic(other, civ)
         tradeLogic.currentTrade.ourOffers.add(request.first)
         // CvDealAI::DoAcceptedDeal for the asker: the help is remembered (negative assist = good)
-        val value = TradeEvaluation().getTradeAcceptability(tradeLogic.currentTrade.reverse(), civ, other)
-        tradeLogic.acceptTrade(applyGifts = false)
+        val value = DealAi.getDealValue(civ, other, tradeLogic.currentTrade.reverse(), false).total
+        tradeLogic.acceptTrade()
         civ.ai.diplomacy.changeRecentAssistValue(other, -value)
     }
 
@@ -489,10 +472,15 @@ object DiplomacyAutomation {
             if (!other.isMajorCiv) continue
             val memory = ai.memoryOf(other)
             val allowed = isResearchAgreementTradingAllowed(civ, other) || isResearchAgreementTradingAllowed(other, civ)
-            if (civ.getDiplomacyManager(other)?.hasFlag(DiplomacyFlags.ResearchAgreement) != true && !memory.wantsResearchAgreement && allowed)
+            if (civ.getDiplomacyManager(other)?.hasFlag(DiplomacyFlags.ResearchAgreement) != true && !memory.wantsResearchAgreement && allowed) {
                 memory.wantsResearchAgreement = true
-            if (memory.wantsResearchAgreement && (ai.approachTowards(other, hideTrueFeelings = true) == MajorCivApproach.Hostile || !allowed))
+                // CvDiplomacyAI::DoAddWantsResearchAgreementWithPlayer: start saving for it
+                civ.ai.purchaseSavings.startSaveForPurchase(PurchaseType.MajorCivTrade, civ.diplomacyFunctions.getResearchAgreementCost(other), 1)
+            }
+            if (memory.wantsResearchAgreement && (ai.approachTowards(other, hideTrueFeelings = true) == MajorCivApproach.Hostile || !allowed)) {
                 memory.wantsResearchAgreement = false
+                civ.ai.purchaseSavings.cancelSaveForPurchase(PurchaseType.MajorCivTrade)
+            }
         }
     }
 

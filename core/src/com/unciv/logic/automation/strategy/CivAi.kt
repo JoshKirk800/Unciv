@@ -114,6 +114,8 @@ class CivAi : IsPartOfGameInfoSerialization {
     var diplomacy = DiplomacyAi()
     /** CvMinorCivAI::m_eStatus of a city-state, updated each turn by [MinorCivStatusAi.status] */
     var minorCivStatus = MinorCivStatus.Normal
+    /** Deal and city-state AI memory: deal statements sent, expired deals to renew (see [com.unciv.logic.automation.civilization.DealsAiState]) */
+    var deals = com.unciv.logic.automation.civilization.DealsAiState()
     //endregion
 
     //region Transients
@@ -157,6 +159,7 @@ class CivAi : IsPartOfGameInfoSerialization {
         toReturn.military = military.clone()
         toReturn.diplomacy = diplomacy.clone()
         toReturn.minorCivStatus = minorCivStatus
+        toReturn.deals = deals.clone()
         return toReturn
     }
 

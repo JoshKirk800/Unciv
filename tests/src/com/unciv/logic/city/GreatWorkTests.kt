@@ -392,14 +392,14 @@ class GreatWorkTests {
 
         assertTrue(TradeEvaluation().isTradeValid(trade.currentTrade, civ, other))
         assertTrue(trade.ourAvailableOffers.any { it.name == GreatWorkFunctions.tradeId(first) && it.type == TradeOfferType.GreatWork })
-        trade.acceptTrade(applyGifts = false)
+        trade.acceptTrade()
 
         assertTrue(first.getWork() === foreignWork)
         assertTrue(second.getWork() === ownWork)
         assertEquals(listOf(foreignWork), city.greatWorks.getWorks())
         assertEquals(listOf(ownWork), foreignCity.greatWorks.getWorks())
         assertEquals(other.civName, first.getWork()!!.creatorCiv)
-        trade.acceptTrade(applyGifts = false)
+        trade.acceptTrade()
         assertTrue("a repeated offer cannot reverse or duplicate the exchange", first.getWork() === foreignWork)
         assertEquals(1, city.greatWorks.getNumWorks())
         assertEquals(1, foreignCity.greatWorks.getNumWorks())
@@ -420,13 +420,13 @@ class GreatWorkTests {
         put(foreignGallery, 0, foreignWork, foreignCity)
         val trade = exchangeWith(other, first, second)
         assertFalse(TradeEvaluation().isTradeValid(trade.currentTrade, civ, other))
-        trade.acceptTrade(applyGifts = false)
+        trade.acceptTrade()
         assertTrue(first.getWork() === ownWork)
         assertTrue(second.getWork() === foreignWork)
 
         trade.currentTrade.theirOffers.clear()
         assertFalse(TradeEvaluation().isTradeValid(trade.currentTrade, civ, other))
-        trade.acceptTrade(applyGifts = false)
+        trade.acceptTrade()
         assertEquals(1, city.greatWorks.getNumWorks())
         assertEquals(1, foreignCity.greatWorks.getNumWorks())
     }
@@ -450,7 +450,7 @@ class GreatWorkTests {
         put(foreignGallery, 0, foreign, foreignCity)
         val trade = exchangeWith(other, first, second)
         assertTrue(TradeEvaluation().isTradeValid(trade.currentTrade, civ, other))
-        trade.acceptTrade(applyGifts = false)
+        trade.acceptTrade()
         assertTrue(first.getWork() === foreign)
         assertTrue(untouched.getWork() === duplicate)
         assertTrue(second.getWork() === offered)
@@ -481,7 +481,7 @@ class GreatWorkTests {
         val trade = exchangeWith(ai, ownSlot, aiSlot)
         assertTrue(TradeEvaluation().isTradeAcceptable(trade.currentTrade.reverse(), ai, civ))
 
-        trade.acceptTrade(applyGifts = false)
+        trade.acceptTrade()
 
         assertEquals(3, aiCity.greatWorks.getThemingBonus(themed))
         assertTrue(ownSlot.getWork() === theirArtifact)

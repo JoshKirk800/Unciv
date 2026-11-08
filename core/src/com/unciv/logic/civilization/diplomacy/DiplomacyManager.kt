@@ -804,6 +804,5 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
                 "The resting point for Influence has decreased by [20] for [${civInfo.civName}].",
             NotificationCategory.Diplomacy, civInfo.civName)
     }
-
     //endregion
 }
