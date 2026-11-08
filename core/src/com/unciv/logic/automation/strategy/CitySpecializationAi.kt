@@ -190,8 +190,7 @@ object CitySpecializationAi {
      *    + the unowned percent of the capital's landmass × _PERCENT_CONTINENT_UNOWNED, + cities × _NUM_CITIES, + settlers × _NUM_SETTLERS;
      *    tripled with one city plus settlers in all; at least 0;
      *  - production: [weightProductionSubtypes];
-     *  - gold: GOLD × _GOLD_WEIGHT_FLAVOR_GOLD (+ the land dispute level × _LAND_DISPUTE: CvDiplomacyAI::GetTotalLandDisputeLevel is
-     *    not ported, so that term is missing);
+     *  - gold: GOLD × _GOLD_WEIGHT_FLAVOR_GOLD + CvDiplomacyAI::GetTotalLandDisputeLevel × _GOLD_WEIGHT_LAND_DISPUTE;
      *  - science: SCIENCE × _SCIENCE_WEIGHT_FLAVOR_SCIENCE + SPACESHIP × _FLAVOR_SPACESHIP;
      *  - general economic: _GENERAL_ECONOMIC_WEIGHT;
      *  plus the active grand strategy's AIGrandStrategy_Yields for food, gold and science.
@@ -225,7 +224,8 @@ object CitySpecializationAi {
         val subtypeWeights = weightProductionSubtypes(civ, flavorWonder, flavorSpaceship)
         val production = subtypeWeights.sumOf { it.weight }
 
-        var gold = flavor(Flavor.Gold) * rules.define(AiDefine.AI_CITY_SPECIALIZATION_GOLD_WEIGHT_FLAVOR_GOLD)
+        var gold = flavor(Flavor.Gold) * rules.define(AiDefine.AI_CITY_SPECIALIZATION_GOLD_WEIGHT_FLAVOR_GOLD) +
+            civ.ai.diplomacy.totalLandDisputeLevel() * rules.define(AiDefine.AI_CITY_SPECIALIZATION_GOLD_WEIGHT_LAND_DISPUTE)
         var science = flavor(Flavor.Science) * rules.define(AiDefine.AI_CITY_SPECIALIZATION_SCIENCE_WEIGHT_FLAVOR_SCIENCE) +
             flavorSpaceship * rules.define(AiDefine.AI_CITY_SPECIALIZATION_SCIENCE_WEIGHT_FLAVOR_SPACESHIP)
         val general = rules.define(AiDefine.AI_CITY_SPECIALIZATION_GENERAL_ECONOMIC_WEIGHT)

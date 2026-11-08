@@ -2,6 +2,7 @@ package com.unciv.logic.automation.unit
 
 import com.unciv.logic.GameInfo
 import com.unciv.logic.automation.Timers.Companion.timeThis
+import com.unciv.logic.automation.diplomacy.DisputeLevel
 import com.unciv.logic.automation.strategy.GrandStrategyAi
 import com.unciv.logic.automation.strategy.StateAllWars
 import com.unciv.logic.automation.strategy.WarStateAi
@@ -10,7 +11,6 @@ import com.unciv.logic.battle.CityCombatant
 import com.unciv.logic.city.City
 import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.civilization.Civilization
-import com.unciv.logic.civilization.diplomacy.RelationshipLevel
 import com.unciv.logic.civilization.managers.ReligionState
 import com.unciv.logic.map.BFS
 import com.unciv.logic.map.TileMap
@@ -20,6 +20,7 @@ import com.unciv.models.UnitActionType
 import com.unciv.models.ruleset.Ruleset
 import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.ai.DiplomacyPersonality
+import com.unciv.models.ruleset.ai.MajorCivApproach
 import com.unciv.models.ruleset.ai.MinorCivApproach
 import com.unciv.models.ruleset.tile.ResourceType
 import com.unciv.models.ruleset.unique.GameContext
@@ -264,9 +265,8 @@ object GreatPersonAutomation {
     }
 
     /**
-     *  CvPlayerAI::FindBestMerchantTargetPlot: among the city-states we are not at war with and do not approach as Conquest, the revealed
-     *  tile owned by the city-state next to its capital that [unit] reaches in the fewest turns.
-     *  Deviation: CvDiplomacyAI::GetWarGoal (no war planned against the city-state) is not available to this port.
+     *  CvPlayerAI::FindBestMerchantTargetPlot: among the city-states we are not at war with, do not approach as Conquest and plan no war
+     *  against (CvDiplomacyAI::GetWarGoal), the revealed tile owned by the city-state next to its capital that [unit] reaches in the fewest turns.
      */
     fun findBestMerchantTargetPlot(unit: MapUnit): Tile? {
         val civ = unit.civ
@@ -277,7 +277,7 @@ object GreatPersonAutomation {
             val capitalTile = cityState.getCapital()?.getCenterTile() ?: continue
             if (!capitalTile.isExplored(civ)) continue
             if (civ.ai.minorCivApproaches[cityState.civID] == MinorCivApproach.Conquest) continue
-            if (civ.isAtWarWith(cityState)) continue
+            if (civ.isAtWarWith(cityState) || civ.ai.diplomacy.warGoal(cityState) != null) continue
             for (tile in capitalTile.neighbors) {
                 if (tile.getOwner() != cityState || !tile.isExplored(civ)) continue
                 val turns = turnsToReach(unit, tile)
@@ -389,13 +389,13 @@ object GreatPersonAutomation {
     }
 
     /**
-     *  The major-civ test of FindBestArtistTargetPlot: our (visible) approach to [other] is HOSTILE, or NEUTRAL with a STRONG or FIERCE land
-     *  dispute. Stand-in until the diplomacy port's approaches are available on this branch: our relationship with [other] (ignoring fear) is
-     *  Enemy or Unforgivable.
+     *  The major-civ test of FindBestArtistTargetPlot: the approach we show [other] (CvDiplomacyAI::GetMajorCivApproach with hidden
+     *  feelings) is HOSTILE, or NEUTRAL with a STRONG or FIERCE land dispute.
      */
     private fun isTickedOffAt(civ: Civilization, other: Civilization): Boolean {
-        val level = civ.getDiplomacyManager(other)?.relationshipIgnoreAfraid() ?: return false
-        return level <= RelationshipLevel.Enemy
+        val approach = civ.ai.diplomacy.approachTowards(other, hideTrueFeelings = true)
+        return approach == MajorCivApproach.Hostile
+            || approach == MajorCivApproach.Neutral && civ.ai.diplomacy.landDisputeLevel(other) >= DisputeLevel.Strong
     }
 
     /**

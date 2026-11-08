@@ -150,13 +150,6 @@ object CivilianUnitAutomation {
         return // The AI doesn't know how to handle unknown civilian units
     }
 
-    @Readonly
-    fun isLateGame(civ: CivView): Boolean {
-        val technologies = civ.ruleset.technologies.keys
-        val researchCompletePercent = technologies.count { civ.isResearched(it) } * 1.0f / technologies.size
-        return researchCompletePercent >= 0.55f
-    }
-
     /** Returns whether the civilian spends its turn hiding and not moving */
     fun tryRunAwayIfNeccessary(unit: MapUnitView, cache: AutomationCache): Boolean {
         // This is a little 'Bugblatter Beast of Traal': Run if we can attack an enemy
