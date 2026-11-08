@@ -13,17 +13,24 @@ import com.unciv.models.ruleset.ai.MultiUnitFormationDef
 import com.unciv.models.ruleset.unit.BaseUnit
 import kotlin.math.max
 
-/** How the tactical AI moves the armies of an operation (AIOperationMovementType); [None] = the original's INVALID type: never moved */
-enum class OperationMoveType { None, SingleHex, EnemyTerritory }
+/**
+ *  How the tactical AI moves the armies of an operation (AIOperationMovementType); [None] = the original's INVALID / STATIC type: never moved.
+ *  [NavalFleet] is the original's ENEMY_TERRITORY type as the naval bombardment and pure naval city attack set it: the fleet is moved by the
+ *  naval formation code ([com.unciv.logic.automation.unit.NavalOperationMoves]), which places ships on water, instead of the land army's.
+ */
+enum class OperationMoveType { None, SingleHex, EnemyTerritory, NavalEscort, FreeformNaval, NavalFleet }
 
 /**
  *  AIOperationTypes this port covers. [moveType] is what CvAIOperation::m_eMoveType is set to by the operation's Init;
- *  [mixedLandNaval] = CvAIOperation::IsMixedLandNavalOperation; [tacticalMayInterrupt] = CanTacticalAIInterruptOperation (false for all of these).
- *
- *  The naval operation types are interim: until the naval slice ports CvAINavalEscortedOperation they run the land attack machinery
- *  (muster at the start port, units head for the target by themselves, embarking).
+ *  [mixedLandNaval] = CvAIOperation::IsMixedLandNavalOperation, [allNaval] = IsAllNavalOperation;
+ *  [tacticalMayInterrupt] = CanTacticalAIInterruptOperation (true only for the naval superiority and the pure naval city attack).
  */
-enum class AiOperationType(val moveType: OperationMoveType, val mixedLandNaval: Boolean = false, val tacticalMayInterrupt: Boolean = false) {
+enum class AiOperationType(
+    val moveType: OperationMoveType,
+    val mixedLandNaval: Boolean = false,
+    val tacticalMayInterrupt: Boolean = false,
+    val allNaval: Boolean = false,
+) {
     FOUND_CITY(OperationMoveType.SingleHex),
     QUICK_COLONIZE(OperationMoveType.SingleHex),
     BASIC_CITY_ATTACK(OperationMoveType.EnemyTerritory),
@@ -34,16 +41,29 @@ enum class AiOperationType(val moveType: OperationMoveType, val mixedLandNaval: 
     PILLAGE_ENEMY(OperationMoveType.EnemyTerritory),
     CITY_CLOSE_DEFENSE(OperationMoveType.None),
     RAPID_RESPONSE(OperationMoveType.None),
-    NAVAL_ATTACK(OperationMoveType.EnemyTerritory, mixedLandNaval = true),
-    NAVAL_SNEAK_ATTACK(OperationMoveType.EnemyTerritory, mixedLandNaval = true),
-    CITY_STATE_NAVAL_ATTACK(OperationMoveType.EnemyTerritory, mixedLandNaval = true);
+    /** AI_OPERATION_COLONIZE: CvAINavalEscortedOperation, a settler with a land escort and naval escorts overseas */
+    NAVAL_COLONIZE(OperationMoveType.NavalEscort, mixedLandNaval = true),
+    NAVAL_ATTACK(OperationMoveType.NavalEscort, mixedLandNaval = true),
+    NAVAL_SNEAK_ATTACK(OperationMoveType.NavalEscort, mixedLandNaval = true),
+    CITY_STATE_NAVAL_ATTACK(OperationMoveType.NavalEscort, mixedLandNaval = true),
+    NAVAL_BOMBARDMENT(OperationMoveType.NavalFleet, allNaval = true),
+    NAVAL_SUPERIORITY(OperationMoveType.FreeformNaval, tacticalMayInterrupt = true, allNaval = true),
+    PURE_NAVAL_CITY_ATTACK(OperationMoveType.NavalFleet, tacticalMayInterrupt = true, allNaval = true),
+    /** CvAIOperationNukeAttack: the original's STATIC move type, it only works with the nuke already in place */
+    NUKE_ATTACK(OperationMoveType.None);
 
     /** The operations CvCity-bound settlers run (CvAIEscortedOperation) */
     val isEscorted get() = this == FOUND_CITY || this == QUICK_COLONIZE
-    /** CvAIEnemyTerritoryOperation and its descendants */
+    /** CvAIEnemyTerritoryOperation and its descendants that walk (the land ones) */
     val isEnemyTerritory get() = moveType == OperationMoveType.EnemyTerritory
-    /** The attacks on a city (CvAIOperationBasicCityAttack and its subclasses) */
+    /** The attacks on a city by land (CvAIOperationBasicCityAttack and its subclasses) */
     val isCityAttack get() = isEnemyTerritory && this != DESTROY_BARBARIAN_CAMP && this != PILLAGE_ENEMY
+    /** CvAIOperationNavalAttack and its subclasses: transports with escorts to a coastal city */
+    val isNavalInvasion get() = this == NAVAL_ATTACK || this == NAVAL_SNEAK_ATTACK || this == CITY_STATE_NAVAL_ATTACK
+    /** CvAINavalOperation and its subclasses: the operations of ships only */
+    val isNavalFleet get() = allNaval
+    /** CvAINavalEscortedOperation and its subclasses (the colonization party and the invasions) */
+    val isNavalEscorted get() = this == NAVAL_COLONIZE || isNavalInvasion
 }
 
 /** AIOperationStates */
@@ -52,7 +72,7 @@ enum class OperationState { RECRUITING_UNITS, GATHERING_FORCES, MOVING_TO_TARGET
 /** AIOperationAbortReason (the ones the ported operations use) */
 enum class OperationAbortReason {
     NONE, SUCCESS, NO_TARGET, REPEAT_TARGET, LOST_TARGET, TARGET_ALREADY_CAPTURED, NO_ROOM_DEPLOY, HALF_STRENGTH, NO_MUSTER,
-    LOST_CIVILIAN, ESCORT_DIED, KILLED, WAR_STATE_CHANGE, DIPLO_OPINION_CHANGE, LOST_PATH
+    LOST_CIVILIAN, ESCORT_DIED, KILLED, WAR_STATE_CHANGE, DIPLO_OPINION_CHANGE, LOST_PATH, NO_NUKES
 }
 
 /** ArmyAIState */
@@ -183,6 +203,8 @@ class AiOperations : IsPartOfGameInfoSerialization {
     @Transient var statsLaunched = 0
     @Transient var statsSucceeded = 0
     @Transient var statsAborted = 0
+    /** Operations created and succeeded per type (for the simulation report): [created, succeeded] */
+    @Transient val statsByType = HashMap<AiOperationType, IntArray>()
 
     fun clone(): AiOperations {
         val toReturn = AiOperations()
@@ -270,6 +292,7 @@ class AiOperations : IsPartOfGameInfoSerialization {
         operation.type = type
         operation.enemyCivId = enemy?.civID
         operation.createdTurn = civ.gameInfo.turns
+        statsByType.getOrPut(type) { IntArray(2) }[0]++
         operations.add(operation)
         return operation
     }
@@ -321,7 +344,10 @@ class AiOperations : IsPartOfGameInfoSerialization {
         AiDecisionLog.log(civ) {
             "operation ${operation.type} #${operation.id} ended: ${operation.abortReason} (started t${operation.createdTurn}, target ${operation.targetTile})"
         }
-        if (operation.abortReason == OperationAbortReason.SUCCESS) statsSucceeded++ else statsAborted++
+        if (operation.abortReason == OperationAbortReason.SUCCESS) {
+            statsSucceeded++
+            statsByType.getOrPut(operation.type) { IntArray(2) }[1]++
+        } else statsAborted++
         operation.armies.clear()
         operation.slotsToBuild.clear()
         operation.committedCities.clear()

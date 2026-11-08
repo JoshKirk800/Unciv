@@ -41,25 +41,6 @@ object BattleHelper {
         return !unitView.hasMovement()
     }
 
-    fun tryDisembarkUnitToAttackPosition(unitView: MapUnitView): Boolean {
-        if (!unitView.getBaseUnit().isMelee() || !unitView.getBaseUnit().isLandUnit || !unitView.isEmbarked()) return false
-
-        val attackableEnemiesNextTurn = unitView.getAttackableEnemies()
-                // Only take enemies we can fight without dying
-                .filter {
-                    unitView.asCombatant().survivesAttackOn(it.getTileToAttack().getCombatant()!!)
-                }
-                .filter { it.getTileToAttackFrom().isLand }
-
-        val enemyTileToAttackNextTurn = chooseAttackTarget(unitView, attackableEnemiesNextTurn)
-
-        if (enemyTileToAttackNextTurn != null) {
-            unitView.tryMoveToTile(enemyTileToAttackNextTurn.getTileToAttackFrom())
-            return true
-        }
-        return false
-    }
-
     /**
      * Choses the best target in attackableEnemies, this could be a city or a unit.
      */

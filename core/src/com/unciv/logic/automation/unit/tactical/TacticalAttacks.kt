@@ -284,7 +284,7 @@ object TacticalAttacks {
 
         // The free tiles around the target to attack from
         val freeTiles = tile.neighbors.filter { n ->
-            !ctx.map.isEnemyCity(n) && n.militaryUnit?.let { it.civ == target.targetCiv } != true
+            !ctx.isEnemyCity(n) && n.militaryUnit?.let { it.civ == target.targetCiv } != true
         }.toMutableList()
 
         // Second loop are only melee units

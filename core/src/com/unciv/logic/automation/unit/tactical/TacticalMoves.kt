@@ -234,17 +234,19 @@ object TacticalMoves {
         }
     }
 
-    /** CvTacticalAI::FindNearbyTarget: the target within [range] of the unit on its landmass that it reaches soonest (the tile it stands on first of all) */
-    private fun findNearbyTarget(ctx: TacticalContext, unit: MapUnit, range: Int, targets: List<TacticalTarget>): Tile? {
+    /**
+     *  CvTacticalAI::FindNearbyTarget: the target within [range] of the unit on its landmass that it reaches soonest (the tile it stands on first of all);
+     *  tiles for which [excluded] is true (the original's pNoLikeUnit) are left out
+     */
+    fun findNearbyTarget(ctx: TacticalContext, unit: MapUnit, range: Int, targets: List<TacticalTarget>, excluded: ((Tile) -> Boolean)? = null): Tile? {
         var best: Tile? = null
         var bestValue = Int.MAX_VALUE
         val unitTile = unit.getTile()
-        val area = ctx.map.areaOf(unitTile)
         val near = ArrayList<Pair<TacticalTarget, Int>>()
         for (target in targets) {
             val distance = unitTile.aerialDistanceTo(target.tile)
             if (distance == 0) return target.tile
-            if (distance < range && area == ctx.map.areaOf(target.tile)) near.add(target to distance)
+            if (distance < range && ctx.sameArea(unitTile, target.tile) && excluded?.invoke(target.tile) != true) near.add(target to distance)
         }
         // Only the nearest few are measured by path: it would be a path search for every target in range
         for ((target, _) in near.sortedBy { it.second }.take(MAX_REPOSITION_CANDIDATES)) {
@@ -382,7 +384,7 @@ object TacticalMoves {
             // Don't embark for one of these moves
             if (!from.isWater && tile.isWater && blocker.baseUnit.isLandUnit) continue
             // Has to be somewhere we can move and be empty of other units/enemy cities
-            if (TacticalTargets.visibleEnemyDefender(ctx.civ, tile) == null && !ctx.map.isEnemyCity(tile) && blocker.movement.canReach(tile)
+            if (TacticalTargets.visibleEnemyDefender(ctx.civ, tile) == null && !ctx.isEnemyCity(tile) && blocker.movement.canReach(tile)
                 && blocker.movement.canMoveTo(tile)) {
                 moveToPlot(ctx, blocker, tile)
                 ctx.log { "moving blocking ${blocker.name} out of way, leaving ${from.position}, now at ${blocker.getTile().position}" }

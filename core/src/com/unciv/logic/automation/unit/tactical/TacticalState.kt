@@ -50,6 +50,8 @@ class ZonePosture : IsPartOfGameInfoSerialization {
 class TacticalState : IsPartOfGameInfoSerialization {
     var postures = ArrayList<ZonePosture>()
     var temporaryZones = ArrayList<TemporaryZone>()
+    /** CvUnit::GetTacticalAIPlot: the destination a barbarian ship keeps heading for over several turns, by [com.unciv.logic.map.mapunit.MapUnit.id] */
+    var unitDestinations = HashMap<Int, HexCoord>()
 
     @Transient private lateinit var civ: Civilization
     @Transient private var cachedMap: TacticalMap? = null
@@ -60,6 +62,7 @@ class TacticalState : IsPartOfGameInfoSerialization {
         val toReturn = TacticalState()
         for (posture in postures) toReturn.postures.add(posture.clone())
         for (zone in temporaryZones) toReturn.temporaryZones.add(zone.clone())
+        toReturn.unitDestinations.putAll(unitDestinations)
         return toReturn
     }
 

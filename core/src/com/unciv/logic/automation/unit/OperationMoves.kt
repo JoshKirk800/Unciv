@@ -55,6 +55,7 @@ object OperationMoves {
         when (operation.type.moveType) {
             OperationMoveType.SingleHex -> moveSingleHex(civ, operation, cache)
             OperationMoveType.EnemyTerritory -> moveEnemyTerritory(civ, operation, cache)
+            OperationMoveType.NavalEscort, OperationMoveType.FreeformNaval, OperationMoveType.NavalFleet -> NavalOperationMoves.moveOperation(civ, operation, cache)
             OperationMoveType.None -> Unit
         }
         operation.lastTurnMoved = turn
