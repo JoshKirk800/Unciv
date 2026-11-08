@@ -295,6 +295,20 @@ class OperationTests {
     }
 
     @Test
+    fun `an army unit with no path to its muster point stays where it is`() {
+        civ.getDiplomacyManager(enemy)!!.declareWar()
+        fillAttackReserves()
+        val operation = attack()
+        assertEquals(OperationState.GATHERING_FORCES, operation.state)
+        val (_, stranded) = AiOperationLogic.armyUnits(civ, operation.firstArmy!!).first()
+        val island = game.getTile(HexCoord(-8, 0))
+        for (neighbor in island.neighbors) game.setTileTerrain(neighbor.position, "Ocean") // no embarking without Optics
+        stranded.removeFromTile(); stranded.putInTile(island)
+        OperationMoves.moveOperation(civ, operation, AutomationCache())
+        assertEquals(island, stranded.getTile())
+    }
+
+    @Test
     fun `a city attack ends when the target city is no longer the enemy's`() {
         fillAttackReserves()
         val operation = attack()
