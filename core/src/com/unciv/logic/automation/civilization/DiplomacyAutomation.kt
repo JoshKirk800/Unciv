@@ -7,6 +7,7 @@ import com.unciv.logic.automation.strategy.MilitaryOperations
 import com.unciv.logic.automation.strategy.OperationAbortReason
 import com.unciv.logic.automation.diplomacy.AggressivePosture
 import com.unciv.logic.automation.diplomacy.CoopWarAi
+import com.unciv.logic.automation.diplomacy.CoopWarState
 import com.unciv.logic.automation.diplomacy.DiploStatement
 import com.unciv.logic.automation.diplomacy.DiplomacyTurn
 import com.unciv.logic.automation.diplomacy.MajorCivMemory
@@ -46,7 +47,7 @@ object DiplomacyAutomation {
 
     private const val NEVER = 9999
 
-    private fun turnsSinceStatement(civ: Civilization, memory: MajorCivMemory, statement: DiploStatement): Int {
+    internal fun turnsSinceStatement(civ: Civilization, memory: MajorCivMemory, statement: DiploStatement): Int {
         val turn = memory.statementTurns[statement] ?: return NEVER
         return civ.gameInfo.turns - turn
     }
@@ -55,7 +56,7 @@ object DiplomacyAutomation {
         civ.ai.diplomacy.memoryOf(other).statementTurns[statement] = civ.gameInfo.turns
     }
 
-    private fun sendStatement(civ: Civilization, other: Civilization, statement: DiploStatement) {
+    internal fun sendStatement(civ: Civilization, other: Civilization, statement: DiploStatement) {
         logStatement(civ, other, statement)
         civ.ai.diplomacy.markStatementMade(other)
     }
@@ -98,8 +99,10 @@ object DiplomacyAutomation {
             doPeaceOffer(civ, other)
             return
         }
+        if (doCoopWarTimeStatement(civ, other, rules)) return
         if (doCoopWarStatement(civ, other, rules)) return
         if (doMakeDemand(civ, other, rules)) return
+        if (InformationalStatementAi.contact(civ, other)) return
         if (doDoFStatement(civ, other)) return
         if (doDenounceFriendStatement(civ, other)) return
         if (doDenounceStatement(civ, other)) return
@@ -124,16 +127,44 @@ object DiplomacyAutomation {
         else tradeLogic.acceptTrade()
     }
 
-    /** CvDiplomacyAI::DoCoopWarStatement: only while at war with no major, ask [other] to join a war on our best target */
+    /**
+     *  CvDiplomacyAI::DoCoopWarStatement: only while at war with no major, ask [other] to join a war on our best target. An AI answers at
+     *  once ([CoopWarAi.requestCoopWar]); a human gets an alert ([CoopWarAi.askHuman]) and answers it there ([CoopWarAi.onHumanAnswered]).
+     */
     private fun doCoopWarStatement(civ: Civilization, other: Civilization, rules: AiRuleset): Boolean {
-        if (other.isHuman()) return false  // the request to humans has no Unciv counterpart
         if (civ.getCivsAtWarWith().any { it.isMajorCiv }) return false
         val target = CoopWarAi.coopWarTarget(civ, other, rules) ?: return false
         val memory = civ.ai.diplomacy.memoryOf(other)
         if (turnsSinceStatement(civ, memory, DiploStatement.CoopWarRequest) < 10) return false
         sendStatement(civ, other, DiploStatement.CoopWarRequest)
-        CoopWarAi.requestCoopWar(civ, other, target, rules)
+        if (other.isHuman()) CoopWarAi.askHuman(civ, other, target, now = false)
+        else CoopWarAi.requestCoopWar(civ, other, target, rules)
         return true
+    }
+
+    /**
+     *  CvDiplomacyAI::DoCoopWarTimeStatement: a human partner who said "soon" to a war on a target is asked again when the counter reaches
+     *  COOP_WAR_SOON_COUNTER (an AI partner's counter is handled by [CoopWarAi.doCoopWarCounters]). A human who is at war with the target
+     *  already is taken to have agreed, and we declare war too.
+     */
+    private fun doCoopWarTimeStatement(civ: Civilization, other: Civilization, rules: AiRuleset): Boolean {
+        if (!other.isHuman()) return false
+        for ((targetId, entry) in civ.ai.diplomacy.memoryOf(other).coopWars) {
+            if (entry.state != CoopWarState.Soon || entry.counter != rules.define(AiDefine.COOP_WAR_SOON_COUNTER)) continue
+            val target = civ.gameInfo.getCivilizationOrNull(targetId) ?: continue
+            if (!target.isMajorCiv) continue
+            if (!other.isAtWarWith(target) && target.isAlive()) {
+                sendStatement(civ, other, DiploStatement.CoopWarTime)
+                CoopWarAi.askHuman(civ, other, target, now = true)
+                return true
+            }
+            entry.state = CoopWarState.Accepted
+            if (!civ.isAtWarWith(target) && target.isAlive()) {
+                WarAi.declareWar(civ, target)
+                MilitaryOperations.requestBasicAttack(civ, target, 1)
+            }
+        }
+        return false
     }
     //endregion
 
@@ -309,7 +340,10 @@ object DiplomacyAutomation {
         return target to randFailed
     }
 
-    /** CvDiplomacyAI::DoRequestFriendDenounceStatement with an AI friend (DoSendStatementToPlayer REQUEST_FRIEND_DENOUNCE) */
+    /**
+     *  CvDiplomacyAI::DoRequestFriendDenounceStatement (DoSendStatementToPlayer REQUEST_FRIEND_DENOUNCE): an AI friend answers at once by the
+     *  asker's own willingness; a human gets an alert and answers it there ([onHumanAnsweredDenounceRequest]).
+     */
     private fun doRequestFriendDenounceStatement(civ: Civilization, friend: Civilization): Boolean {
         val (target, randFailed) = requestFriendToDenounceTarget(civ, friend)
         if (target == null) return false
@@ -321,12 +355,27 @@ object DiplomacyAutomation {
             logStatement(civ, friend, DiploStatement.DenounceRandFailed)
             return false
         }
-        if (friend.isHuman()) return false  // the request to humans has no Unciv counterpart
         sendStatement(civ, friend, DiploStatement.RequestFriendDenounce)
+        if (friend.isHuman()) {
+            val value = PopupAlert.pairValue(civ.civID, target.civID)
+            if (friend.popupAlerts.none { it.type == AlertType.DenounceRequest && it.value == value })
+                friend.popupAlerts.add(PopupAlert(AlertType.DenounceRequest, value))
+            return true
+        }
         // As the original: the asker's own willingness decides whether the friend agrees
         if (isDenounceAcceptable(civ, target, bias = true)) friend.getDiplomacyManager(target)?.denounce()
         else if (isFriendDenounceRefusalUnacceptable(civ, target)) civ.getDiplomacyManager(friend)!!.denounce()
         return true
+    }
+
+    /**
+     *  FROM_UI_DIPLO_EVENT_AI_REQUEST_DENOUNCE_RESPONSE: [human] answered [civ]'s request to denounce [target]. Agreeing denounces them; refusing
+     *  makes [civ] denounce the human if the original's IsFriendDenounceRefusalUnacceptable says so.
+     */
+    fun onHumanAnsweredDenounceRequest(civ: Civilization, human: Civilization, target: Civilization, agreed: Boolean) {
+        if (agreed) {
+            human.getDiplomacyManager(target)?.takeIf { !target.isDefeated() && !human.isAtWarWith(target) }?.denounce()
+        } else if (isFriendDenounceRefusalUnacceptable(civ, target)) civ.getDiplomacyManager(human)?.denounce()
     }
 
     /** CvDiplomacyAI::IsFriendDenounceRefusalUnacceptable */

@@ -105,6 +105,8 @@ object DiplomacyEvents {
         if (victim.isCityState && WarStateAi.isPlayerValid(me, victim) && me in victim.cityStateFunctions.getProtectorCivs()) {
             val memory = ai.memoryOf(declarer)
             memory.turnsSinceAttackedProtectedMinor = 0
+            memory.protectedMinorAttacked = victim.civID
+            memory.protectedMinorAttackedUnseen = true
             memory.numProtectedMinorsAttacked++
         }
     }
@@ -120,6 +122,8 @@ object DiplomacyEvents {
         val ai = civ.ai.diplomacy
         val memory = ai.memoryOf(other)
         memory.turnMadePeace = civ.gameInfo.turns
+        // CvDiplomacyAI::ResetSentAttackProtectedMinorTaunts: at peace with a city-state the taunts about it start over
+        if (other.isCityState) for (tauntMemory in ai.memories.values) tauntMemory.sentAttackProtectedMinorTaunts.remove(other.civID)
         memory.musteringForAttack = false
         if (!other.isMajorCiv) return
         // Coop wars against them are over
@@ -274,7 +278,11 @@ object DiplomacyEvents {
             val memory = protector.ai.diplomacy.memoryOf(bully)
             memory.numProtectedMinorsBullied++
             memory.turnsSinceBulliedProtectedMinor = 0
+            memory.protectedMinorBullied = cityState.civID
+            memory.protectedMinorBulliedTurn = bully.gameInfo.turns
         }
+        // CvMinorCivAI::m_aiTurnLastBulliedByMajor, as the bully's own memory of the city-state
+        bully.ai.diplomacy.memoryOf(cityState).turnLastBulliedByUs = bully.gameInfo.turns
     }
 
     /** DoFromUIDiploEvent: [protector] sided with its city-state against [bully] */
@@ -295,6 +303,20 @@ object DiplomacyEvents {
     /** CvPlayerEspionage: a spy of [thief] stealing from [victim] was identified or killed */
     fun onRobbed(victim: Civilization, thief: Civilization) {
         if (victim.isMajorCiv) victim.ai.diplomacy.memoryOf(thief).numTimesRobbed++
+    }
+
+    /** CvPlayerEspionage::ProcessSpy: a spy of [thief] stealing from [victim] was identified (the victim's CvEspionageAI::m_aiTurnLastSpyCaught) */
+    fun onSpyCaught(victim: Civilization, thief: Civilization) {
+        if (victim.isMajorCiv && thief.isMajorCiv) victim.ai.diplomacy.memoryOf(thief).turnLastSpyCaught = victim.gameInfo.turns
+    }
+
+    /** CvPlayerEspionage::ProcessSpy: a spy of [thief] was killed in a city of [victim] (m_aiTurnLastSpyKilled and m_aiNumSpiesKilled of the victim, m_aiTurnLastSpyDied of the thief) */
+    fun onSpyKilled(victim: Civilization, thief: Civilization) {
+        if (!victim.isMajorCiv || !thief.isMajorCiv) return
+        val memory = victim.ai.diplomacy.memoryOf(thief)
+        memory.turnLastSpyKilled = victim.gameInfo.turns
+        memory.numSpiesKilled++
+        thief.ai.diplomacy.memoryOf(victim).turnLastSpyDied = victim.gameInfo.turns
     }
 
     /**

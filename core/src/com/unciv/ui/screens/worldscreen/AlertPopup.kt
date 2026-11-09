@@ -1,5 +1,7 @@
 package com.unciv.ui.screens.worldscreen
 
+import com.unciv.logic.automation.civilization.DiplomacyAutomation
+import com.unciv.logic.automation.diplomacy.CoopWarAi
 import com.unciv.logic.automation.diplomacy.DiplomacyTurn
 import com.unciv.logic.automation.diplomacy.DiplomacyEvents
 import com.badlogic.gdx.graphics.Color
@@ -120,6 +122,11 @@ class AlertPopup(
             AlertType.SpyingOnUsDespiteOurPromise -> shouldOpen = addDemand(Demand.DontSpyOnUs)
             AlertType.DemandToStopDiggingInOurLands -> shouldOpen = addDemand(Demand.DoNotDigInOurLands)
             AlertType.DugInOurLandsDespitePromise -> shouldOpen = addDemandViolationNoticed(Demand.DoNotDigInOurLands)
+            AlertType.CoopWarRequest -> shouldOpen = addCoopWarRequest(now = false)
+            AlertType.CoopWarNow -> shouldOpen = addCoopWarRequest(now = true)
+            AlertType.DenounceRequest -> shouldOpen = addDenounceRequest()
+            AlertType.DemandToStopBuyingLandNearUs -> shouldOpen = addDemand(Demand.DoNotBuyLandNearUs)
+            AlertType.LandBoughtNearUsDespiteOurPromise -> shouldOpen = addDemandViolationNoticed(Demand.DoNotBuyLandNearUs)
             AlertType.DemandToNotAttackUs -> shouldOpen = addDemand(Demand.DoNotAttackUs)
             AlertType.AttackedUsDespitePromise -> shouldOpen = addDemandViolationNoticed(Demand.DoNotAttackUs)
             AlertType.AcceptingDemand -> shouldOpen = addAcceptingDemand()
@@ -325,6 +332,51 @@ class AlertPopup(
         }.row()
         val music = UncivGame.Current.musicController
         music.playVoice("${otherciv.nation.name}.declaringFriendship")
+        return true
+    }
+
+    /** An AI asks us to wage a war on [AlertType.CoopWarRequest]'s target with it, or, when we said "soon", to start it now ([AlertType.CoopWarNow]) */
+    private fun addCoopWarRequest(now: Boolean): Boolean {
+        val (askerId, targetId) = popupAlert.value.split('@')
+        val asker = getCiv(askerId)
+        val target = getCiv(targetId)
+        if (asker.isDefeated() || target.isDefeated() || asker.isAtWarWith(viewingCiv) || !viewingCiv.knows(target)) return false
+        val canDeclare = viewingCiv.getDiplomacyManager(target)!!.canDeclareWar()
+        addLeaderName(asker)
+        addTopicHeader("WAR PLAN", LIGHTER_RED_COLOR)
+        addGoodSizedLabel(
+            if (now) "The time has come to strike: will you declare war on [${target.civName}] with us now?"
+            else "We would like to wage war on [${target.civName}] together. Will you join us?"
+        ).row()
+        if (canDeclare) addCloseButton("Let us declare war on [${target.civName}] together!", KeyboardBinding.Confirm) {
+            CoopWarAi.onHumanAnswered(asker, viewingCiv, target, CoopWarAi.HumanAnswer.Agree, now)
+        }.row()
+        if (!now) addCloseButton("We will join you in a while.") {
+            CoopWarAi.onHumanAnswered(asker, viewingCiv, target, CoopWarAi.HumanAnswer.Soon, now)
+        }.row()
+        addCloseButton(if (now) "We will not go to war." else "We cannot join you.", KeyboardBinding.Cancel) {
+            CoopWarAi.onHumanAnswered(asker, viewingCiv, target, CoopWarAi.HumanAnswer.Refuse, now)
+        }.row()
+        return true
+    }
+
+    /** An AI friend asks us to denounce [AlertType.DenounceRequest]'s target */
+    private fun addDenounceRequest(): Boolean {
+        val (askerId, targetId) = popupAlert.value.split('@')
+        val asker = getCiv(askerId)
+        val target = getCiv(targetId)
+        val diplomacy = viewingCiv.getDiplomacyManager(target)
+        if (asker.isDefeated() || target.isDefeated() || asker.isAtWarWith(viewingCiv) || diplomacy == null
+            || viewingCiv.isAtWarWith(target) || diplomacy.hasFlag(DiplomacyFlags.Denunciation)) return false
+        addLeaderName(asker)
+        addTopicHeader("DENOUNCEMENT", LIGHTER_ORANGE_COLOR)
+        addGoodSizedLabel("We are both troubled by [${target.civName}]. Will you denounce them with us?").row()
+        addCloseButton("We denounce [${target.civName}]!", KeyboardBinding.Confirm) {
+            DiplomacyAutomation.onHumanAnsweredDenounceRequest(asker, viewingCiv, target, agreed = true)
+        }.row()
+        addCloseButton("We would rather not.", KeyboardBinding.Cancel) {
+            DiplomacyAutomation.onHumanAnsweredDenounceRequest(asker, viewingCiv, target, agreed = false)
+        }.row()
         return true
     }
 

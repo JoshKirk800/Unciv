@@ -29,6 +29,7 @@ object DiplomacyTurn {
     fun doTurn(civ: Civilization) {
         val rules = civ.gameInfo.ruleset.ai
         val others = validPlayers(civ)
+        if (civ.ai.diplomacy.turnsSinceSettledLastCity >= 0) civ.ai.diplomacy.turnsSinceSettledLastCity++  // CvPlayer::doTurn
         doCounters(civ, others, rules)
         warDamageDecay(civ, others)
         updateWarDamageLevels(civ, others, rules)
@@ -97,7 +98,7 @@ object DiplomacyTurn {
             memory.commonFoeValue = max(0, memory.commonFoeValue - rules.define(AiDefine.COMMON_FOE_VALUE_PER_TURN_DECAY))
             if (memory.recentAssistValue > 0) memory.recentAssistValue -= min(memory.recentAssistValue, dealDecay)
             else if (memory.recentAssistValue < 0) memory.recentAssistValue += min(-memory.recentAssistValue, dealDecay)
-            PromiseAi.decayPromiseValues(memory, rules)
+            PromiseAi.decayPromiseValues(memory, rules, civ.gameInfo.turns)
             memory.declaredWarOnFriendValue = max(0, memory.declaredWarOnFriendValue - rules.define(AiDefine.DECLARED_WAR_ON_FRIEND_PER_TURN_DECAY))
 
             if (memory.turnsSinceAttackedProtectedMinor >= 0) memory.turnsSinceAttackedProtectedMinor++

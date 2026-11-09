@@ -135,6 +135,34 @@ class MajorCivMemory : IsPartOfGameInfoSerialization {
     var ignoredNoDiggingPromise = false
     var brokenCoopWarPromise = false
     var wantsResearchAgreement = false
+    /** CvDiplomacyAI::m_paiPlayerMadeExpansionPromiseTurn: turn they promised not to expand towards us, -1 = never (EverMadeExpansionPromise) */
+    var expansionPromiseTurn = -1
+    /** CvDiplomacyAI::m_paePlayerExpansionPromiseData: their expansion posture when they promised; the promise breaks when it rises above it */
+    var expansionPromisePosture: AggressivePosture? = null
+    /** CvDiplomacyAI::m_paiPlayerMadeBorderPromiseTurn and m_paePlayerBorderPromiseData for the plot buying (border) promise */
+    var borderPromiseTurn = -1
+    var borderPromisePosture: AggressivePosture? = null
+    /**
+     *  CvDiplomacyAI::GetOtherPlayerProtectedMinorAttacked / Bullied: the last protected city-state they attacked / bullied, by civID.
+     *  [protectedMinorAttackedUnseen] stands for "GetTurnsSincePlayerAttackedProtectedMinor == 0": set with the attack, cleared when our
+     *  turn's diplomacy ends (the original counts the turns up at the end of its DoTurn); [protectedMinorBulliedTurn] is the game turn of the bullying.
+     */
+    var protectedMinorAttacked: String? = null
+    var protectedMinorAttackedUnseen = false
+    var protectedMinorBullied: String? = null
+    var protectedMinorBulliedTurn = -1
+    /** CvMinorCivAI::GetTurnLastBulliedByMajor of the city-state this memory is about, for us as the bully: game turn, -1 = never */
+    var turnLastBulliedByUs = -1
+    /** CvEspionageAI::m_aiTurnLastSpyCaught / m_aiTurnLastSpyKilled / m_aiNumSpiesKilled: their spies in our cities, -1 = never */
+    var turnLastSpyCaught = -1
+    var turnLastSpyKilled = -1
+    var numSpiesKilled = 0
+    /** CvEspionageAI::m_aiTurnLastSpyDied: one of our spies died in their city, -1 = never */
+    var turnLastSpyDied = -1
+    /** CvDiplomacyAI::m_ppaaiOtherPlayerLastRoundWarValueLost for [theirWarValueLostToUs] (CacheOtherPlayerWarValuesLost) */
+    var lastRoundTheirWarValueLostToUs = 0
+    /** CvDiplomacyAI::m_pabSentAttackProtectedMinorTaunt: we told them we hurt a city-state they protect, by civID of that city-state */
+    var sentAttackProtectedMinorTaunts = HashSet<String>()
 
     /** The diplo log (DoAddNewStatementToDiploLog): game turn each statement was last sent */
     var statementTurns = HashMap<DiploStatement, Int>()
@@ -185,6 +213,15 @@ class MajorCivMemory : IsPartOfGameInfoSerialization {
         copy.brokenNoConvertPromise = brokenNoConvertPromise; copy.ignoredNoConvertPromise = ignoredNoConvertPromise
         copy.brokenNoDiggingPromise = brokenNoDiggingPromise; copy.ignoredNoDiggingPromise = ignoredNoDiggingPromise
         copy.brokenCoopWarPromise = brokenCoopWarPromise; copy.wantsResearchAgreement = wantsResearchAgreement
+        copy.expansionPromiseTurn = expansionPromiseTurn; copy.expansionPromisePosture = expansionPromisePosture
+        copy.borderPromiseTurn = borderPromiseTurn; copy.borderPromisePosture = borderPromisePosture
+        copy.protectedMinorAttacked = protectedMinorAttacked; copy.protectedMinorAttackedUnseen = protectedMinorAttackedUnseen
+        copy.protectedMinorBullied = protectedMinorBullied; copy.protectedMinorBulliedTurn = protectedMinorBulliedTurn
+        copy.turnLastBulliedByUs = turnLastBulliedByUs
+        copy.turnLastSpyCaught = turnLastSpyCaught; copy.turnLastSpyKilled = turnLastSpyKilled
+        copy.numSpiesKilled = numSpiesKilled; copy.turnLastSpyDied = turnLastSpyDied
+        copy.lastRoundTheirWarValueLostToUs = lastRoundTheirWarValueLostToUs
+        copy.sentAttackProtectedMinorTaunts.addAll(sentAttackProtectedMinorTaunts)
         copy.statementTurns.putAll(statementTurns); copy.lastContactTurn = lastContactTurn; copy.turnMet = turnMet
         return copy
     }
@@ -203,6 +240,8 @@ class DiplomacyAi : IsPartOfGameInfoSerialization {
     var demandReady = false
     /** CvDiplomacyAI::GetTotalLandDisputeLevel as of the last [DiplomacyTurn.doTurn] (the disputes it sums change only there) */
     var lastTotalLandDisputeLevel = 0
+    /** CvPlayer::m_iTurnsSinceSettledLastCity: turns since this civilization founded a city, -1 = never (counted by [DiplomacyTurn.doTurn]) */
+    var turnsSinceSettledLastCity = -1
 
     @Transient lateinit var civ: Civilization
 
@@ -211,6 +250,7 @@ class DiplomacyAi : IsPartOfGameInfoSerialization {
         for ((id, memory) in memories) copy.memories[id] = memory.clone()
         copy.demandTarget = demandTarget
         copy.demandReady = demandReady
+        copy.turnsSinceSettledLastCity = turnsSinceSettledLastCity
         copy.lastTotalLandDisputeLevel = lastTotalLandDisputeLevel
         return copy
     }

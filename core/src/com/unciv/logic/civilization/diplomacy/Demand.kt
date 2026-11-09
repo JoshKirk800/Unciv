@@ -99,6 +99,24 @@ enum class Demand(
         // The AI raises this after an actual foreign dig; don't offer a context-free demand in the diplomacy menu.
         override fun show(civ: Civilization) = false
     },
+    DoNotBuyLandNearUs(
+        agreedToDemand = DiplomacyFlags.AgreedToNotBuyLandNearUs,
+        violationOccurred = DiplomacyFlags.BoughtLandNearUs,
+        willIgnoreViolation = DiplomacyFlags.IgnoreThemBuyingLandNearUs,
+        demandAlert = AlertType.DemandToStopBuyingLandNearUs,
+        violationDiscoveredAlert = AlertType.LandBoughtNearUsDespiteOurPromise,
+        demandText = "Please stop buying up land near our borders.",
+        acceptDemandText = "Very well, we shall leave the land near your borders alone.",
+        refuseDemandText = "We shall buy land wherever we please.",
+        agreedToDemandText = "[civName] agreed to stop buying land near us!",
+        refusedDemandText = "[civName] refused to stop buying land near us!",
+        violationNoticedText = "We noticed you kept buying land near our borders, despite your promise. This will have....implications.",
+        wePromisedText = "We promised not to buy land near them ([turns] turns remaining)",
+        theyPromisedText = "They promised not to buy land near us ([turns] turns remaining)"
+    ) {
+        // The AI asks when it sees plots being bought (CvDiplomacyAI::DoPlotBuyingWarningStatement); a human has no such request to make
+        override fun show(civ: Civilization) = false
+    },
     DoNotAttackUs(
         agreedToDemand = DiplomacyFlags.AgreedToNotAttackUs,
         // first violation = notice military presence near border

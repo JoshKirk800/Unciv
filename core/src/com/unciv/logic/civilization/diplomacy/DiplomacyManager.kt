@@ -90,6 +90,11 @@ enum class DiplomacyFlags {
     MilitaryPresenceNearBorderOrAttackedUsDespitePromise,
     IgnoreMilitaryPresenceNearBorder,
 
+    /** The border (plot buying) promise: raised by the posture test of [com.unciv.logic.automation.diplomacy.PromiseAi.testPromises], not by an event */
+    BoughtLandNearUs,
+    AgreedToNotBuyLandNearUs,
+    IgnoreThemBuyingLandNearUs,
+
     ProvideMilitaryUnit,
     MarriageCooldown,
     NotifiedAfraid,
@@ -774,7 +779,9 @@ class DiplomacyManager() : IsPartOfGameInfoSerialization {
     }
 
     fun agreeToDemand(demand: Demand){
-        otherCivDiplomacy().setFlag(demand.agreedToDemand, if (demand == Demand.DoNotDigInOurLands) 1 else 100, demand != Demand.DoNotDigInOurLands)
+        val promiseLength = PromiseAi.promiseLength(civInfo, otherCiv, demand)
+        if (promiseLength != null) otherCivDiplomacy().setFlag(demand.agreedToDemand, promiseLength)
+        else otherCivDiplomacy().setFlag(demand.agreedToDemand, if (demand == Demand.DoNotDigInOurLands) 1 else 100, demand != Demand.DoNotDigInOurLands)
         if (demand == Demand.DoNotDigInOurLands) otherCivDiplomacy().negativeArchaeologyPoints =
             (otherCivDiplomacy().negativeArchaeologyPoints - 10).coerceAtLeast(0)
         PromiseAi.onDemandAgreed(otherCiv, civInfo, demand)
