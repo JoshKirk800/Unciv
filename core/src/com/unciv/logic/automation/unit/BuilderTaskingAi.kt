@@ -3,9 +3,12 @@ package com.unciv.logic.automation.unit
 import com.unciv.Constants
 import com.unciv.UncivGame
 import com.unciv.logic.automation.Timers.Companion.timeThis
+import com.unciv.logic.automation.diplomacy.DiplomacyTurn
 import com.unciv.logic.city.City
 import com.unciv.logic.city.CityFocus
 import com.unciv.logic.civilization.Civilization
+import com.unciv.logic.civilization.Proximity
+import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.MapPathing
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.mapunit.actions.UnitActionModifiers
@@ -16,6 +19,7 @@ import com.unciv.models.ruleset.QuestName
 import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.ai.CitySpecializationDef
 import com.unciv.models.ruleset.ai.Flavor
+import com.unciv.models.ruleset.ai.MinorCivApproach
 import com.unciv.models.ruleset.tile.ResourceType
 import com.unciv.models.ruleset.tile.TileImprovement
 import com.unciv.models.ruleset.tile.TileResource
@@ -54,9 +58,10 @@ class BuilderDirective(val type: Type, val build: Build, val tile: Tile, val mov
  *    than AI_ATTEMPT_RUSH_OVER_X_TURNS_TO_BUILD turns (×MINOR_CIV_PRODUCTION_PERCENT for city-states), which is when the original's
  *    CvCityStrategyAI::ChooseProduction sets the order's rush flag. Chop production is Unciv's (closest city within 5 tiles).
  *  - A road is free for the route value when someone else built it (Unciv has no per-plot trade route flag).
- *  - Major civilizations do not build routes to city-states: the original builds those only for a Friendly or Protective minor civ
- *    approach, which this branch does not compute. City-states connect to non-human majors that gave them a route quest.
- *  - Builders do not claim plots across turns (MISSIONAI_BUILD): a plot another builder has chosen this turn, or works on, is skipped.
+ *  - The route connection wish of a major civilization towards a city-state (DoContactMinorCivs) is computed here from its approach, the
+ *    route quest and the proximity; the original's wish was stored when the diplomacy AI last ran.
+ *  - Builders keep their plot across turns as the original's MISSIONAI_BUILD does ([MapUnit.builderTarget]): another builder skips it until
+ *    that one is sent elsewhere. A human's builder only counts while it is automated.
  */
 class BuilderTaskingAi(val civ: Civilization) {
     private val ruleset = civ.gameInfo.ruleset
@@ -77,8 +82,6 @@ class BuilderTaskingAi(val civ: Civilization) {
     private val nonTerritoryPlots = ArrayList<Tile>()
     /** CvCityStrategyAI::UpdateBestYields of every city, this turn */
     private val cityYields = HashMap<City, CityYieldTargets>()
-    /** Plots a builder has been sent to this turn (MISSIONAI_BUILD) */
-    private val claimedTiles = HashSet<Tile>()
     /** Current yields per plot this turn (UpdateCurrentPlotYields) */
     private val currentYieldCache = HashMap<Tile, IntArray>()
     /** Projected yields per plot and build this turn (UpdateProjectedPlotYields) */
@@ -112,31 +115,52 @@ class BuilderTaskingAi(val civ: Civilization) {
     //region Routes
 
     /**
-     *  CvBuilderTaskingAI::UpdateRoutePlots: for every route build the player has the tech for, every city is connected to the capital
-     *  (CITY_CONNECTIONS_CONNECT_TO_CAPITAL) - see [connectCitiesToCapital]. Needs two connectable cities, a best route and a builder.
+     *  CvBuilderTaskingAI::UpdateRoutePlots: for every route build the player has the tech for, every pair of connectable cities with a
+     *  capital in it (CITY_CONNECTIONS_CONNECT_TO_CAPITAL) is connected, the pair's capital being ours if it has one, else the later of the
+     *  two - see [connectCitiesToCapital]. Needs two connectable cities, a best route and a builder.
+     *  The cities are ours and [connectableCapitals], in the original's order of player ids (majors before city-states).
      */
     private fun updateRoutePlots() {
         routePlots.clear()
         nonTerritoryPlots.clear()
-        val capital = civ.getCapital() ?: return
-        val routeQuestMajors = if (civ.isCityState) routeQuestCapitals() else emptyList()
-        if (civ.cities.size + routeQuestMajors.size < 2) return
+        if (civ.getCapital() == null) return
+        val others = connectableCapitals()
+        if (civ.cities.size + others.size < 2) return
         if (bestRoute() == RoadStatus.None) return
         if (civ.units.getCivUnits().none { it.cache.hasUniqueToBuildImprovements }) return
 
+        val connectable = if (civ.isCityState) others + civ.cities else civ.cities + others
         for (route in arrayOf(RoadStatus.Road, RoadStatus.Railroad)) {
             val improvement = route.improvement(ruleset) ?: continue
             if (improvement.techRequired != null && !civ.tech.isResearched(improvement.techRequired!!)) continue
-            for (city in civ.cities) if (city != capital) connectCitiesToCapital(capital, city, route)
-            for (other in routeQuestMajors) connectCitiesToCapital(capital, other, route)
+            for (i in connectable.indices) for (j in i + 1 until connectable.size) {
+                val first = connectable[i]
+                val second = connectable[j]
+                if (!first.isCapital() && !second.isCapital()) continue
+                if (first.isCapital() && first.civ == civ) connectCitiesToCapital(first, second, route)
+                else connectCitiesToCapital(second, first, route)
+            }
         }
     }
 
-    /** Capitals of the non-human majors this city-state gave a route quest (CvCityConnections::ShouldConnectToOtherPlayer for minors) */
-    private fun routeQuestCapitals(): List<City> = civ.getKnownCivs()
-        .filter { it.isMajorCiv && !it.isHuman() && civ.questManager.getAssignedQuestsFor(it).any { quest -> quest.questName == QuestName.Route.value } }
-        .mapNotNull { it.getCapital() }
-        .toList()
+    /**
+     *  The capitals of the other civilizations we connect to (CvCityConnections::ShouldConnectToOtherPlayer): never for a human major;
+     *  a city-state connects to the non-human majors it gave a route quest, a major to the city-states it gave it a route quest while it is
+     *  not at war with them, approaches them as a friend or protector (the original's route connection wish of DoContactMinorCivs) and
+     *  neighbors them.
+     */
+    private fun connectableCapitals(): List<City> {
+        val routeQuest = { giver: Civilization, receiver: Civilization ->
+            giver.questManager.getAssignedQuestsFor(receiver).any { quest -> quest.questName == QuestName.Route.value }
+        }
+        if (civ.isCityState)
+            return civ.getKnownCivs().filter { it.isMajorCiv && !it.isHuman() && routeQuest(civ, it) }.mapNotNull { it.getCapital() }.toList()
+        if (civ.isHuman()) return emptyList()
+        return DiplomacyTurn.validPlayers(civ).filter { minor ->
+            minor.isCityState && !civ.isAtWarWith(minor) && routeQuest(minor, civ) && civ.getProximity(minor) == Proximity.Neighbors &&
+                civ.ai.minorCivApproaches[minor.civID].let { it == MinorCivApproach.Friendly || it == MinorCivApproach.Protective }
+        }.mapNotNull { it.getCapital() }
+    }
 
     /**
      *  CvBuilderTaskingAI::ConnectCitiesToCapital: flags the plots of the road path from [capital] to [target] that lack [route] with a
@@ -145,9 +169,9 @@ class BuilderTaskingAi(val civ: Civilization) {
      *  (length × (maintenance + 1))) × length / plots needed, only if it pays for itself. A plot keeps its highest value.
      */
     private fun connectCitiesToCapital(capital: City, target: City, route: RoadStatus) {
-        val majorMinorConnection = target.civ != civ
+        val majorMinorConnection = target.civ != capital.civ
         val industrialRoute = route == RoadStatus.Railroad
-        if (target.cityStats.isConnectedToCapital(route) && !majorMinorConnection) return
+        if (target.civ == civ && target.cityStats.isConnectedToCapital(route)) return
         val goldForRoute = if (majorMinorConnection) 0 else target.cityStats.getTradeRouteGold().toInt()
         val maintenancePerTile = route.upkeep
 
@@ -155,8 +179,7 @@ class BuilderTaskingAi(val civ: Civilization) {
         var roadLength = 0
         var plotsNeeded = 0
         for (tile in path) {
-            val city = tile.getCity()
-            if (tile.isCityCenter() && city != null && city.civ == civ) continue
+            if (tile.isCityCenter()) continue  // a city's plot has its road: ours cost nothing, a foreign one is someone else's
             if (tile.roadStatus == route && !tile.roadIsPillaged) {
                 if (tile.getRoadOwner() != civ) continue  // someone else built it: free
                 roadLength++
@@ -184,7 +207,7 @@ class BuilderTaskingAi(val civ: Civilization) {
         }
 
         for (tile in path) {
-            if (tile.roadStatus == route && !tile.roadIsPillaged) continue
+            if (tile.isCityCenter() || tile.roadStatus == route && !tile.roadIsPillaged) continue
             val known = routePlots[tile]
             if (known != null) {
                 if (value > known.value) {
@@ -210,9 +233,10 @@ class BuilderTaskingAi(val civ: Civilization) {
     fun evaluateBuilder(unit: MapUnit): BuilderDirective? = timeThis("AI.EvaluateBuilder") {
         if (civ.cities.size != numCities) update()
         val builds = BuilderBuilds(unit)
+        val claimed = otherBuilderTargets(unit)
         val directives = ArrayList<BuilderDirective>()
         for (city in civ.cities) for (tile in city.getTiles()) {
-            if (!shouldBuilderConsiderPlot(unit, tile)) continue
+            if (!shouldBuilderConsiderPlot(unit, tile, claimed)) continue
             val turnsAway = findTurnsAway(unit, tile)
             if (turnsAway < 0) continue
             addRouteDirectives(unit, builds, tile, turnsAway, directives)
@@ -222,7 +246,7 @@ class BuilderTaskingAi(val civ: Civilization) {
             addScrubFalloutDirectives(unit, builds, tile, turnsAway, directives)
         }
         for (tile in nonTerritoryPlots) {
-            if (!shouldBuilderConsiderPlot(unit, tile)) continue
+            if (!shouldBuilderConsiderPlot(unit, tile, claimed)) continue
             val turnsAway = findTurnsAway(unit, tile)
             if (turnsAway < 0) continue
             addRouteDirectives(unit, builds, tile, turnsAway, directives)
@@ -232,16 +256,28 @@ class BuilderTaskingAi(val civ: Civilization) {
         directives.firstOrNull { it.tile == unit.getTile() || unit.movement.canReach(it.tile) }
     }
 
-    /** Marks [tile] as the target of a builder this turn (MISSIONAI_BUILD) */
-    fun claim(tile: Tile) {
-        claimedTiles.add(tile)
+    /** Sends [unit] to [tile] (MISSIONAI_BUILD): no other builder considers it until [unit] gets another directive */
+    fun claim(unit: MapUnit, tile: Tile) {
+        unit.builderTarget = tile.position
+    }
+
+    /** The plots other builders of ours were sent to (CvPlayerAI::AI_plotTargetMissionAIs with MISSIONAI_BUILD) */
+    private fun otherBuilderTargets(unit: MapUnit): Set<HexCoord> {
+        val targets = HashSet<HexCoord>()
+        for (other in civ.units.getCivUnits()) {
+            if (other == unit) continue
+            val target = other.builderTarget ?: continue
+            if (civ.isHuman() && !other.isAutomated()) continue
+            targets.add(target)
+        }
+        return targets
     }
 
     /**
      *  CvBuilderTaskingAI::ShouldBuilderConsiderPlot: not impassable, not owned by another major, in the builder's domain, on its landmass
-     *  unless it can embark, not targeted by another builder, without plot danger, and with no other civilian of ours on it.
+     *  unless it can embark, not the target of another builder ([claimed]), without plot danger, and with no other civilian of ours on it.
      */
-    private fun shouldBuilderConsiderPlot(unit: MapUnit, tile: Tile): Boolean {
+    private fun shouldBuilderConsiderPlot(unit: MapUnit, tile: Tile, claimed: Set<HexCoord>): Boolean {
         if (tile.isImpassible() || tile.getBaseTerrain().impassable) return false
         val owner = tile.getOwner()
         if (owner != null && owner != civ && !owner.isCityState) return false
@@ -250,7 +286,7 @@ class BuilderTaskingAi(val civ: Civilization) {
         if (landUnit == tile.isWater) return false
         if (landUnit && tile.getContinent() != unit.getTile().getContinent() && !civ.tech.unitsCanEmbark) return false
         val atPlot = tile == unit.getTile()
-        if (!atPlot && tile in claimedTiles) return false
+        if (!atPlot && tile.position in claimed) return false
         val otherCivilian = tile.civilianUnit
         if (!atPlot && otherCivilian != null) return false  // another builder works here, or the plot is full (PLOT_UNIT_LIMIT)
         if (civ.ai.plotDanger.get(tile) > 0) return false
@@ -300,8 +336,9 @@ class BuilderTaskingAi(val civ: Civilization) {
             }
 
             weight = buildCostWeight(weight)
-            // CvPlot::getBuildTime of the improvement to replace, in build points (100 per worker turn), as the original adds it
-            val investedTime = if (existing != null && existing != improvement) existing.getTurnsToBuild(civ, unit, tile) * 100 else 0
+            // CvPlot::getBuildTime of the first build of the improvement already there, in build points (100 per worker turn): also when
+            // it is the pillaged one to repair; a created improvement (no build time) counts nothing
+            val investedTime = if (existing != null && existing.turnsToBuild > 0) existing.getTurnsToBuild(civ, unit, tile) * 100 else 0
             val helpsRush = doesBuildHelpRush(tile, build)
             weight += buildTimeWeight(unit, tile, build, helpsRush, investedTime + turnsAway)
             weight = correctWeight(weight)
@@ -499,14 +536,24 @@ class BuilderTaskingAi(val civ: Civilization) {
     /**
      *  CvBuilderTaskingAI::GetBuildTimeWeight: 10000 / (turns left after this turn's work, at least 1, + [additionalTime]). When
      *  [ignoreFeatureTime], the feature removal time is subtracted in build points (turns × 100), as the original does.
+     *  An improvement (route) build on a plot whose improvement (route) is pillaged is timed as the repair, whatever it replaces.
      */
     fun buildTimeWeight(unit: MapUnit, tile: Tile, build: Build, ignoreFeatureTime: Boolean, additionalTime: Int): Int {
-        var buildTime = turnsLeft(unit, tile, build) - 1
+        val timed = timedAsRepair(tile, build)
+        var buildTime = turnsLeft(unit, tile, timed) - 1
         if (buildTime <= 0) buildTime = 1
-        if (ignoreFeatureTime && build.removeFirst != null) buildTime -= build.removeFirst.turnsToBuild * 100
+        if (ignoreFeatureTime && timed.removeFirst != null) buildTime -= timed.removeFirst.turnsToBuild * 100
         buildTime += additionalTime
         if (buildTime == 0) buildTime = 1
         return 10000 / buildTime
+    }
+
+    private fun timedAsRepair(tile: Tile, build: Build): Build {
+        if (build.isRepair || build.improvement.name.startsWith(Constants.remove)) return build
+        val pillaged = if (build.improvement.isRoad()) tile.roadStatus != RoadStatus.None && tile.roadIsPillaged
+            else tile.improvement != null && tile.improvementIsPillaged
+        if (!pillaged) return build
+        return ruleset.tileImprovements[Constants.repair]?.let { Build(it) } ?: build
     }
 
     /** Turns [unit] needs to finish [build] on [tile], counting work already done there; 0 for an instant (Great Person) improvement */
@@ -601,7 +648,7 @@ class BuilderTaskingAi(val civ: Civilization) {
         yieldsOf(alternative.stats.getTileStats(city, civ)).also { for (i in it.indices) it[i] = max(it[i], 0) }
     }
 
-    /** CvPlot::calculateNatureYield: the plot's yields without improvement and route */
+    /** CvPlot::calculateNatureYield: the plot's yields without improvement and route (tile stats are never below 0, as there) */
     private fun natureYields(tile: Tile): IntArray {
         val bare = tile.clone(addUnits = false)
         bare.setTerrainTransients()
