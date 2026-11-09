@@ -38,6 +38,13 @@ import java.util.UUID
  * FULL_SIM_MAX_TURNS (default 700), FULL_SIM_WALL_MINUTES (default 150), FULL_SIM_PLAY_ON (any value: keep playing after a victory),
  * FULL_SIM_CIVS (8), FULL_SIM_CITYSTATES (8), FULL_SIM_SEED (7), FULL_SIM_RULESET (default Civ V - Brave New World),
  * FULL_SIM_MAPSIZE (Tiny, Small, Medium, Large or Huge; default Medium), FULL_SIM_MAPTYPE (default Small Continents).
+ * FULL_SIM_NATIONS = comma-separated exact names of major nations (`The Huns,Babylon`): these play instead of the first FULL_SIM_CIVS
+ * majors (an unknown or non-major name stops the run). FULL_SIM_VICTORIES = comma-separated victory type names that replace the default
+ * (every selectable victory without a turn limit; an unknown name stops the run). FULL_SIM_START_UNITS = `Nation=Unit,Unit;Nation2=Unit`:
+ * after the game is generated these units are placed for the civilization on a free land tile near its first unit (they are in the
+ * start file, which is generated once and reused). FULL_SIM_TRACE_CIV = a civilization name, a comma-separated list of names or `all`
+ * (every major): [CivDecisionTrace] writes `<report>.trace.txt` for one civilization, `<report>.trace.<Civ>.txt` (spaces as underscores)
+ * for several. The report's header names the nations, map, seed, victories and start units of the game.
  *
  * Reproducibility: FULL_SIM_DIGESTS = a file that gets one line per turn, `turn <n> <hash of the whole game state>` (the wall-clock
  * turn start time and the random ids of great works are left out of the hash). Two runs from the same start file must write the
@@ -77,18 +84,32 @@ class FullGameSim {
     private fun startGame(): GameInfo {
         val ruleset = RulesetCache[env("FULL_SIM_RULESET", BaseRuleset.Civ_V_BNW.fullName)]!!
         val players = ArrayList<Player>()
-        for (nation in ruleset.nations.values) {
-            if (players.size >= env("FULL_SIM_CIVS", "8").toInt()) break
-            if (nation.isMajorCiv) players.add(Player(nation.name, PlayerType.AI))
+        val nations = list("FULL_SIM_NATIONS")
+        if (nations.isEmpty()) {
+            for (nation in ruleset.nations.values) {
+                if (players.size >= env("FULL_SIM_CIVS", "8").toInt()) break
+                if (nation.isMajorCiv) players.add(Player(nation.name, PlayerType.AI))
+            }
+        } else {
+            require(nations.distinct().size == nations.size) { "FULL_SIM_NATIONS names a nation twice: $nations" }
+            for (name in nations) {
+                val nation = ruleset.nations[name] ?: error("FULL_SIM_NATIONS: unknown nation '$name'")
+                require(nation.isMajorCiv) { "FULL_SIM_NATIONS: '$name' is not a major civilization" }
+                players.add(Player(name, PlayerType.AI))
+            }
         }
         players.add(Player("Spectator", PlayerType.Human))
+        val startUnits = startUnits(ruleset)
+        for (nation in startUnits.keys) require(players.any { it.chosenCiv == nation }) { "FULL_SIM_START_UNITS: '$nation' does not play in this game" }
+        val victories = list("FULL_SIM_VICTORIES")
+        for (name in victories) require(name in ruleset.victories) { "FULL_SIM_VICTORIES: unknown victory '$name', known: ${ruleset.victories.keys}" }
         val parameters = GameParameters().apply {
             baseRuleset = ruleset.name
             difficulty = "Prince"
             speed = "Standard"
             numberOfCityStates = env("FULL_SIM_CITYSTATES", "8").toInt()
             // as the new game screen does: every victory that does not need a turn limit; without any, the game never ends
-            victoryTypes.addAll(ruleset.selectableVictories().filter { !it.enablesMaxTurns() }.map { it.name })
+            victoryTypes.addAll(victories.ifEmpty { ruleset.selectableVictories().filter { !it.enablesMaxTurns() }.map { it.name } })
             shufflePlayerOrder = false
             this.players = players
         }
@@ -103,7 +124,39 @@ class FullGameSim {
             }
             seed = env("FULL_SIM_SEED", "7").toLong()
         }
-        return GameStarter.startNewGame(GameSetupInfo(parameters, mapParameters), gameId = UUID.nameUUIDFromBytes("full-sim-${mapParameters.seed}".toByteArray()).toString())
+        val game = GameStarter.startNewGame(GameSetupInfo(parameters, mapParameters), gameId = UUID.nameUUIDFromBytes("full-sim-${mapParameters.seed}".toByteArray()).toString())
+        for ((nation, units) in startUnits) {
+            val civ = game.civilizations.first { it.civName == nation }
+            val position = civ.units.getCivUnits().firstOrNull()?.getTile()?.position ?: error("FULL_SIM_START_UNITS: $nation has no unit to place its units next to")
+            for (unit in units) civ.units.placeUnitNearTile(position, unit) ?: error("FULL_SIM_START_UNITS: no free tile for $unit of $nation")
+        }
+        return game
+    }
+
+    /** The comma-separated names in an environment variable, empty when it is not set */
+    private fun list(name: String) = env(name, "").split(',').map { it.trim() }.filter { it.isNotEmpty() }
+
+    /** FULL_SIM_START_UNITS parsed: nation -> unit names, each checked against the ruleset */
+    private fun startUnits(ruleset: com.unciv.models.ruleset.Ruleset): Map<String, List<String>> {
+        val result = LinkedHashMap<String, List<String>>()
+        for (entry in env("FULL_SIM_START_UNITS", "").split(';').map { it.trim() }.filter { it.isNotEmpty() }) {
+            val nation = entry.substringBefore('=').trim()
+            require('=' in entry) { "FULL_SIM_START_UNITS: '$entry' is not Nation=Unit,Unit" }
+            require(nation in ruleset.nations) { "FULL_SIM_START_UNITS: unknown nation '$nation'" }
+            val units = entry.substringAfter('=').split(',').map { it.trim() }.filter { it.isNotEmpty() }
+            for (unit in units) require(unit in ruleset.units) { "FULL_SIM_START_UNITS: unknown unit '$unit'" }
+            result[nation] = (result[nation] ?: emptyList()) + units
+        }
+        return result
+    }
+
+    /** The civilizations FULL_SIM_TRACE_CIV names (`all` = every major), each of which must play in this game */
+    private fun traceCivs(game: GameInfo): List<String> {
+        val names = list("FULL_SIM_TRACE_CIV")
+        if (names == listOf("all")) return players(game).map { it.civName }
+        val known = players(game).map { it.civName }
+        for (name in names) require(name in known) { "FULL_SIM_TRACE_CIV: '$name' is not a major civilization of this game, known: $known" }
+        return names.distinct()
     }
 
     private fun players(game: GameInfo) =
@@ -184,6 +237,12 @@ class FullGameSim {
         val text = StringBuilder()
         text.appendLine("# Full game simulation, ${game.gameParameters.baseRuleset}, ${game.civilizations.count { it.isMajorCiv && !it.isSpectator }} majors, ${game.civilizations.count { it.isCityState }} city-states")
         text.appendLine("ended: $ended")
+        // the game as the report's reader needs to know it; line 2 stays the `ended:` line
+        text.appendLine("nations: ${players(game).joinToString(", ") { it.civName }}")
+        val map = game.tileMap.mapParameters
+        text.appendLine("map: ${map.mapSize.name}, ${map.type}, ${game.tileMap.tileList.size} tiles, seed ${map.seed}, ${game.civilizations.count { it.isCityState }} city-states")
+        text.appendLine("victories: ${game.gameParameters.victoryTypes.joinToString(", ")}")
+        text.appendLine("start units: ${env("FULL_SIM_START_UNITS", "").ifEmpty { "none" }}")
         text.appendLine()
         text.appendLine("## Events")
         events.forEach { text.appendLine(it) }
@@ -227,7 +286,11 @@ class FullGameSim {
         val spans = System.getenv("FULL_SIM_SPANS") != null
         val performance = SimPerformance(game, spans, File("$outPath.perf.csv"), if (spans) File("$outPath.spans.csv") else null)
             .also { this.performance = it }
-        val civTrace = System.getenv("FULL_SIM_TRACE_CIV")?.let { CivDecisionTrace(game, it, File("$outPath.trace.txt")) }
+        val traceNames = traceCivs(game)
+        val civTraces = traceNames.map { name ->
+            val file = if (traceNames.size == 1) "$outPath.trace.txt" else "$outPath.trace.${name.replace(' ', '_')}.txt"
+            CivDecisionTrace(game, name, File(file))
+        }
         val out = StringBuilder()
         val events = ArrayList<String>()
         val checkpoint = File(System.getenv("FULL_SIM_OUT")!! + ".checkpoint.save")
@@ -272,7 +335,7 @@ class FullGameSim {
             combatLosses.afterTurn()
             barbarianStats.afterTurn()
             embarkedStats.afterTurn()
-            civTrace?.afterTurn(turn)
+            for (civTrace in civTraces) civTrace.afterTurn(turn)
             val dump = dumpDir != null && (dumpAll || turn in dumpTurns)
             if (digestFile != null || dump) {
                 val state = stateJson(game)
@@ -336,7 +399,7 @@ class FullGameSim {
         summary(game, turn, (System.currentTimeMillis() - startedAt) / 1000, out)
         report(out, events, game, ended)
         performance.close()
-        civTrace?.close()
+        for (civTrace in civTraces) civTrace.close()
         Assert.assertFalse("The game threw: see the report", ended.startsWith("exception"))
     }
 }
