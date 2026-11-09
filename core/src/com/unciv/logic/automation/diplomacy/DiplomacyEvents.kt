@@ -131,10 +131,13 @@ object DiplomacyEvents {
 
     //region War damage, conquest, liberation
 
-    /** CvDiplomacyAI::ChangeWarValueLost: [loser] lost [value] to [winner]; the loser's enemies like the winner for it (common foe) */
+    /**
+     *  CvDiplomacyAI::ChangeWarValueLost: [loser] lost [value] to [winner]; the majors at war with the loser like the winner for it (common
+     *  foe). A city-state's losses count too (its own record of them is not read by anything): the majors at war with it like whoever hurts it.
+     */
     fun changeWarValueLost(loser: Civilization, winner: Civilization, value: Int) {
-        if (!loser.isMajorCiv) return
-        loser.ai.diplomacy.memoryOf(winner).warValueLost += value
+        if (loser.isMajorCiv) loser.ai.diplomacy.memoryOf(winner).warValueLost += value
+        else if (!loser.isCityState) return
         if (value <= 0) return
         for (third in loser.gameInfo.civilizations) {
             if (!third.isMajorCiv || third == winner || third == loser || !WarStateAi.isPlayerValid(loser, third)) continue
