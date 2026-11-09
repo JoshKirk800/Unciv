@@ -541,7 +541,8 @@ class UnitMovement(val unit: MapUnit) {
 
             teleportTransportedUnitsTo(origin, destination)
 
-            unit.useMovementPoints(1f)
+            // CvUnit::paradrop: changeMoves of half a movement point, the drop counts as an attack
+            unit.useMovementPoints(0.5f)
             unit.attacksThisTurn += 1
             // Check if unit maintenance changed
             // Is also done for other units, but because we skip everything else, we have to manually check it
@@ -811,9 +812,9 @@ class UnitMovement(val unit: MapUnit) {
         return CannotMoveToReason.NoAirUnitTransport
     }
 
-    // Can a paratrooper land at this tile?
+    /** Can a paratrooper land at this tile? CvUnit::canParadropAt: in range, seen and enterable (CvUnit::canMoveInto with MOVEFLAG_DESTINATION) */
     @Readonly
-    private fun canParadropOn(destination: Tile, distance: Int): Boolean {
+    fun canParadropOn(destination: Tile, distance: Int): Boolean {
         if (unit.cache.cannotMove) return false
 
         // Can only move to tiles within range that are visible and not impassible
@@ -822,7 +823,7 @@ class UnitMovement(val unit: MapUnit) {
 
         // The destination is valid if any of the `tileFilters` match, and is within range
         for ((tileFilter, distanceAllowed) in unit.cache.paradropDestinationTileFilters) {
-            if (distance <= distanceAllowed && destination.matchesFilter(tileFilter, unit.civ)) return true
+            if (distance <= distanceAllowed && destination.matchesFilter(tileFilter, unit.civ)) return canMoveTo(destination)
         }
 
         return false

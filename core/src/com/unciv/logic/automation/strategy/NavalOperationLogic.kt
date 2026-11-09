@@ -220,7 +220,7 @@ object NavalOperationLogic {
     }
 
     /**
-     *  The water tile of an enemy unit (embarked ones count 2/3) weighted by base moves x distance from [unit]; of the lightest the first one
+     *  The water tile of an enemy unit (embarked ones count 2/3) or trader at sea (1/3) weighted by base moves x distance from [unit]; of the lightest the first one
      *  [unit] can reach, fewer turns winning among equal weights (GetReachablePlot). None: a water tile next to the nearest coastal enemy city,
      *  else next to the nearest coastal barbarian camp, that it can reach (the last such one).
      */
@@ -235,13 +235,16 @@ object NavalOperationLogic {
             if (!civ.hasExplored(tile)) continue
             if (tile.isWater) {
                 val units = enemyUnitsOn(civ, tile)
-                if (units.isEmpty()) continue
+                val traders = civ.tradeRoutes.getEnemyTradersAt(tile)
+                if (units.isEmpty() && traders.isEmpty()) continue
                 val distance = unit.getTile().aerialDistanceTo(tile)
                 for (enemy in units) {
                     var score = baseMoves * distance
                     if (enemy.isEmbarked()) score = score * 2 / 3 // we want to take out embarked units more than ships
                     weighted.add(tile to score)
                 }
+                // we want to plunder trade routes if possible
+                repeat(traders.size) { weighted.add(tile to baseMoves * distance / 3) }
             } else if (tile.isCityCenter() && isCoastalLand(tile)) { // Backup plan is a coastal enemy city
                 val city = tile.getCity() ?: continue
                 if (civ.isAtWarWith(city.civ) || city.civ.isBarbarian) {

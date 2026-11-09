@@ -81,6 +81,10 @@ object TacticalAttacks {
 
     //region Reach
 
+    /** CvUnit::GetMaxAttackStrength with no target: what a unit that shoots fights with, else its attack in the open */
+    fun maxAttackStrength(unit: MapUnit): Int =
+        if (unit.baseUnit.isRanged()) unit.baseUnit.strength else MapUnitCombatant(unit).getAttackingStrength(null)
+
     /**
      *  CvUnit::IsCanAttack: units that fight, aircraft by their ranged strike. Nuclear weapons have no attack strength in the original (the nuke
      *  operation sets them off), so they never are strikers.
@@ -168,7 +172,7 @@ object TacticalAttacks {
             val distance = unit.getTile().aerialDistanceTo(tile)
             if (distance > unit.getMaxMovement() * maxOf(turns, 1) + (if (ranged) unit.getRange() else 1)) continue
 
-            var strength = if (ranged) unit.baseUnit.strength else MapUnitCombatant(unit).getAttackingStrength(null)
+            var strength = maxAttackStrength(unit)
             val health = unit.health
             if (preferredDamage > 0 && 100 - health > preferredDamage) strength *= 3
 

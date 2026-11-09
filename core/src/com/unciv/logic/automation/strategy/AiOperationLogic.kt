@@ -12,6 +12,7 @@ import com.unciv.logic.map.tile.Tile
 import com.unciv.models.UnitActionType
 import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.ai.DiplomacyPersonality
+import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.logic.automation.unit.tactical.CityThreat
 import com.unciv.logic.automation.unit.tactical.TacticalTargetType
 import com.unciv.view.GameView
@@ -456,7 +457,8 @@ object AiOperationLogic {
     }
 
     /**
-     *  CvAIOperation::FindBestFitReserveUnit: among the free units with the slot's primary unit AI, else its secondary one, the nearest
+     *  CvAIOperation::FindBestFitReserveUnit: among the free units with the slot's primary unit AI, else its secondary one, but no paratroopers
+     *  (they are the tactical AI's, which drops them on pillage targets), the nearest
      *  (hex distance to the muster, doubled for a land unit on another landmass; to the target without a muster) that can get there
      *  joins the slot.
      */
@@ -471,7 +473,7 @@ object AiOperationLogic {
             val type = UnitAiType.ofXmlName(aiName) ?: continue
             val candidates = civ.units.getCivUnits()
                 .filter {
-                    UnitAiTypes.canHave(it.baseUnit, type, rules) && isFreeForOperation(civ, it, naval) &&
+                    UnitAiTypes.canHave(it.baseUnit, type, rules) && isFreeForOperation(civ, it, naval) && !it.hasUnique(UniqueType.MayParadrop) &&
                         !(deepWaterOnly && it.baseUnit.isWaterUnit && it.cache.cannotEnterOceanTiles)
                 }
                 .map { unit ->
