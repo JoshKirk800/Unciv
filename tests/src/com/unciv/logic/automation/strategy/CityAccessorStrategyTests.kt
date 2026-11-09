@@ -99,6 +99,16 @@ class CityAccessorStrategyTests {
         assertFalse(CityStrategyAi.isFirstFaithBuilding(capital))
     }
 
+    @Test
+    fun `only experience for every land unit makes a training facility, not the Ducal Stable's for mounted units`() {
+        val city = colony(3)
+        assertEquals(0, CityStrategyAi.landFreeExperience(city))
+        city.cityConstructions.addBuilding("Ducal Stable")
+        assertEquals(0, CityStrategyAi.landFreeExperience(city))
+        city.cityConstructions.addBuilding("Barracks")
+        assertEquals(15, CityStrategyAi.landFreeExperience(city))
+    }
+
     private val blockadeEnemy by lazy {
         game.addCiv().also {
             civ.diplomacyFunctions.makeCivilizationsMeet(it)
