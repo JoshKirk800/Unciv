@@ -126,8 +126,7 @@ class StepFinder {
  *  The target selection of CvMilitaryAI: FindBestAttackTarget, ShouldAttackBySea, ScoreTarget, EvaluateMilitaryApproaches,
  *  GetNearestCoastalCity, GetCoastalPlotAdjacentToTarget and GetMostThreatenedCity.
  *
- *  Deviations: the step finder is [StepFinder] (own routes only, no ignore-units variant); CvCity::CanAirlift (two airports) is any city
- *  with the airlift flavor's [CityStrategyAi.isGoodAirliftCity] lack: Unciv has no airlift, so the airlift bonus never applies.
+ *  Deviations: the step finder is [StepFinder] (own routes only, no ignore-units variant).
  */
 object MilitaryTargets {
 
@@ -231,6 +230,8 @@ object MilitaryTargets {
                 target.pathLength < 20 -> 4
                 else -> 2
             }
+            // Double if the troops can be assembled in the muster city by airlift
+            if (target.musterCity.canAirlift()) value *= 2
         } else {
             value *= when {
                 target.pathLength < 12 -> 5

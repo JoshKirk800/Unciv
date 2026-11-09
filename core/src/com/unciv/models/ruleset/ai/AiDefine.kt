@@ -792,6 +792,7 @@ enum class AiDefine(val default: Float) {
     AI_HOMELAND_MOVE_PRIORITY_UPGRADE(25f),
     AI_HOMELAND_MOVE_PRIORITY_ANCIENT_RUINS(40f),
     AI_HOMELAND_MOVE_PRIORITY_GARRISON_CITY_STATE(40f),
+    AI_HOMELAND_MOVE_PRIORITY_AIRLIFT(24f),
     AI_HOMELAND_MAX_DEFENSIVE_MOVE_TURNS(4f),
     AI_TACTICAL_FLAVOR_DAMPENING_FOR_MOVE_PRIORITIZATION(0.3f),
     // CvTacticalAI::EstablishBarbarianPriorities (AIBarbarianTacticalMove base priorities; a negative one is never run)

@@ -95,6 +95,7 @@ enum class UnitActionType(val value: String) {
     Transform("Transform"),
     Pillage("Pillage"),
     Paradrop("Paradrop"),
+    Airlift("Airlift"),
     AirSweep("Air Sweep"),
     SetUp("Set up"),
     FoundCity("Found city"),

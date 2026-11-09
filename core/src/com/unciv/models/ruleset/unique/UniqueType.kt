@@ -503,6 +503,9 @@ enum class UniqueType(
     ObsoleteWith("Obsolete with [tech]", UniqueTarget.Building, UniqueTarget.Resource, UniqueTarget.Improvement),
     IndicatesCapital("Indicates the capital city", UniqueTarget.Building),
     MovesToNewCapital("Moves to new capital when capital changes", UniqueTarget.Building),
+    AllowsAirlift("Allows airlifts to and from this city", UniqueTarget.Building,
+        docDescription = "A land unit that has not moved this turn and stands in, or next to, a city with this can be airlifted to a free land tile in, or next to, another city of the same civilization with this, " +
+            "unless an enemy unit is adjacent to that tile. Airlifting uses up the unit's movement."),
     ProvidesExtraLuxuryFromCityResources("Provides 1 extra copy of each improved luxury resource near this City", UniqueTarget.Building),
 
     DestroyedWhenCityCaptured("Destroyed when the city is captured", UniqueTarget.Building),

@@ -1152,7 +1152,7 @@
 		"name": "Airport",
 		"cost": 400,
 		"maintenance": 5,
-		"uniques": ["Can carry [4] extra [Air] units", "[+50]% Tourism from Great Works [in this city]", "[50]% of the Culture from wonders, natural wonders and improved tiles becomes Tourism [in this city]"],
+		"uniques": ["Allows airlifts to and from this city", "Can carry [4] extra [Air] units", "[+50]% Tourism from Great Works [in this city]", "[50]% of the Culture from wonders, natural wonders and improved tiles becomes Tourism [in this city]"],
 		"requiredTech": "Radar"
 	},
 	{

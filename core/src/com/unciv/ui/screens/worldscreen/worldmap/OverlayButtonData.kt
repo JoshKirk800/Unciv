@@ -1,6 +1,7 @@
 package com.unciv.ui.screens.worldscreen.worldmap
 
 import com.unciv.view.hasMovement
+import com.unciv.view.isPreparingAirlift
 import com.unciv.view.isPreparingParadrop
 import com.unciv.view.GameView
 import com.badlogic.gdx.graphics.Color
@@ -45,8 +46,8 @@ class MoveHereOverlayButtonData(
     }
 
     private fun getMoveHereButton(worldMapHolder: WorldMapHolder): Group {
-        val isParadrop = unitToTurnsToDestination.keys.all { it.isPreparingParadrop() }
-        val image = if (isParadrop)
+        val isTeleport = unitToTurnsToDestination.keys.all { it.isPreparingParadrop() || it.isPreparingAirlift() }
+        val image = if (isTeleport)
             ImageGetter.getUnitActionPortrait("Paradrop", buttonSize / 2)
         else ImageGetter.getStatIcon("Movement")
             .apply { color = ImageGetter.CHARCOAL; width = buttonSize / 2; height = buttonSize / 2 }
@@ -54,7 +55,7 @@ class MoveHereOverlayButtonData(
             .surroundWithCircle(buttonSize - 2, false)
             .surroundWithCircle(buttonSize, false, ImageGetter.CHARCOAL)
 
-        if (!isParadrop) {
+        if (!isTeleport) {
             val numberCircle = unitToTurnsToDestination.values.maxOrNull()!!.tr().toLabel(fontSize = 14)
                 .apply { setAlignment(Align.center) }
                 .surroundWithCircle(smallerCircleSizes - 2, color = BaseScreen.skinStrings.skinConfig.baseColor.darken(0.3f))

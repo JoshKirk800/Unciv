@@ -2300,6 +2300,11 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 ??? example  "Moves to new capital when capital changes"
 	Applicable to: Building
 
+??? example  "Allows airlifts to and from this city"
+	A land unit that has not moved this turn and stands in, or next to, a city with this can be airlifted to a free land tile in, or next to, another city of the same civilization with this, unless an enemy unit is adjacent to that tile. Airlifting uses up the unit's movement.
+
+	Applicable to: Building
+
 ??? example  "Provides 1 extra copy of each improved luxury resource near this City"
 	Applicable to: Building
 
