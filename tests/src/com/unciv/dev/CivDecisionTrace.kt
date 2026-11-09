@@ -11,8 +11,8 @@ import com.unciv.models.ruleset.ai.AiDefine
 import java.io.File
 
 /**
- *  FullGameSim's trace of one civilization's decisions, turn by turn ([FullGameSim] with FULL_SIM_TRACE_CIV=<civ name>, written to
- *  `<report>.trace.txt`): its economy and military each turn, what the AI decided with the alternatives it weighed ([AiDecisionLog]:
+ *  FullGameSim's trace of one civilization's decisions, turn by turn ([FullGameSim] with FULL_SIM_TRACE_CIV=<civ names or all>, written to
+ *  `<report>.trace.txt` or, for several civilizations, `<report>.trace.<Civ>.txt`): its economy and military each turn, what the AI decided with the alternatives it weighed ([AiDecisionLog]:
  *  production with the top weights and turns, research with the top weights, settler operations), strategy changes, cities founded and lost,
  *  units lost with the enemies that stood near them the turn before, and every 10 turns its cities.
  */
@@ -28,7 +28,8 @@ class CivDecisionTrace(private val game: GameInfo, private val civName: String, 
     private class UnitRecord(val description: String, val position: String, val enemiesNear: String)
 
     init {
-        AiDecisionLog.sink = { civ, message -> if (civ.civName == civName) decisions.add(message) }
+        active[civName] = this
+        AiDecisionLog.sink = { civ, message -> active[civ.civName]?.decisions?.add(message) }
         writer.appendLine("# Decision trace of $civName")
     }
 
@@ -130,7 +131,13 @@ class CivDecisionTrace(private val game: GameInfo, private val civName: String, 
     }
 
     fun close() {
-        AiDecisionLog.sink = null
+        active.remove(civName)
+        if (active.isEmpty()) AiDecisionLog.sink = null
         writer.close()
+    }
+
+    private companion object {
+        /** [AiDecisionLog] has one sink: it hands each decision to the trace of the civilization it belongs to (several traces may run at once) */
+        val active = HashMap<String, CivDecisionTrace>()
     }
 }
