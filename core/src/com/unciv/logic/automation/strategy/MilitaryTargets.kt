@@ -28,7 +28,8 @@ enum class CityAttackApproach(val multiplier: Int) { UNRESTRICTED(10), OPEN(8), 
 /**
  *  The step finder of the original (GC.getStepFinder(): a hex path over terrain that ignores units) as far as the military AI needs it:
  *  a land route an army of [civ] could walk against [enemy] - explored, not water, not impassable, and territory it may enter (its own,
- *  the enemy's, friendly land, city-state land and that of civilizations it is at war with). One path length is a step.
+ *  the enemy's, friendly land, city-state land and that of civilizations it is at war with) - or a route over explored water under the
+ *  same rules, where deep ocean counts as impassable until [civ] can embark onto it. One path length is a step.
  *  Scratch arrays are reused between calls; not thread safe, one instance per civilization AI.
  */
 class StepFinder {
@@ -49,14 +50,24 @@ class StepFinder {
      *  [enemy], the tile is friendly territory for [civ], or the owner is a city-state or at war with [civ]: the original lets any civilization
      *  cross city-state land and only a major that is neither the enemy, a friend nor at war blocks the route. This is the route planner's
      *  rule, not the movement rules ([com.unciv.logic.civilization.diplomacy.DiplomacyFunctions.canPassThroughTiles]), which the units walk by.
+     *  The original stays within one area (the land of the start, or its water), which here is land or water by the kind of route.
      */
-    fun isValid(civ: Civilization, enemy: Civilization?, tile: Tile): Boolean {
-        if (tile.isWater || tile.isImpassible() || !civ.hasExplored(tile)) return false
+    fun isValid(civ: Civilization, enemy: Civilization?, tile: Tile): Boolean = !tile.isWater && isOpen(civ, enemy, tile)
+
+    /** StepValid for a route over water: the same rules for the tile, in the water area of the start */
+    private fun seaValid(civ: Civilization, enemy: Civilization?, tile: Tile) = tile.isWater && isOpen(civ, enemy, tile)
+
+    /**
+     *  StepValid beyond the area check: nothing impassable (mountains, ice), no deep ocean unless the team can embark onto it
+     *  (GetEmbarkedAllWaterPassage, [com.unciv.logic.civilization.managers.TechManager.embarkedUnitsCanEnterOcean]), and the territory rule of [isValid].
+     *  Explored tiles only, the AI does not know the rest.
+     */
+    private fun isOpen(civ: Civilization, enemy: Civilization?, tile: Tile): Boolean {
+        if (tile.isImpassible() || !civ.hasExplored(tile)) return false
+        if (tile.isOcean && !civ.tech.embarkedUnitsCanEnterOcean) return false
         val owner = tile.getOwner() ?: return true
         return owner == enemy || tile.isFriendlyTerritory(civ) || owner.isCityState || owner.isBarbarian || civ.isAtWarWith(owner)
     }
-
-    private fun seaValid(civ: Civilization, tile: Tile) = tile.isWater && civ.hasExplored(tile)
 
     /** Breadth-first search from [start]; the visited tiles are left in the scratch arrays */
     private fun search(civ: Civilization, enemy: Civilization?, start: Tile, sea: Boolean, maxSteps: Int, stopAt: Tile?): Boolean {
@@ -75,7 +86,7 @@ class StepFinder {
             for (neighbor in current.neighbors) {
                 val index = neighbor.zeroBasedIndex
                 if (stamp[index] == counter) continue
-                if (neighbor !== stopAt && !(if (sea) seaValid(civ, neighbor) else isValid(civ, enemy, neighbor))) continue
+                if (neighbor !== stopAt && !(if (sea) seaValid(civ, enemy, neighbor) else isValid(civ, enemy, neighbor))) continue
                 stamp[index] = counter
                 dist[index] = dist[current.zeroBasedIndex] + 1
                 parent[index] = current.zeroBasedIndex
@@ -110,7 +121,7 @@ class StepFinder {
     }
 
     /** DoesPathExist over water between two sea tiles */
-    fun seaPathExists(civ: Civilization, from: Tile, to: Tile): Boolean = search(civ, null, from, sea = true, maxSteps = Int.MAX_VALUE, stopAt = to)
+    fun seaPathExists(civ: Civilization, enemy: Civilization?, from: Tile, to: Tile): Boolean = search(civ, enemy, from, sea = true, maxSteps = Int.MAX_VALUE, stopAt = to)
 
     /**
      *  GetXPlotsFromEnd: the tile [x] steps before the end of the path from [from] to [to] (the start if the path is shorter);
@@ -186,7 +197,7 @@ object MilitaryTargets {
                 if (!target.musterCity.isCoastal() || !target.targetCity.isCoastal()) continue
                 val nearMuster = coastalPlotAdjacentToTarget(target.musterCity.getCenterTile()) ?: continue
                 val nearTarget = coastalPlotAdjacentToTarget(target.targetCity.getCenterTile()) ?: continue
-                if (!steps.seaPathExists(civ, nearMuster, nearTarget)) continue
+                if (!steps.seaPathExists(civ, enemy, nearMuster, nearTarget)) continue
             }
             scored.add(target to scoreTarget(civ, target, type))
         }
