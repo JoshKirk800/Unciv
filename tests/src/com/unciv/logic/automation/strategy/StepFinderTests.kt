@@ -7,8 +7,10 @@ import com.unciv.models.metadata.BaseRuleset
 import com.unciv.testing.GdxTestRunner
 import com.unciv.testing.TestGame
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -67,5 +69,27 @@ class StepFinderTests {
         game.addCity(enemy, tile(0))
         assertEquals(16, steps())
         assertEquals("not when it is not the enemy of the operation and at peace", -1, steps(forEnemy = null))
+    }
+
+    /** A sea route from one side of the strip to the other, between two water tiles, across the wall of water at x = 0 */
+    private fun seaRoute(wall: String): Pair<Tile, Tile> {
+        for (tile in game.tileMap.values) if (tile.position.x == 0 && tile.position.y != 0) game.setTileTerrain(tile.position, wall)
+        return game.getTile(HexCoord(-8, 1)) to game.getTile(HexCoord(8, 1))
+    }
+
+    @Test
+    fun `a route over water goes through coast`() {
+        val (start, end) = seaRoute("Coast")
+        assertNotNull(StepFinder().path(civ, enemy, start, end, sea = true))
+    }
+
+    @Test
+    fun `deep ocean is impassable for a route over water until the civilization can embark onto it`() {
+        val (start, end) = seaRoute("Ocean")
+        assertNull(StepFinder().path(civ, enemy, start, end, sea = true))
+        assertFalse(StepFinder().seaPathExists(civ, enemy, start, end))
+        civ.tech.embarkedUnitsCanEnterOcean = true
+        assertNotNull(StepFinder().path(civ, enemy, start, end, sea = true))
+        assertTrue(StepFinder().seaPathExists(civ, enemy, start, end))
     }
 }
