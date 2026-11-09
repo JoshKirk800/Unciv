@@ -221,6 +221,15 @@ class DiplomacyAiTests {
         assertTrue("a is at war with the city-state too", a.ai.diplomacy.memoryOf(b).commonFoeValue > 0)
         assertEquals("c is not", 0, c.ai.diplomacy.memoryOf(b).commonFoeValue)
     }
+
+    @Test
+    fun `the era of the game is the average of every living civilization including the barbarians`() {
+        val eras = game.ruleset.eras.values
+        for (major in listOf(a, b, c)) major.tech.era = eras.first { it.eraNumber == 2 }
+        assertEquals(eras.first { it.eraNumber == 2 }.name, DiplomacyTurn.gameEraName(a))
+        game.addBarbarianCiv() // era 0: (2 + 2 + 2 + 0) / 4 = 1
+        assertEquals(eras.first { it.eraNumber == 1 }.name, DiplomacyTurn.gameEraName(a))
+    }
     //endregion
 
     //region Approaches
