@@ -8,11 +8,11 @@ import com.unciv.logic.automation.civilization.NextTurnAutomation
 import com.unciv.logic.city.managers.CityTurnManager
 import com.unciv.logic.civilization.*
 import com.unciv.logic.civilization.diplomacy.DiplomacyTurnManager.nextTurn
-import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.mapunit.UnitTurnManager
 import com.unciv.logic.map.tile.ArchaeologyFunctions
 import com.unciv.logic.map.tile.Tile
 import com.unciv.logic.trade.TradeEvaluation
+import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.unique.UniqueTriggerActivation
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.models.ruleset.unique.endTurn
@@ -398,19 +398,11 @@ class TurnManager(val civInfo: Civilization) {
         }
 
         if (! civInfo.isBarbarian) {
-            // disband military units until there are none left OR the gold values are normal
-            while (civInfo.gold <= -200 && nextTurnStats.gold.toInt() < 0) {
-                // prioritize units inside our territory, because disbanding them yields gold, and inexperienced units
-                val priorities = compareByDescending<MapUnit> { it.currentTile.getOwner() == civInfo }
-                    .thenBy { it.promotions.valueOfPromotionsAndXp() }
-                val unitToDisband = civInfo.units.getCivUnits()
-                    .filter { it.isMilitary() }
-                    .sortedWith(priorities)
-                    .firstOrNull()
-                    ?: break
-                unitToDisband.disband()
-                val unitName = unitToDisband.shortDisplayName()
-                civInfo.addNotification("Cannot provide unit upkeep for $unitName - unit has been disbanded!", NotificationCategory.Units, unitName, NotificationIcon.Death)
+            // CvTreasury::DoGold: when the treasury after this turn's income would be at or below the threshold (-5 gold), CvPlayer::DoDeficit
+            // disbands a unit, in half of the cases. The original also resets the treasury to 0; here the debt stays (it costs science)
+            val goldAfterTimes100 = civInfo.gold * 100 + (nextTurnStats.gold * 100).toInt()
+            if (goldAfterTimes100 <= civInfo.gameInfo.ruleset.ai.define(AiDefine.DEFICIT_UNIT_DISBANDING_THRESHOLD) * 100) {
+                civInfo.ai.military.doDeficit(civInfo)
                 // No need to recalculate unit upkeep, disband did that in UnitManager.removeUnit
                 nextTurnStats = civInfo.stats.statsForNextTurn
             }
