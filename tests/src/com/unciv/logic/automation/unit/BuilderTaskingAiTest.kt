@@ -1,13 +1,17 @@
 package com.unciv.logic.automation.unit
 
+import com.unciv.json.json
 import com.unciv.logic.automation.unit.BuilderTaskingAi.CityYieldTargets
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
+import com.unciv.logic.civilization.PlayerType
+import com.unciv.logic.civilization.managers.quests.QuestManager
 import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.MapPathing
 import com.unciv.logic.map.tile.RoadStatus
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.metadata.BaseRuleset
+import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.ai.Flavor
 import com.unciv.models.stats.Stat
 import com.unciv.testing.GdxTestRunner
@@ -206,5 +210,55 @@ class BuilderTaskingAiTest {
         val roadTurns = road.getTurnsToBuild(civ, worker, directive.tile)
         val expected = ((100 / (distance + 1)) * 100 + 10000 / (max(1, roadTurns - 1) + distance)) * ai.routePlots[directive.tile]!!.value
         assertEquals(expected, directive.weight)
+    }
+
+    /** The capital at (0,0) with a worker, a city-state capital [distance] plots east that gave [civ] a route quest */
+    private fun routeQuestCityState(distance: Int = 4): Pair<Civilization, City> {
+        research("The Wheel")
+        val capital = game.addCity(civ, tile(0, 0), initialPopulation = 5)
+        game.addUnit("Worker", civ, capital.getCenterTile())
+        val cityState = game.addCiv(cityStateType = "Cultured")
+        cityState.tech.techsResearched.add("The Wheel")  // its city center gets a road only then
+        val cityStateCapital = game.addCity(cityState, tile(distance, 0))
+        civ.diplomacyFunctions.makeCivilizationsMeet(cityState)
+        for ((from, to) in listOf(civ to cityState, cityState to civ)) from.getDiplomacyManager(to)!!.hasOpenBorders = true  // workers may only enter a city-state's land with open borders
+        val json = "{\"assignedQuests\":[{\"questName\":\"Route\",\"assigner\":\"${cityState.civID}\",\"assignee\":\"${civ.civID}\",\"assignedOnTurn\":1}]}"
+        cityState.questManager = json().fromJson(QuestManager::class.java, json)
+        cityState.questManager.setTransients(cityState)
+        return cityState to cityStateCapital
+    }
+
+    @Test
+    fun `an AI major that wants the connection flags the road to the capital of a city-state with a route quest`() {
+        val (cityState, cityStateCapital) = routeQuestCityState()
+        civ.ai.wantsRouteToMinors.add(cityState.civID)
+        val plots = roadPlots(civ.getCapital()!!, cityStateCapital)
+        val ai = BuilderTaskingAi(civ)
+        assertTrue(plots.isNotEmpty())
+        assertEquals(plots.toSet(), ai.routePlots.keys)
+        val expected = game.ruleset.ai.define(AiDefine.MINOR_CIV_ROUTE_QUEST_WEIGHT) / plots.size
+        for (plot in plots) assertEquals(expected, ai.routePlots[plot]!!.value)
+    }
+
+    @Test
+    fun `an AI major builds no road to a city-state it does not want to connect to`() {
+        routeQuestCityState()
+        assertTrue(BuilderTaskingAi(civ).routePlots.isEmpty())
+    }
+
+    @Test
+    fun `a city-state without a route quest for the major gets no road`() {
+        val (cityState, _) = routeQuestCityState()
+        civ.ai.wantsRouteToMinors.add(cityState.civID)
+        cityState.questManager = QuestManager().also { it.setTransients(cityState) }
+        assertTrue(BuilderTaskingAi(civ).routePlots.isEmpty())
+    }
+
+    @Test
+    fun `a human's builders do not connect city-states on the human's behalf`() {
+        val (cityState, _) = routeQuestCityState()
+        civ.ai.wantsRouteToMinors.add(cityState.civID)
+        civ.playerType = PlayerType.Human
+        assertTrue(BuilderTaskingAi(civ).routePlots.isEmpty())
     }
 }
