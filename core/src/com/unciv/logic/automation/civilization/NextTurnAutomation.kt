@@ -74,6 +74,7 @@ object NextTurnAutomation {
                 DiplomacyAutomation.contactMajorCivsAfterOffers(civInfo)
                 DiplomacyAutomation.checkMilitaryPresenceNearBorder(civInfo)
             }
+            InformationalStatementAi.endOfTurn(civInfo)
             if (civInfo.gameInfo.ruleset.greatWorks.isNotEmpty()) timeThis("AI.greatWorks") {
                 // CvEconomicAI::DoTurn, AI part: DisbandExtraArchaeologists, then CvPlayerCulture::DoSwapGreatWorks
                 ArchaeologistAutomation.disbandExtraArchaeologists(civInfo)
@@ -292,7 +293,8 @@ object NextTurnAutomation {
             }
             // violation before promise
             else -> {
-                if (PromiseAi.wantsPromiseFrom(civInfo, offendingCiv, demand))
+                if (PromiseAi.wantsPromiseFrom(civInfo, offendingCiv, demand) &&
+                    offendingCiv.popupAlerts.none { it.type == demand.demandAlert && it.value == civView.civID })
                     offendingCiv.popupAlerts.add(PopupAlert(demand.demandAlert, civView.civID))
             }
         }

@@ -26,6 +26,9 @@ enum class AlertType : IsPartOfGameInfoSerialization {
     
     DemandToNotAttackUs,
     AttackedUsDespitePromise,
+
+    DemandToStopBuyingLandNearUs,
+    LandBoughtNearUsDespiteOurPromise,
     
     AcceptingDemand,
     RejectingDemand,
@@ -47,6 +50,13 @@ enum class AlertType : IsPartOfGameInfoSerialization {
     
     Denounced,
 
+    /** An AI asks a human to join its war: [PopupAlert.value] is [PopupAlert.pairValue] of the asking civ and the war's target (CvDiplomacyAI COOP_WAR_REQUEST) */
+    CoopWarRequest,
+    /** An AI asks a human who said "soon" to declare the war now, value as [CoopWarRequest] (COOP_WAR_TIME) */
+    CoopWarNow,
+    /** An AI friend asks a human to denounce a civ, value as [CoopWarRequest] (REQUEST_FRIEND_DENOUNCE) */
+    DenounceRequest,
+
     /** A session of the World Congress has finished, its outcomes are in `League.lastResults` */
     LeagueSessionResult
 }
@@ -61,4 +71,9 @@ class PopupAlert : IsPartOfGameInfoSerialization {
     }
 
     constructor() // for json serialization
+
+    companion object {
+        /** The value of an alert about two civs, `first@second` as the protected city-state alerts have it */
+        fun pairValue(first: String, second: String) = "$first@$second"
+    }
 }

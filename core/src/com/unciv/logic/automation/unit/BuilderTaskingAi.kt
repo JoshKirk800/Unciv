@@ -54,8 +54,9 @@ class BuilderDirective(val type: Type, val build: Build, val tile: Tile, val mov
  *    than AI_ATTEMPT_RUSH_OVER_X_TURNS_TO_BUILD turns (×MINOR_CIV_PRODUCTION_PERCENT for city-states), which is when the original's
  *    CvCityStrategyAI::ChooseProduction sets the order's rush flag. Chop production is Unciv's (closest city within 5 tiles).
  *  - A road is free for the route value when someone else built it (Unciv has no per-plot trade route flag).
- *  - Major civilizations do not build routes to city-states: the original builds those only for a Friendly or Protective minor civ
- *    approach, which this branch does not compute. City-states connect to non-human majors that gave them a route quest.
+ *  - A non-human major connects its capital to a city-state's capital only while it wants to (CvDiplomacyAI::IsWantToRouteConnectToMinor,
+ *    kept by [com.unciv.logic.automation.civilization.CityStateAi.contactMinorCivs]) and the city-state has a route quest for it; a city-state
+ *    connects to non-human majors it gave a route quest, never to a human's capital.
  *  - Builders do not claim plots across turns (MISSIONAI_BUILD): a plot another builder has chosen this turn, or works on, is skipped.
  */
 class BuilderTaskingAi(val civ: Civilization) {
@@ -119,8 +120,8 @@ class BuilderTaskingAi(val civ: Civilization) {
         routePlots.clear()
         nonTerritoryPlots.clear()
         val capital = civ.getCapital() ?: return
-        val routeQuestMajors = if (civ.isCityState) routeQuestCapitals() else emptyList()
-        if (civ.cities.size + routeQuestMajors.size < 2) return
+        val questCapitals = routeQuestCapitals()
+        if (civ.cities.size + questCapitals.size < 2) return
         if (bestRoute() == RoadStatus.None) return
         if (civ.units.getCivUnits().none { it.cache.hasUniqueToBuildImprovements }) return
 
@@ -128,15 +129,28 @@ class BuilderTaskingAi(val civ: Civilization) {
             val improvement = route.improvement(ruleset) ?: continue
             if (improvement.techRequired != null && !civ.tech.isResearched(improvement.techRequired!!)) continue
             for (city in civ.cities) if (city != capital) connectCitiesToCapital(capital, city, route)
-            for (other in routeQuestMajors) connectCitiesToCapital(capital, other, route)
+            for (other in questCapitals) connectCitiesToCapital(capital, other, route)
         }
     }
 
-    /** Capitals of the non-human majors this city-state gave a route quest (CvCityConnections::ShouldConnectToOtherPlayer for minors) */
-    private fun routeQuestCapitals(): List<City> = civ.getKnownCivs()
-        .filter { it.isMajorCiv && !it.isHuman() && civ.questManager.getAssignedQuestsFor(it).any { quest -> quest.questName == QuestName.Route.value } }
-        .mapNotNull { it.getCapital() }
-        .toList()
+    /**
+     *  Capitals connected for a route quest (CvCityConnections::ShouldConnectToOtherPlayer): a city-state's builders go to the non-human
+     *  majors it gave a route quest; a non-human major's go to the city-states it wants to connect to that gave it one. Humans: none.
+     */
+    private fun routeQuestCapitals(): List<City> {
+        if (civ.isHuman()) return emptyList()
+        val others = civ.getKnownCivs().filter {
+            when {
+                civ.isCityState -> it.isMajorCiv && !it.isHuman() && hasRouteQuest(civ, it)
+                civ.isMajorCiv -> it.isCityState && it.isAlive() && it.civID in civ.ai.wantsRouteToMinors && hasRouteQuest(it, civ)
+                else -> false
+            }
+        }
+        return others.mapNotNull { it.getCapital() }.toList()
+    }
+
+    private fun hasRouteQuest(minor: Civilization, major: Civilization) =
+        minor.questManager.getAssignedQuestsFor(major).any { it.questName == QuestName.Route.value }
 
     /**
      *  CvBuilderTaskingAI::ConnectCitiesToCapital: flags the plots of the road path from [capital] to [target] that lack [route] with a

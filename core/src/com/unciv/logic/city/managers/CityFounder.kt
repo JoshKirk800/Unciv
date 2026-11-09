@@ -93,6 +93,7 @@ class CityFounder {
                     otherCiv.cache.updateProximity(civInfo))
         }
 
+        civInfo.ai.diplomacy.turnsSinceSettledLastCity = 0  // CvPlayer::found
         triggerCitiesSettledNearOtherCiv(city)
 
         addStartingBuildings(city, civInfo, startingEra)
@@ -290,7 +291,10 @@ class CityFounder {
                     .map { it.civ }
                     .distinct()
                     .filter { it.knows(city.civ) && it.hasExplored(city.getCenterTile()) }
-        for (otherCiv in civsWithCloseCities)
-            otherCiv.getDiplomacyManager(city.civ)!!.setFlag(DiplomacyFlags.SettledCitiesNearUs, 30, true)
+        for (otherCiv in civsWithCloseCities) {
+            val diplomacy = otherCiv.getDiplomacyManager(city.civ)!!
+            // A promise not to settle near them breaks when their expansion posture towards us rises (PromiseAi.testPromises), not on a founding
+            if (!diplomacy.hasFlag(DiplomacyFlags.AgreedToNotSettleNearUs)) diplomacy.setFlag(DiplomacyFlags.SettledCitiesNearUs, 30, true)
+        }
     }
 }
