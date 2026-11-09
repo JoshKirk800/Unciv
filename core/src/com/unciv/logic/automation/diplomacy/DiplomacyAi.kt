@@ -7,6 +7,7 @@ import com.unciv.logic.automation.strategy.WarStateAi
 import com.unciv.logic.civilization.Civilization
 import org.jetbrains.annotations.VisibleForTesting
 import yairm210.purity.annotations.Readonly
+import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.ai.MajorCivApproach
 
 /** A coop war agreement with one partner against one target (CvDiplomacyAI::m_ppaacCoopWarAcceptedState / m_ppaaiCoopWarCounter) */
@@ -31,8 +32,6 @@ class CoopWarEntry() : IsPartOfGameInfoSerialization {
 class MajorCivMemory : IsPartOfGameInfoSerialization {
     // Opinion and approach
     var opinion = MajorCivOpinion.Neutral
-    /** GetMajorCivOpinionWeight of the last update (positive = bad) */
-    var opinionWeight = 0
     /** null = NO_MAJOR_CIV_APPROACH (not evaluated yet: reads as Neutral) */
     var approach: MajorCivApproach? = null
     var warFace: WarFace? = null
@@ -146,7 +145,7 @@ class MajorCivMemory : IsPartOfGameInfoSerialization {
 
     fun clone(): MajorCivMemory {
         val copy = MajorCivMemory()
-        copy.opinion = opinion; copy.opinionWeight = opinionWeight; copy.approach = approach; copy.warFace = warFace
+        copy.opinion = opinion; copy.approach = approach; copy.warFace = warFace
         copy.warGoal = warGoal; copy.wantPeaceCounter = wantPeaceCounter; copy.wantsPeace = wantsPeace; copy.warProjection = warProjection
         copy.lastWarProjection = lastWarProjection; copy.warDamageLevel = warDamageLevel; copy.warValueLost = warValueLost
         copy.theirWarValueLostToUs = theirWarValueLostToUs; copy.theirWarDamageLevel = theirWarDamageLevel
@@ -248,10 +247,6 @@ class DiplomacyAi : IsPartOfGameInfoSerialization {
     @Readonly
     fun opinionOf(other: Civilization): MajorCivOpinion = memories[other.civID]?.opinion ?: MajorCivOpinion.Neutral
 
-    /** CvDiplomacyAI::GetMajorCivOpinionWeight of the last update (positive = bad) */
-    @Readonly
-    fun opinionWeightOf(other: Civilization): Int = memories[other.civID]?.opinionWeight ?: 0
-
     /** CvDiplomacyAI::GetWarProjection, null = NO_WAR_PROJECTION_TYPE */
     @Readonly
     fun warProjection(other: Civilization): WarProjection? = memories[other.civID]?.warProjection
@@ -277,9 +272,6 @@ class DiplomacyAi : IsPartOfGameInfoSerialization {
     /** CvDiplomacyAI::GetPlayerEconomicStrengthComparedToUs */
     @Readonly
     fun economicStrength(other: Civilization): StrengthLevel? = memories[other.civID]?.economicStrength
-
-    /** CvDiplomacyAI::GetPlayerNumTurnsAtWar (kept by [WarStateAi]) */
-    fun turnsAtWarWith(other: Civilization): Int = WarStateAi.turnsAtWar(civ, other)
 
     /** CvDiplomacyAI::GetMilitaryThreat */
     @Readonly
@@ -337,15 +329,37 @@ class DiplomacyAi : IsPartOfGameInfoSerialization {
         memoryOf(other).lastContactTurn = civ.gameInfo.turns
     }
 
-    /** CvDiplomacyAI::ChangeRecentTradeValue: what a deal with [from] was worth to us (CvDealAI::DoAcceptedDeal: in full if generous, else half) */
+    /**
+     *  CvDiplomacyAI::ChangeRecentTradeValue: what a deal with [from] was worth to us (CvDealAI::DoAcceptedDeal: in full if generous, else half),
+     *  kept between 0 and the most the opinion can use (DEAL_VALUE_PER_OPINION_WEIGHT × -OPINION_WEIGHT_TRADE_MAX)
+     */
     fun changeRecentTradeValue(from: Civilization, value: Int) {
+        val rules = civ.gameInfo.ruleset.ai
         val memory = memoryOf(from)
-        memory.recentTradeValue = maxOf(0, memory.recentTradeValue + value)
+        memory.recentTradeValue = (memory.recentTradeValue + value)
+            .coerceIn(0, rules.define(AiDefine.DEAL_VALUE_PER_OPINION_WEIGHT) * -rules.define(AiDefine.OPINION_WEIGHT_TRADE_MAX))
     }
 
-    /** CvDiplomacyAI::ChangeRecentAssistValue: negative = [from] helped us, positive = they refused */
+    /**
+     *  CvDiplomacyAI::ChangeCommonFoeValue: damage [from] did to a foe of ours, kept between 0 and the most the opinion can use
+     *  (COMMON_FOE_VALUE_PER_OPINION_WEIGHT × -OPINION_WEIGHT_COMMON_FOE_MAX)
+     */
+    fun changeCommonFoeValue(from: Civilization, value: Int) {
+        val rules = civ.gameInfo.ruleset.ai
+        val memory = memoryOf(from)
+        memory.commonFoeValue = (memory.commonFoeValue + value)
+            .coerceIn(0, rules.define(AiDefine.COMMON_FOE_VALUE_PER_OPINION_WEIGHT) * -rules.define(AiDefine.OPINION_WEIGHT_COMMON_FOE_MAX))
+    }
+
+    /**
+     *  CvDiplomacyAI::ChangeRecentAssistValue: negative = [from] helped us, positive = they refused, kept within
+     *  ±(DEAL_VALUE_PER_OPINION_WEIGHT × OPINION_WEIGHT_ASSIST_MAX)
+     */
     fun changeRecentAssistValue(from: Civilization, value: Int) {
-        memoryOf(from).recentAssistValue += value
+        val rules = civ.gameInfo.ruleset.ai
+        val memory = memoryOf(from)
+        val max = rules.define(AiDefine.DEAL_VALUE_PER_OPINION_WEIGHT) * rules.define(AiDefine.OPINION_WEIGHT_ASSIST_MAX)
+        memory.recentAssistValue = (memory.recentAssistValue + value).coerceIn(-max, max)
     }
 
     /** Sets the approach towards [other] directly (scenario setup and tests) */

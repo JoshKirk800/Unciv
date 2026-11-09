@@ -373,19 +373,6 @@ object BattleDamage {
         return damageToInt(damageModifier(ratio, false, randomnessFactor) * getHealthDependantDamageRatio(attacker, fullHealthScale))
     }
 
-    /** Whether [attacker] lives through attacking [defender]: either the estimated damage to it is less than its health, or it is a melee unit
-     *  that takes a city, which it survives however much damage the city does, or a melee unit that would kill and be killed by a unit
-     *  but has taken less damage in total (see [Battle.takeDamage] and [resolveMeleeDeaths]). */
-    @Readonly
-    fun attackerSurvives(attacker: ICombatant, defender: ICombatant, tileToAttackFrom: Tile = defender.getTile()): Boolean {
-        val toDefender = calculateDamageToDefender(attacker, defender, tileToAttackFrom)
-        val toAttacker = calculateDamageToAttacker(attacker, defender, tileToAttackFrom)
-        if (attacker.isMelee() && defender is CityCombatant && toDefender >= defender.getHealth()) return true
-        if (attacker.isMelee() && defender !is CityCombatant && !defender.isCivilian())
-            return resolveMeleeDeaths(attacker, defender, toDefender, toAttacker).second < attacker.getHealth()
-        return toAttacker < attacker.getHealth()
-    }
-
     /** A melee attack on a unit rolls both damages up front and applies both (CvUnitCombat::GenerateMeleeCombatInfo). If that would kill
      *  both units, the one that has taken less damage in total - the damage it already had plus what it would take - survives with
      *  1 HP; on a tie the defender survives.

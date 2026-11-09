@@ -80,8 +80,6 @@ class CityAi : IsPartOfGameInfoSerialization {
 
     /** CvCityStrategyAI::IsUsingCityStrategy */
     fun isCityStrategyActive(name: String) = name in cityStrategies
-    /** CvCityStrategyAI::GetTurnCityStrategyAdopted: -1 if not active */
-    fun cityStrategyTurnAdopted(name: String): Int = cityStrategies[name] ?: -1
 
     fun specializationDef(): CitySpecializationDef? =
         specialization?.let { name -> city.civ.gameInfo.ruleset.ai.citySpecializations.firstOrNull { it.name == name } }

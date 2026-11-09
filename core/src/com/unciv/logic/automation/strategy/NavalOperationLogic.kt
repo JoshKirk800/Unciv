@@ -1,7 +1,6 @@
 package com.unciv.logic.automation.strategy
 
 import com.unciv.logic.automation.AiDecisionLog
-import com.unciv.logic.automation.unit.SettleAreas
 import com.unciv.logic.automation.unit.tactical.TacticalTargetType
 import com.unciv.logic.automation.unit.tactical.TacticalTargets
 import com.unciv.logic.battle.Nuke
@@ -10,25 +9,22 @@ import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.Tile
-import com.unciv.models.UnitActionType
 import com.unciv.models.ruleset.ai.AiDefine
-import com.unciv.view.GameView
 
 /**
  *  The naval operations of CvAIOperation.cpp: CvAINavalOperation (CvAIOperationNavalBombardment, CvAIOperationNavalSuperiority,
- *  CvAIOperationPureNavalCityAttack), CvAINavalEscortedOperation (the colonization party, [AiOperationType.NAVAL_COLONIZE]) and its
- *  descendants CvAIOperationNavalAttack / NavalSneakAttack / NavalCityStateAttack (an invasion: land units that embark, with warships), and
- *  CvAIOperationNukeAttack: Init, target finding, ArmyInPosition, CheckOnTarget. The base machinery is [AiOperationLogic], the ships are moved
- *  by [com.unciv.logic.automation.unit.NavalOperationMoves].
+ *  CvAIOperationPureNavalCityAttack), CvAIOperationNavalAttack and its descendants NavalSneakAttack / NavalCityStateAttack (an invasion:
+ *  land units that embark, with warships), and CvAIOperationNukeAttack: Init, target finding, ArmyInPosition, CheckOnTarget. The base
+ *  machinery is [AiOperationLogic], the ships are moved by [com.unciv.logic.automation.unit.NavalOperationMoves].
  *
  *  As in the original, land units embark themselves (there are no transports): an invasion army is the land units and the warships of its
  *  slots (UNITAI_ASSAULT_SEA is the Frigate, Galleass and the like), all moving as a formation on water.
+ *  Not ported: the colonization party of CvAINavalEscortedOperation (AI_OPERATION_COLONIZE), which no caller in the original ever creates.
  *  Deviations, with the reason: an army's operation area is the one the original gives it
  *  (bombardment, superiority and pure naval attacks: the water at the muster point, which no city lies on, so cities do not train for
- *  them, their ships come from the reserves and the last one is bought; invasions: the landmass of the target); the original's colonization
- *  party is never started by BNW's AI (nothing calls addAIOperation for it) - here a settler whose best site is overseas starts it
- *  ([tryStartColonization]); FindBestTarget of the invasions and the pure naval attack is "obsolete" in the original and is not ported (the
- *  target is the city chosen by the military AI); a naval target is visible to the original's whole-map loops only when revealed, as here.
+ *  them, their ships come from the reserves and the last one is bought; invasions: the landmass of the target); FindBestTarget of the
+ *  invasions and the pure naval attack is "obsolete" in the original and is not ported (the target is the city chosen by the military
+ *  AI); a naval target is visible to the original's whole-map loops only when revealed, as here.
  */
 object NavalOperationLogic {
 
@@ -169,37 +165,6 @@ object NavalOperationLogic {
             army.state = ArmyState.WAITING_FOR_UNITS_TO_CATCH_UP
             operation.state = OperationState.GATHERING_FORCES
         } else operation.state = OperationState.RECRUITING_UNITS
-    }
-
-    /**
-     *  CvAINavalEscortedOperation::Init: [settler] (a loose settler of ours) sails from the first coastal city on its landmass to the best site
-     *  anywhere (CvPlayer::GetBestSettlePlot, escorted), its escort and naval escorts from the reserves. Null (no operation is made) when
-     *  there is no such port or site.
-     */
-    fun tryStartColonization(civ: Civilization, settler: MapUnit): AiOperation? {
-        val operations = civ.ai.operations
-        val area = settler.getTile().getContinent()
-        val port = civ.cities.firstOrNull { it.isCoastal() && it.getCenterTile().getContinent() == area } ?: return null
-        val target = SettleAreas.bestSettlePlot(settler, true, -1, operations.settleTargets(null)) ?: return null
-        // The party is for sites across the water; a site on the settler's landmass is the found-city operation's
-        if (target.getContinent() == area) return null
-        val operation = operations.newOperation(AiOperationType.NAVAL_COLONIZE, null)
-        operation.startCityId = port.id
-        operation.area = area
-        operation.targetTile = target.position
-        val army = operations.newArmy(operation, AiOperationLogic.formationName(civ, operation.type))
-        army.goalTile = target.position
-        operation.musterTile = port.getCenterTile().position
-        army.position = port.getCenterTile().position
-        // Add the settler to our army
-        operations.addUnit(army, settler, 0)
-        // try to get the escort from existing units that are waiting around
-        operations.buildListOfUnitsWeStillNeedToBuild(operation)
-        if (AiOperationLogic.grabUnitsFromTheReserves(civ, operation, port.getCenterTile(), null)) {
-            army.state = ArmyState.WAITING_FOR_UNITS_TO_CATCH_UP
-            operation.state = OperationState.GATHERING_FORCES
-        } else operation.state = OperationState.RECRUITING_UNITS
-        return operation
     }
 
     /**
@@ -454,50 +419,6 @@ object NavalOperationLogic {
             }
             else -> return AiOperationLogic.baseArmyInPosition(operation, army)
         }
-    }
-
-    /**
-     *  CvAINavalEscortedOperation::ArmyInPosition: moving or at the target, the settler founds its city, or looks for another site if this
-     *  one is no longer ours to settle (the whole army is not waited for).
-     */
-    fun colonizationInPosition(civ: Civilization, operation: AiOperation, army: AiArmy): Boolean {
-        if (operation.state != OperationState.MOVING_TO_TARGET && operation.state != OperationState.AT_TARGET) return AiOperationLogic.baseArmyInPosition(operation, army)
-        val changed = AiOperationLogic.baseArmyInPosition(operation, army)
-        val settler = AiOperationLogic.armyUnits(civ, army).firstOrNull()?.second ?: return changed
-        val target = AiOperationLogic.targetTile(civ, operation) ?: return changed
-        val owner = target.getOwner()
-        val settlerTile = settler.getTile()
-        val escort = AiOperationLogic.armyUnits(civ, army).getOrNull(1)?.second
-        if ((owner != null && owner != civ) || target.neighbors.any { val o = it.getOwner(); o != null && o != civ }) {
-            retargetCivilian(civ, operation, army, settler)
-            settler.currentMovement = 0f
-            escort?.currentMovement = 0f
-        } else if (settlerTile == target && settler.hasMovement() && SettleAreas.canFound(settler, target)) {
-            // If the settler made it, we don't care about the entire army
-            if (GameView(civ.gameInfo, civ).getMapUnitView(settler).tryInvokeUnitAction(UnitActionType.FoundCity)) {
-                AiDecisionLog.log(civ) { "city founded by colonization party at ${target.position}" }
-                operation.state = OperationState.SUCCESSFUL_FINISH
-            }
-        } else if (settlerTile == target && !SettleAreas.canFound(settler, target)) {
-            // might be someone else beat us to this area: move back out, picking a new target
-            retargetCivilian(civ, operation, army, settler)
-            settler.currentMovement = 0f
-            escort?.currentMovement = 0f
-        }
-        return changed
-    }
-
-    /** CvAINavalEscortedOperation::RetargetCivilian: another site (GetBestSettlePlot escorted, anywhere); none aborts, a new one is moved to */
-    fun retargetCivilian(civ: Civilization, operation: AiOperation, army: AiArmy, civilian: MapUnit): Boolean {
-        val better = SettleAreas.bestSettlePlot(civilian, true, -1, civ.ai.operations.settleTargets(operation))
-        if (better == null) { AiOperationLogic.abortOperation(operation, OperationAbortReason.NO_TARGET); return false }
-        if (better.position != operation.targetTile) {
-            operation.targetTile = better.position
-            army.goalTile = better.position
-        }
-        army.state = ArmyState.MOVING_TO_DESTINATION
-        operation.state = OperationState.MOVING_TO_TARGET
-        return true
     }
 
     /** CvAIOperationNukeAttack::ArmyInPosition: the nuke goes off at the target if it can */

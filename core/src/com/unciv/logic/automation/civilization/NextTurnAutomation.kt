@@ -11,6 +11,7 @@ import com.unciv.logic.automation.Automation
 import com.unciv.logic.automation.diplomacy.PromiseAi
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.unit.HomelandAi
+import com.unciv.logic.automation.unit.PromotionAi
 import com.unciv.logic.automation.unit.tactical.OperationalMoves
 import com.unciv.logic.automation.unit.ArchaeologistAutomation
 import com.unciv.logic.automation.unit.EspionageAutomation
@@ -37,7 +38,6 @@ import com.unciv.models.ruleset.tech.Technology
 import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unit.BaseUnit
 import com.unciv.ui.screens.victoryscreen.RankingType
-import com.unciv.utils.randomWeighted
 import com.unciv.view.CivView
 import com.unciv.view.GameView
 import com.unciv.view.MapUnitView
@@ -82,7 +82,6 @@ object NextTurnAutomation {
             
             timeThis("AI.issueRequests") { issueRequests(civView) }
             timeThis("AI.adoptPolicy") { adoptPolicy(civView) }  // todo can take a second - why?
-            timeThis("AI.freeUpSpaceResources") { freeUpSpaceResources(civView) }
         } else if (civView.isCityState) {
             civInfo.cityStateFunctions.getFreeTechForCityState()
             civInfo.cityStateFunctions.updateDiplomaticRelationshipForCityState()
@@ -174,66 +173,22 @@ object NextTurnAutomation {
         PolicyAutomation.doPolicyAi(civInfo)
     }
 
-    /** If we are able to build a spaceship but have already spent our resources, try disbanding
-     *  a unit and selling a building to make room. Can happen due to trades etc */
-    private fun freeUpSpaceResources(civView: CivView) {
-        val civInfo = civView.getCiv()
-        // No need to build spaceship parts just yet
-        if (civView.getAvailableVictories()
-                .none { civInfo.victoryManager.getNextMilestone(it)?.type == MilestoneType.AddedSSPartsInCapital })
-            return
-
-        for (resource in civInfo.gameInfo.spaceResources) {
-            // Have enough resources already
-            if (civView.getResourceAmount(resource) >= 2) continue
-
-            val unitToDisband = civInfo.units.getCivUnits()
-                .filter { it.requiresResource(resource) && !it.hasUnique(UniqueType.SpaceshipPart) }
-                .minByOrNull { it.getForceEvaluation() }
-            unitToDisband?.disband()
-            sellBuildingForResource(civView, resource)
-        }
-    }
-
-    private fun sellBuildingForResource(civView: CivView, resource: String) {
-        val civInfo = civView.getCiv()
-        for (city in civInfo.cities) {
-            if (city.hasSoldBuildingThisTurn) continue
-            val rng = city.state.stateBasedRandom("NextTurnAutomation.freeUpSpaceResources")
-            val buildingToSell = civView.ruleset.buildings.values
-                .filter {
-                    city.cityConstructions.isBuilt(it.name)
-                        && it.requiredResources(city.state).contains(resource)
-                        && it.isSellable()
-                        && !city.greatWorks.holdsWorks(it)
-                        && !civInfo.civConstructions.hasFreeBuilding(city, it)
-                }
-                .randomOrNull(rng) ?: continue
-            city.sellBuilding(buildingToSell)
-            return
-        }
-    }
-
-
     private fun automateUnits(civView: CivView, cache: AutomationCache, canUpgrade: Boolean) {
         val civInfo = civView.getCiv()
-        val isAtWar = civView.isAtWar()
         // Instances present when the pass starts. addUnit/removeUnit replace UnitManager's list,
         // so units acquired later must not extend this pass. The instances stay mutable:
         // capturedBy changes owner on the same object, and an earlier action can do that to a
         // later one, so ownership and destruction are checked at each dispatch, not before the loop.
-        val unitsAtStart = civView.getUnits()
-        fun unitsInPriorityOrder() = unitsAtStart.sortedBy { unit -> getUnitPriority(unit, isAtWar, cache) }
+        // The original walks the units in unit-id order for every subsystem (CvTacticalAI::CommandeerUnits, CvHomelandAI::RecruitUnits)
+        val unitsAtStart = civView.getUnits().sortedBy { it.getUnit().id }
 
-        for (unit in unitsInPriorityOrder()) {
-            if (!isStillOurUnit(unit, civView)) continue
-            applyPromotions(unit)
-        }
+        // CvPlayer::doTurnUnits ends with CvPlayerAI::AI_doTurnUnitsPost: the promotions, before the units move
+        PromotionAi.promoteUnits(civInfo)
         HomelandAi.continueMissions(unitsAtStart.map { it.getUnit() })
         // CvTacticalAI::Update runs before the homeland AI: the units near the enemy or in danger first (the attacks of units and cities
         // included), the rest of the unit AI skips them
-        TacticalAi.automate(civInfo, unitsInPriorityOrder().map { it.getUnit() }, cache)
-        for (unit in unitsInPriorityOrder()) {
+        TacticalAi.automate(civInfo, unitsAtStart.map { it.getUnit() }, cache)
+        for (unit in unitsAtStart) {
             // move spaceship parts and settlers first, so we're not blocking them
             if (!unit.hasUnique(UniqueType.SpaceshipPart) && !unit.hasUnique(UniqueType.FoundCity)) continue
             if (!isStillOurUnit(unit, civView)) continue
@@ -243,7 +198,7 @@ object NextTurnAutomation {
         // CvHomelandAI::Update takes the military units that the tactical AI and the operations left, by the homeland move priorities
         // (which include the upgrades); everyone else (civilians, aircraft) has the unit AI, first
         val homelandUnits = HomelandAi.recruitUnits(civInfo, unitsAtStart.map { it.getUnit() }, cache).toSet()
-        for (unit in unitsInPriorityOrder()) {
+        for (unit in unitsAtStart) {
             // spaceship parts and settlers have already moved
             if (unit.hasUnique(UniqueType.SpaceshipPart) || unit.hasUnique(UniqueType.FoundCity)) continue
             if (unit.getUnit() in homelandUnits) continue
@@ -259,56 +214,15 @@ object NextTurnAutomation {
         return !unit.isDestroyed() && unit.civ() == civView
     }
 
-    internal fun applyPromotions(unitView: MapUnitView) {
+    /** The automatic promotions of a human's unit (the setting, or auto play) take the choice of [PromotionAi] */
+    fun applyPromotions(unitView: MapUnitView) {
         val unit = unitView.getUnit()
         // Humans only auto-promote when the setting is not Off (AI always does)
         if (!unit.civ.isAI() && UncivGame.Current.settings.automaticPromotions == GameSettings.AutomaticPromotions.Off) return
-        val rng = unit.cache.state.stateBasedRandom("NextTurnAutomation.automateUnits")
-        val stateForConditionals = unit.cache.state
-        while (unitView.canBePromoted()) {
-            val promotions = unit.promotions.getAvailablePromotions()
-            val availablePromotions = if (unitView.unitHealth <= 60
-                && promotions.any { it.hasUnique(UniqueType.OneTimeUnitHeal) }
-                && !(unitView.isAirUnit() || unitView.hasUnique(UniqueType.CanMoveAfterAttacking))
-            ) {
-                promotions.filter { it.hasUnique(UniqueType.OneTimeUnitHeal) }
-            } else promotions.filterNot { it.hasUnique(UniqueType.SkipPromotion) }
-
-            if (availablePromotions.none()) break
-            val freePromotions = availablePromotions.filter { it.hasUnique(UniqueType.FreePromotion) }.toList()
-            val chosenPromotion =
-                if (freePromotions.isNotEmpty()) freePromotions.randomWeighted(rng) {
-                    it.getWeightForAiDecision(stateForConditionals)
-                }
-                else availablePromotions.toList()
-                    .randomWeighted(rng) { it.getWeightForAiDecision(stateForConditionals) }
-            unitView.tryAddPromotion(chosenPromotion.name)
-        }
+        PromotionAi.promote(unit, unit.civ.ai.random("UnitAI.Promote"))
     }
 
-    /** Returns the priority of the unit, a lower value is higher priority **/
-    fun getUnitPriority(unit: MapUnitView, isAtWar: Boolean, cache: AutomationCache): Int {
-        val mapUnit = unit.getUnit()
-        if (unit.hasUnique(UniqueType.SpaceshipPart)) return 0 // Move before everything else so we can swap
-        if (unit.isCivilian() && unit.hasUnique(UniqueType.FoundCity)) return 1// Settlers before workers
-        if (unit.isCivilian() && !mapUnit.isGreatPersonOfType("War")) return 2 // Civilian
-        if (unit.isAirUnit()) return when {
-            mapUnit.canIntercept() -> 2 // Fighers first
-            unit.isNuclearWeapon() -> 3 // Then Nukes (area damage)
-            !unit.hasUnique(UniqueType.SelfDestructs) -> 4 // Then Bombers (reusable)
-            else -> 5 // Missiles
-        }
-        val distance = if (!isAtWar) 0 else ThreatManager.getDistanceToClosestEnemyUnit(unit.civ(), cache, unit.getTile(), 6)
-        // Lower health units should move earlier to swap with higher health units
-        return distance + (unit.unitHealth / 10) - mapUnit.promotions.numberOfPromotions + when {
-            unit.getBaseUnit().isRanged() -> 10
-            unit.getBaseUnit().isMelee() -> 30
-            mapUnit.isGreatPersonOfType("War") -> 100 // Generals move after military units
-            else -> 1
-        }
-    }
-
-    /** Every city of a human player shoots at what it can (the end-of-turn setting, auto play); the AI's cities shoot as part of [TacticalAi]'s attacks */
+    /** Every city of a human player shoots at what it can (the end-of-turn setting, [TurnManager.endTurn]); the cities of the AI and of auto play shoot as part of [TacticalAi]'s attacks */
     fun automateCityBombardment(civView: CivView) {
         for (city in civView.cities()) UnitAutomation.tryBombardEnemy(city)
     }

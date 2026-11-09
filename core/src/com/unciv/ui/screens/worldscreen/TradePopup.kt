@@ -82,9 +82,9 @@ class TradePopup(worldScreen: WorldScreen) : Popup(worldScreen) {
 
         // Starting playback here assumes the TradePopup is shown immediately
         UncivGame.Current.musicController.playVoice("${requestingCiv.civName}.tradeRequest")
-        addGoodSizedLabel(nation.tradeRequest).pad(15f).row()
+        addGoodSizedLabel(if (tradeRequest.isDemand) "Give in to my demands or else!" else nation.tradeRequest).pad(15f).row()
 
-        addButton("Sounds good!", 'y') {
+        addButton(if (tradeRequest.isDemand) "We will pay." else "Sounds good!", 'y') {
             val tradeLogic = TradeLogic(viewingCiv, requestingCiv)
             tradeLogic.currentTrade.set(trade)
             tradeLogic.acceptTrade()
@@ -93,14 +93,14 @@ class TradePopup(worldScreen: WorldScreen) : Popup(worldScreen) {
             requestingCiv.addNotification("[${viewingCiv.civName}] has accepted your trade request", NotificationCategory.Trade, viewingCiv.civName, NotificationIcon.Trade)
         }.row()
 
-        addButton("Not this time.", 'n') {
+        addButton(if (tradeRequest.isDemand) "We refuse." else "Not this time.", 'n') {
             tradeRequest.decline(viewingCiv)
             close()
             requestingCiv.addNotification("[${viewingCiv.civName}] has denied your trade request", NotificationCategory.Trade, viewingCiv.civName, NotificationIcon.Trade)
             worldScreen.shouldUpdate = true
         }.row()
 
-        addButton("How about something else...", 'e') {
+        if (!tradeRequest.isDemand) addButton("How about something else...", 'e') {
             close()
             worldScreen.game.pushScreen {
                 DiplomacyScreen(

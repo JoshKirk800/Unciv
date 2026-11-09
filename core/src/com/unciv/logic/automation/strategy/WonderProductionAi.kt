@@ -16,10 +16,14 @@ class EngineerWonder(val wonder: Building, val totalWeight: Int, val city: City?
 /**
  *  CvWonderProductionAI (CvWonderProductionAI.cpp): which wonder a player wants next.
  *
- *  Weights (CvWonderProductionAI::FlavorUpdate / AddFlavorWeights): for each wonder, Σ over flavors of the player's flavor (negative read as 0,
- *  CvFlavorRecipient::GetLatestFlavorValue) × the wonder's Building_Flavors. Deviation: the original adds these products again on every flavor
- *  broadcast (each strategy adopted or dropped) without resetting, so its weights follow the flavors summed over the game; here they follow
- *  the current flavors ([CivAi.flavors]), which keeps the same ranking while the flavors stay constant.
+ *  Weights (CvWonderProductionAI::m_WonderAIWeights, [CivAi.wonderWeights]): CvWonderProductionAI::FlavorUpdate adds, for each wonder, Σ over
+ *  flavors of the recipient's latest flavor (negative read as 0, GetLatestFlavorValue) × the wonder's Building_Flavors, and nothing ever
+ *  resets them but CvWonderProductionAI::Init (the city production AIs reset in CvCityStrategyAI::FlavorUpdate; this one does not). It runs on
+ *  every broadcast to the player-level recipients: when the flavor recipient is registered and when the personality is broadcast again
+ *  (CvFlavorManager::Init, AdjustWeightsForMap), and on each economic or military strategy adopted or dropped
+ *  (CvFlavorManager::ChangeFlavors). So the weights are the flavors summed once per broadcast, see [flavorUpdate].
+ *  Deviation: the intermediate flavors of a broadcast are [CivAi.flavors] (re-derived from the active strategies, each delta clamped in
+ *  definition order rather than adoption order, which only differs at FLAVOR_MIN_VALUE / FLAVOR_MAX_VALUE).
  *
  *  The wonder city is CvCitySpecializationAI::GetWonderBuildCity, stored as [CivAi.wonderCityId] by the city specialization AI.
  */
@@ -34,13 +38,34 @@ object WonderProductionAi {
         return civ.cities.firstOrNull { it.id == id }
     }
 
-    /** CvWonderProductionAI::m_WonderAIWeights for [wonder]: Σ max(0, flavor) × the wonder's flavor */
+    /** CvWonderProductionAI::Init -> Reset: all weights 0 */
+    fun reset(civ: Civilization) = civ.ai.wonderWeights.clear()
+
+    /**
+     *  CvWonderProductionAI::FlavorUpdate / AddFlavorWeights: adds Σ max(0, flavor) × the wonder's flavor to every wonder's weight. [flavors] is the
+     *  recipient's latest flavor vector by [Flavor.ordinal].
+     */
+    fun flavorUpdate(civ: Civilization, flavors: IntArray = civ.ai.flavors()) {
+        val ai = civ.gameInfo.ruleset.ai
+        val weights = civ.ai.wonderWeights
+        for (building in civ.gameInfo.ruleset.buildings.values) {
+            if (!isWonder(building)) continue
+            val wonderFlavors = ai.flavorsOf(building)
+            var sum = 0
+            for (i in 0 until Flavor.count) sum += max(0, flavors[i]) * wonderFlavors[i]
+            weights[building.name] = (weights[building.name] ?: 0) + sum
+        }
+    }
+
+    /** Saves from before the weights were kept have none: they start at the current flavors added once */
+    internal fun ensureWeights(civ: Civilization) {
+        if (civ.ai.wonderWeights.isEmpty()) flavorUpdate(civ)
+    }
+
+    /** CvWonderProductionAI::GetWeight: the accumulated weight of [wonder] */
     fun weight(civ: Civilization, wonder: Building): Int {
-        val flavors = civ.ai.flavors()
-        val wonderFlavors = civ.gameInfo.ruleset.ai.flavorsOf(wonder)
-        var sum = 0
-        for (i in 0 until Flavor.count) sum += max(0, flavors[i]) * wonderFlavors[i]
-        return sum
+        ensureWeights(civ)
+        return civ.ai.wonderWeights[wonder.name] ?: 0
     }
 
     /**

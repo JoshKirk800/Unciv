@@ -12,7 +12,6 @@ class AttackableTileView(private val attackableTile: AttackableTile, viewer: Civ
 
     @Readonly fun getTileToAttackFrom(): TileView = gameView.getTile(attackableTile.tileToAttackFrom)
     @Readonly fun getTileToAttack(): TileView = gameView.getTile(attackableTile.tileToAttack)
-    @Readonly fun getMovementLeftAfterMovingToAttackTile(): Float = attackableTile.movementLeftAfterMovingToAttackTile
     @Readonly fun getCombatant(): CombatantView? = when (val combatant = attackableTile.combatant) {
         null -> null
         is MapUnitCombatant -> gameView.getForeignMapUnitView(combatant.unit).asCombatant()

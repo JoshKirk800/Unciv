@@ -198,6 +198,23 @@ class TacticalAttackTests {
         assertEquals(warrior, TacticalAttacks.planAttack(ctx, target, strikers, emptyList(), mustSurviveAttack = false).attacks.single().unit)
     }
 
+    @Test
+    fun `a city at minimum health is taken by a unit that would otherwise die, a healthy one is not thrown at it`() {
+        val city = enemyCity(0)
+        city.health = 200
+        val wounded = melee(1, city.getCenterTile(), "Swordsman").single().also { it.health = 5 }
+        var ctx = context()
+        TacticalMoves.plotCaptureCityMoves(ctx)
+        TacticalMoves.plotDamageCityMoves(ctx)
+        assertFalse(wounded.isDestroyed)
+        assertEquals("not attacked", 0, wounded.attacksThisTurn)
+
+        city.health = 1
+        ctx = context()
+        TacticalMoves.plotCaptureCityMoves(ctx)
+        assertEquals(civ, city.civ)
+    }
+
     // endregion
     // region Units: destroy and attrition
 
@@ -376,6 +393,16 @@ class TacticalAttackTests {
         assertFalse(TacticalBombards.safeBombardTarget(ctx, target(ctx, victim.getTile())))
         assertEquals(0, archer.attacksThisTurn)
         assertEquals(tile(-2), archer.getTile())
+    }
+
+    @Test
+    fun `a ranged unit is used on a tile with a defender but not on one with only a civilian (IsExpectedToDamageWithRangedAttack)`() {
+        val archer = game.addUnit("Archer", civ, tile(-1))
+        game.addUnit("Worker", enemy, tile(0))
+        game.addUnit("Swordsman", enemy, tile(1))
+        val ctx = context()
+        assertEquals(listOf(archer), TacticalAttacks.findUnits(ctx, tile(1), 1).map { it.unit })
+        assertTrue("nobody to damage on the worker's tile", TacticalAttacks.findUnits(ctx, tile(0), 1).none { it.unit == archer })
     }
 
     /** A tile 2 from the target that two of the tiles next to the target touch, and the tile behind it for the archer */
@@ -560,6 +587,86 @@ class TacticalAttackTests {
         assertTrue(unit.getTile().aerialDistanceTo(near.getTile()) < 8)
         assertEquals(tile(-12), farUnit.getTile())
         assertTrue(unit in ctx.cache.processedUnits)
+    }
+
+    // endregion
+    // region Aircraft
+
+    /** Our city at -6 holds the aircraft: a Bomber has range 10, so the enemy at 4 is in range and the one at 5 is not */
+    private fun airBase() = game.addCity(civ, tile(-6)).getCenterTile()
+
+    @Test
+    fun `an aircraft with more than half its health strikes a defender in its range, and nothing else`() {
+        val base = airBase()
+        val bomber = game.addUnit("Bomber", civ, base)
+        val near = defender(4)
+        val far = defender(5)
+        val worker = game.addUnit("Worker", enemy, tile(3))
+        val nuke = game.addUnit("Atomic Bomb", civ, base)
+        var ctx = context()
+        assertEquals(listOf(bomber), TacticalAttacks.findUnits(ctx, near.getTile(), 1).map { it.unit })
+        assertTrue("out of range", TacticalAttacks.findUnits(ctx, far.getTile(), 1).isEmpty())
+        assertTrue("no defender to damage", TacticalAttacks.findUnits(ctx, worker.getTile(), 1).isEmpty())
+        assertFalse("nuclear weapons have no attack of their own", nuke in TacticalAttacks.findUnits(ctx, near.getTile(), 1).map { it.unit })
+
+        bomber.health = 51
+        ctx = context()
+        assertEquals("more than half is enough", listOf(bomber), TacticalAttacks.findUnits(ctx, near.getTile(), 1).map { it.unit })
+        bomber.health = 50
+        ctx = context()
+        assertTrue("half is not", TacticalAttacks.findUnits(ctx, near.getTile(), 1).isEmpty())
+    }
+
+    @Test
+    fun `aircraft are not asked to move onto a tile, pillage or take part when ranged units are left out`() {
+        val base = airBase()
+        game.addUnit("Bomber", civ, base)
+        val victim = defender(4)
+        val ctx = context()
+        assertTrue(TacticalAttacks.findUnits(ctx, victim.getTile(), 1, noRanged = true).isEmpty())
+        assertTrue(TacticalAttacks.findUnits(ctx, victim.getTile(), 1, willPillage = true).isEmpty())
+        assertTrue(TacticalAttacks.findUnits(ctx, victim.getTile(), 1, targetUndefended = true).isEmpty())
+        assertTrue(TacticalAttacks.findUnits(ctx, tile(2), 1, mustMoveThrough = true).isEmpty())
+    }
+
+    @Test
+    fun `an aircraft is expected to take no damage from its strike`() {
+        val base = airBase()
+        val bomber = game.addUnit("Bomber", civ, base)
+        val victim = defender(4)
+        val ctx = context()
+        val target = target(ctx, victim.getTile())
+        val striker = Striker(bomber, 100, 100, base)
+        val defenderCombatant = Battle.getMapCombatantOfTile(victim.getTile())!!
+        assertTrue("Unciv's air strike would cost it hit points",
+            BattleDamage.calculateDamageToAttacker(MapUnitCombatant(bomber), defenderCombatant, base, 0.5f) > 0)
+        TacticalAttacks.computeTotalExpectedDamage(target, listOf(striker))
+        assertTrue(striker.expectedTargetDamage > 0)
+        assertEquals(0, striker.expectedSelfDamage)
+    }
+
+    @Test
+    fun `an aircraft destroys a unit in its range as part of the tactical turn and is done for the turn`() {
+        val base = airBase()
+        val bomber = game.addUnit("Bomber", civ, base)
+        val victim = defender(4)
+        victim.health = 10
+        civ.viewableTiles = game.tileMap.values.toSet()
+        civ.ai.invalidateTurnCaches()
+        val cache = AutomationCache()
+        TacticalAi.automate(civ, civ.units.getCivUnits().toList(), cache)
+        assertTrue(victim.isDestroyed)
+        assertEquals(1, bomber.attacksThisTurn)
+        assertTrue(bomber in cache.processedUnits)
+        assertEquals(base, bomber.getTile())
+    }
+
+    @Test
+    fun `an aircraft is no candidate to be moved to a bombard tile, it has no combat strength of its own`() {
+        val base = airBase()
+        val bomber = game.addUnit("Bomber", civ, base)
+        val ctx = context()
+        assertTrue(TacticalBombards.findClosestUnits(ctx, base, 1, mustBeRanged = true, rangeRequired = 2).none { it.unit == bomber })
     }
 
     // endregion

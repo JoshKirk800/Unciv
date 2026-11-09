@@ -10,6 +10,7 @@ import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.Proximity
 import com.unciv.logic.civilization.diplomacy.DiplomaticStatus
 import com.unciv.logic.map.HexCoord
+import com.unciv.logic.map.TileMap
 import com.unciv.models.metadata.BaseRuleset
 import com.unciv.models.ruleset.ai.DiplomacyPersonality
 import com.unciv.models.ruleset.ai.Flavor
@@ -21,6 +22,7 @@ import com.unciv.testing.GdxTestRunner
 import com.unciv.testing.TestGame
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -236,6 +238,18 @@ class EconomicMilitaryAiTests {
     }
 
     @Test
+    fun `an army being built for a sneak or city-state attack turns war mobilization on for good`() {
+        val civ = neutralCiv()
+        game.addCiv()
+        val threshold = militaryDef(EconomicMilitaryStrategyTests.WAR_MOBILIZATION).weightThreshold
+        assertTrue(EconomicMilitaryStrategyTests.warMobilizationWeight(civ) < threshold)
+        civ.ai.military.requestArmy(bySea = false)
+        assertTrue(EconomicMilitaryStrategyTests.warMobilizationWeight(civ) >= threshold)
+        civ.ai.military.numLandAttacksRequested = 0
+        assertTrue("the original never clears the army type", EconomicMilitaryStrategyTests.warMobilizationWeight(civ) >= threshold)
+    }
+
+    @Test
     fun `barbarian camps near our cities make eradication worthwhile unless a war is being prepared`() {
         val civ = neutralCiv()
         civ.ai.setPersonalityFlavor(Flavor.Offense, 5)
@@ -258,10 +272,33 @@ class EconomicMilitaryAiTests {
     }
 
     @Test
+    fun `a barbarian camp operation that is running keeps eradication on after the camp threat has dropped below the threshold`() {
+        val civ = neutralCiv()
+        civ.ai.setPersonalityFlavor(Flavor.Offense, 5)
+        civ.ai.setPersonalityFlavor(Flavor.Defense, 5)
+        game.addCity(civ, tile(0, 0))
+        val camp = tile(3, 0)
+        camp.setImprovementBasic(Constants.barbarianEncampment)
+        camp.setExplored(civ, true)
+        civ.ai.military.scanForBarbarians(civ)
+        val def = militaryDef("MILITARYAISTRATEGY_ERADICATE_BARBARIANS")
+        civ.ai.militaryStrategies[def.name] = 0
+        MilitaryOperations.updateOperations(civ)
+        assertEquals(1, civ.ai.operations.numOperationsOfType(AiOperationType.DESTROY_BARBARIAN_CAMP))
+
+        camp.removeImprovement()
+        civ.ai.military.scanForBarbarians(civ)
+        assertEquals(0, civ.ai.military.barbarianCampCount)
+        assertTrue(EconomicMilitaryStrategyTests.eradicateBarbarians(civ, def))
+        civ.ai.operations.killAll(AiOperationType.DESTROY_BARBARIAN_CAMP, OperationAbortReason.WAR_STATE_CHANGE)
+        assertFalse(EconomicMilitaryStrategyTests.eradicateBarbarians(civ, def))
+    }
+
+    @Test
     fun `need happiness uses half the happiness personality as margin, critical a fixed -3`() {
         val civ = neutralCiv()
         civ.ai.setPersonalityFlavor(Flavor.Happiness, 8)
-        game.addCity(civ, tile(0, 0), initialPopulation = 3)
+        game.addCity(civ, tile(0, 0), initialPopulation = 3).cityStats.update()
         val need = economicDef("ECONOMICAISTRATEGY_NEED_HAPPINESS")
         val critical = economicDef("ECONOMICAISTRATEGY_NEED_HAPPINESS_CRITICAL")
         civ.stats.happiness = 4
@@ -273,6 +310,23 @@ class EconomicMilitaryAiTests {
         assertTrue(EconomicMilitaryStrategyTests.needHappinessCritical(civ, critical))
         civ.stats.happiness = -2
         assertFalse(EconomicMilitaryStrategyTests.needHappinessCritical(civ, critical))
+    }
+
+    @Test
+    fun `need happiness needs some unhappiness as well as population`() {
+        val civ = neutralCiv()
+        val city = game.addCity(civ, tile(0, 0), initialPopulation = 3)
+        val need = economicDef("ECONOMICAISTRATEGY_NEED_HAPPINESS")
+        val critical = economicDef("ECONOMICAISTRATEGY_NEED_HAPPINESS_CRITICAL")
+        civ.stats.happiness = -5
+        city.cityStats.happinessList = linkedMapOf("Cities" to 0f, "Population" to 0f)
+        assertFalse(EconomicMilitaryStrategyTests.needHappiness(civ, need))
+        assertFalse(EconomicMilitaryStrategyTests.needHappinessCritical(civ, critical))
+        city.cityStats.happinessList = linkedMapOf("Cities" to -0.5f, "Population" to -0.4f)
+        assertFalse("less than 1 unhappiness", EconomicMilitaryStrategyTests.needHappiness(civ, need))
+        city.cityStats.happinessList = linkedMapOf("Cities" to -3f, "Population" to -3f)
+        assertTrue(EconomicMilitaryStrategyTests.needHappiness(civ, need))
+        assertTrue(EconomicMilitaryStrategyTests.needHappinessCritical(civ, critical))
     }
 
     @Test
@@ -413,6 +467,28 @@ class EconomicMilitaryAiTests {
         assertEquals(strong, CityConquestAutomation.considerAnnex(civ))
         assertFalse(strong.isPuppet)
         assertTrue(weak.isPuppet)
+    }
+    //endregion
+
+    //region Strategy tests
+
+    @Test
+    fun `found city counts only loose settlers, not those an operation already moves`() {
+        game.makeHexagonalMap(12, Constants.grassland)
+        val civ = neutralCiv()
+        game.tileMap.assignContinents(TileMap.AssignContinentsMode.Reassign)
+        civ.ai.setPersonalityFlavor(Flavor.Growth, 5)
+        civ.ai.setPersonalityFlavor(Flavor.Expansion, 3)
+        civ.viewableTiles = game.tileMap.values.toSet()
+        for (tile in game.tileMap.values) tile.setExplored(civ, true)
+        game.addCity(civ, tile(0, 0))
+        assertFalse(EconomicMilitaryStrategyTests.foundCity(civ))
+        val settler = game.addUnit("Settler", civ, tile(2, 0))
+        assertTrue(EconomicMilitaryStrategyTests.foundCity(civ))
+        val operation = AiOperationLogic.addSettlerOperation(civ, AiOperationType.FOUND_CITY, settler, -1)
+        assertNotNull(civ.ai.operations.armyOf(settler))
+        assertFalse("aborted: ${operation.abortReason}", operation.state == OperationState.ABORTED)
+        assertFalse(EconomicMilitaryStrategyTests.foundCity(civ))
     }
     //endregion
 }

@@ -36,7 +36,7 @@ object Battle {
      * Moves [attacker] to [attackableTile], handles siege setup then attacks if still possible
      * (by calling [attack] or [Nuke.NUKE]). Does _not_ play the attack sound!
      *
-     * Currently not used by UI, only by automation via [BattleHelper.tryAttackNearbyEnemy][com.unciv.logic.automation.unit.BattleHelper.tryAttackNearbyEnemy]
+     * Currently not used by UI, only by automation via [TacticalAttacks.launch][com.unciv.logic.automation.unit.tactical.TacticalAttacks.launch]
      */
     fun moveAndAttack(attacker: MapUnitCombatant, attackableTile: AttackableTile) {
         if (!movePreparingAttack(attacker, attackableTile, true)) return

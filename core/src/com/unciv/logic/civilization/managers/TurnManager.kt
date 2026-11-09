@@ -349,7 +349,8 @@ class TurnManager(val civInfo: Civilization) {
 
 
     fun endTurn(progressBar: NextTurnProgress? = null):Unit = timeThis("TurnManager.endTurn") {
-        if (UncivGame.Current.settings.citiesAutoBombardAtEndOfTurn)
+        // A human's setting: the cities of an AI civ (or an auto-playing one) bombard as part of the tactical AI's attacks (CvTacticalAI)
+        if (UncivGame.Current.settings.citiesAutoBombardAtEndOfTurn && !civInfo.isAIOrAutoPlaying())
             NextTurnAutomation.automateCityBombardment(GameView(civInfo.gameInfo, civInfo).civView) // Bombard with all cities that haven't, maybe you missed one
 
         civInfo.forEachTriggeredUnique(UniqueType.TriggerUponTurnEnd, civInfo.state, ignoreCities = true) { unique ->

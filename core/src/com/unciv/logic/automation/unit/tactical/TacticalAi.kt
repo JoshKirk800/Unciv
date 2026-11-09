@@ -3,11 +3,14 @@ package com.unciv.logic.automation.unit.tactical
 import com.unciv.logic.automation.AiDecisionLog
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.civilization.AutomationCache
+import com.unciv.logic.automation.strategy.UnitAiType
+import com.unciv.logic.automation.strategy.UnitAiTypes
 import com.unciv.logic.automation.unit.AirMoves
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.ruleset.ai.AiDefine
+import com.unciv.models.ruleset.unique.UniqueType
 
 /**
  *  CvTacticalAI::Update for one civilization's turn: the units under tactical control ([commandeerUnits]), the targets
@@ -23,7 +26,6 @@ import com.unciv.models.ruleset.ai.AiDefine
  */
 object TacticalAi {
 
-    private const val AIR_COMBAT_READY_HEALTH = 50
     private const val EMERGENCY_PURCHASES = "TACTICAL_EMERGENCY_PURCHASES"
     private const val MOVE_OPERATIONS = "TACTICAL_MOVE_OPERATIONS"
     private const val POSTURE_WITHDRAW = "TACTICAL_POSTURE_WITHDRAW"
@@ -31,12 +33,12 @@ object TacticalAi {
     private const val HEAL = "TACTICAL_HEAL"
 
     /**
-     *  CvTacticalAI::CommandeerUnits: the units that are the tactical AI's this turn. Not units that cannot move, are processed or have no
-     *  unit AI, or are not combat units or Great Generals. Of those: not the ones in an army tactical may not interrupt
-     *  ([com.unciv.logic.automation.strategy.CivAi.canTacticalAiInterrupt]); the ones whose tile has danger, that have a visible enemy unit or
-     *  city within AI_TACTICAL_RECRUIT_RANGE, or that left an operation within AI_TACTICAL_MAP_TEMP_ZONE_TURNS turns. Air units with more than
-     *  half their health that will not rebase ([AirMoves.willAirUnitRebase]) are all tactical. (Barbarians have their own AI, [com.unciv.logic.automation.civilization.BarbarianAutomation];
-     *  paratroopers are not handled here.)
+     *  CvTacticalAI::CommandeerUnits: the units that are the tactical AI's this turn. Not units that cannot move, are processed, have the
+     *  unit AI UNKNOWN or EXPLORE (explorers are the homeland AI's, however near the enemy), are not combat units or Great Generals. Of the
+     *  rest: not the ones in an army tactical may not interrupt ([com.unciv.logic.automation.strategy.CivAi.canTacticalAiInterrupt]); the
+     *  ones whose tile has danger, that have a visible enemy unit or city within AI_TACTICAL_RECRUIT_RANGE, or that left an operation within
+     *  AI_TACTICAL_MAP_TEMP_ZONE_TURNS turns; and, danger or not, a unit that [canParadrop]. Air units with more than half their health that
+     *  will not rebase ([AirMoves.willAirUnitRebase]) are all tactical. (Barbarians have their own AI, [com.unciv.logic.automation.civilization.BarbarianAutomation].)
      */
     fun commandeerUnits(civ: Civilization, units: List<MapUnit>, cache: AutomationCache): List<MapUnit> {
         val rules = civ.gameInfo.ruleset.ai
@@ -48,19 +50,26 @@ object TacticalAi {
         val result = ArrayList<MapUnit>()
         for (unit in units) {
             if (unit.isDestroyed || unit.civ != civ || unit in cache.processedUnits || !unit.hasMovement()) continue
+            val unitAi = UnitAiTypes.current(unit)
+            if (unitAi == UnitAiType.UNKNOWN || unitAi == UnitAiType.EXPLORE) continue
             // CommandeerUnits: air units that are combat ready (more than half health) and not about to rebase
             if (unit.baseUnit.isAirUnit()) {
-                if (unit.health > AIR_COMBAT_READY_HEALTH && !AirMoves.willAirUnitRebase(unit)) result.add(unit)
+                if (AirMoves.isCombatReady(unit) && !AirMoves.willAirUnitRebase(unit)) result.add(unit)
                 continue
             }
             if (!unit.isMilitary() && !unit.isGreatPersonOfType("War")) continue
             if (!civ.ai.canTacticalAiInterrupt(unit)) continue
             val tile = unit.getTile()
-            if (danger.get(tile) > 0 || nearAny(tile, enemyTiles, recruitRange) || civ.ai.deployFromOperationTurn(unit) + tempZoneTurns >= turn)
+            if (danger.get(tile) > 0 || nearAny(tile, enemyTiles, recruitRange) || civ.ai.deployFromOperationTurn(unit) + tempZoneTurns >= turn
+                || canParadrop(unit))
                 result.add(unit)
         }
         return result
     }
+
+    /** CvUnit::canParadrop(plot, false): the unit has a paradrop range, has not moved this turn, is not embarked and stands in friendly territory */
+    fun canParadrop(unit: MapUnit): Boolean =
+        unit.hasUnique(UniqueType.MayParadrop) && !unit.hasUnitMovedThisTurn() && !unit.isEmbarked() && unit.getTile().isFriendlyTerritory(unit.civ)
 
     /** The tiles of the visible units and cities of players at war with [civ] (CvTacticalAI::NearVisibleEnemy's candidates) */
     fun visibleEnemyTiles(civ: Civilization): List<Tile> {

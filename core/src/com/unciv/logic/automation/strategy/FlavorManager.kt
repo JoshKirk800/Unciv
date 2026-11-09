@@ -41,7 +41,9 @@ object FlavorManager {
     /**
      *  CvFlavorManager::Init: an AI major takes its leader's flavors (Personalities.json `flavors`), an AI city-state those of its
      *  MinorCivilization_Flavors entry; a flavor without a value is DEFAULT_FLAVOR_VALUE. Then RandomizeWeights. A human player gets
-     *  DEFAULT_FLAVOR_VALUE for every flavor, not randomized.
+     *  DEFAULT_FLAVOR_VALUE for every flavor, not randomized. The wonder AI starts from zero weights (CvWonderProductionAI::Init) and gets the
+     *  personality as its first flavor broadcast (when the recipient is registered). Deviation: a city-state's CvMinorCivAI::DoPickPersonality
+     *  broadcast is not counted; city-states never choose wonders.
      */
     internal fun initPersonalityFlavors(civ: Civilization) {
         val ai = civ.ai
@@ -60,6 +62,8 @@ object FlavorManager {
         ai.personalityFlavors.clear()
         for (flavor in Flavor.entries) ai.personalityFlavors[flavor.name] = vector[flavor.ordinal]
         ai.setTransients(civ)
+        WonderProductionAi.reset(civ)
+        broadcastBaseFlavors(civ)
     }
 
     /** CvFlavorManager::RandomizeWeights: every nonzero flavor moves by a random amount in -plusMinus..plusMinus, kept within min..max */
@@ -92,6 +96,16 @@ object FlavorManager {
         ai.personalityFlavors[Flavor.Expansion.name] = minOf(expansion, rules.define(AiDefine.PERSONALITY_FLAVOR_MAX_VALUE))
         ai.personalityFlavors[Flavor.Growth.name] = maxOf(growth, rules.define(AiDefine.PERSONALITY_FLAVOR_MIN_VALUE))
         ai.setTransients(civ)
+        broadcastBaseFlavors(civ)
+    }
+
+    /**
+     *  CvFlavorManager::BroadcastBaseFlavors to the wonder AI (CvFlavorRecipient::SetFlavors -> FlavorUpdate): the personality is its latest
+     *  flavors, and its weights grow by them once more.
+     */
+    private fun broadcastBaseFlavors(civ: Civilization) {
+        val personality = Flavor.vectorOf(civ.ai.personalityFlavors, civ.gameInfo.ruleset.ai.define(AiDefine.DEFAULT_FLAVOR_VALUE))
+        WonderProductionAi.flavorUpdate(civ, personality)
     }
 
     /**

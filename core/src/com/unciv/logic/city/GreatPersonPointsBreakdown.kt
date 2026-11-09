@@ -5,6 +5,7 @@ import com.unciv.models.Counter
 import com.unciv.models.ruleset.Ruleset
 import com.unciv.models.ruleset.unique.Unique
 import com.unciv.models.ruleset.unique.UniqueType
+import yairm210.purity.annotations.LocalState
 import yairm210.purity.annotations.Pure
 import yairm210.purity.annotations.Readonly
 
@@ -120,9 +121,12 @@ class GreatPersonPointsBreakdown private constructor(private val ruleset: Rulese
         }
     }
 
-    /** Aggregate over sources, applying percentage boni using fixed-point math to avoid rounding surprises */
+    /**
+     *  Aggregate over sources, with the percentage boni applied, still in fixed-point (n.3, see [fixedPointFactor]) and unrounded;
+     *  only for points of valid units
+     */
     @Readonly
-    fun sum(): Counter<String> {
+    fun sumFixedPoint(): Counter<String> {
         // Accumulate base points as fake "fixed-point"
         val result = Counter<String>()
         for (entry in basePoints)
@@ -139,15 +143,21 @@ class GreatPersonPointsBreakdown private constructor(private val ruleset: Rulese
             result.add(key, result[key] * bonuses[key] / 100)
         }
 
-        // Round fixed-point to integers, toSet() because a result of 0 will remove the entry (-99% bonus in a certain Mod)
-        for (key in result.keys.toSet())
-            result[key] = (result[key] + fixedPointFactor / 2) / fixedPointFactor
-
         // Remove all "gpp" values that are not valid units
         for (key in result.keys.toSet())
             if (key !in ruleset.units)
                 result.remove(key)
 
+        return result
+    }
+
+    /** [sumFixedPoint] rounded to integers */
+    @Readonly
+    fun sum(): Counter<String> {
+        @LocalState val result = sumFixedPoint()
+        // toSet() because a result of 0 will remove the entry (-99% bonus in a certain Mod)
+        for (key in result.keys.toSet())
+            result[key] = (result[key] + fixedPointFactor / 2) / fixedPointFactor
         return result
     }
 }

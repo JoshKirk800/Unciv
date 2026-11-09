@@ -60,9 +60,6 @@ sealed class CombatantView constructor(private val combatant: ICombatant, viewer
     @Readonly fun calculateDamageToAttacker(defender: CombatantView, tileToAttackFrom: TileView = defender.getTile(), randomnessFactor: Float? = null): Int =
         BattleDamage.calculateDamageToAttacker(combatant, defender.unwrap(), tileToAttackFrom.unwrap(),
             randomnessFactor ?: BattleDamage.getRandomness(combatant))
-    /** Whether this combatant lives through attacking [defender], see [BattleDamage.attackerSurvives] */
-    @Readonly fun survivesAttackOn(defender: CombatantView, tileToAttackFrom: TileView = defender.getTile()): Boolean =
-        BattleDamage.attackerSurvives(combatant, defender.unwrap(), tileToAttackFrom.unwrap())
     /** For a melee attack by this combatant on the unit [defender]: the damages after the correction for both dying, see [BattleDamage.resolveMeleeDeaths] */
     @Readonly fun resolveMeleeDeaths(defender: CombatantView, damageToDefender: Int, damageToAttacker: Int): Pair<Int, Int> =
         BattleDamage.resolveMeleeDeaths(combatant, defender.unwrap(), damageToDefender, damageToAttacker)

@@ -241,9 +241,6 @@ class EspionageAutomation(private val civInfo: Civilization) {
     private fun metCityStatesAtPeace(): Sequence<Civilization> = gameInfo.civilizations.asSequence()
         .filter { it.isCityState && it.isAlive() && civInfo.knows(it) && !civInfo.isAtWarWith(it) }
 
-    /** CvPlayerCulture::WantsDiplomatDoingPropaganda: once every other civilization is at Exotic influence or above, the two highest levels */
-    fun wantsDiplomatDoingPropaganda(target: Civilization): Boolean = propagandaTargets()?.contains(target) == true
-
     /** CvPlayerCulture::GetMaxPropagandaDiplomatsWanted */
     private fun getMaxPropagandaDiplomatsWanted(): Int = propagandaTargets()?.size ?: 0
 
@@ -270,7 +267,7 @@ class EspionageAutomation(private val civInfo: Civilization) {
 
     //region City lists
     /**
-     * CvEspionageAI::BuildDiplomatCityList: going for Culture, the capitals of the civilizations [wantsDiplomatDoingPropaganda];
+     * CvEspionageAI::BuildDiplomatCityList: going for Culture, the capitals of the civilizations [propagandaTargets];
      * otherwise the revealed capitals ranked by diplomat usefulness (none excluded).
      */
     fun buildDiplomatCityList(): List<City> {

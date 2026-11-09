@@ -110,6 +110,7 @@ class BarbarianManager : IsPartOfGameInfoSerialization {
 
         val viableTiles = fogTiles.filter {
             !it.isImpassible()
+                    && it.getOwner() == null // CvBarbarians::DoCamps: !isOwned
                     && it.resource == null
                     && it.terrainFeatureObjects.none { feature -> feature.hasUnique(UniqueType.RestrictedBuildableImprovements) }
                     && it.neighbors.any { neighbor -> neighbor.isLand }

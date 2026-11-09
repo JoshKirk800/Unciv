@@ -41,8 +41,6 @@ enum class AiOperationType(
     PILLAGE_ENEMY(OperationMoveType.EnemyTerritory),
     CITY_CLOSE_DEFENSE(OperationMoveType.None),
     RAPID_RESPONSE(OperationMoveType.None),
-    /** AI_OPERATION_COLONIZE: CvAINavalEscortedOperation, a settler with a land escort and naval escorts overseas */
-    NAVAL_COLONIZE(OperationMoveType.NavalEscort, mixedLandNaval = true),
     NAVAL_ATTACK(OperationMoveType.NavalEscort, mixedLandNaval = true),
     NAVAL_SNEAK_ATTACK(OperationMoveType.NavalEscort, mixedLandNaval = true),
     CITY_STATE_NAVAL_ATTACK(OperationMoveType.NavalEscort, mixedLandNaval = true),
@@ -62,8 +60,6 @@ enum class AiOperationType(
     val isNavalInvasion get() = this == NAVAL_ATTACK || this == NAVAL_SNEAK_ATTACK || this == CITY_STATE_NAVAL_ATTACK
     /** CvAINavalOperation and its subclasses: the operations of ships only */
     val isNavalFleet get() = allNaval
-    /** CvAINavalEscortedOperation and its subclasses (the colonization party and the invasions) */
-    val isNavalEscorted get() = this == NAVAL_COLONIZE || isNavalInvasion
 }
 
 /** AIOperationStates */
@@ -225,10 +221,11 @@ class AiOperations : IsPartOfGameInfoSerialization {
     fun firstOfType(type: AiOperationType, enemy: Civilization? = null, target: Tile? = null): AiOperation? =
         operations.firstOrNull { it.type == type && (enemy == null || it.enemyCivId == enemy.civID) && (target == null || it.targetTile == target.position) }
 
-    fun operationsOfType(type: AiOperationType): List<AiOperation> = operations.filter { it.type == type }
-
     /** CvPlayer::numOperationsOfType */
     fun numOperationsOfType(type: AiOperationType) = operations.count { it.type == type }
+
+    /** CvPlayerAI::GetNumUnitsNeededToBeBuilt: the sum of CvAIOperation::GetNumUnitsNeededToBeBuilt, the slots not yet committed to a city */
+    fun numUnitsNeededToBeBuilt() = operations.sumOf { it.slotsToBuild.size }
 
     fun operationById(id: Int) = operations.firstOrNull { it.id == id }
 
@@ -271,11 +268,6 @@ class AiOperations : IsPartOfGameInfoSerialization {
             if (naval == null || naval == operation.type.mixedLandNaval) return true
         }
         return false
-    }
-
-    /** CvPlayer::IsPlotTargetedForCity: a settler operation heads for a plot within 2 of [tile] */
-    fun isPlotTargetedForCity(tile: Tile): Boolean = operations.any { operation ->
-        operation.type.isEscorted && operation.targetTile?.let { civ.gameInfo.tileMap[it].aerialDistanceTo(tile) <= 2 } == true
     }
 
     /** The target tiles of the settler operations of this civilization other than [except] */

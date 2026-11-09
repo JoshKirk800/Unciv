@@ -50,6 +50,8 @@ class AiRuleset {
     var multiUnitFormations = ArrayList<MultiUnitFormationDef>()
     /** TacticalMoves rows by Type name, in XML order (CvTacticalAI::EstablishTacticalPriorities) */
     var tacticalMoves = ArrayList<TacticalMoveDef>()
+    /** The UnitPromotions CvUnit::AI_promotionValue reads, in XML order */
+    var promotionAi = ArrayList<PromotionAiDef>()
 
     /** The ruleset this belongs to - needed to derive flavors of objects without a table entry */
     @Transient lateinit var ruleset: Ruleset
@@ -57,6 +59,8 @@ class AiRuleset {
     @Transient private var itemFlavorIndex: HashMap<String, ItemFlavors>? = null
     @Transient private var minorCivFlavorIndex: HashMap<String, NamedFlavors>? = null
     @Transient private var unitAiTypesIndex: HashMap<String, UnitAiTypesDef>? = null
+    @Transient private var promotionAiByName: HashMap<String, PromotionAiDef>? = null
+    @Transient private var promotionAiByType: HashMap<String, PromotionAiDef>? = null
     @Transient private val flavorCache = HashMap<String, IntArray>()
 
     companion object {
@@ -103,6 +107,7 @@ class AiRuleset {
         mergeByName(worldSizes, other.worldSizes)
         mergeByName(multiUnitFormations, other.multiUnitFormations)
         mergeByName(tacticalMoves, other.tacticalMoves)
+        mergeByName(promotionAi, other.promotionAi)
         for (entry in other.itemFlavors) {
             val index = itemFlavors.indexOfFirst { it.kind == entry.kind && it.name == entry.name }
             if (index >= 0) itemFlavors[index] = entry else itemFlavors.add(entry)
@@ -131,6 +136,7 @@ class AiRuleset {
         worldSizes.clear()
         multiUnitFormations.clear()
         tacticalMoves.clear()
+        promotionAi.clear()
         clearCaches()
     }
 
@@ -145,6 +151,8 @@ class AiRuleset {
         itemFlavorIndex = null
         minorCivFlavorIndex = null
         unitAiTypesIndex = null
+        promotionAiByName = null
+        promotionAiByType = null
         flavorCache.clear()
     }
     //endregion
@@ -192,6 +200,18 @@ class AiRuleset {
     fun getItemFlavors(kind: String, name: String): ItemFlavors? {
         val index = itemFlavorIndex ?: itemFlavors.associateByTo(HashMap()) { it.kind + "/" + it.name }.also { itemFlavorIndex = it }
         return index["$kind/$name"]
+    }
+
+    /** The promotion AI data of an Unciv promotion, null if it has none (a promotion AI_promotionValue reads nothing of) */
+    fun promotionAiOf(promotionName: String): PromotionAiDef? {
+        val index = promotionAiByName ?: promotionAi.associateByTo(HashMap()) { it.name }.also { promotionAiByName = it }
+        return index[promotionName]?.takeIf { it.type != it.name }
+    }
+
+    /** The promotion AI data of an XML promotion type (`PROMOTION_*`), null if it has none */
+    fun promotionAiOfType(type: String): PromotionAiDef? {
+        val index = promotionAiByType ?: promotionAi.associateByTo(HashMap()) { it.type }.also { promotionAiByType = it }
+        return index[type]
     }
 
     /** The Unit_AITypes entry of a unit by Unciv unit name, null if it has none */

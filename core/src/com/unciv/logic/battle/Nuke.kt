@@ -22,7 +22,8 @@ object Nuke {
      *  - Not if we would need to declare war on someone we can't.
      *  - Disallow nuking the tile the nuke is in, as per Civ5 (but not nuking your own tiles/units otherwise)
      *
-     *  Both [BattleTable.simulateNuke] and [AirUnitAutomation.automateNukes] check range, so that check is omitted here.
+     *  [BattleTable.simulateNuke] checks range, and the AI sets nukes off in [com.unciv.logic.automation.strategy.NavalOperationLogic.nukeInPosition]
+     *  once the operation's army is in position, so that check is omitted here.
      */
     @Readonly
     fun mayUseNuke(nuke: MapUnitCombatant, targetTile: Tile): Boolean {

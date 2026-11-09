@@ -1,7 +1,9 @@
 package com.unciv.logic.automation.strategy
 
 import com.unciv.Constants
+import com.unciv.logic.automation.WaterBodies
 import com.unciv.logic.city.City
+import com.unciv.logic.city.GreatPersonPointsBreakdown
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.ruleset.Building
@@ -24,6 +26,9 @@ import kotlin.math.floor
  *  reads CvCity::getThreatValue, the danger map's [com.unciv.logic.automation.unit.PlotDanger.cityThreat] ([CityThreat]).
  */
 object CityStrategyAi {
+    private const val NEED_TILE_IMPROVERS_LOCKOUT_TURNS = 25
+    private const val WANT_TILE_IMPROVERS_LOCKOUT_TURNS = 10
+    private const val ENOUGH_TILE_IMPROVERS_LOCKOUT_TURNS = 10
     private const val NEED_TILE_IMPROVERS = "AICITYSTRATEGY_NEED_TILE_IMPROVERS"
     private const val NEED_NAVAL_TILE_IMPROVEMENT = "AICITYSTRATEGY_NEED_NAVAL_TILE_IMPROVEMENT"
     private const val CAPITAL_UNDER_THREAT = "AICITYSTRATEGY_CAPITAL_UNDER_THREAT"
@@ -147,7 +152,8 @@ object CityStrategyAi {
 
     private val landUnitFilterCache = WeakHashMap<AiRuleset, HashMap<String, Boolean>>()
 
-    /** CvCity::getDomainFreeExperience(DOMAIN_LAND): the experience the city's buildings give new land military units */
+    /** CvCity::getDomainFreeExperience(DOMAIN_LAND): the experience the city's buildings give every new land military unit - a unique
+     *  that only some of them get (Poland's Ducal Stable gives [Mounted] only) is not a domain experience */
     fun landFreeExperience(city: City): Int {
         val ruleset = city.civ.gameInfo.ruleset
         val cache = synchronized(landUnitFilterCache) { landUnitFilterCache.getOrPut(ruleset.ai) { HashMap() } }
@@ -156,7 +162,7 @@ object CityStrategyAi {
             for (unique in building.getMatchingUniques(UniqueType.UnitStartingExperience, city.state)) {
                 val filter = unique.params[0]
                 val matchesLand = synchronized(cache) {
-                    cache.getOrPut(filter) { ruleset.units.values.any { it.isLandUnit && it.isMilitary && it.matchesFilter(filter) } }
+                    cache.getOrPut(filter) { ruleset.units.values.filter { it.isLandUnit && it.isMilitary }.let { land -> land.isNotEmpty() && land.all { it.matchesFilter(filter) } } }
                 }
                 if (matchesLand && city.matchesFilter(unique.params[2])) experience += unique.params[1].toInt()
             }
@@ -227,8 +233,16 @@ object CityStrategyAi {
     fun isLargeCity(city: City): Boolean =
         city.population.population >= city.civ.gameInfo.ruleset.ai.define(AiDefine.AI_CITYSTRATEGY_LARGE_CITY_POP_THRESHOLD)
 
+    /** CvEconomicAI::GetLastTurnWorkerDisbanded is set and the game turn is at most [turns] after it */
+    private fun workerDisbandedWithin(civ: Civilization, turns: Int): Boolean {
+        val last = civ.ai.economic.lastTurnWorkerDisbanded
+        return last >= 0 && civ.gameInfo.turns - last <= turns
+    }
+
+    /** IsTestCityStrategy_NeedTileImprovers: false for 25 turns after a worker was scrapped (CvEconomicAI::DisbandExtraWorkers), before anything else */
     fun needTileImprovers(city: City, weightThreshold: Int): Boolean {
         val civ = city.civ
+        if (workerDisbandedWithin(civ, NEED_TILE_IMPROVERS_LOCKOUT_TURNS)) return false
         val numCities = civ.cities.size
         val numWorkers = numLandWorkers(civ)
         if (civ.isCityState) {
@@ -249,6 +263,7 @@ object CityStrategyAi {
 
     fun wantTileImprovers(city: City, perCityThreshold: Int): Boolean {
         val civ = city.civ
+        if (workerDisbandedWithin(civ, WANT_TILE_IMPROVERS_LOCKOUT_TURNS)) return false
         if (!civ.isCityState && WarStateAi.stateAllWars(civ) == StateAllWars.Losing) return false
         val numWorkers = numLandWorkers(civ)
         if (numWorkers >= civ.cities.size * 3 / 2 + 1) return false
@@ -283,6 +298,7 @@ object CityStrategyAi {
 
     fun enoughTileImprovers(city: City, perCityThreshold: Int): Boolean {
         val civ = city.civ
+        if (workerDisbandedWithin(civ, ENOUGH_TILE_IMPROVERS_LOCKOUT_TURNS)) return true
         if (city.ai.isCityStrategyActive(NEED_TILE_IMPROVERS)) return false
         val numBuilders = numLandWorkers(civ)
         if (civ.isCityState && numBuilders >= civ.cities.size) return true
@@ -322,13 +338,27 @@ object CityStrategyAi {
         return (citiesPlusSettlers == 1 && turn * 4 > weightThreshold) || (citiesPlusSettlers == 2 && turn * 2 > weightThreshold)
     }
 
+    /**
+     *  CvCity::GetJONSCulturePerTurnFromBuildings and GetFaithPerTurnFromBuildings: what the city's buildings give by themselves, with their
+     *  unconditional stats (the tech-enhanced yields). Beliefs and policies that add culture or faith per building are separate sums
+     *  there (FromReligion, FromPolicies), so the stat tree's "Buildings" branch, which holds them, is not read.
+     */
+    private fun ownYieldFromBuildings(city: City, stat: Stat): Int {
+        var total = 0f
+        for (building in city.cityConstructions.getBuiltBuildings()) {
+            total += building[stat]
+            building.forEachMatchingUnique(UniqueType.Stats, city.state) { total += it.stats[stat] }
+        }
+        return total.toInt()
+    }
+
     fun isFirstCultureBuilding(city: City): Boolean {
-        val culture = baseYieldFromBuildings(city, Stat.Culture)
+        val culture = ownYieldFromBuildings(city, Stat.Culture)
         return culture <= 0 || (city.isCapital() && culture <= 1)
     }
 
     fun isFirstCultureBuildingEmergency(city: City): Boolean =
-        city.population.population >= 5 && baseYieldFromBuildings(city, Stat.Culture) <= 0
+        city.population.population >= 5 && ownYieldFromBuildings(city, Stat.Culture) <= 0
 
     fun isFirstScienceBuilding(city: City): Boolean =
         city.population.population >= 4 && yieldPerPopTimes100(city, Stat.Science) == 0
@@ -341,14 +371,13 @@ object CityStrategyAi {
 
     /** Religion personality above 6, or above 4 once the civilization has a pantheon; the city has 2+ citizens and no faith from buildings */
     fun isFirstFaithBuilding(city: City): Boolean {
-        if (baseYieldFromBuildings(city, Stat.Faith) > 0) return false
+        if (ownYieldFromBuildings(city, Stat.Faith) > 0) return false
         if (city.population.population < 2) return false
         val religionFlavor = city.civ.ai.personality(Flavor.Religion)
         return (religionFlavor > 4 && city.civ.religionManager.religion != null) || religionFlavor > 6
     }
 
-    /** CvCityCitizens::IsAnyPlotBlockaded: a water tile of the city with a military unit of an enemy on water within 2 tiles
-     *  (the original also requires the same water area, which Unciv does not track; only water tiles can share it with water) */
+    /** CvCityCitizens::IsAnyPlotBlockaded: a water tile of the city with a military unit of an enemy within 2 tiles on the same body of water */
     fun isUnderBlockade(city: City): Boolean {
         val civ = city.civ
         val center = city.getCenterTile()
@@ -358,8 +387,10 @@ object CityStrategyAi {
         }.also { cache.enemyNavalTiles = it }
         val enemyTiles = allEnemyTiles.filter { it.aerialDistanceTo(center) <= 5 }
         if (enemyTiles.isEmpty()) return false
+        val bodies = WaterBodies.of(civ)
         return city.tilesInRange.any { tile ->
-            tile != center && tile.isWater && enemyTiles.any { it.aerialDistanceTo(tile) <= 2 }
+            tile != center && tile.isWater &&
+                enemyTiles.any { it.aerialDistanceTo(tile) <= 2 && bodies.bodyOf(it) == bodies.bodyOf(tile) }
         }
     }
 
@@ -370,8 +401,9 @@ object CityStrategyAi {
     fun isJungleCity(city: City): Boolean = countOwnedTilesWithin2(city) { Constants.jungle in it.terrainFeatures } > 1
     fun isMountainCity(city: City): Boolean = city.getCenterTile().neighbors.any { it.baseTerrain == Constants.mountain }
 
-    /** CityStrategyAIHelpers::IsTestCityStrategy_GoodGPCity: 8+ Great Person points per turn from specialists and buildings with their modifiers */
-    fun isGoodGreatPersonCity(city: City): Boolean = city.getGreatPersonPoints().sumValues() >= 8
+    /** CityStrategyAIHelpers::IsTestCityStrategy_GoodGPCity: 8+ Great Person points per turn from specialists and buildings with their modifiers, not rounded per kind */
+    fun isGoodGreatPersonCity(city: City): Boolean =
+        GreatPersonPointsBreakdown(city).sumFixedPoint().sumValues() >= 8 * GreatPersonPointsBreakdown.fixedPointFactor
 
     /**
      *  CvCityCulture::GetSlotTypeFirstAvailableCultureBuilding: the slot type of the cheapest building with Great Work slots, not a world wonder,
@@ -398,16 +430,10 @@ object CityStrategyAi {
         return numAvailableGreatWorkSlots(city.civ, slotType) <= 2
     }
 
-    /** Culture of the world wonders, worked natural wonders and worked improvements plus the base tourism of the city above 10 */
+    /** CityStrategyAIHelpers::IsTestCityStrategy_NeedTourismBuilding: culture of the world wonders, worked natural wonders and worked improvements plus the base tourism of the city above 10 */
     fun needTourismBuilding(city: City): Boolean {
-        var value = 0
-        val buildingStats = city.cityStats.baseStatTree.children["Buildings"]
-        for (building in city.cityConstructions.getBuiltBuildings())
-            if (building.isWonder) value += buildingStats?.children?.get(building.name)?.totalStats?.culture?.toInt() ?: 0
-        for (tile in city.getWorkedTiles())
-            if (tile.isNaturalWonder() || tile.improvement != null) value += tile.stats.getTileStats(city, city.civ).culture.toInt()
-        value += city.civ.culture.getCityTourism(city)
-        return value > 10
+        val culture = city.civ.culture
+        return culture.getCultureOfWonders(city) + culture.getCultureOfWorkedTiles(city) + culture.getCityTourism(city) > 10
     }
 
     /** The capital, a city on another landmass than the capital, or one more than 20 tiles away from it */
@@ -426,7 +452,7 @@ object CityStrategyAi {
         tests.registerCity("AICITYSTRATEGY_SMALL_CITY") { city, _ -> isSmallCity(city) }
         tests.registerCity("AICITYSTRATEGY_MEDIUM_CITY") { city, _ -> isMediumCity(city) }
         tests.registerCity("AICITYSTRATEGY_LARGE_CITY") { city, _ -> isLargeCity(city) }
-        tests.registerCity("AICITYSTRATEGY_LANDLOCKED") { city, _ -> !city.isCoastal() }
+        tests.registerCity("AICITYSTRATEGY_LANDLOCKED") { city, _ -> !WaterBodies.isCoastal(city) }
         tests.registerCity(NEED_TILE_IMPROVERS) { city, def -> needTileImprovers(city, def.weightThreshold) }
         tests.registerCity("AICITYSTRATEGY_WANT_TILE_IMPROVERS") { city, def ->
             wantTileImprovers(city, def.weightThreshold + city.civ.ai.weightThresholdModifier(def))
@@ -460,7 +486,7 @@ object CityStrategyAi {
         tests.registerCity("AICITYSTRATEGY_FOREST_CITY") { city, _ -> isForestCity(city) }
         tests.registerCity("AICITYSTRATEGY_HILL_CITY") { city, _ -> isHillCity(city) }
         tests.registerCity("AICITYSTRATEGY_JUNGLE_CITY") { city, _ -> isJungleCity(city) }
-        tests.registerCity("AICITYSTRATEGY_COAST_CITY") { city, _ -> city.isCoastal() }
+        tests.registerCity("AICITYSTRATEGY_COAST_CITY") { city, _ -> WaterBodies.isCoastal(city) }
         tests.registerCity("AICITYSTRATEGY_GOOD_GP_CITY") { city, _ -> isGoodGreatPersonCity(city) }
         tests.registerCity("AICITYSTRATEGY_NEED_CULTURE_BUILDING") { city, _ -> needCultureBuilding(city) }
         tests.registerCity("AICITYSTRATEGY_NEED_TOURISM_BUILDING") { city, _ -> needTourismBuilding(city) }

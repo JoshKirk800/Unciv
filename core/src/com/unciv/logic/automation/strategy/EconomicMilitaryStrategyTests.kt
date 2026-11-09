@@ -1,5 +1,6 @@
 package com.unciv.logic.automation.strategy
 
+import com.unciv.logic.automation.WaterBodies
 import com.unciv.logic.automation.diplomacy.WarGoal
 import com.unciv.logic.automation.unit.SettleAreas
 import com.unciv.logic.city.GreatWorkFunctions
@@ -33,6 +34,8 @@ object EconomicMilitaryStrategyTests {
     const val REALLY_EXPAND_TO_OTHER_CONTINENTS = "ECONOMICAISTRATEGY_REALLY_EXPAND_TO_OTHER_CONTINENTS"
     const val LOSING_WARS = "MILITARYAISTRATEGY_LOSING_WARS"
     const val WAR_MOBILIZATION = "MILITARYAISTRATEGY_WAR_MOBILIZATION"
+    /** MAX_MAJOR_CIVS of the original: the player slots its per-civ loops pass over */
+    private const val MAX_MAJOR_CIVS = 22
 
     internal fun registerAll(tests: StrategyTests) {
         // CvEconomicAI::DoTurn
@@ -54,7 +57,7 @@ object EconomicMilitaryStrategyTests {
             needImprovement(civ, Stat.Food, "AICITYSTRATEGY_NEED_IMPROVEMENT_FOOD") }
         tests.register("ECONOMICAISTRATEGY_NEED_IMPROVEMENT_PRODUCTION") { civ, _ ->
             needImprovement(civ, Stat.Production, "AICITYSTRATEGY_NEED_IMPROVEMENT_PRODUCTION") }
-        tests.register("ECONOMICAISTRATEGY_ONE_OR_FEWER_COASTAL_CITIES") { civ, _ -> civ.cities.count { it.isCoastal() } <= 1 }
+        tests.register("ECONOMICAISTRATEGY_ONE_OR_FEWER_COASTAL_CITIES") { civ, _ -> civ.cities.count { WaterBodies.isCoastal(it) } <= 1 }
         tests.register(EconomicAi.LOSING_MONEY) { civ, def -> losingMoney(civ, def) }
         tests.register("ECONOMICAISTRATEGY_HALT_GROWTH_BUILDINGS") { civ, _ -> haltGrowthBuildings(civ) }
         tests.register("ECONOMICAISTRATEGY_TOO_MANY_UNITS") { civ, _ -> civ.stats.getUnitSupplyDeficit() > 0 }
@@ -223,16 +226,31 @@ object EconomicMilitaryStrategyTests {
         return settlers >= def.weightThreshold + extraSettlers
     }
 
-    /** IsTestStrategy_NeedHappiness: with population, excess happiness <= (HAPPINESS personality x threshold mod) / weight threshold (2) */
+    /**
+     *  CvPlayer::GetUnhappiness: the unhappiness of the city count, the citizens and the occupied cities (the negative parts of the cities'
+     *  happiness lists, whose AI-handicap scaling is already in them) plus the public opinion unhappiness (scaled for an AI player), as a whole number.
+     */
+    internal fun unhappiness(civ: Civilization): Int {
+        var fromCities = 0f
+        for (city in civ.cities)
+            for (source in UNHAPPINESS_SOURCES) fromCities -= city.cityStats.happinessList[source] ?: 0f
+        var opinion = civ.culture.publicOpinion.unhappiness.toFloat()
+        if (!civ.isHuman()) opinion *= civ.gameInfo.getDifficulty().aiUnhappinessModifier
+        return fromCities.toInt() + opinion.toInt()
+    }
+
+    private val UNHAPPINESS_SOURCES = listOf("Cities", "Population", "Occupied City")
+
+    /** IsTestStrategy_NeedHappiness: with population and some unhappiness, excess happiness <= (HAPPINESS personality x threshold mod) / weight threshold (2) */
     fun needHappiness(civ: Civilization, def: PlayerStrategyDef): Boolean {
-        if (civ.cities.sumOf { it.population.population } <= 0) return false
+        if (civ.cities.sumOf { it.population.population } <= 0 || unhappiness(civ) <= 0) return false
         return civ.getHappiness() <= civ.ai.weightThresholdModifier(def) / def.weightThreshold
     }
 
-    /** IsTestStrategy_NeedHappinessCritical: not losing all wars; with population, excess happiness <= the weight threshold (-3) */
+    /** IsTestStrategy_NeedHappinessCritical: not losing all wars; with population and some unhappiness, excess happiness <= the weight threshold (-3) */
     fun needHappinessCritical(civ: Civilization, def: PlayerStrategyDef): Boolean {
         if (WarStateAi.stateAllWars(civ) == StateAllWars.Losing) return false
-        if (civ.cities.sumOf { it.population.population } <= 0) return false
+        if (civ.cities.sumOf { it.population.population } <= 0 || unhappiness(civ) <= 0) return false
         return civ.getHappiness() <= def.weightThreshold
     }
 
@@ -249,12 +267,14 @@ object EconomicMilitaryStrategyTests {
     }
 
     /**
-     *  IsTestStrategy_FoundCity (the test; launching the found-city operation is the settling port's): AI players with at least one city,
-     *  a settler (UNITAI_SETTLE) and a settle area.
+     *  IsTestStrategy_FoundCity (the test; launching the found-city operation is [com.unciv.logic.automation.unit.SettlerAutomation.launchOperation]):
+     *  AI players with at least one city and a loose settler (UNITAI_SETTLE that is in no army, so not one an operation already moves)
+     *  and a settle area.
      */
     fun foundCity(civ: Civilization): Boolean {
         if (civ.isHuman() || civ.cities.isEmpty()) return false
-        if (civ.units.getCivUnits().none { UnitAiTypes.current(it) == UnitAiType.SETTLE }) return false
+        val operations = civ.ai.operations
+        if (civ.units.getCivUnits().none { UnitAiTypes.current(it) == UnitAiType.SETTLE && operations.armyOf(it) == null }) return false
         return SettleAreas.bestSettleAreas(civ, minimumSettleFertility(civ)).count > 0
     }
 
@@ -347,12 +367,12 @@ object EconomicMilitaryStrategyTests {
         return best != capital.getCenterTile().getContinent() && best != -1
     }
 
-    /** IsTestStrategy_MostlyOnTheCoast: population of coastal cities at least that of the others, and some */
+    /** IsTestStrategy_MostlyOnTheCoast: population of cities on a body of water of at least 100 tiles (no lakes or small inland seas) at least that of the others, and some */
     fun mostlyOnTheCoast(civ: Civilization): Boolean {
         var coastal = 0
         var inland = 0
         for (city in civ.cities) {
-            if (city.isCoastal()) coastal += city.population.population
+            if (WaterBodies.isCoastal(city, 100)) coastal += city.population.population
             else inland += city.population.population
         }
         return coastal > 0 && coastal >= inland
@@ -410,10 +430,13 @@ object EconomicMilitaryStrategyTests {
 
     /**
      *  The weight of IsTestStrategy_WarMobilization: 25 under conquest; per other major +100 if preparing war on it, else +50 if our
-     *  approach is WAR, HOSTILE or AFRAID, else +25 if GUARDED or DECEPTIVE. (AT_WAR blocks the strategy, see [registerAll].)
+     *  approach is WAR, HOSTILE or AFRAID, else +25 if GUARDED or DECEPTIVE. (AT_WAR blocks the strategy, see [registerAll].) Once
+     *  [MilitaryAi.armyTypeBeingBuilt] is set (never cleared) every pass of the original's loop over its [MAX_MAJOR_CIVS] player slots, empty
+     *  slots and our own included, adds 100 whatever the other civ is: 2200, far above the threshold.
      */
     fun warMobilizationWeight(civ: Civilization): Int {
         var weight = if (civ.ai.isGoingForWorldConquest()) 25 else 0
+        if (civ.ai.military.armyTypeBeingBuilt != null) return weight + 100 * MAX_MAJOR_CIVS
         for (other in civ.gameInfo.civilizations) {
             if (other == civ || !other.isMajorCiv) continue
             if (civ.ai.diplomacy.warGoal(other) == WarGoal.Prepare) {
@@ -433,7 +456,8 @@ object EconomicMilitaryStrategyTests {
      *  IsTestStrategy_EradicateBarbarians. At war: the original's test `!GetStateAllWars() == STATE_ALL_WARS_WINNING` is true when the state
      *  is NEUTRAL, so it gives up then (winning or losing it goes on). Always when barbarians hold a settler or worker of ours. Weight =
      *  camps x 50 + visible barbarians x 25 against the weight threshold plus the personality modifier: at twice that with barbarians
-     *  visible, always; at once, unless preparing war on a major. (The barbarian-camp operation that keeps it on is not ported.)
+     *  visible, always; at once, unless preparing war on a major; below the threshold it stays on while a barbarian-camp operation is running
+     *  (so [MilitaryOperations.updateOperations], which kills that operation once the strategy is off, does not end it by its own check).
      */
     fun eradicateBarbarians(civ: Civilization, def: PlayerStrategyDef): Boolean {
         if (civ.ai.isMilitaryStrategyActive(MilitaryAi.AT_WAR) && WarStateAi.stateAllWars(civ) == StateAllWars.Neutral) return false
@@ -449,7 +473,7 @@ object EconomicMilitaryStrategyTests {
         if (weight >= threshold * 2 && military.visibleBarbarianCount > 0) return true
         if (weight >= threshold)
             return civ.gameInfo.civilizations.none { it != civ && it.isMajorCiv && civ.ai.diplomacy.warGoal(it) == WarGoal.Prepare }
-        return false
+        return civ.ai.operations.firstOfType(AiOperationType.DESTROY_BARBARIAN_CAMP) != null
     }
 
     /** IsTestStrategy_Need(Ranged|Mobile|Air)Units: units x 10 / max(1, melee + units) <= flavor (personality and grand strategy) / 2 */
