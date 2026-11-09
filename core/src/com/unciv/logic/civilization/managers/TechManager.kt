@@ -524,7 +524,8 @@ class TechManager : IsPartOfGameInfoSerialization {
         }
     }
 
-    private fun updateEra() {
+    /** Recomputes [era] from the researched technologies; [addTechnology] does it itself, for techs given in bulk (the barbarians') */
+    fun updateEra() {
         val ruleset = civInfo.gameInfo.ruleset
         if (ruleset.technologies.isEmpty() || researchedTechnologies.isEmpty())
             return

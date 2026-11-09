@@ -70,12 +70,12 @@ object DiplomacyTurn {
     /** GameSpeeds.OpinionDurationPercent of the game's speed */
     fun opinionDurationPercent(civ: Civilization): Int = civ.gameInfo.ruleset.ai.gameSpeedDiplomacy(civ.gameInfo.speed.name).opinionDurationPercent
 
-    /** CvGame::getCurrentEra: the average era of the living civilizations (city-states included, as the original's teams) */
+    /** CvGame::getCurrentEra: the average era of the living civilizations (city-states and the barbarians included, as the original's teams) */
     fun gameEraName(civ: Civilization): String {
         var sum = 0
         var count = 0
         for (other in civ.gameInfo.civilizations) {
-            if (other.isBarbarian || other.isSpectator || !other.isAlive()) continue
+            if (other.isSpectator || !other.isAlive()) continue
             sum += other.getEraNumber()
             count++
         }

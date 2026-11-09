@@ -218,6 +218,17 @@ class OperationTests {
     }
 
     @Test
+    fun `a unit that may paradrop is no reserve, it is the tactical AI's for pillaging`() {
+        val drop = game.createUnitPromotion("May Paradrop to [Land] tiles up to [5] tiles away")
+        val walker = unit("Warrior", HexCoord(1, 0))
+        val paratrooper = unit("Warrior", HexCoord(0, 1))
+        paratrooper.promotions.addPromotion(drop.name, true)
+        closeDefense()
+        assertNotNull("the plain unit of the same kind is recruited", ops.armyOf(walker))
+        assertNull(ops.armyOf(paratrooper))
+    }
+
+    @Test
     fun `scouts, wounded units and units that just finished an operation are no reserves`() {
         val explorer = unit("Warrior")
         UnitAiTypes.set(explorer, UnitAiType.EXPLORE)
@@ -562,6 +573,16 @@ class OperationTests {
         assertTrue(abs(score(target(10)) - 2 * score(target(15))) <= 2)
         assertTrue(abs(score(target(15)) - 2 * score(target(20))) <= 2)
         assertTrue(short > 0)
+    }
+
+    @Test
+    fun `a muster city with an Airport doubles the score of a land target, not of one reached by sea`() {
+        val land = score(target(25))
+        val sea = score(target(25, bySea = true))
+        assertTrue(land > 0 && sea > 0)
+        city.cityConstructions.addBuilding("Airport")
+        assertTrue("land ${score(target(25))} plain $land", abs(score(target(25)) - 2 * land) <= 2)
+        assertEquals(sea, score(target(25, bySea = true)))
     }
 
     @Test

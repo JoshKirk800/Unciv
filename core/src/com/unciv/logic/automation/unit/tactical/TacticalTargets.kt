@@ -58,11 +58,23 @@ class TacticalTarget(
 }
 
 /**
+ *  What FindTacticalTargets asks CvPlayerTrade about the tiles: where traders of civilizations at war with [civ] stand ([enemyTraders]),
+ *  which tiles their routes cross ([enemyRoute]), and the tiles any route of any civilization crosses ([anyRoute], CvPlot::IsTradeRoute).
+ */
+private class TradeTiles(civ: Civilization) {
+    val enemyTraders = civ.tradeRoutes.getEnemyTraderTiles()
+    val enemyRoute = civ.tradeRoutes.getEnemyRouteTiles()
+    val anyRoute: Set<Tile> = civ.gameInfo.civilizations.asSequence().filter { it.isAlive() }
+        .flatMap { it.tradeRoutes.routes }.flatMapTo(HashSet()) { it.getTiles() }
+}
+
+/**
  *  The targets of the tactical AI for one civilization and turn (CvTacticalAI::FindTacticalTargets and the post-processing it runs:
  *  IdentifyPriorityTargets, IdentifyPriorityTargetsByType), sorted by [TacticalTarget.aux] (the most damaged unit, the most threatened city first).
  *
- *  Deviations: only tiles we see are looked at, as in the original; trade routes are not map units in Unciv, so there are no trade unit,
- *  trade plot or trade route targets; barbarians get IdentifyPriorityBarbarianTargets instead of IdentifyPriorityTargets and no analysis map
+ *  Deviations: only tiles we see are looked at, as in the original; a trade route is data in Unciv, not a unit, so its trader is looked
+ *  up by where [com.unciv.models.TradeRoute.getCurrentTile] is ([com.unciv.logic.civilization.managers.TradeRouteManager.getEnemyTraderTiles]);
+ *  barbarians get IdentifyPriorityBarbarianTargets instead of IdentifyPriorityTargets and no analysis map
  *  (their [map] is null); the barbarian release turn is not applied (Unciv's barbarian spawner has its own start); naval blockade points belong to the homeland AI; improvements that cannot be pillaged are not targets; a unit "reaches" the
  *  city it threatens if the city is within its base moves on its landmass (a ship needs a coastal city), as in [PlotDanger]; the fire support
  *  of the defending city's units is not subtracted from what an attacker does to it.
@@ -105,6 +117,7 @@ class TacticalTargets private constructor(val all: List<TacticalTarget>) {
         fun find(civ: Civilization, map: TacticalMap?, danger: PlotDanger): TacticalTargets = timeThis("AI.TacticalTargets") {
             val targets = ArrayList<TacticalTarget>()
             val visible = civ.viewableTiles
+            val trade = TradeTiles(civ)
             for (tile in civ.gameInfo.tileMap.tileList) {
                 if (tile !in visible) continue
                 val zoneId = map?.zoneOf(tile)?.id ?: -1
@@ -114,7 +127,7 @@ class TacticalTargets private constructor(val all: List<TacticalTarget>) {
                     else if (civ.isAtWarWith(city.civ)) targets.add(TacticalTarget(TacticalTargetType.City, tile, zoneId, city.civ, city = city))
                     continue
                 }
-                targetOfTile(civ, map, danger, tile, zoneId)?.let { targets.add(it) }
+                targetOfTile(civ, map, danger, trade, tile, zoneId)?.let { targets.add(it) }
             }
             if (civ.isBarbarian) identifyPriorityBarbarianTargets(civ, targets) else identifyPriorityTargets(civ, targets)
             identifyPriorityTargetsByType(targets)
@@ -124,7 +137,7 @@ class TacticalTargets private constructor(val all: List<TacticalTarget>) {
 
         /** The branches of FindTacticalTargets for a tile without a city, in the original's order: the first that applies makes the target */
         private fun targetOfTile(
-            civ: Civilization, map: TacticalMap?, danger: PlotDanger, tile: Tile, zoneId: Int
+            civ: Civilization, map: TacticalMap?, danger: PlotDanger, trade: TradeTiles, tile: Tile, zoneId: Int
         ): TacticalTarget? {
             val owner = tile.getOwner()
             val ownerAtWar = owner != null && owner != civ && civ.isAtWarWith(owner)
@@ -153,8 +166,14 @@ class TacticalTargets private constructor(val all: List<TacticalTarget>) {
                     else TacticalTarget(TacticalTargetType.ImprovementResource, tile, zoneId, owner)
                 return TacticalTarget(TacticalTargetType.Improvement, tile, zoneId, owner)
             }
+            // ... enemy trade route? A road of a trade route is pillaged like an improvement
+            if (ownerAtWar && tile.canPillageRoad() && tile in trade.anyRoute)
+                return TacticalTarget(TacticalTargetType.Improvement, tile, zoneId, owner)
             // ... enemy civilian (or embarked) unit?
             civilianTarget(civ, tile, zoneId)?.let { return it }
+            // ... trade unit
+            if (tile in trade.enemyTraders)
+                return TacticalTarget(if (tile.isWater) TacticalTargetType.TradeUnitSea else TacticalTargetType.TradeUnitLand, tile, zoneId)
             // ... defensive bastion?
             if (owner == civ && map != null && map.defenseModifier(tile) > 0 && danger.get(tile) > 0) {
                 val defenseCity = tile.neighbors.firstNotNullOfOrNull { n -> if (n.isCityCenter()) n.getCity()?.takeIf { it.civ == civ } else null }
@@ -164,6 +183,9 @@ class TacticalTargets private constructor(val all: List<TacticalTarget>) {
             // ... friendly improvement?
             if (owner == civ && improvement != null)
                 return TacticalTarget(TacticalTargetType.ImprovementToDefend, tile, zoneId)
+            // ... trade plot (for getting units to park on trade routes to try to get them to plunder enemy trade routes)
+            if (tile in trade.enemyRoute)
+                return TacticalTarget(if (tile.isWater) TacticalTargetType.TradeUnitSeaPlot else TacticalTargetType.TradeUnitLandPlot, tile, zoneId)
             return null
         }
 

@@ -1,6 +1,7 @@
 package com.unciv.ui.screens.worldscreen.unit.presenter
 
 import com.unciv.view.isCivilian
+import com.unciv.view.isPreparingAirlift
 import com.unciv.view.isPreparingAirSweep
 import com.unciv.view.isPreparingParadrop
 import com.badlogic.gdx.utils.Align
@@ -41,7 +42,7 @@ class UnitPresenter(private val unitTable: UnitTable, private val worldScreen: W
         if (!append) selectedUnits.clear()
         if (unitView != null) {
             selectedUnits.add(unitView)
-            if (unitView.isPreparingParadrop() || unitView.isPreparingAirSweep())
+            if (unitView.isPreparingParadrop() || unitView.isPreparingAirlift() || unitView.isPreparingAirSweep())
                 unitView.tryResetAction()
         }
         selectedUnitIsSwapping = false

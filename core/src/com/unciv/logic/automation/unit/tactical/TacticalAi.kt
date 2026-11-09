@@ -15,18 +15,20 @@ import com.unciv.models.ruleset.unique.UniqueType
 /**
  *  CvTacticalAI::Update for one civilization's turn: the units under tactical control ([commandeerUnits]), the targets
  *  ([TacticalTargets]), then the moves of the tactical priority list (`tacticalMoves` of AI.json, [com.unciv.models.ruleset.ai.TacticalMoveDef.priority]
- *  first, in the XML order among equals): emergency purchases (once per dominance zone), the attack moves (capture and damage cities, destroy
- *  and attrition attacks on units, civilians, camps, pillaging, safe bombards - [TacticalMoves], [TacticalAttacks], [TacticalBombards]),
+ *  first, in the XML order among equals): emergency purchases and defensive airlifts (once per dominance zone), the attack moves (capture and damage
+ *  cities, destroy and attrition attacks on units, civilians, camps, pillaging (by paradrop too), plundering and parking on trade routes, safe
+ *  bombards - [TacticalMoves], [TradeMoves], [TacticalAttacks], [TacticalBombards]),
  *  the moves of the dominance zones' postures (offensive postures, shore bombardment, hedgehog, withdrawing, closing on the target - [Postures],
  *  [Deployment]), the armies of the operations ([OperationalMoves]), moves to safety and healing, garrisons, bastions, guarding improvements,
  *  repositioning. A unit a move commands is added to [AutomationCache.processedUnits]; the other units, tactical or not, go on to the rest of
  *  the unit AI.
  *
- *  Not ported (their rows of AI.json's `tacticalMoves` have no code behind them): trade moves and naval blockades.
+ *  Not ported (their rows of AI.json's `tacticalMoves` have no code behind them): naval blockades.
  */
 object TacticalAi {
 
     private const val EMERGENCY_PURCHASES = "TACTICAL_EMERGENCY_PURCHASES"
+    private const val DEFENSIVE_AIRLIFT = "TACTICAL_DEFENSIVE_AIRLIFT"
     private const val MOVE_OPERATIONS = "TACTICAL_MOVE_OPERATIONS"
     private const val POSTURE_WITHDRAW = "TACTICAL_POSTURE_WITHDRAW"
     private const val TO_SAFETY = "TACTICAL_TO_SAFETY"
@@ -108,6 +110,11 @@ object TacticalAi {
                     EmergencyPurchases.plot(civ, zone, map) { highPriority }
                 }
             },
+            Step(DEFENSIVE_AIRLIFT) {
+                Postures.forEachZone(ctx, { zone, _ -> zone.dominance != TacticalDominance.Friendly && zone.territory == TacticalTerritory.Friendly }) { zone, _ ->
+                    plotDefensiveAirlifts(ctx, zone)
+                }
+            },
             Step("TACTICAL_CAPTURE_CITY") { TacticalMoves.plotCaptureCityMoves(ctx) },
             Step("TACTICAL_DESTROY_HIGH_UNIT") { TacticalMoves.plotDestroyUnitMoves(ctx, TacticalTargetType.HighPriorityUnit, true) },
             Step("TACTICAL_ATTACK_VERY_HIGH_PRIORITY_CIVILIAN") { TacticalMoves.plotCivilianAttackMoves(ctx, TacticalTargetType.VeryHighPriorityCivilian) },
@@ -155,6 +162,8 @@ object TacticalAi {
             Step("TACTICAL_AIR_SWEEP") { AirMoves.plotAirSweepMoves(ctx) },
             Step("TACTICAL_AIR_INTERCEPT") { AirMoves.plotAirInterceptMoves(ctx) },
             Step("TACTICAL_ESCORT_EMBARKED_UNIT") { NavalMoves.plotEscortEmbarkedMoves(ctx) },
+            Step("TACTICAL_PLUNDER_TRADE_UNIT") { TradeMoves.plotPlunderTradeUnitMoves(ctx) },
+            Step("TACTICAL_PARK_ON_TRADE_ROUTE") { TradeMoves.plotParkOnTradeRouteMoves(ctx) },
         )
         // CvTacticalAI::EstablishTacticalPriorities: every move with a priority of 0 or more, the highest first, stable in XML order
         val stepByName = steps.associateBy { it.name }
@@ -168,6 +177,30 @@ object TacticalAi {
             "Tactical: $commandeered units commandeered, ${commandeered - ctx.units.size} commanded, ${ctx.targets.all.size} targets; postures " +
                 state.postures.filter { it.posture != TacticalPosture.None }.joinToString { "${it.posture}${if (it.isWater) " (sea)" else ""}" }.ifEmpty { "-" }
         }
+    }
+
+    /**
+     *  CvTacticalAI::PlotDefensiveAirlifts for one zone: not for city-states. In the zone around one of our cities that allows airlifts
+     *  ([com.unciv.logic.city.City.canAirlift]), on our own land, where enemy units are, every tactical unit that can be airlifted ([com.unciv.logic.map.mapunit.movement.UnitMovement.airliftTo])
+     *  to a tile next to the city (the first one that works) goes there.
+     *  @return the units airlifted
+     */
+    fun plotDefensiveAirlifts(ctx: TacticalContext, zone: DominanceZone): List<MapUnit> {
+        val civ = ctx.civ
+        if (civ.isCityState) return emptyList()
+        val city = zone.closestCity ?: return emptyList()
+        if (city.civ != civ || zone.territory != TacticalTerritory.Friendly || !city.canAirlift() || zone.enemyUnitCount <= 0) return emptyList()
+
+        val airlifted = ArrayList<MapUnit>()
+        for (unit in ctx.liveUnits()) {
+            val from = unit.getTile()
+            val target = city.getCenterTile().neighbors.firstOrNull { unit.movement.canAirliftTo(it) } ?: continue
+            if (!unit.movement.airliftTo(target)) continue
+            ctx.log { "${unit.name} airlifted from ${from.position} to ${city.name}" }
+            airlifted.add(unit)
+        }
+        for (unit in airlifted) ctx.unitProcessed(unit)
+        return airlifted
     }
 
     /**

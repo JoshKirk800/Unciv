@@ -6,6 +6,8 @@ import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.mapunit.MapUnit
+import com.unciv.models.TradeRoute
+import com.unciv.models.TradeRouteKind
 import com.unciv.models.metadata.BaseRuleset
 import com.unciv.models.ruleset.ai.DiplomacyPersonality
 import com.unciv.models.ruleset.ai.Flavor
@@ -149,6 +151,21 @@ class NavalOperationTests {
         val operation = ops.firstOfType(AiOperationType.NAVAL_SUPERIORITY)!!
         assertEquals("the enemy ship is the target", tile(5, 2).position, operation.targetTile)
         assertEquals("it sails at once", OperationState.MOVING_TO_TARGET, operation.state)
+    }
+
+    @Test
+    fun `naval superiority sails for an enemy trader at sea`() {
+        civ.ai.setPersonalityFlavor(Flavor.Naval, 10)
+        squadron(0)
+        val route = TradeRoute(enemyCity.location, city.location, TradeRouteKind.International, true, "Cargo Ship",
+            listOf(tile(4, 2).position, tile(5, 2).position, tile(6, 2).position), 4, 30, game.gameInfo.turns)
+        route.setTransients(enemy)
+        route.pathIndex = 1
+        enemy.tradeRoutes.routes.add(route)
+        civ.ai.militaryStrategies[MilitaryOperations.AT_WAR] = 1
+        MilitaryOperations.launchOpportunityNavalOperations(civ)
+        val operation = ops.firstOfType(AiOperationType.NAVAL_SUPERIORITY)!!
+        assertEquals(tile(5, 2).position, operation.targetTile)
     }
 
     @Test

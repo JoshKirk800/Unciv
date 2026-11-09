@@ -189,6 +189,7 @@ class TestGame(vararg addGlobalUniques: String, forUITesting: Boolean = false, b
         barbarianCivilization.gameInfo = gameInfo
         barbarianCivilization.cache.updateState()
         gameInfo.civilizations.add(barbarianCivilization)
+        barbarianCivilization.setTransients()
         return barbarianCivilization
     }
 

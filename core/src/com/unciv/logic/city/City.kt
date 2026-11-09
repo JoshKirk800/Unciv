@@ -239,6 +239,8 @@ class City : IsPartOfGameInfoSerialization, INamed {
     @Readonly fun isWorked(tile: Tile) = workedTiles.contains(tile.position)
 
     @Readonly fun isCapital(): Boolean = cityConstructions.builtBuildingUniqueMap.hasUnique(UniqueType.IndicatesCapital, state)
+    /** CvCity::CanAirlift: a building of the city allows airlifts */
+    @Readonly fun canAirlift(): Boolean = cityConstructions.builtBuildingUniqueMap.hasUnique(UniqueType.AllowsAirlift, state)
     @Readonly fun isCoastal(): Boolean = centerTile.isAdjacentToCoast()
     @Readonly fun isNaval(): Boolean = centerTile.isWater || isCoastal()
 

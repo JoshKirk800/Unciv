@@ -13,9 +13,7 @@ import kotlin.math.max
  *  PlotBarbarianCivilianEscortMove / ExecuteBarbarianCivilianEscortMove. The attack moves barbarians share with the other players are
  *  [TacticalMoves]; [com.unciv.logic.automation.civilization.BarbarianAutomation] orders them all by AI_TACTICAL_BARBARIAN_PRIORITY_*.
  *
- *  Deviations: barbarians have no trade units to gank or plunder here (trade routes are not map units in Unciv), so
- *  FindBarbarianGankTradeRouteTarget finds nothing - its value is the number of trade routes through a plot, always 0 - and
- *  PlotBarbarianPlunderTradeUnitMove has no targets; a sea move looks at the 5 nearest targets only (as [TacticalMoves.findNearbyTarget]);
+ *  Deviations: a sea move looks at the 5 nearest targets only (as [TacticalMoves.findNearbyTarget]);
  *  the camp-adjacent search of FindBestBarbarianSeaMove compares `distance < moves * bestValue` with the best value starting at the largest
  *  Int, which overflows in the original for ships that move more than one tile (it then never finds a plot): here it is the intent, any
  *  such plot within the sea range x 3; barbarians do not upgrade units (the original has no such move for them).
@@ -91,10 +89,11 @@ object BarbarianMoves {
 
     /**
      *  CvTacticalAI::FindBestBarbarianLandMove: a unit, city or improvement of the enemy within the land target range that it reaches soonest;
-     *  else (no trade routes to gank here) the best tile to explore towards.
+     *  else the trade route to sit on ([findGankTradeRouteTarget]); else the best tile to explore towards.
      */
     fun findBestLandMove(ctx: TacticalContext, unit: MapUnit): Tile? =
-        TacticalMoves.findNearbyTarget(ctx, unit, landRange(ctx.civ), ctx.targets.all.filter { it.type in HUNTED }) ?: findExploreTarget(ctx, unit)
+        TacticalMoves.findNearbyTarget(ctx, unit, landRange(ctx.civ), ctx.targets.all.filter { it.type in HUNTED })
+            ?: findGankTradeRouteTarget(ctx, unit) ?: findExploreTarget(ctx, unit)
 
     /** CvTacticalAI::FindPassiveBarbarianLandMove: the nearest barbarian camp, else the best tile to explore towards */
     fun findPassiveLandMove(ctx: TacticalContext, unit: MapUnit): Tile? {
@@ -110,6 +109,7 @@ object BarbarianMoves {
         val unitTile = unit.getTile()
         val range = seaRange(ctx.civ)
         TacticalMoves.findNearbyTarget(ctx, unit, range, ctx.targets.all.filter { it.isUnitTarget })?.let { return it }
+        findGankTradeRouteTarget(ctx, unit)?.let { return it }
 
         // No units to pick on, so sail to a tile adjacent to the second closest barbarian camp
         val camps = TacticalTargets.ofType(ctx.targets.all, TacticalTargetType.BarbarianCamp)
@@ -129,6 +129,32 @@ object BarbarianMoves {
             }
         }
         return best ?: findExploreTarget(ctx, unit)
+    }
+
+    /**
+     *  CvTacticalAI::FindBarbarianGankTradeRouteTarget: of the revealed tiles within the movement the unit has left, on its landmass or sea,
+     *  that it can reach in a turn, the one most trade routes (of any civilization, the unit's own tile left out) cross; the first of
+     *  the best wins, and a tile that no route crosses is not one.
+     */
+    fun findGankTradeRouteTarget(ctx: TacticalContext, unit: MapUnit): Tile? {
+        val range = unit.currentMovement.toInt()
+        if (range <= 0) return null
+        val routesThrough = HashMap<Tile, Int>()
+        for (civ in ctx.civ.gameInfo.civilizations)
+            for (route in civ.tradeRoutes.routes)
+                for (tile in route.getTiles()) routesThrough.merge(tile, 1, Int::plus)
+        if (routesThrough.isEmpty()) return null
+        val unitTile = unit.getTile()
+        var best: Tile? = null
+        var bestValue = 0
+        for (tile in unitTile.getTilesInDistance(range)) {
+            if (tile == unitTile || !ctx.civ.hasExplored(tile) || !ctx.sameArea(unitTile, tile)) continue
+            val value = routesThrough[tile] ?: continue
+            if (value <= bestValue || TacticalAttacks.turnsToReach(unit, tile) > 1) continue
+            best = tile
+            bestValue = value
+        }
+        return best
     }
 
     /**

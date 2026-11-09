@@ -368,6 +368,24 @@ class TradeRouteManager : IsPartOfGameInfoSerialization {
             .toList()
     }
 
+    /** The routes of civilizations at war with us (CvPlayerTrade::GetTradeUnitsAtPlot with bExcludingMe and bOnlyWar: the origin's owner decides) */
+    @Readonly
+    private fun enemyRoutes(): Sequence<TradeRoute> = civ.gameInfo.civilizations.asSequence()
+        .filter { it != civ && it.isAlive() && civ.isAtWarWith(it) }
+        .flatMap { it.tradeRoutes.routes }
+
+    /** The tiles where a trader of a civilization at war with us stands now (CvPlayerTrade::ContainsEnemyTradeUnit) */
+    @Readonly
+    fun getEnemyTraderTiles(): Set<Tile> = enemyRoutes().map { it.getCurrentTile() }.toSet()
+
+    /** The tiles any route of a civilization at war with us goes over (CvPlayerTrade::ContainsEnemyTradePlot) */
+    @Readonly
+    fun getEnemyRouteTiles(): Set<Tile> = enemyRoutes().flatMap { it.getTiles() }.toSet()
+
+    /** The enemy traders on [tile] (CvPlayerTrade::GetEnemyTradeUnitsAtPlot) */
+    @Readonly
+    fun getEnemyTradersAt(tile: Tile): List<TradeRoute> = enemyRoutes().filter { it.getCurrentTile() == tile }.toList()
+
     /** CvPlayerTrade::PlunderTradeRoute: [plunderer] gets gold, the route is over, nobody gets a trade unit back */
     fun plunder(route: TradeRoute, plunderer: MapUnit) = route.civ.tradeRoutes.plunderRoute(route, plunderer.civ, plunderer.getTile())
 
