@@ -20,6 +20,9 @@ import kotlin.math.max
 import kotlin.math.pow
 import kotlin.random.Random
 
+/** GC.getBARBARIAN_TECH_PERCENT: the share of the living majors that must know a tech for the barbarians to learn it */
+private const val BARBARIAN_TECH_PERCENT = 75
+
 class BarbarianManager : IsPartOfGameInfoSerialization {
 
     val encampments = ArrayList<BarbarianEncampment>()
@@ -55,6 +58,8 @@ class BarbarianManager : IsPartOfGameInfoSerialization {
     }
 
     fun updateEncampments() {
+        updateBarbarianTech()
+
         // Check if camps were destroyed
         for (encampment in encampments.toList()) { // tolist to avoid concurrent modification
             if (!tileMap[encampment.position].isBarbarianEncampment()) {
@@ -248,13 +253,21 @@ class BarbarianManager : IsPartOfGameInfoSerialization {
         return spawnedUnit
     }
 
-    private fun updateBarbarianTech(){
-        val barbarianCiv = gameInfo.getBarbarianCivilization()
-        val allResearchedTechs = gameInfo.ruleset.technologies.keys.toMutableList()
-        for (civ in gameInfo.civilizations.filter { !it.isBarbarian && !it.isDefeated() }) {
-            allResearchedTechs.retainAll(civ.tech.techsResearched)
+    /**
+     *  CvTeam::DoBarbarianTech, run every turn: the barbarians learn every tech that 75% (BARBARIAN_TECH_PERCENT, rounded down, at least one)
+     *  of the living majors know, city-states and the barbarians themselves not counted; a tech once learned is never lost. The barbarians'
+     *  era follows from it, and with it the average era of the game ([com.unciv.logic.automation.diplomacy.DiplomacyTurn.gameEraName]).
+     */
+    fun updateBarbarianTech() {
+        val barbarianTech = gameInfo.getBarbarianCivilization().tech
+        val majors = gameInfo.civilizations.filter { it.isMajorCiv && !it.isDefeated() }
+        val needed = max(1, majors.size * BARBARIAN_TECH_PERCENT / 100)
+        for (tech in gameInfo.ruleset.technologies.values) {
+            if (barbarianTech.isResearched(tech.name) || majors.count { it.tech.isResearched(tech.name) } < needed) continue
+            barbarianTech.techsResearched.add(tech.name)
+            barbarianTech.researchedTechnologies.add(tech)
         }
-        barbarianCiv.tech.techsResearched = allResearchedTechs.toHashSet()
+        barbarianTech.updateEra()
     }
 
     @Readonly
