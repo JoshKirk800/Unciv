@@ -411,16 +411,12 @@ class DiplomacyLeftoversTests {
         a.ai.diplomacy.setApproach(target, MajorCivApproach.Hostile)
         a.ai.diplomacy.setOpinion(target, MajorCivOpinion.Unforgivable)
         assertTrue(OpinionAi.isDoFAccepted(a, human))
-        // The original's roll may fail and is logged for 10 turns; with this willingness the request goes out at the latest then
-        var sent = 0
-        for (turn in 50..120 step 11) {
-            game.gameInfo.turns = turn
-            DiplomacyAutomation.contactMajorCivs(a)
-            if (alerts(human, AlertType.DenounceRequest).isNotEmpty()) { sent = turn; break }
-        }
-        assertTrue("no request", sent > 0)
+        // a (willingness 40) denounces b in the same contact pass, which would make b a second candidate of equal weight: the original
+        // flags every candidate that does not beat the best as a failed roll. The human has denounced b already, so only the target is left.
+        human.getDiplomacyManager(b)!!.denounce()
+        DiplomacyAutomation.contactMajorCivs(a)
         assertEquals(PopupAlert.pairValue(a.civID, target.civID), alerts(human, AlertType.DenounceRequest).single().value)
-        assertEquals(sent, memory(a, human).statementTurns[DiploStatement.RequestFriendDenounce])
+        assertEquals(50, memory(a, human).statementTurns[DiploStatement.RequestFriendDenounce])
 
         DiplomacyAutomation.onHumanAnsweredDenounceRequest(a, human, target, agreed = false)
         assertTrue("a refusal this serious costs the friendship", a.getDiplomacyManager(human)!!.hasFlag(DiplomacyFlags.Denunciation))
