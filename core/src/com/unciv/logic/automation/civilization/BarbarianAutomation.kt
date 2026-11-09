@@ -8,6 +8,7 @@ import com.unciv.logic.automation.unit.tactical.TacticalMoves
 import com.unciv.logic.automation.unit.tactical.TacticalSafety
 import com.unciv.logic.automation.unit.tactical.TacticalTargetType
 import com.unciv.logic.automation.unit.tactical.TacticalTargets
+import com.unciv.logic.automation.unit.tactical.TradeMoves
 import com.unciv.logic.civilization.Civilization
 import com.unciv.models.ruleset.ai.AiDefine
 
@@ -17,11 +18,12 @@ import com.unciv.models.ruleset.ai.AiDefine
  *  IdentifyPriorityBarbarianTargets) and one list of moves is run in the order of AI_TACTICAL_BARBARIAN_PRIORITY_* plus a die roll of up to
  *  AI_TACTICAL_MOVE_PRIORITY_RANDOMNESS per move (EstablishBarbarianPriorities, once a turn; a negative base priority never runs):
  *  capture city 9, damage city 5, destroy high/medium/low priority units 16/15/14, civilian attacks 13, camp defense 13, pillaging 12/14/4,
- *  escorting captured civilians 30, attrition 10/7/6, move to safety 10, aggressive move 3, desperate attack 0 (BNW data). The attacks are
- *  [TacticalMoves] (the same routines the other civilizations use), the hunting, sea raids, camp defense and captive escort are
- *  [BarbarianMoves]. Replaces the per-unit chain (pillage to heal, upgrade, attack nearby, pillage, wander).
+ *  escorting captured civilians 30, plundering trade units 20, attrition 10/7/6, move to safety 10, aggressive move 3, desperate attack 0
+ *  (BNW data). The attacks are [TacticalMoves] (the same routines the other civilizations use), the trade unit plunder is [TradeMoves], the
+ *  hunting, sea raids, camp defense and captive escort are [BarbarianMoves]. Replaces the per-unit chain (pillage to heal, upgrade, attack
+ *  nearby, pillage, wander).
  *
- *  Not here: PlotBarbarianPlunderTradeUnitMove (no trade units on the map, see [BarbarianMoves]), the blockade move (commented out in the
+ *  Not here: the blockade move (commented out in the
  *  original), the barbarian release turn (Unciv's spawner has its own start).
  */
 class BarbarianAutomation(val civInfo: Civilization) {
@@ -62,7 +64,7 @@ class BarbarianAutomation(val civInfo: Civilization) {
         DESPERATE_ATTACK(AiDefine.AI_TACTICAL_BARBARIAN_PRIORITY_DESPERATE_ATTACK,
             { TacticalMoves.plotDestroyUnitMoves(it, TacticalTargetType.LowPriorityUnit, false, attackAtPoorOdds = true) }),
         ESCORT_CIVILIAN(AiDefine.AI_TACTICAL_BARBARIAN_PRIORITY_ESCORT_CIVILIAN, { BarbarianMoves.executeCivilianEscortMoves(it) }),
-        PLUNDER_TRADE_UNIT(AiDefine.AI_TACTICAL_BARBARIAN_PRIORITY_PLUNDER_TRADE_UNIT, { });
+        PLUNDER_TRADE_UNIT(AiDefine.AI_TACTICAL_BARBARIAN_PRIORITY_PLUNDER_TRADE_UNIT, { TradeMoves.plotPlunderTradeUnitMoves(it) });
     }
 
     fun automate() = timeThis("AI.Barbarians") {

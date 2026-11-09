@@ -15,14 +15,15 @@ import com.unciv.models.ruleset.unique.UniqueType
 /**
  *  CvTacticalAI::Update for one civilization's turn: the units under tactical control ([commandeerUnits]), the targets
  *  ([TacticalTargets]), then the moves of the tactical priority list (`tacticalMoves` of AI.json, [com.unciv.models.ruleset.ai.TacticalMoveDef.priority]
- *  first, in the XML order among equals): emergency purchases and defensive airlifts (once per dominance zone), the attack moves (capture and damage cities, destroy
- *  and attrition attacks on units, civilians, camps, pillaging, safe bombards - [TacticalMoves], [TacticalAttacks], [TacticalBombards]),
+ *  first, in the XML order among equals): emergency purchases and defensive airlifts (once per dominance zone), the attack moves (capture and damage
+ *  cities, destroy and attrition attacks on units, civilians, camps, pillaging (by paradrop too), plundering and parking on trade routes, safe
+ *  bombards - [TacticalMoves], [TradeMoves], [TacticalAttacks], [TacticalBombards]),
  *  the moves of the dominance zones' postures (offensive postures, shore bombardment, hedgehog, withdrawing, closing on the target - [Postures],
  *  [Deployment]), the armies of the operations ([OperationalMoves]), moves to safety and healing, garrisons, bastions, guarding improvements,
  *  repositioning. A unit a move commands is added to [AutomationCache.processedUnits]; the other units, tactical or not, go on to the rest of
  *  the unit AI.
  *
- *  Not ported (their rows of AI.json's `tacticalMoves` have no code behind them): trade moves and naval blockades.
+ *  Not ported (their rows of AI.json's `tacticalMoves` have no code behind them): naval blockades.
  */
 object TacticalAi {
 
@@ -161,6 +162,8 @@ object TacticalAi {
             Step("TACTICAL_AIR_SWEEP") { AirMoves.plotAirSweepMoves(ctx) },
             Step("TACTICAL_AIR_INTERCEPT") { AirMoves.plotAirInterceptMoves(ctx) },
             Step("TACTICAL_ESCORT_EMBARKED_UNIT") { NavalMoves.plotEscortEmbarkedMoves(ctx) },
+            Step("TACTICAL_PLUNDER_TRADE_UNIT") { TradeMoves.plotPlunderTradeUnitMoves(ctx) },
+            Step("TACTICAL_PARK_ON_TRADE_ROUTE") { TradeMoves.plotParkOnTradeRouteMoves(ctx) },
         )
         // CvTacticalAI::EstablishTacticalPriorities: every move with a priority of 0 or more, the highest first, stable in XML order
         val stepByName = steps.associateBy { it.name }

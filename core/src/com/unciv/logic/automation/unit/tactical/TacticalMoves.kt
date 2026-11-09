@@ -4,6 +4,7 @@ import com.unciv.logic.automation.strategy.UnitAiType
 import com.unciv.logic.automation.strategy.UnitAiTypes
 import com.unciv.logic.battle.Battle
 import com.unciv.logic.map.mapunit.MapUnit
+import com.unciv.logic.map.mapunit.actions.UnitActionsFromUniques
 import com.unciv.logic.map.mapunit.actions.UnitActionsPillage
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.ruleset.ai.AiDefine
@@ -17,7 +18,7 @@ import com.unciv.models.ruleset.unique.UniqueType
  *  the execution helpers they share (ExecuteMoveToTarget, ExecuteMoveToPlot, ExecuteMoveOfBlockingUnit, MoveToEmptySpaceNearTarget,
  *  FindUnitsForThisMove, FindNearbyTarget).
  *
- *  Deviations: [plotRepositionMoves] measures the path to the 5 nearest targets only; units that may paradrop do not pillage by paradrop (the AI has no paratrooper logic, [MayParadrop] is not used);
+ *  Deviations: [plotRepositionMoves] measures the path to the 5 nearest targets only;
  *  a unit's promotions that raise its attack, defense or strength are the unconditional and "when attacking" / "when defending"
  *  [UniqueType.Strength] uniques of its promotions (the original's attack, defense and extra combat modifiers); a unit "is a fast mover" when
  *  its type may have the unit AI FAST_ATTACK.
@@ -138,9 +139,13 @@ object TacticalMoves {
     }
 
     /**
-     *  CvTacticalAI::PlotPillageMoves for the targets of [type]: in the first pass the best unit (damaged ones, which heal by it, count triple)
+     *  CvTacticalAI::PlotPillageMoves for the targets of [type]: in the first pass a paratrooper that can drop on the tile does, and pillages
+     *  (FindParatroopersWithinStrikingDistance, ExecuteParadropPillage: "because it looks cooler"), else the best unit (damaged ones, which heal by it, count triple)
      *  that can get to the tile with movement left goes there and pillages (ExecutePillage); in the second pass (for the next turn) the
      *  best unit within 2 turns moves towards it.
+     *
+     *  The original does not ask whether the paratrooper can pillage and does not look at danger on the tile or escort the unit; here one that
+     *  may not pillage ([UnitActionsPillage.canPillage]) is left out.
      */
     fun plotPillageMoves(ctx: TacticalContext, type: TacticalTargetType, firstPass: Boolean) {
         val heal = ctx.rules.define(AiDefine.PILLAGE_HEAL_AMOUNT)
@@ -148,6 +153,16 @@ object TacticalMoves {
             val tile = target.tile
             if (!tile.canPillageTile()) continue
             if (firstPass) {
+                val paratrooper = findParatroopers(ctx, tile).firstOrNull()
+                if (paratrooper != null) {
+                    ctx.log { "paratrooping in to pillage $type, ${tile.position}" }
+                    val unit = paratrooper.unit
+                    UnitActionsFromUniques.paradrop(unit, tile)
+                    if (unit.getTile() == tile) UnitActionsPillage.getPillageAction(unit, tile)?.action?.invoke()
+                    unit.currentMovement = 0f
+                    ctx.unitProcessed(unit)
+                    continue
+                }
                 val striker = TacticalAttacks.findUnits(ctx, tile, 0, heal, mustMoveThrough = true, willPillage = true).firstOrNull() ?: continue
                 ctx.log { "pillaging $type, ${tile.position}" }
                 val unit = striker.unit
@@ -164,6 +179,16 @@ object TacticalMoves {
             }
         }
     }
+
+    /**
+     *  CvTacticalAI::FindParatroopersWithinStrikingDistance: the units of the tactical AI that can drop on [tile] now ([TacticalAi.canParadrop],
+     *  [UnitActionsFromUniques.canParadropAt]) and pillage it, strongest and healthiest first
+     */
+    fun findParatroopers(ctx: TacticalContext, tile: Tile): List<Striker> =
+        ctx.liveUnits().filter {
+            TacticalAi.canParadrop(it) && UnitActionsFromUniques.canParadropAt(it, tile) && UnitActionsPillage.canPillage(it, tile)
+        }.map { Striker(it, TacticalAttacks.maxAttackStrength(it), it.health) }
+            .sortedByDescending { it.attackPriority }
 
     /** CvTacticalAI::PlotAncientRuinMoves: a unit that can attack (a fast one first) and is [turnsAway] turns from a ruin goes to pop it */
     fun plotAncientRuinMoves(ctx: TacticalContext, turnsAway: Int) {

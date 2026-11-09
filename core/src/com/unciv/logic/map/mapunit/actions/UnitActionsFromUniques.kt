@@ -130,7 +130,12 @@ object UnitActionsFromUniques {
         )
     }
 
-    internal fun getParadropActions(unit: MapUnit, tile: Tile): Sequence<UnitAction> {
+    /**
+     *  Fills [com.unciv.logic.map.mapunit.MapUnitCache.paradropDestinationTileFilters] with the tiles the unit may drop on (the filters of its
+     *  [UniqueType.MayParadrop] uniques that apply now, each with the largest distance given for it).
+     *  @return the unique whose distance was the last to set a filter, null if the unit cannot paradrop at all
+     */
+    private fun updateParadropDestinations(unit: MapUnit): Unique? {
         unit.cache.paradropDestinationTileFilters.clear()
 
         // Retrieve all parardrop uniques, considering the state of the unit
@@ -147,7 +152,26 @@ object UnitActionsFromUniques {
                 frequencyUnique = unique
             }
         }
-        if (unit.cache.paradropDestinationTileFilters.isEmpty()) return emptySequence()
+        return frequencyUnique
+    }
+
+    /** The target tests of CvUnit::canParadropAt: the unit has not moved this turn, [destination] is another tile, within range, visible and one it can enter */
+    fun canParadropAt(unit: MapUnit, destination: Tile): Boolean {
+        if (unit.hasUnitMovedThisTurn() || destination == unit.getTile()) return false
+        if (updateParadropDestinations(unit) == null) return false
+        return unit.movement.canParadropOn(destination, unit.getTile().aerialDistanceTo(destination))
+    }
+
+    /** CvUnit::paradrop: the unit lands on [destination] ([canParadropAt]) and is done with half a movement point less, as if it had attacked; false if it cannot */
+    fun paradrop(unit: MapUnit, destination: Tile): Boolean {
+        if (!canParadropAt(unit, destination)) return false
+        unit.action = UnitActionType.Paradrop.value
+        unit.movement.moveToTile(destination)
+        return true
+    }
+
+    internal fun getParadropActions(unit: MapUnit, tile: Tile): Sequence<UnitAction> {
+        val frequencyUnique = updateParadropDestinations(unit) ?: return emptySequence()
 
         return sequenceOf(UnitAction(UnitActionType.Paradrop,
             isCurrentAction = unit.isPreparingParadrop(),
