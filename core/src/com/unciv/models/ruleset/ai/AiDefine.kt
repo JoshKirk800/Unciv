@@ -679,6 +679,9 @@ enum class AiDefine(val default: Float) {
     AI_ATTEMPT_RUSH_OVER_X_TURNS_TO_BUILD(15f),
     MINOR_CIV_PRODUCTION_PERCENT(150f),
 
+    // CvTreasury::DoGold: the treasury after the turn's income (in gold) at or below which CvPlayer::DoDeficit disbands a unit
+    DEFICIT_UNIT_DISBANDING_THRESHOLD(-5f),
+
     // CvDealAI, CvDiplomacyAI city-state approaches and contacts, CvPlayer::GetBuyPlotCost (deals & city-states slice)
     AI_GOLD_PRIORITY_BUYOUT_CITY_STATE(350f),
     AI_GOLD_PRIORITY_DIPLOMACY_BASE(150f),

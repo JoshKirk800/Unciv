@@ -131,6 +131,29 @@ class BuilderTaskingAiTest {
     }
 
     @Test
+    fun `a build on a plot whose improvement or road is pillaged is timed as the repair`() {
+        research("Agriculture", "Bronze Working", "Mining", "The Wheel", "Railroad")
+        game.addCity(civ, tile(0, 0))
+        val plot = tile(2, 0)
+        val worker = game.addUnit("Worker", civ, plot)
+        val ai = BuilderTaskingAi(civ)
+        val repair = Build(improvement("Repair"))
+        val mine = Build(improvement("Mine"))
+        val railroad = Build(improvement("Railroad"))
+
+        plot.setImprovement("Farm")
+        plot.roadStatus = RoadStatus.Road
+        assertTrue("setup: mine and repair differ", ai.buildTimeWeight(worker, plot, mine, false, 2) != ai.buildTimeWeight(worker, plot, repair, false, 2))
+        assertTrue(ai.buildTimeWeight(worker, plot, railroad, false, 2) != ai.buildTimeWeight(worker, plot, repair, false, 2))
+        plot.improvementIsPillaged = true
+        assertEquals(ai.buildTimeWeight(worker, plot, repair, false, 2), ai.buildTimeWeight(worker, plot, mine, false, 2))
+        assertTrue("a pillaged improvement does not change a route build", ai.buildTimeWeight(worker, plot, railroad, false, 2) != ai.buildTimeWeight(worker, plot, repair, false, 2))
+        plot.improvementIsPillaged = false
+        plot.roadIsPillaged = true
+        assertEquals(ai.buildTimeWeight(worker, plot, repair, false, 2), ai.buildTimeWeight(worker, plot, railroad, false, 2))
+    }
+
+    @Test
     fun `resource weight sums the flavor products and scales luxuries and known strategics`() {
         civ.ai.setPersonalityFlavor(Flavor.Happiness, 6)
         civ.ai.setPersonalityFlavor(Flavor.Production, 4)
@@ -209,6 +232,48 @@ class BuilderTaskingAiTest {
         val road = improvement("Road")
         val roadTurns = road.getTurnsToBuild(civ, worker, directive.tile)
         val expected = ((100 / (distance + 1)) * 100 + 10000 / (max(1, roadTurns - 1) + distance)) * ai.routePlots[directive.tile]!!.value
+        assertEquals(expected, directive.weight)
+    }
+
+    @Test
+    fun `a plot another builder was sent to is skipped on later turns and the target is set by the move`() {
+        val (capital, _) = twoCities(10)
+        val worker = capital.getCenterTile().civilianUnit!!
+        val first = BuilderTaskingAi(civ).evaluateBuilder(worker)!!
+        // The same decision on the next turn (a new instance), after another builder started walking to that plot
+        val claimer = game.addUnit("Worker", civ, tile(0, 3))
+        claimer.builderTarget = first.tile.position
+        assertTrue(BuilderTaskingAi(civ).evaluateBuilder(worker)!!.tile != first.tile)
+        // Once that builder is sent elsewhere the plot is free again
+        claimer.builderTarget = null
+        assertEquals(first.tile, BuilderTaskingAi(civ).evaluateBuilder(worker)!!.tile)
+
+        assertTrue(civ.getWorkerAutomation().executeWorkerMove(worker))
+        assertEquals(first.tile.position, worker.builderTarget)
+    }
+
+    @Test
+    fun `repairing a pillaged resource improvement adds the build time of that improvement like replacing one`() {
+        research("Calendar")
+        // Only the wine plot is workable around the capital, so its repair is the directive
+        for (plot in game.tileMap.values) if (plot.position != HexCoord(0, 0) && plot.position != HexCoord(1, 0)) game.setTileTerrain(plot.position, "Mountain")
+        val capital = game.addCity(civ, tile(0, 0))
+        val plot = tile(1, 0).also { it.setTileResource("Wine") }
+        val plantation = improvement("Plantation")
+        plot.setImprovement("Plantation")
+        plot.improvementIsPillaged = true
+        val worker = game.addUnit("Worker", civ, capital.getCenterTile())
+        val ai = BuilderTaskingAi(civ)
+
+        val directive = ai.evaluateBuilder(worker)!!
+        assertEquals(BuilderDirective.Type.Repair, directive.type)
+        assertEquals(plot, directive.tile)
+        val invested = plantation.getTurnsToBuild(civ, worker, plot) * 100
+        val repair = Build(improvement("Repair"))
+        var expected = 250 * 100 + ai.buildTimeWeight(worker, plot, repair, false, invested + directive.moveTurnsAway)
+        expected += resourceWeight(civ, plot.tileResource!!, plantation, plot.resourceAmount)
+        val score = ai.scorePlot(plot, repair)
+        if (score > 0) expected *= score
         assertEquals(expected, directive.weight)
     }
 
