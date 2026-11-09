@@ -1,13 +1,17 @@
 package com.unciv.logic.automation.unit
 
+import com.unciv.json.json
 import com.unciv.logic.automation.unit.BuilderTaskingAi.CityYieldTargets
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
+import com.unciv.logic.civilization.PlayerType
+import com.unciv.logic.civilization.managers.quests.QuestManager
 import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.MapPathing
 import com.unciv.logic.map.tile.RoadStatus
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.metadata.BaseRuleset
+import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.ai.Flavor
 import com.unciv.models.stats.Stat
 import com.unciv.testing.GdxTestRunner
@@ -127,6 +131,29 @@ class BuilderTaskingAiTest {
     }
 
     @Test
+    fun `a build on a plot whose improvement or road is pillaged is timed as the repair`() {
+        research("Agriculture", "Bronze Working", "Mining", "The Wheel", "Railroad")
+        game.addCity(civ, tile(0, 0))
+        val plot = tile(2, 0)
+        val worker = game.addUnit("Worker", civ, plot)
+        val ai = BuilderTaskingAi(civ)
+        val repair = Build(improvement("Repair"))
+        val mine = Build(improvement("Mine"))
+        val railroad = Build(improvement("Railroad"))
+
+        plot.setImprovement("Farm")
+        plot.roadStatus = RoadStatus.Road
+        assertTrue("setup: mine and repair differ", ai.buildTimeWeight(worker, plot, mine, false, 2) != ai.buildTimeWeight(worker, plot, repair, false, 2))
+        assertTrue(ai.buildTimeWeight(worker, plot, railroad, false, 2) != ai.buildTimeWeight(worker, plot, repair, false, 2))
+        plot.improvementIsPillaged = true
+        assertEquals(ai.buildTimeWeight(worker, plot, repair, false, 2), ai.buildTimeWeight(worker, plot, mine, false, 2))
+        assertTrue("a pillaged improvement does not change a route build", ai.buildTimeWeight(worker, plot, railroad, false, 2) != ai.buildTimeWeight(worker, plot, repair, false, 2))
+        plot.improvementIsPillaged = false
+        plot.roadIsPillaged = true
+        assertEquals(ai.buildTimeWeight(worker, plot, repair, false, 2), ai.buildTimeWeight(worker, plot, railroad, false, 2))
+    }
+
+    @Test
     fun `resource weight sums the flavor products and scales luxuries and known strategics`() {
         civ.ai.setPersonalityFlavor(Flavor.Happiness, 6)
         civ.ai.setPersonalityFlavor(Flavor.Production, 4)
@@ -206,5 +233,97 @@ class BuilderTaskingAiTest {
         val roadTurns = road.getTurnsToBuild(civ, worker, directive.tile)
         val expected = ((100 / (distance + 1)) * 100 + 10000 / (max(1, roadTurns - 1) + distance)) * ai.routePlots[directive.tile]!!.value
         assertEquals(expected, directive.weight)
+    }
+
+    @Test
+    fun `a plot another builder was sent to is skipped on later turns and the target is set by the move`() {
+        val (capital, _) = twoCities(10)
+        val worker = capital.getCenterTile().civilianUnit!!
+        val first = BuilderTaskingAi(civ).evaluateBuilder(worker)!!
+        // The same decision on the next turn (a new instance), after another builder started walking to that plot
+        val claimer = game.addUnit("Worker", civ, tile(0, 3))
+        claimer.builderTarget = first.tile.position
+        assertTrue(BuilderTaskingAi(civ).evaluateBuilder(worker)!!.tile != first.tile)
+        // Once that builder is sent elsewhere the plot is free again
+        claimer.builderTarget = null
+        assertEquals(first.tile, BuilderTaskingAi(civ).evaluateBuilder(worker)!!.tile)
+
+        assertTrue(civ.getWorkerAutomation().executeWorkerMove(worker))
+        assertEquals(first.tile.position, worker.builderTarget)
+    }
+
+    @Test
+    fun `repairing a pillaged resource improvement adds the build time of that improvement like replacing one`() {
+        research("Calendar")
+        // Only the wine plot is workable around the capital, so its repair is the directive
+        for (plot in game.tileMap.values) if (plot.position != HexCoord(0, 0) && plot.position != HexCoord(1, 0)) game.setTileTerrain(plot.position, "Mountain")
+        val capital = game.addCity(civ, tile(0, 0))
+        val plot = tile(1, 0).also { it.setTileResource("Wine") }
+        val plantation = improvement("Plantation")
+        plot.setImprovement("Plantation")
+        plot.improvementIsPillaged = true
+        val worker = game.addUnit("Worker", civ, capital.getCenterTile())
+        val ai = BuilderTaskingAi(civ)
+
+        val directive = ai.evaluateBuilder(worker)!!
+        assertEquals(BuilderDirective.Type.Repair, directive.type)
+        assertEquals(plot, directive.tile)
+        val invested = plantation.getTurnsToBuild(civ, worker, plot) * 100
+        val repair = Build(improvement("Repair"))
+        var expected = 250 * 100 + ai.buildTimeWeight(worker, plot, repair, false, invested + directive.moveTurnsAway)
+        expected += resourceWeight(civ, plot.tileResource!!, plantation, plot.resourceAmount)
+        val score = ai.scorePlot(plot, repair)
+        if (score > 0) expected *= score
+        assertEquals(expected, directive.weight)
+    }
+
+    /** The capital at (0,0) with a worker, a city-state capital [distance] plots east that gave [civ] a route quest */
+    private fun routeQuestCityState(distance: Int = 4): Pair<Civilization, City> {
+        research("The Wheel")
+        val capital = game.addCity(civ, tile(0, 0), initialPopulation = 5)
+        game.addUnit("Worker", civ, capital.getCenterTile())
+        val cityState = game.addCiv(cityStateType = "Cultured")
+        cityState.tech.techsResearched.add("The Wheel")  // its city center gets a road only then
+        val cityStateCapital = game.addCity(cityState, tile(distance, 0))
+        civ.diplomacyFunctions.makeCivilizationsMeet(cityState)
+        for ((from, to) in listOf(civ to cityState, cityState to civ)) from.getDiplomacyManager(to)!!.hasOpenBorders = true  // workers may only enter a city-state's land with open borders
+        val json = "{\"assignedQuests\":[{\"questName\":\"Route\",\"assigner\":\"${cityState.civID}\",\"assignee\":\"${civ.civID}\",\"assignedOnTurn\":1}]}"
+        cityState.questManager = json().fromJson(QuestManager::class.java, json)
+        cityState.questManager.setTransients(cityState)
+        return cityState to cityStateCapital
+    }
+
+    @Test
+    fun `an AI major that wants the connection flags the road to the capital of a city-state with a route quest`() {
+        val (cityState, cityStateCapital) = routeQuestCityState()
+        civ.ai.wantsRouteToMinors.add(cityState.civID)
+        val plots = roadPlots(civ.getCapital()!!, cityStateCapital)
+        val ai = BuilderTaskingAi(civ)
+        assertTrue(plots.isNotEmpty())
+        assertEquals(plots.toSet(), ai.routePlots.keys)
+        val expected = game.ruleset.ai.define(AiDefine.MINOR_CIV_ROUTE_QUEST_WEIGHT) / plots.size
+        for (plot in plots) assertEquals(expected, ai.routePlots[plot]!!.value)
+    }
+
+    @Test
+    fun `an AI major builds no road to a city-state it does not want to connect to`() {
+        routeQuestCityState()
+        assertTrue(BuilderTaskingAi(civ).routePlots.isEmpty())
+    }
+
+    @Test
+    fun `a city-state without a route quest for the major gets no road`() {
+        val (cityState, _) = routeQuestCityState()
+        civ.ai.wantsRouteToMinors.add(cityState.civID)
+        cityState.questManager = QuestManager().also { it.setTransients(cityState) }
+        assertTrue(BuilderTaskingAi(civ).routePlots.isEmpty())
+    }
+
+    @Test
+    fun `a human's builders do not connect city-states on the human's behalf`() {
+        val (cityState, _) = routeQuestCityState()
+        civ.ai.wantsRouteToMinors.add(cityState.civID)
+        civ.playerType = PlayerType.Human
+        assertTrue(BuilderTaskingAi(civ).routePlots.isEmpty())
     }
 }

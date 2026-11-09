@@ -40,13 +40,17 @@ class WorkerAutomation(val civInfo: Civilization, val cachedForTurn: Int) {
             val unit = unitView.getUnit()
             val tile = unit.getTile()
             if (civInfo.ai.plotDanger.isUnderImmediateThreat(tile) && tile.militaryUnit?.civ != civInfo && CivilianSafety.moveToSafety(unit)) {
+                unit.builderTarget = null  // the move to safety is another mission: the unit gives up its plot
                 unit.currentMovement = 0f
                 return@timeThis
             }
             if (executeWorkerMove(unit)) return@timeThis
 
             unitView.tryAddNotification("${unitView.shortDisplayName()} has no work to do.", NotificationCategory.Units, unitView.name, "OtherIcons/Sleep")
-            if (CivilianSafety.moveToSafety(unit, ignoreUnits = true)) unit.currentMovement = 0f
+            if (CivilianSafety.moveToSafety(unit, ignoreUnits = true)) {
+                unit.builderTarget = null
+                unit.currentMovement = 0f
+            }
         }
 
     /**
@@ -56,7 +60,7 @@ class WorkerAutomation(val civInfo: Civilization, val cachedForTurn: Int) {
     fun executeWorkerMove(unit: MapUnit): Boolean {
         if (isBuilding(unit)) return true
         val directive = builderTaskingAi.evaluateBuilder(unit) ?: return false
-        builderTaskingAi.claim(directive.tile)
+        builderTaskingAi.claim(unit, directive.tile)
         if (unit.getTile() == directive.tile) startBuild(unit, directive.build)
         else unit.movement.tryHeadTowards(directive.tile)
         return true

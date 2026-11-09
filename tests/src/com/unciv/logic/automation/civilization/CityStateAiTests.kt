@@ -1,9 +1,13 @@
 package com.unciv.logic.automation.civilization
 
 import com.unciv.logic.automation.strategy.GrandStrategyAi
+import com.unciv.json.json
 import com.unciv.logic.civilization.Civilization
+import com.unciv.logic.civilization.Proximity
 import com.unciv.logic.civilization.diplomacy.CityStatePersonality
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
+import com.unciv.logic.civilization.diplomacy.DiplomaticStatus
+import com.unciv.logic.civilization.managers.quests.QuestManager
 import com.unciv.logic.map.HexCoord
 import com.unciv.models.metadata.BaseRuleset
 import com.unciv.models.ruleset.ai.DiplomacyPersonality
@@ -250,6 +254,56 @@ class CityStateAiTests {
         cs.cityStatePersonality = CityStatePersonality.Friendly
         CityStateAi.pickInitialFlavors(cs, friendlyFlavors, Random(1))
         for (flavor in arrayOf(Flavor.CityDefense, Flavor.Defense, Flavor.Offense)) assertEquals(10, friendlyFlavors[flavor.ordinal])
+    }
+    //endregion
+
+    //region Route wish
+
+    private fun giveRouteQuest() {
+        val json = "{\"assignedQuests\":[{\"questName\":\"Route\",\"assigner\":\"${cs.civID}\",\"assignee\":\"${a.civID}\",\"assignedOnTurn\":1}]}"
+        cs.questManager = json().fromJson(QuestManager::class.java, json)
+        cs.questManager.setTransients(cs)
+    }
+
+    private fun contactWithApproach(approach: MinorCivApproach) {
+        a.ai.minorCivApproaches[cs.civID] = approach
+        CityStateAi.contactMinorCivs(a)
+    }
+
+    @Test
+    fun `a Friendly or Protective AI wants to connect to a neighbouring city-state that gave it a route quest`() {
+        giveRouteQuest()
+        assertEquals(Proximity.Neighbors, a.getProximity(cs))
+        contactWithApproach(MinorCivApproach.Friendly)
+        assertTrue(cs.civID in a.ai.wantsRouteToMinors)
+        contactWithApproach(MinorCivApproach.Protective)
+        assertTrue(cs.civID in a.ai.wantsRouteToMinors)
+    }
+
+    @Test
+    fun `no route wish without the route quest, with another approach, or when the city-state is not a neighbour`() {
+        contactWithApproach(MinorCivApproach.Friendly)
+        assertFalse("no quest", cs.civID in a.ai.wantsRouteToMinors)
+        giveRouteQuest()
+        contactWithApproach(MinorCivApproach.Bully)
+        assertFalse("Bully", cs.civID in a.ai.wantsRouteToMinors)
+        a.proximity[cs.civID] = Proximity.Close
+        contactWithApproach(MinorCivApproach.Friendly)
+        assertFalse("not a neighbour", cs.civID in a.ai.wantsRouteToMinors)
+    }
+
+    @Test
+    fun `the route wish is dropped when the approach changes, and kept while at war with the city-state`() {
+        giveRouteQuest()
+        contactWithApproach(MinorCivApproach.Friendly)
+        assertTrue(cs.civID in a.ai.wantsRouteToMinors)
+        contactWithApproach(MinorCivApproach.Ignore)
+        assertFalse(cs.civID in a.ai.wantsRouteToMinors)
+
+        contactWithApproach(MinorCivApproach.Friendly)
+        a.getDiplomacyManager(cs)!!.diplomaticStatus = DiplomaticStatus.War
+        contactWithApproach(MinorCivApproach.Ignore)
+        assertTrue("the original skips the update at war", cs.civID in a.ai.wantsRouteToMinors)
     }
     //endregion
 }

@@ -102,6 +102,10 @@ class MapUnit : IsPartOfGameInfoSerialization {
      *  MERCHANT_DELEGATION / CONCERT_TOUR operation), null if none */
     var greatPersonTarget: HexCoord? = null
 
+    /** AI: the plot this builder was last sent to (the plot of the original's MISSIONAI_BUILD mission AI, which CvUnit keeps until another
+     *  mission is pushed); other builders of the civilization do not consider it, see BuilderTaskingAi */
+    var builderTarget: HexCoord? = null
+
     /** AI: this Great Person's directive of its last move (CvUnit::GetGreatPeopleDirective), read by the economic strategy tests */
     @Transient
     var greatPeopleDirective: GreatPeopleDirective? = null
@@ -255,6 +259,7 @@ class MapUnit : IsPartOfGameInfoSerialization {
         toReturn.religiousStrengthLost = religiousStrengthLost
         toReturn.turnCreated = turnCreated
         toReturn.greatPersonTarget = greatPersonTarget
+        toReturn.builderTarget = builderTarget
         toReturn.movementMemories = movementMemories.copy()
         val newStatusMap = HashMap<String, UnitStatus>((statusMap.size * 4 + 2) / 3)
         for ((name, status) in statusMap) {

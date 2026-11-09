@@ -5,6 +5,8 @@ import com.unciv.logic.automation.civilization.UseGoldAutomation
 import com.unciv.logic.automation.diplomacy.AiThreat
 import com.unciv.logic.automation.unit.CitySiteEvaluator
 import com.unciv.logic.civilization.Civilization
+import com.unciv.logic.civilization.NotificationCategory
+import com.unciv.logic.civilization.NotificationIcon
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.ai.DiplomacyPersonality
@@ -321,29 +323,60 @@ class MilitaryAi : IsPartOfGameInfoSerialization {
     }
 
     /**
-     *  CvMilitaryAI::FindBestUnitToScrap (not deficit-forced): among military units of the domain, skipping all if that domain's defense
-     *  state is CRITICAL, land units we can still build, units without a researched obsolete tech, units with at least half the power of
-     *  the strongest unit we can build in the domain, and units whose upgrade needs a resource we have while that domain's state is worse
-     *  than NEUTRAL; the one with the lowest power (CvUnit::GetPower: level and health). Null if none.
+     *  CvPlayer::DoDeficit, which CvTreasury::DoGold calls when the treasury after the turn's income would be at or below
+     *  DEFICIT_UNIT_DISBANDING_THRESHOLD (see [com.unciv.logic.civilization.managers.TurnManager.endTurn]): for any civilization (human
+     *  too) with more military units than cities, in half of the cases one unit is disbanded - the weakest of [findBestUnitToScrap] over
+     *  land (when the land defense state is NEUTRAL or better) and over sea (likewise), the land one if the land state is not worse than
+     *  the naval one or it is not stronger. The player is told which.
      */
-    fun findBestUnitToScrap(civ: Civilization, isLand: Boolean): Pair<MapUnit, Int>? {
+    fun doDeficit(civ: Civilization) {
+        if (civ.units.getCivUnits().count { it.isMilitary() } <= civ.cities.size) return
+        if (civ.ai.random("DoDeficit").nextInt(100) >= 50) return
+        ensureData(civ)
+
+        var land: Pair<MapUnit, Int>? = null
+        var naval: Pair<MapUnit, Int>? = null
+        if (landDefenseState <= DefenseState.Neutral) land = findBestUnitToScrap(civ, isLand = true, deficitForced = true)
+        if (navalDefenseState <= DefenseState.Neutral) naval = findBestUnitToScrap(civ, isLand = false, deficitForced = true)
+        val landScore = land?.second ?: Int.MAX_VALUE
+        val navalScore = naval?.second ?: Int.MAX_VALUE
+        val scrapped = when {
+            land != null && (landDefenseState <= navalDefenseState || landScore <= navalScore) -> land.first
+            naval != null -> naval.first
+            else -> null
+        } ?: return
+        civ.addNotification("A unit was disbanded because your empire is running a negative budget and has no treasury!",
+            scrapped.getTile().position, NotificationCategory.Units, scrapped.name, NotificationIcon.Death)
+        scrapped.disband()
+    }
+
+    /**
+     *  CvMilitaryAI::FindBestUnitToScrap: among military units of the domain the one with the lowest power (CvUnit::GetPower: level and
+     *  health), null if none. Not [deficitForced] (the AI deciding to disband): skipping all if that domain's defense state is CRITICAL,
+     *  land units we can still build, units without a researched obsolete tech, units with at least half the power of the strongest unit
+     *  we can build in the domain, and units whose upgrade needs a resource we have while that domain's state is worse than NEUTRAL.
+     *  When the game forces the disbanding (CvPlayer::DoDeficit), none of that applies.
+     */
+    fun findBestUnitToScrap(civ: Civilization, isLand: Boolean, deficitForced: Boolean = false): Pair<MapUnit, Int>? {
         val state = if (isLand) landDefenseState else navalDefenseState
-        if (state == DefenseState.Critical) return null
-        val strongestBuildable = powerOfStrongestBuildableUnit(civ, isLand)
+        if (!deficitForced && state == DefenseState.Critical) return null
+        val strongestBuildable = if (deficitForced) 0 else powerOfStrongestBuildableUnit(civ, isLand)
         var best: MapUnit? = null
         var bestScore = Int.MAX_VALUE
         for (unit in civ.units.getCivUnits()) {
             if (!unit.isMilitary()) continue
             val baseUnit = unit.baseUnit
             if (isLand && !baseUnit.isLandUnit || !isLand && !baseUnit.isWaterUnit) continue
-            if (isLand && baseUnit.isBuildable(civ)) continue
-            val obsoleteTech = baseUnit.obsoleteTech ?: continue
-            if (!civ.tech.isResearched(obsoleteTech)) continue
-            if (baseUnit.getForceEvaluation() * 2 >= strongestBuildable) continue
-            if (state > DefenseState.Neutral) {
-                val upgradeTo = baseUnit.upgradesTo?.let { civ.getEquivalentUnit(it) }
-                if (upgradeTo != null && upgradeTo.getResourceRequirementsPerTurn(civ.state).keys.any { civ.getResourceAmount(it) > 0 })
-                    continue // we'll wait and try to upgrade this one
+            if (!deficitForced) {
+                if (isLand && baseUnit.isBuildable(civ)) continue
+                val obsoleteTech = baseUnit.obsoleteTech ?: continue
+                if (!civ.tech.isResearched(obsoleteTech)) continue
+                if (baseUnit.getForceEvaluation() * 2 >= strongestBuildable) continue
+                if (state > DefenseState.Neutral) {
+                    val upgradeTo = baseUnit.upgradesTo?.let { civ.getEquivalentUnit(it) }
+                    if (upgradeTo != null && upgradeTo.getResourceRequirementsPerTurn(civ.state).keys.any { civ.getResourceAmount(it) > 0 })
+                        continue // we'll wait and try to upgrade this one
+                }
             }
             val score = unitPower(unit)
             if (score < bestScore) {

@@ -101,6 +101,8 @@ class CivAi : IsPartOfGameInfoSerialization {
     var citySpecialization = CitySpecializationState()
     /** CvDiplomacyAI::m_paeMinorCivApproach: our approach to each city-state by civID, missing = [MinorCivApproach.Ignore] */
     var minorCivApproaches = HashMap<String, MinorCivApproach>()
+    /** CvDiplomacyAI::m_pabWantToRouteToMinor: civIDs of the city-states whose route quest our builders should work on, see [CityStateAi.contactMinorCivs] */
+    var wantsRouteToMinors = HashSet<String>()
     /** CvDiplomacyAI war state memory (turns at war, war states, target values, military strength comparison), see [WarStateAi] */
     var warStates = WarStateMemory()
     /** CvCitySpecializationAI::m_iWonderCityID: the [com.unciv.logic.city.City.id] of the city chosen to build wonders, null if none */
@@ -162,6 +164,7 @@ class CivAi : IsPartOfGameInfoSerialization {
         for ((civId, memory) in aggressionMemory) toReturn.aggressionMemory[civId] = memory.clone()
         toReturn.citySpecialization = citySpecialization.clone()
         toReturn.minorCivApproaches.putAll(minorCivApproaches)
+        toReturn.wantsRouteToMinors.addAll(wantsRouteToMinors)
         toReturn.warStates = warStates.clone()
         toReturn.wonderCityId = wonderCityId
         toReturn.wonderWeights.putAll(wonderWeights)

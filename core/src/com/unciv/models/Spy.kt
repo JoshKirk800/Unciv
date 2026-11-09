@@ -289,6 +289,9 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
             demandToNotBeSpiedOn(otherCiv)
             // CvPlayerEspionage::ProcessSpyStealing: an identified or killed thief is remembered (CvDiplomacyAI::ChangeNumTimesRobbedBy)
             DiplomacyEvents.onRobbed(otherCiv, civInfo)
+            // ... and the victim's espionage AI notes the kill, or the identified thief
+            if (spyResult >= 200) DiplomacyEvents.onSpyKilled(otherCiv, civInfo)
+            else if (stolenTech != null) DiplomacyEvents.onSpyCaught(otherCiv, civInfo)
         }
     }
     

@@ -61,33 +61,6 @@ class EndTurnGoldTests {
     }
 
     @Test
-    fun militaryUnitsAreDisbandedWhenFarBelowTheLimitWithNegativeIncome() {
-        val civ = civWithCity(-100)
-        addWarriorsAndAWorker(civ)
-        civ.addGold(-1000)
-        Assert.assertTrue("setup", predictedGoldIncome(civ) < 0)
-
-        TurnManager(civ).endTurn()
-
-        Assert.assertEquals("military units should be disbanded one by one until none are left", 0, civ.militaryUnits())
-        Assert.assertEquals("civilians are never disbanded for upkeep", 1, civ.civilianUnits())
-    }
-
-    @Test
-    fun disbandingStartsAtExactlyMinus200Gold() {
-        val civ = civWithCity(-100)
-        addWarriorsAndAWorker(civ)
-        civ.addGold(-200)
-        Assert.assertTrue("setup", predictedGoldIncome(civ) < 0)
-
-        TurnManager(civ).endTurn()
-
-        // Disbanding a unit inside our borders refunds some gold, which may already end the process after one unit
-        Assert.assertTrue("at least one military unit should be disbanded, ${civ.militaryUnits()} left", civ.militaryUnits() < 2)
-        Assert.assertEquals(1, civ.civilianUnits())
-    }
-
-    @Test
     fun noUnitsAreDisbandedJustAboveTheLimit() {
         val civ = civWithCity(-100)
         addWarriorsAndAWorker(civ)

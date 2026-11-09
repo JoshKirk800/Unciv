@@ -402,7 +402,9 @@ object CityStateAi {
      *  CvDiplomacyAI::DoContactMinorCivs: for every valid city-state we are not at war with, the protection update, then the desire to
      *  buy it out (Austria), to give it gold, to take a worker, to take gold; then the buyout (one a turn, else saving), the gifts
      *  (several a turn, never below half of the turn's starting treasury, else saving), one worker, and every gold tribute.
-     *  Unciv has no route-connection wish or intrusion state (SetWantToRouteConnectToMinor, SetMajorIntruding).
+     *  The route wish (SetWantToRouteConnectToMinor) is set for a neighbouring city-state with an active route quest for us that we are
+     *  Friendly or Protective towards, cleared otherwise, and kept for a city-state we are at war with; [BuilderTaskingAi] reads it.
+     *  Unciv has no intrusion state (SetMajorIntruding).
      */
     fun contactMinorCivs(civ: Civilization) = timeThis("AI.ContactMinorCivs") {
         val wishes = contactWishes(civ)
@@ -410,10 +412,16 @@ object CityStateAi {
         val gifts = ArrayList<Pair<GoldGift, Int>>()
         val bullyUnits = ArrayList<Pair<Civilization, Int>>()
         val bullyGolds = ArrayList<Pair<Civilization, Int>>()
+        val wantsRoute = civ.ai.wantsRouteToMinors
+        // The original skips the wish update of a city-state at war, so that wish is kept as it was
+        wantsRoute.retainAll { id -> civ.gameInfo.getCivilization(id).let { it.isAlive() && civ.isAtWarWith(it) } }
         for (minor in DiplomacyTurn.validPlayers(civ).filter { it.isCityState }) {
             if (civ.isAtWarWith(minor)) continue
             val approach = civ.ai.minorCivApproaches[minor.civID] ?: MinorCivApproach.Ignore
             updateMinorCivProtection(civ, minor, approach)
+            if ((approach == MinorCivApproach.Protective || approach == MinorCivApproach.Friendly)
+                && hasQuest(minor, civ, QuestName.Route) && DiplomacyTurn.proximity(civ, minor) == DiplomacyTurn.PROXIMITY_NEIGHBORS)
+                wantsRoute.add(minor.civID)
             var buyingOut = false
             if (wishes.buyout) {
                 val value = buyoutValue(civ, minor)

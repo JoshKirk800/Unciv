@@ -3,7 +3,9 @@ package com.unciv.logic.automation.diplomacy
 import com.unciv.logic.automation.strategy.TargetValue
 import com.unciv.logic.automation.strategy.MilitaryOperations
 import com.unciv.logic.automation.strategy.WarStateAi
+import com.unciv.logic.civilization.AlertType
 import com.unciv.logic.civilization.Civilization
+import com.unciv.logic.civilization.PopupAlert
 import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.ai.AiRuleset
 import com.unciv.models.ruleset.ai.MajorCivApproach
@@ -165,6 +167,48 @@ object CoopWarAi {
             partner.ai.diplomacy.memoryOf(target).turnsLockedIntoWar += locked
         }
         if (accepted != CoopWarState.Rejected) entry(civ, partner, target).state = accepted
+    }
+
+    /** What a human answers to an AI's request to join a war ([AlertType.CoopWarRequest], [AlertType.CoopWarNow]) */
+    enum class HumanAnswer { Agree, Soon, Refuse }
+
+    /**
+     *  DoSendStatementToPlayer(COOP_WAR_REQUEST / COOP_WAR_TIME) with a human partner: the request is an alert, once at a time. A request
+     *  [now] is the second one, to a human who said "soon".
+     */
+    fun askHuman(civ: Civilization, human: Civilization, target: Civilization, now: Boolean) {
+        val type = if (now) AlertType.CoopWarNow else AlertType.CoopWarRequest
+        val value = PopupAlert.pairValue(civ.civID, target.civID)
+        if (human.popupAlerts.none { it.type == type && it.value == value }) human.popupAlerts.add(PopupAlert(type, value))
+    }
+
+    /**
+     *  FROM_UI_DIPLO_EVENT_COOP_WAR_RESPONSE and COOP_WAR_NOW_RESPONSE: [human] answered [civ]'s request to fight [target]. The counter
+     *  restarts whatever the answer (so a refusal is not asked again for 30 turns). Agreeing makes both declare war and locks them in for
+     *  COOP_WAR_LOCKED_LENGTH turns; "soon" is the agreement the counter turns into a second request after COOP_WAR_SOON_COUNTER turns,
+     *  which a refusal breaks (the broken coop war promise is held against the human).
+     */
+    fun onHumanAnswered(civ: Civilization, human: Civilization, target: Civilization, answer: HumanAnswer, now: Boolean) {
+        val rules = civ.gameInfo.ruleset.ai
+        val entry = entry(civ, human, target)
+        entry.counter = 0
+        when (answer) {
+            HumanAnswer.Soon -> entry.state = CoopWarState.Soon
+            HumanAnswer.Refuse -> if (now) {
+                entry.state = null
+                civ.ai.diplomacy.memoryOf(human).brokenCoopWarPromise = true
+            }
+            HumanAnswer.Agree -> {
+                entry.state = CoopWarState.Accepted
+                if (target.isDefeated()) return
+                WarAi.declareWar(civ, target)
+                MilitaryOperations.requestBasicAttack(civ, target, 1)
+                human.getDiplomacyManager(target)?.takeIf { it.canDeclareWar() }?.declareWar()
+                val locked = rules.define(AiDefine.COOP_WAR_LOCKED_LENGTH)
+                civ.ai.diplomacy.memoryOf(target).turnsLockedIntoWar += locked
+                human.ai.diplomacy.memoryOf(target).turnsLockedIntoWar += locked
+            }
+        }
     }
 
     /**
