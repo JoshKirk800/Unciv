@@ -152,7 +152,8 @@ object CityStrategyAi {
 
     private val landUnitFilterCache = WeakHashMap<AiRuleset, HashMap<String, Boolean>>()
 
-    /** CvCity::getDomainFreeExperience(DOMAIN_LAND): the experience the city's buildings give new land military units */
+    /** CvCity::getDomainFreeExperience(DOMAIN_LAND): the experience the city's buildings give every new land military unit - a unique
+     *  that only some of them get (Poland's Ducal Stable gives [Mounted] only) is not a domain experience */
     fun landFreeExperience(city: City): Int {
         val ruleset = city.civ.gameInfo.ruleset
         val cache = synchronized(landUnitFilterCache) { landUnitFilterCache.getOrPut(ruleset.ai) { HashMap() } }
@@ -161,7 +162,7 @@ object CityStrategyAi {
             for (unique in building.getMatchingUniques(UniqueType.UnitStartingExperience, city.state)) {
                 val filter = unique.params[0]
                 val matchesLand = synchronized(cache) {
-                    cache.getOrPut(filter) { ruleset.units.values.any { it.isLandUnit && it.isMilitary && it.matchesFilter(filter) } }
+                    cache.getOrPut(filter) { ruleset.units.values.filter { it.isLandUnit && it.isMilitary }.let { land -> land.isNotEmpty() && land.all { it.matchesFilter(filter) } } }
                 }
                 if (matchesLand && city.matchesFilter(unique.params[2])) experience += unique.params[1].toInt()
             }
