@@ -3,6 +3,7 @@ package com.unciv.logic.automation.unit
 import com.unciv.view.isMilitary
 import com.unciv.view.isAutomatingRoadConnection
 import com.unciv.logic.automation.civilization.AutomationCache
+import com.unciv.logic.automation.unit.tactical.TacticalSafety
 import com.unciv.view.CivView
 import com.unciv.logic.civilization.managers.ReligionState
 import com.unciv.logic.map.tile.Tile
@@ -10,6 +11,7 @@ import com.unciv.models.UnitActionType
 import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unique.UniqueTriggerActivation
 import com.unciv.models.ruleset.unique.UniqueType
+import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.mapunit.actions.UnitActionModifiers
 import com.unciv.logic.map.mapunit.actions.UnitActionModifiers.canUse
 import com.unciv.logic.map.mapunit.actions.UnitActions
@@ -26,9 +28,26 @@ object CivilianUnitAutomation {
         && !unit.hasUnique(UniqueType.AddInCapital)
         && unit.civ().getUnits().any { it.hasUnique(UniqueType.AddInCapital) }
 
+    /**
+     *  The civilians whose homeland move has a higher priority than the heal move (AI_HOMELAND_MOVE_PRIORITY_HEAL), so that they are
+     *  not left for it: the traders, archaeologists, Great People, prophets, missionaries, inquisitors and the units that are added to the
+     *  capital (spaceship parts).
+     */
+    private fun hasMoveBeforeHealing(unit: MapUnit): Boolean =
+        unit.hasUnique(UniqueType.EstablishTradeRoutes) || unit.hasUnique(UniqueType.CanExcavate)
+            || GreatPersonAutomation.roleOf(unit.baseUnit, unit.civ.gameInfo.ruleset) != null
+            || unit.hasUnique(UniqueType.MayFoundReligion) || unit.hasUnique(UniqueType.MayEnhanceReligion)
+            || unit.civ.religionManager.maySpreadReligionAtAll(unit)
+            || unit.hasUnique(UniqueType.PreventSpreadingReligion) || unit.hasUnique(UniqueType.CanRemoveHeresy)
+            || unit.hasUnique(UniqueType.AddInCapital)
+
     fun automateCivilianUnit(unit: MapUnitView, cache: AutomationCache): Unit = timeThis("automateCivilianUnit") {
         // Temporary - logic-layer automation below still works on MapUnit
         val mapUnit = unit.getUnit()
+
+        // CvHomelandAI::PlotHealMoves takes every unit that is hurt, the civilians no earlier move took (workers, work boats, settlers) too:
+        // it runs before the worker moves and the moves to safety, so such a civilian waits to heal where it stands
+        if (!hasMoveBeforeHealing(mapUnit) && TacticalSafety.heal(mapUnit)) return
 
         // To allow "found city" actions that can only trigger a limited number of times
         
