@@ -7,6 +7,7 @@ import com.unciv.logic.battle.MapUnitCombatant
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.Tile
+import yairm210.purity.annotations.Readonly
 
 /**
  *  How units get out of harm's way: CvTacticalAI::PlotMovesToSafety / ExecuteMovesToSafestPlot (combat units), PlotHealMoves / ExecuteHeals,
@@ -17,6 +18,7 @@ import com.unciv.logic.map.tile.Tile
 object TacticalSafety {
 
     /** CvUnit::IsCanDefend: a combat unit that is not embarked (a land unit on water cannot defend itself) */
+    @Readonly
     fun canDefend(unit: MapUnit): Boolean = unit.baseUnit.strength > 0 && unit.isMilitary() && !unit.isEmbarked()
 
     /**

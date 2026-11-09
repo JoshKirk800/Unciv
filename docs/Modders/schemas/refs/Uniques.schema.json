@@ -186,6 +186,7 @@
       "Obsolete with [tech]",
       "Indicates the capital city",
       "Moves to new capital when capital changes",
+      "Allows airlifts to and from this city",
       "Provides 1 extra copy of each improved luxury resource near this City",
       "Destroyed when the city is captured",
       "Never destroyed when the city is captured",

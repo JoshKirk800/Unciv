@@ -5,6 +5,7 @@ import com.unciv.view.isAirUnit
 import com.unciv.view.isCivilian
 import com.unciv.view.isExploring
 import com.unciv.view.isMoving
+import com.unciv.view.isPreparingAirlift
 import com.unciv.view.isPreparingAirSweep
 import com.unciv.view.isPreparingParadrop
 import com.badlogic.gdx.Application
@@ -305,7 +306,7 @@ class WorldMapHolder(
             var pathToTileViews: List<TileView>? = null
             try {
                 tileToMoveToView = selectedUnitView.getTileToMoveToThisTurn(targetTileView)
-                if (!selectedUnitView.isAirUnit() && !selectedUnitView.isPreparingParadrop())
+                if (!selectedUnitView.isAirUnit() && !selectedUnitView.isPreparingParadrop() && !selectedUnitView.isPreparingAirlift())
                     pathToTileViews = selectedUnitView.getPathToTile(tileToMoveToView)
             } catch (ex: Exception) {
                 when (ex) {
@@ -442,7 +443,7 @@ class WorldMapHolder(
                 val turnsToGetThere = if (unitView.isAirUnit()) {
                     if (unitView.canReach(tileView)) 1
                     else 0
-                } else if (unitView.isPreparingParadrop()) {
+                } else if (unitView.isPreparingParadrop() || unitView.isPreparingAirlift()) {
                     if (unitView.canReach(tileView)) 1
                     else 0
                 } else {

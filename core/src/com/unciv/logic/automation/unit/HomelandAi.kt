@@ -1,5 +1,6 @@
 package com.unciv.logic.automation.unit
 
+import com.unciv.Constants
 import com.unciv.logic.automation.AiDecisionLog
 import com.unciv.logic.automation.Timers.Companion.timeThis
 import com.unciv.logic.automation.civilization.AutomationCache
@@ -10,6 +11,7 @@ import com.unciv.logic.automation.strategy.ExplorationPlots
 import com.unciv.logic.automation.strategy.ReconState
 import com.unciv.logic.automation.strategy.UnitAiType
 import com.unciv.logic.automation.strategy.UnitAiTypes
+import com.unciv.logic.automation.unit.tactical.TacticalDominance
 import com.unciv.logic.automation.unit.tactical.TacticalSafety
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
@@ -37,6 +39,7 @@ enum class HomelandMove(val priority: AiDefine) {
     Upgrade(AiDefine.AI_HOMELAND_MOVE_PRIORITY_UPGRADE),
     AncientRuins(AiDefine.AI_HOMELAND_MOVE_PRIORITY_ANCIENT_RUINS),
     GarrisonCityState(AiDefine.AI_HOMELAND_MOVE_PRIORITY_GARRISON_CITY_STATE),
+    Airlift(AiDefine.AI_HOMELAND_MOVE_PRIORITY_AIRLIFT),
 }
 
 /** CvHomelandMove: a move and its priority this turn */
@@ -62,7 +65,8 @@ class HomelandTargets(
  *  [ExplorationAi]), [HomelandMove.Garrison] and the city-state variant (PlotGarrisonMoves), [HomelandMove.Heal] and [HomelandMove.ToSafety]
  *  (the moves of [TacticalSafety], which the tactical AI shares), [HomelandMove.MobileReserve], [HomelandMove.Sentry],
  *  [HomelandMove.AncientRuins], [HomelandMove.Upgrade] (the movement part of PlotUpgradeMoves; the gold part is
- *  [UseGoldAutomation.plotUpgradeMoves]) and [HomelandMove.Patrol]; units no move took are skipped (ReviewUnassignedUnits).
+ *  [UseGoldAutomation.plotUpgradeMoves]), [HomelandMove.Patrol] and [HomelandMove.Airlift] (PlotAirliftMoves: spare units go to the free
+ *  tiles beside the cities that have airports, where the tactical AI's defensive airlifts take them from); units no move took are skipped (ReviewUnassignedUnits).
  *  The civilian moves (settlers, workers, Great People, trade, religion, archaeologists, spaceship parts) and aircraft are not here:
  *  those units have their own automation, which runs outside the military pass.
  *
@@ -113,7 +117,7 @@ object HomelandAi {
                 HomelandMove.GarrisonCityState -> flavorDefense
                 HomelandMove.Explore, HomelandMove.ExploreSea, HomelandMove.AncientRuins -> flavorExplore
                 HomelandMove.Upgrade -> flavorMilitaryTraining
-                HomelandMove.Patrol -> 0
+                HomelandMove.Patrol, HomelandMove.Airlift -> 0
             }
             result.add(HomelandMovePriority(move, priority))
         }
@@ -378,6 +382,7 @@ object HomelandAi {
                     HomelandMove.AncientRuins -> plotTargetMoves(HomelandMove.AncientRuins, targets.ruins, defensiveMoveTurns)
                     HomelandMove.Patrol -> plotPatrolMoves()
                     HomelandMove.Upgrade -> plotUpgradeMoves()
+                    HomelandMove.Airlift -> plotAirliftMoves()
                 }
             }
             reviewUnassignedUnits()
@@ -553,15 +558,51 @@ object HomelandAi {
         }
 
         /**
+         *  CvHomelandAI::PlotAirliftMoves: not for a human player (one on autoplay is not), and only with two or more cities that allow airlifts. Next to such a city
+         *  whose zone is ours or has no visible units, every tile of ours that is neither water nor mountain either holds a defender, who stays
+         *  there if the homeland AI has him (his turn is over: he waits to be airlifted, [com.unciv.logic.automation.unit.tactical.TacticalAi.plotDefensiveAirlifts]),
+         *  or is empty and an airlift origin. For each origin the mobile reserve's best unit walks there.
+         */
+        private fun plotAirliftMoves() {
+            if (!civ.isAIOrAutoPlaying()) return
+            val airliftCities = civ.cities.filter { it.canAirlift() }
+            if (airliftCities.size < 2) return
+
+            val map = civ.ai.tactical.map
+            val origins = ArrayList<Tile>()
+            for (city in airliftCities) {
+                val dominance = map.zoneByCity(city, false)?.dominance
+                if (dominance != TacticalDominance.Friendly && dominance != TacticalDominance.NoUnitsVisible) continue
+                for (tile in city.getCenterTile().neighbors) {
+                    if (tile.isWater || tile.baseTerrain == Constants.mountain || tile.getOwner() != civ) continue
+                    val defender = tile.militaryUnit?.takeIf { it.civ == civ && TacticalSafety.canDefend(it) }
+                    if (defender == null) origins.add(tile)
+                    else if (defender in currentSet) {
+                        defender.currentMovement = 0f
+                        processed(defender)
+                        AiDecisionLog.log(civ) { "Homeland: ${defender.name} ${tile.position} stays for a future airlift" }
+                    }
+                }
+            }
+
+            for (tile in origins) {
+                findUnitsForThisMove(HomelandMove.MobileReserve, rebuild = true)
+                if (highPriorityUnits.size + moveUnits.size == 0) continue
+                if (getBestUnitToReachTarget(tile, Int.MAX_VALUE)) executeMoveToTarget(tile, HomelandMove.Airlift)
+            }
+        }
+
+        /**
          *  CvHomelandAI::FindUnitsForThisMove: the units that suit [move], normal and high priority. The first call for a move builds the lists
-         *  (not units that are not combat units, nor explorers unless recon is ENOUGH); later calls keep the units still unassigned.
+         *  (not units that are not combat units, nor explorers unless recon is ENOUGH), also any call with [rebuild] (PlotAirliftMoves asks for it
+         *  for every tile); later calls keep the units still unassigned.
          *  Garrison: ranged units that are not city bombarders (high priority), other units that can attack and have no promotion
          *  strength bonuses. Sentry: units that are not ranged and take the terrain bonus, those with extra sight first (a unit that takes no
          *  terrain bonus only with extra sight, first). Mobile reserve: ranged and fast attack units first, then any that can attack.
          *  Ancient ruins: fast attack units first, then any that can attack.
          */
-        private fun findUnitsForThisMove(move: HomelandMove) {
-            if (listsBuiltFor == move) {
+        private fun findUnitsForThisMove(move: HomelandMove, rebuild: Boolean = false) {
+            if (!rebuild && listsBuiltFor == move) {
                 moveUnits.removeAll { it.unit !in currentSet }
                 highPriorityUnits.removeAll { it.unit !in currentSet }
                 return

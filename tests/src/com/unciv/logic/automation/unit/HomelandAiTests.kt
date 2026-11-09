@@ -5,7 +5,10 @@ import com.unciv.logic.automation.civilization.AutomationCache
 import com.unciv.logic.automation.strategy.ExplorationAi
 import com.unciv.logic.automation.strategy.ExplorationPlots
 import com.unciv.logic.automation.strategy.ReconState
+import com.unciv.logic.automation.unit.tactical.TacticalDominance
+import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
+import com.unciv.logic.civilization.PlayerType
 import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.Tile
@@ -78,7 +81,7 @@ class HomelandAiTests {
             HomelandMove.AncientRuins to 40, HomelandMove.GarrisonCityState to 40,
             HomelandMove.Explore to 35, HomelandMove.ExploreSea to 35,
             HomelandMove.Heal to 30, HomelandMove.ToSafety to 30,
-            HomelandMove.Upgrade to 25, HomelandMove.Sentry to 20, HomelandMove.MobileReserve to 15,
+            HomelandMove.Upgrade to 25, HomelandMove.Airlift to 24, HomelandMove.Sentry to 20, HomelandMove.MobileReserve to 15,
             HomelandMove.Garrison to 10, HomelandMove.Patrol to 0), order)
     }
 
@@ -408,6 +411,82 @@ class HomelandAiTests {
         val cache = AutomationCache().also { it.processedUnits.add(processed) }
         assertEquals(listOf(free), HomelandAi.recruitUnits(civ, listOf(worker, processed, spent, free), cache))
         assertFalse(worker in cache.processedUnits)
+    }
+
+    // endregion
+    // region Airlift (CvHomelandAI::PlotAirliftMoves)
+
+    private fun airportCity(y: Int): City = game.addCity(civ, tile(y)).also { it.cityConstructions.addBuilding("Airport") }
+
+    private fun doorsOf(vararg cities: City): Set<Tile> = cities.flatMap { it.getCenterTile().neighbors.toList() }.toSet()
+
+    private fun airliftDestination(unit: MapUnit, vararg cities: City): Boolean = unit.isMoving() && unit.getMovementDestination() in doorsOf(*cities)
+
+    @Test
+    fun `with two cities that have airports a spare unit walks to a free tile next to one of them`() {
+        val a = airportCity(0)
+        val b = airportCity(10)
+        val spare = game.addUnit("Warrior", civ, tile(5))
+        run(spare)
+        assertTrue(airliftDestination(spare, a, b))
+    }
+
+    @Test
+    fun `one city with an airport is not enough`() {
+        val a = airportCity(0)
+        val b = game.addCity(civ, tile(10))
+        val spare = game.addUnit("Warrior", civ, tile(5))
+        run(spare)
+        assertFalse(airliftDestination(spare, a, b))
+    }
+
+    @Test
+    fun `a human player's units are not sent to the airports`() {
+        val a = airportCity(0)
+        val b = airportCity(10)
+        civ.playerType = PlayerType.Human
+        val spare = game.addUnit("Warrior", civ, tile(5))
+        run(spare)
+        assertFalse(airliftDestination(spare, a, b))
+    }
+
+    @Test
+    fun `a defender at an airport city's door stays, finished for the turn, and the others go to the free doors`() {
+        val a = airportCity(0)
+        val b = airportCity(10)
+        val door = a.getCenterTile().neighbors.first()
+        val guard = game.addUnit("Warrior", civ, door)
+        val spare = game.addUnit("Warrior", civ, tile(5))
+        val cache = run(guard, spare)
+        assertEquals(door, guard.getTile())
+        assertEquals(0f, guard.currentMovement)
+        assertTrue(guard in cache.processedUnits)
+        assertTrue(airliftDestination(spare, a, b))
+        assertNotEquals(door, spare.getMovementDestination())
+    }
+
+    @Test
+    fun `a defender that the homeland AI does not have is left alone`() {
+        val a = airportCity(0)
+        airportCity(10)
+        val door = a.getCenterTile().neighbors.first()
+        val guard = game.addUnit("Warrior", civ, door)
+        run(game.addUnit("Warrior", civ, tile(5)))
+        assertEquals(guard.getMaxMovement().toFloat(), guard.currentMovement)
+    }
+
+    @Test
+    fun `the doors of a city the enemy dominates are not origins`() {
+        val threatened = airportCity(0)
+        val safe = airportCity(-10)
+        val around = threatened.getCenterTile().getTilesInDistance(3).filter { it != threatened.getCenterTile() && it.position.y >= 0 }.sortedBy { it.aerialDistanceTo(threatened.getCenterTile()) }
+        for (tile in around.take(8)) game.addUnit("Swordsman", enemy, tile)
+        val spare = game.addUnit("Warrior", civ, tile(-5))
+        see()
+        val dominance = civ.ai.tactical.map.zoneByCity(threatened, false)!!.dominance
+        assertTrue("the scenario has the enemy ahead: $dominance", dominance != TacticalDominance.Friendly && dominance != TacticalDominance.NoUnitsVisible)
+        run(spare)
+        assertTrue(airliftDestination(spare, safe))
     }
 
     // endregion

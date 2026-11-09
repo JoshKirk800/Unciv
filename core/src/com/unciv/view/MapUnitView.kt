@@ -260,6 +260,7 @@ class MapUnitView internal constructor(
 @Readonly fun MapUnitView.isExploring(): Boolean = action == UnitActionType.Explore.value
 @Readonly fun MapUnitView.isAutomatingRoadConnection(): Boolean = action == Constants.connectRoadAction
 @Readonly fun MapUnitView.isPreparingParadrop(): Boolean = action == UnitActionType.Paradrop.value
+@Readonly fun MapUnitView.isPreparingAirlift(): Boolean = action == UnitActionType.Airlift.value
 @Readonly fun MapUnitView.isPreparingAirSweep(): Boolean = action == UnitActionType.AirSweep.value
 
 @Readonly fun MapUnitView.getImprovementInProgress(): String? = getTile().improvementInProgress

@@ -5,6 +5,7 @@ import com.unciv.logic.automation.strategy.UnitAiType
 import com.unciv.logic.automation.strategy.UnitAiTypes
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
+import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.models.metadata.BaseRuleset
 import com.unciv.models.stats.Stat
 import com.unciv.testing.BaseTestRunner
@@ -275,6 +276,106 @@ class TacticalAiTests {
         run()
         assertTrue(capital.cityConstructions.isBuilt("Walls"))
         assertEquals(1, archers())
+    }
+
+    // endregion
+    // region Defensive airlifts (CvTacticalAI::PlotDefensiveAirlifts)
+
+    private fun airportCity(y: Int): City = game.addCity(civ, tile(y)).also { it.cityConstructions.addBuilding("Airport") }
+
+    /** Enemy swordsmen three tiles out on the side of [city] away from the other city, where they threaten it but leave its doors free */
+    private fun besiege(city: City, count: Int = 6) {
+        val ring = city.getCenterTile().getTilesAtDistance(3).filter { it.position.y > city.getCenterTile().position.y }
+        for (tile in ring.take(count)) game.addUnit("Swordsman", enemy, tile)
+    }
+
+    private fun context(vararg units: MapUnit): TacticalContext {
+        see()
+        val map = civ.ai.tactical.map
+        val danger = civ.ai.plotDanger
+        return TacticalContext(civ, map, danger, AutomationCache(), units.toList(), TacticalTargets.find(civ, map, danger))
+    }
+
+    @Test
+    fun `a unit in one airport city is airlifted next to the threatened airport city and is finished for the turn`() {
+        val threatened = airportCity(0)
+        val home = airportCity(-10)
+        besiege(threatened)
+        val unit = game.addUnit("Warrior", civ, home.getCenterTile())
+        val ctx = context(unit)
+        val zone = civ.ai.tactical.map.zoneOf(threatened.getCenterTile())!!
+        assertNotEquals(TacticalDominance.Friendly, zone.dominance)
+        assertTrue(zone.enemyUnitCount > 0)
+
+        assertEquals(listOf(unit), TacticalAi.plotDefensiveAirlifts(ctx, zone))
+        assertEquals(1, unit.getTile().aerialDistanceTo(threatened.getCenterTile()))
+        assertEquals(0f, unit.currentMovement)
+        assertTrue(unit in ctx.cache.processedUnits)
+        assertTrue(unit !in ctx.units)
+    }
+
+    @Test
+    fun `several units go to different tiles next to the city`() {
+        val threatened = airportCity(0)
+        val home = airportCity(-10)
+        besiege(threatened)
+        val units = home.getCenterTile().neighbors.take(3).map { game.addUnit("Warrior", civ, it) }.toList() + game.addUnit("Archer", civ, home.getCenterTile())
+        val ctx = context(*units.toTypedArray())
+        val zone = civ.ai.tactical.map.zoneOf(threatened.getCenterTile())!!
+        assertEquals(units, TacticalAi.plotDefensiveAirlifts(ctx, zone))
+        assertEquals(4, units.map { it.getTile() }.toSet().size)
+        assertTrue(units.all { it.getTile().aerialDistanceTo(threatened.getCenterTile()) == 1 })
+    }
+
+    @Test
+    fun `nothing is airlifted without an airport in the threatened city, with no enemy in its zone, from a unit that moved, or from the city itself`() {
+        val threatened = game.addCity(civ, tile(0))
+        val home = airportCity(-10)
+        besiege(threatened)
+        val unit = game.addUnit("Warrior", civ, home.getCenterTile())
+        val zone = civ.ai.tactical.map.zoneOf(threatened.getCenterTile())!!
+        assertTrue("no airport in the threatened city", TacticalAi.plotDefensiveAirlifts(context(unit), zone).isEmpty())
+
+        threatened.cityConstructions.addBuilding("Airport")
+        unit.currentMovement = 1f
+        assertTrue("the unit has moved", TacticalAi.plotDefensiveAirlifts(context(unit), civ.ai.tactical.map.zoneOf(threatened.getCenterTile())!!).isEmpty())
+
+        unit.currentMovement = unit.getMaxMovement().toFloat()
+        val inside = game.addUnit("Warrior", civ, threatened.getCenterTile())
+        assertTrue("the unit is already in the threatened city", TacticalAi.plotDefensiveAirlifts(context(inside), civ.ai.tactical.map.zoneOf(threatened.getCenterTile())!!).isEmpty())
+
+        for (enemyUnit in enemy.units.getCivUnits().toList()) enemyUnit.destroy()
+        val quietZone = context(unit).map.zoneOf(threatened.getCenterTile())!!
+        assertEquals(0, quietZone.enemyUnitCount)
+        assertTrue("no enemy near", TacticalAi.plotDefensiveAirlifts(context(unit), quietZone).isEmpty())
+    }
+
+    @Test
+    fun `the tactical turn airlifts to a threatened city that we do not dominate, and not to one that we do`() {
+        val threatened = airportCity(0)
+        val home = airportCity(10)
+        besiege(threatened)
+        val unit = game.addUnit("Warrior", civ, home.getCenterTile())
+        see()
+        assertNotEquals(TacticalDominance.Friendly, civ.ai.tactical.map.zoneOf(threatened.getCenterTile())!!.dominance)
+        val cache = run()
+        assertTrue(unit in cache.processedUnits)
+        assertEquals(1, unit.getTile().aerialDistanceTo(threatened.getCenterTile()))
+    }
+
+    @Test
+    fun `a threatened city we dominate gets no airlift`() {
+        val strong = airportCity(0)
+        val home = airportCity(10)
+        for (tile in strong.getCenterTile().getTilesAtDistance(1)) game.addUnit("Swordsman", civ, tile)
+        game.addUnit("Warrior", enemy, tile(3))
+        val unit = game.addUnit("Warrior", civ, home.getCenterTile())
+        see()
+        val zone = civ.ai.tactical.map.zoneOf(strong.getCenterTile())!!
+        assertEquals(TacticalDominance.Friendly, zone.dominance)
+        assertEquals(1, zone.enemyUnitCount)
+        run()
+        assertTrue("it did not go to the city", unit.getTile().aerialDistanceTo(strong.getCenterTile()) > 1)
     }
 
     // endregion

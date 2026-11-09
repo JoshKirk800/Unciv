@@ -6,6 +6,7 @@ import com.unciv.view.isMilitary
 import com.unciv.view.isNuclearWeapon
 import com.unciv.view.isAutomatingRoadConnection
 import com.unciv.view.isMoving
+import com.unciv.view.isPreparingAirlift
 import com.unciv.view.isPreparingAirSweep
 import com.unciv.view.isPreparingParadrop
 import com.badlogic.gdx.graphics.Color
@@ -139,7 +140,7 @@ object WorldMapTileUpdater {
         }
 
         val isAirUnit = unitView.isAirUnit()
-        val moveTileOverlayColor = if (unitView.isPreparingParadrop()) Color.BLUE else Color.WHITE
+        val moveTileOverlayColor = if (unitView.isPreparingParadrop() || unitView.isPreparingAirlift()) Color.BLUE else Color.WHITE
         val tilesInMoveRange = unitView.getReachableTilesInCurrentTurn()
         // Prepare special Nuke blast radius display
         val nukeBlastRadius = if (unitView.isNuclearWeapon() && selectedTile != null && selectedTile != unitView.getTile())

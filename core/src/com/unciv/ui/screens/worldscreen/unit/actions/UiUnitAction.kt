@@ -175,6 +175,7 @@ enum class UiUnitActionType private constructor(
     Transform(UnitActionType.Transform, portrait("Transform"), uncivSound = UncivSound.Upgrade, useFrequency = 70f),
     Pillage(UnitActionType.Pillage, portrait("Pillage"), false, useFrequency = 65f),
     Paradrop(UnitActionType.Paradrop, portrait("Paradrop"), false, useFrequency = 60f),
+    Airlift(UnitActionType.Airlift, portrait("Paradrop"), false, useFrequency = 60f),
     AirSweep(UnitActionType.AirSweep, portrait("AirSweep"), false, useFrequency = 90f),
     SetUp(UnitActionType.SetUp, portrait("SetUp"), false, UncivSound.Setup, useFrequency = 85f),
     FoundCity(UnitActionType.FoundCity, portrait("FoundCity"), uncivSound = UncivSound.Chimes, useFrequency = 80f),

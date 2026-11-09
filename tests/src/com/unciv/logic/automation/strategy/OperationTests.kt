@@ -565,6 +565,16 @@ class OperationTests {
     }
 
     @Test
+    fun `a muster city with an Airport doubles the score of a land target, not of one reached by sea`() {
+        val land = score(target(25))
+        val sea = score(target(25, bySea = true))
+        assertTrue(land > 0 && sea > 0)
+        city.cityConstructions.addBuilding("Airport")
+        assertTrue("land ${score(target(25))} plain $land", abs(score(target(25)) - 2 * land) <= 2)
+        assertEquals(sea, score(target(25, bySea = true)))
+    }
+
+    @Test
     fun `a sneak attack cubes the distance factor, a recapture and the original capital multiply the score`() {
         enemyCity.isOriginalCapital = false
         val plain = score(target())
