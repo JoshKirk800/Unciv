@@ -208,6 +208,28 @@ class DiplomacyAiTests {
         assertEquals(offset, c.ai.diplomacy.memoryOf(a).warmongerAmount - cBefore)
         assertEquals(offset / 2, d.ai.diplomacy.memoryOf(a).warmongerAmount - dBefore)
     }
+
+    @Test
+    fun `killing a city-state's unit pleases the majors at war with that city-state, and only them`() {
+        val cityState = game.addCiv(cityStateType = "Cultured")
+        game.addCity(cityState, game.getTile(HexCoord(0, 8)))
+        for (major in listOf(a, b, c)) meet(major, cityState)
+        cityState.getDiplomacyManager(a)!!.declareWar()
+        cityState.getDiplomacyManager(b)!!.declareWar()
+        val power = game.ruleset.units.getValue("Warrior").getForceEvaluation()
+        DiplomacyEvents.onUnitKilled(cityState, b, power)
+        assertTrue("a is at war with the city-state too", a.ai.diplomacy.memoryOf(b).commonFoeValue > 0)
+        assertEquals("c is not", 0, c.ai.diplomacy.memoryOf(b).commonFoeValue)
+    }
+
+    @Test
+    fun `the era of the game is the average of every living civilization including the barbarians`() {
+        val eras = game.ruleset.eras.values
+        for (major in listOf(a, b, c)) major.tech.era = eras.first { it.eraNumber == 2 }
+        assertEquals(eras.first { it.eraNumber == 2 }.name, DiplomacyTurn.gameEraName(a))
+        game.addBarbarianCiv() // era 0: (2 + 2 + 2 + 0) / 4 = 1
+        assertEquals(eras.first { it.eraNumber == 1 }.name, DiplomacyTurn.gameEraName(a))
+    }
     //endregion
 
     //region Approaches
