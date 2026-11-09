@@ -6,6 +6,7 @@ import com.unciv.logic.IsPartOfGameInfoSerialization
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.NotificationCategory
 import com.unciv.logic.civilization.NotificationIcon
+import com.unciv.logic.map.BFS
 import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.TileMap
 import com.unciv.logic.map.mapunit.MapUnit
@@ -108,8 +109,20 @@ class BarbarianManager : IsPartOfGameInfoSerialization {
                     if (it.destroyed) 4 else 7
             ) }.toSet()
 
+        // CvBarbarians::DoCamps: a landmass takes camps in proportion to its size - the target number times its share of the land, plus one
+        // (a camp is placed while the landmass has no more than that, so one more than that can end up on it)
+        val landmasses = Landmasses(tileMap)
+        val campTarget = fogTiles.size / fogTilesPerCamp
+        val campsOnLandmass = IntArray(landmasses.sizes.size)
+        for (campTile in tileMap.values) if (campTile.isLand && campTile.isBarbarianEncampment()) campsOnLandmass[landmasses.idOf(campTile)]++
+        fun hasRoomForCamp(tile: Tile): Boolean {
+            val id = landmasses.idOf(tile)
+            return campsOnLandmass[id] <= campTarget * landmasses.sizes[id] / landmasses.landTiles + 1
+        }
+
         val viableTiles = fogTiles.filter {
             !it.isImpassible()
+                    && hasRoomForCamp(it)
                     && it.getOwner() == null // CvBarbarians::DoCamps: !isOwned
                     && it.resource == null
                     && it.terrainFeatureObjects.none { feature -> feature.hasUnique(UniqueType.RestrictedBuildableImprovements) }
@@ -141,6 +154,9 @@ class BarbarianManager : IsPartOfGameInfoSerialization {
 
             // Still more camps to add?
             if (addedCamps < campsToAdd) {
+                // The landmass may be full now, and this camp rules out the tiles around it
+                campsOnLandmass[landmasses.idOf(tile)]++
+                viableTiles.removeAll { !hasRoomForCamp(it) }
                 // Remove some newly non-viable tiles
                 viableTiles.removeAll(tile.getTilesInDistance(7).toSet())
                 // Reroll bias
@@ -265,4 +281,30 @@ class BarbarianManager : IsPartOfGameInfoSerialization {
 
     /** Return a _mutable_ List of encampment tiles, allowing in-place sort */
     fun getEncampmentTiles() = encampments.mapTo(mutableListOf()) { gameInfo.tileMap[it.position] }
+}
+
+/**
+ *  The landmasses of [tileMap], CvArea of the land: every group of land tiles that touch, mountains included. [Tile.getContinent] is not
+ *  used, it leaves out the impassable tiles, so a range of mountains would cut a landmass in two.
+ */
+private class Landmasses(tileMap: TileMap) {
+    private val ids = HashMap<Tile, Int>()
+    val sizes: IntArray
+    val landTiles: Int
+
+    init {
+        val sizeList = ArrayList<Int>()
+        for (start in tileMap.values) {
+            if (!start.isLand || start in ids) continue
+            val bfs = BFS(start) { it.isLand }
+            bfs.stepToEnd()
+            val reached = bfs.getReachedTiles()
+            for (tile in reached) ids[tile] = sizeList.size
+            sizeList.add(reached.size)
+        }
+        sizes = sizeList.toIntArray()
+        landTiles = ids.size
+    }
+
+    fun idOf(tile: Tile) = ids.getValue(tile)
 }
