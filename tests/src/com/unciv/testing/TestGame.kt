@@ -188,6 +188,7 @@ class TestGame(vararg addGlobalUniques: String, forUITesting: Boolean = false, b
         val barbarianCivilization = Civilization(nation)
         barbarianCivilization.gameInfo = gameInfo
         barbarianCivilization.cache.updateState()
+        barbarianCivilization.tradeRoutes.setTransients(barbarianCivilization)
         gameInfo.civilizations.add(barbarianCivilization)
         return barbarianCivilization
     }

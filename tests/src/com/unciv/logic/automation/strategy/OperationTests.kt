@@ -218,6 +218,17 @@ class OperationTests {
     }
 
     @Test
+    fun `a unit that may paradrop is no reserve, it is the tactical AI's for pillaging`() {
+        val drop = game.createUnitPromotion("May Paradrop to [Land] tiles up to [5] tiles away")
+        val walker = unit("Warrior", HexCoord(1, 0))
+        val paratrooper = unit("Warrior", HexCoord(0, 1))
+        paratrooper.promotions.addPromotion(drop.name, true)
+        closeDefense()
+        assertNotNull("the plain unit of the same kind is recruited", ops.armyOf(walker))
+        assertNull(ops.armyOf(paratrooper))
+    }
+
+    @Test
     fun `scouts, wounded units and units that just finished an operation are no reserves`() {
         val explorer = unit("Warrior")
         UnitAiTypes.set(explorer, UnitAiType.EXPLORE)
