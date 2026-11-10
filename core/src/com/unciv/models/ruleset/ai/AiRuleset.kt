@@ -55,6 +55,8 @@ class AiRuleset {
     /** CvUnitEntry::GetPower (DoUpdatePower, promotion modifiers included) by Unciv unit name, computed from the XML; units without an entry use [BaseUnit.getAiPower]'s fallback */
     var unitPower = LinkedHashMap<String, Int>()
 
+    /** The number of the original's last era (Eras rows - 1), which a player's era never exceeds there; [NO_LAST_ERA] without a table. Unciv's G&K/BNW rulesets split it into Information and Future */
+    var lastEra = NO_LAST_ERA
     /** The ruleset this belongs to - needed to derive flavors of objects without a table entry */
     @Transient lateinit var ruleset: Ruleset
 
@@ -66,6 +68,7 @@ class AiRuleset {
     @Transient private val flavorCache = HashMap<String, IntArray>()
 
     companion object {
+        const val NO_LAST_ERA = Int.MAX_VALUE
         const val KIND_BUILDING = "Building"
         const val KIND_UNIT = "Unit"
         const val KIND_TECHNOLOGY = "Technology"
@@ -104,6 +107,7 @@ class AiRuleset {
         for (name in other.coastalCivilizations) if (name !in coastalCivilizations) coastalCivilizations.add(name)
         featureStartingLocationWeights.putAll(other.featureStartingLocationWeights)
         unitPower.putAll(other.unitPower)
+        if (other.lastEra != NO_LAST_ERA) lastEra = other.lastEra
         mergeByName(policyBranches, other.policyBranches)
         mergeByName(eraDiplomacy, other.eraDiplomacy)
         mergeByName(gameSpeedDiplomacy, other.gameSpeedDiplomacy)
@@ -141,6 +145,7 @@ class AiRuleset {
         tacticalMoves.clear()
         promotionAi.clear()
         unitPower.clear()
+        lastEra = NO_LAST_ERA
         clearCaches()
     }
 

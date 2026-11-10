@@ -77,7 +77,7 @@ object DiplomacyTurn {
         var count = 0
         for (other in civ.gameInfo.civilizations) {
             if (other.isSpectator || !other.isAlive()) continue
-            sum += other.getEraNumber()
+            sum += other.getAiEraNumber()
             count++
         }
         val eraNumber = if (count == 0) 0 else sum / count

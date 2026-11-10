@@ -130,7 +130,7 @@ object GrandStrategyAi {
 
         val approachModifier = max(max(ai.majorCivApproachBias(MajorCivApproach.Deceptive), ai.majorCivApproachBias(MajorCivApproach.Hostile)),
             ai.majorCivApproachBias(MajorCivApproach.War)) - ai.majorCivApproachBias(MajorCivApproach.Friendly)
-        priority += (ai.diplomacyValue(DiplomacyPersonality.Boldness) + approachModifier) * (12 - civ.getEraNumber())
+        priority += (ai.diplomacyValue(DiplomacyPersonality.Boldness) + approachModifier) * (12 - civ.getAiEraNumber())
 
         // CvGrandStrategyAI::GetConquestPriority loops over the teams, so a major that has been met counts whether or not it is still alive
         if (elapsedTurns >= rules.define(AiDefine.AI_GS_CONQUEST_NOBODY_MET_FIRST_TURN)
@@ -193,7 +193,7 @@ object GrandStrategyAi {
         if (!isVictoryValid(civ, def)) return -100
         val ai = civ.ai
         val rules = ai.rules
-        var priority = (10 - civ.getEraNumber()) * ai.personality(Flavor.Culture) * 200 / 100
+        var priority = (10 - civ.getAiEraNumber()) * ai.personality(Flavor.Culture) * 200 / 100
 
         val ourCulture = culturePerTurn(civ)
         val ourTourism = ai.tourism()
@@ -234,7 +234,7 @@ object GrandStrategyAi {
         var unalliedCityStates = 0
         if (league == null) {
             // Before the World Congress, weight by flavor
-            priority += (10 - civ.getEraNumber()) * ai.personality(Flavor.Diplomacy) * 150 / 100
+            priority += (10 - civ.getAiEraNumber()) * ai.personality(Flavor.Diplomacy) * 150 / 100
         } else {
             votesNeeded = league.getVotesNeededForWorldLeader()
             votesControlled = league.getDelegates(civ)
@@ -290,7 +290,7 @@ object GrandStrategyAi {
     fun spaceshipPriority(civ: Civilization, def: GrandStrategyDef): Int {
         if (!isVictoryValid(civ, def)) return -100
         val ai = civ.ai
-        var priority = civ.getEraNumber() * ai.personality(Flavor.Science) * 150 / 100
+        var priority = civ.getAiEraNumber() * ai.personality(Flavor.Science) * 150 / 100
         if (hasApolloProgram(civ)) priority += ai.rules.define(AiDefine.AI_GS_SS_HAS_APOLLO_PROGRAM)
         return priority
     }

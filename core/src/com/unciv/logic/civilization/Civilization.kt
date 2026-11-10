@@ -874,6 +874,8 @@ class Civilization : IsPartOfGameInfoSerialization {
     /** The ideology of this civilization, if it has chosen one */
     @Readonly fun getIdeology() = policies.getIdeology()
     @Readonly fun getEraNumber(): Int = getEra().eraNumber
+    /** CvPlayer::GetCurrentEra as the original's AI reads it: Unciv's G&K/BNW eras have one more than the XML, and the last two are its Future era */
+    @Readonly fun getAiEraNumber(): Int = minOf(getEraNumber(), gameInfo.ruleset.ai.lastEra)
 
     /** Whether the game difficulty's AI bonuses apply: everybody but the human and the barbarians, so the city states too
      *  (`!isHuman() && !IsAITeammateOfHuman() && !isBarbarian()` in the original). */

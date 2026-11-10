@@ -459,7 +459,7 @@ object DiplomacyAutomation {
         val ai = civ.ai.diplomacy
         if (ai.demandTarget != other.civID || !ai.demandReady) return false
         if (!TradeEvaluation.hasMutualDeclarationOfFriendship(civ, other)) return false
-        val gold = minOf(other.gold, 200 + other.getEraNumber() * 150)
+        val gold = minOf(other.gold, 200 + other.getAiEraNumber() * 150)
         if (gold <= 0) return false
         if (turnsSinceStatement(civ, ai.memoryOf(other), DiploStatement.Demand) < 40) return false
         val tribute = TradeOffer(Constants.flatGold, TradeOfferType.Gold, gold, civ.gameInfo.speed)
