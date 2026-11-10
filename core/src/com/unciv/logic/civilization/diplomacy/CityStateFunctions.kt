@@ -473,39 +473,33 @@ class CityStateFunctions(val civInfo: Civilization) {
         if (canShortcut && modifiers.values.sum() < -200)
             return modifiers
 
-        // highest force is rank=0
-        val forceRank = civInfo.gameInfo.getAliveMajorCivs().sortedByDescending { it.getStatForRanking(
-            RankingType.Force) }.indexOf(demandingCiv)
-        // probably not necessary, but just in case, avoid division by zero if there's some edge case where no players are alive
-        val numAlivePlayers = max(civInfo.gameInfo.getAliveMajorCivs().size, 1)
+        // The living majors ranked by CvPlayer::GetMilitaryMight, highest first (the original does not score a major that is not among them)
+        val majors = civInfo.gameInfo.getAliveMajorCivs()
+        val mightRank = majors.sortedByDescending { it.ai.militaryMight() }.indexOf(demandingCiv)
         val globalModifier = civInfo.gameInfo.ruleset.modOptions.constants.tributeGlobalModifier
-        // apparently lowest force gets some pity points
-        modifiers["Military Rank"] = intimidationStrength(globalModifier * (numAlivePlayers - forceRank) / numAlivePlayers)
+        // (int)((float)(count - rank) / (float)count * 75): the best of them gets all of it, the worst a share
+        modifiers["Military Rank"] = intimidationStrength(
+            if (mightRank < 0) 0 else ((majors.size - mightRank).toFloat() / majors.size.toFloat() * globalModifier).toInt())
 
         if (canShortcut && modifiers.values.sum() < -100)
             return modifiers
 
-        val bullyRange = (civInfo.gameInfo.tileMap.tileMatrix.size / 10).coerceIn(5, 10)   // Longer range for larger maps
-        @Suppress("DEPRECATION") val inRangeTiles = civInfo.getCapital()!!.getCenterTile().getTilesInDistanceRange(1..bullyRange)
-        val forceNearCity = inRangeTiles
-            .sumOf { if (it.militaryUnit?.civ == demandingCiv)
-                    it.militaryUnit!!.getForceEvaluation()
-                else 0
-            }
-        val csForce = CityCombatant(civInfo.getCapital()!!).getDefendingStrength().toFloat().pow(1.5f).toInt() + inRangeTiles
-            .sumOf { if (it.militaryUnit?.civ == civInfo)
-                    it.militaryUnit!!.getForceEvaluation()
-                else 0
-            }
-        val forceRatio = forceNearCity.toFloat() / csForce.toFloat()
+        // The capital's tile and every tile within max(map width / 10, 5) of it; CvUnit::GetPower of the combat units on them
+        val bullyRange = max(civInfo.gameInfo.tileMap.tileMatrix.size / 10, 5)
+        @Suppress("DEPRECATION") val inRangeTiles = civInfo.getCapital()!!.getCenterTile().getTilesInDistanceRange(0..bullyRange)
+        val bullyPower = inRangeTiles.sumOf { tile -> tile.militaryUnit?.takeIf { it.civ == demandingCiv }?.getAiPower() ?: 0 }
+        // CvCity::GetPower: the city's strength to the power 1.5, the same math as a unit's
+        val csPower = CityCombatant(civInfo.getCapital()!!).getDefendingStrength().toDouble().pow(1.5).toInt() +
+            inRangeTiles.sumOf { tile -> tile.militaryUnit?.takeIf { it.civ == civInfo }?.getAiPower() ?: 0 }
+        val powerRatio = bullyPower.toFloat() / csPower.toFloat()
         val localModifier = civInfo.gameInfo.ruleset.modOptions.constants.tributeLocalModifier
 
         modifiers["Military near City-State"] = intimidationStrength(when {
-            forceRatio > 3f -> localModifier
-            forceRatio > 2f -> localModifier * 4/5
-            forceRatio > 1.5f -> localModifier * 3/5
-            forceRatio > 1f -> localModifier * 2/5
-            forceRatio > 0.5f -> localModifier / 5
+            powerRatio >= 3f -> localModifier
+            powerRatio >= 2f -> localModifier * 4/5
+            powerRatio >= 1.5f -> localModifier * 3/5
+            powerRatio >= 1f -> localModifier * 2/5
+            powerRatio >= 0.5f -> localModifier / 5
             else -> 0
         })
 

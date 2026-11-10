@@ -21,6 +21,7 @@ import com.unciv.models.ruleset.ai.MinorCivApproach
 import com.unciv.models.ruleset.ai.StrategyDef
 import com.unciv.utils.hashOf
 import org.jetbrains.annotations.VisibleForTesting
+import yairm210.purity.annotations.Cache
 import yairm210.purity.annotations.Readonly
 import kotlin.math.max
 import kotlin.math.min
@@ -141,8 +142,8 @@ class CivAi : IsPartOfGameInfoSerialization {
     @Transient internal var strategyVersion = 0
         private set
 
-    @Transient private var militaryMightTurn = -1
-    @Transient private var militaryMightCache = 0
+    @Transient @Cache private var militaryMightTurn = -1
+    @Transient @Cache private var militaryMightCache = 0
     @Transient private var tourismTurn = -1
     @Transient private var tourismCache = 0
     @Transient private var plotDangerTurn = -1
@@ -386,7 +387,7 @@ class CivAi : IsPartOfGameInfoSerialization {
      *  The unit type's power is [com.unciv.models.ruleset.unit.BaseUnit.getAiPower] (CvUnitEntry::GetPower);
      *  the unit level is 1 + its promotions gained by experience (CvUnit::getLevel starts at 1).
      */
-    fun militaryMight(): Int {
+    @Readonly fun militaryMight(): Int {
         val turn = civ.gameInfo.turns
         if (militaryMightTurn == turn) return militaryMightCache
         var sum = 0
