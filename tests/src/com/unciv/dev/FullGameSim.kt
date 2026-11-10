@@ -55,6 +55,8 @@ import java.util.UUID
  * (or `all`) with FULL_SIM_DUMP_DIR writes the full state JSON, gzipped, after those turns, so that two runs can be diffed.
  *
  * FULL_SIM_PERTURB_HASH = n: ask for n identity hash codes before the game starts (see the comment in `play`).
+ * FULL_SIM_DECISION_LOG = a file that gets, every turn, the AI values of each major civilization and each pair that has met (approach, disputes,
+ * warmonger threat, wars fought, military might); the columns of the Lua observer for the original game, see [DecisionLog].
  *
  * Performance ([SimPerformance]): every turn's wall time, CPU time, allocation, garbage collection and heap go to `<report>.perf.csv`
  * and into the report. FULL_SIM_SPANS (any value) also times every `timeThis` span, into `<report>.spans.csv`; this slows the hottest
@@ -297,6 +299,7 @@ class FullGameSim {
         val combatLosses = CombatLosses(game).also { this.combatLosses = it }
         val barbarianStats = BarbarianStats(game).also { this.barbarianStats = it }
         val embarkedStats = EmbarkedStats(game).also { this.embarkedStats = it }
+        val decisionLog = System.getenv("FULL_SIM_DECISION_LOG")?.let { DecisionLog(game, File(it)) }
         val outPath = System.getenv("FULL_SIM_OUT")!!
         val spans = System.getenv("FULL_SIM_SPANS") != null
         val performance = SimPerformance(game, spans, File("$outPath.perf.csv"), if (spans) File("$outPath.spans.csv") else null)
@@ -350,6 +353,7 @@ class FullGameSim {
             combatLosses.afterTurn()
             barbarianStats.afterTurn()
             embarkedStats.afterTurn()
+            decisionLog?.afterTurn(turn)
             for (civTrace in civTraces) civTrace.afterTurn(turn)
             val dump = dumpDir != null && (dumpAll || turn in dumpTurns)
             if (digestFile != null || dump) {
