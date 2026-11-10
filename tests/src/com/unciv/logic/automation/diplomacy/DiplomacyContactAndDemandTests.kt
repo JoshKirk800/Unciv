@@ -276,4 +276,36 @@ class DiplomacyContactAndDemandTests {
         assertEquals(ours + 200, a.gold)
     }
     //endregion
+
+    //region A human asks to work together
+
+    @Test
+    fun `a request to work together too early restarts both counters and is refused`() {
+        game.gameInfo.turns = 5 // met on turn 0, DOF_TURN_BUFFER 20
+        a.ai.diplomacy.memoryOf(b).doFCounter = -1
+        assertFalse(DiplomacyAutomation.answerDoFRequest(a, b))
+        assertEquals(0, a.ai.diplomacy.memoryOf(b).doFCounter)
+        assertEquals(0, b.ai.diplomacy.memoryOf(a).doFCounter)
+    }
+
+    @Test
+    fun `asking again within the buffer is refused and leaves the counters alone`() {
+        game.gameInfo.turns = 30
+        a.ai.diplomacy.memoryOf(b).doFCounter = 7
+        b.ai.diplomacy.memoryOf(a).doFCounter = 9
+        assertFalse(DiplomacyAutomation.answerDoFRequest(a, b))
+        assertEquals(7, a.ai.diplomacy.memoryOf(b).doFCounter)
+        assertEquals(9, b.ai.diplomacy.memoryOf(a).doFCounter)
+    }
+
+    @Test
+    fun `a new answer restarts both counters whatever it is`() {
+        game.gameInfo.turns = 30
+        a.ai.diplomacy.memoryOf(b).doFCounter = 25
+        b.ai.diplomacy.memoryOf(a).doFCounter = 25
+        DiplomacyAutomation.answerDoFRequest(a, b)
+        assertEquals(0, a.ai.diplomacy.memoryOf(b).doFCounter)
+        assertEquals(0, b.ai.diplomacy.memoryOf(a).doFCounter)
+    }
+    //endregion
 }
