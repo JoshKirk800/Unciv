@@ -524,31 +524,56 @@ class BaseUnit : RulesetObject(), INonPerpetualConstruction {
 
     @Transient @Cache
     private var cachedForceEvaluation: Int = -1
-    
+
+    @Transient @Cache
+    private var cachedAiPower: Int = -1
+
+    /** Unciv's own estimate of a unit's strength: biased towards fast units and against ranged naval ones. Used where no original rule is ported. */
     @Readonly
     fun getForceEvaluation(): Int {
-        if (cachedForceEvaluation < 0) 
-            cachedForceEvaluation = evaluateForce()
+        if (cachedForceEvaluation < 0)
+            cachedForceEvaluation = evaluateForce(dllPower = false)
         return cachedForceEvaluation
     }
 
+    /**
+     *  CvUnitEntry::GetPower (DoUpdatePower), what the original's military AI compares: strength^1.5, or ranged strength^1.45 (naval ranged x3/4)
+     *  when that is higher, each truncated to a whole number; the mobility term min(1, moves)^0.3 is 1 for every unit that can move at all;
+     *  suicide units halved, nukes +4000, then the promotion modifiers. The modifiers are Unciv's reading of the unit's uniques, as in [getForceEvaluation].
+     */
     @Readonly
-    private fun evaluateForce(): Int {
+    fun getAiPower(): Int {
+        if (cachedAiPower < 0)
+            cachedAiPower = evaluateForce(dllPower = true)
+        return cachedAiPower
+    }
+
+    @Readonly
+    private fun evaluateForce(dllPower: Boolean): Int {
         if (strength == 0 && rangedStrength == 0) return 0
 
         var power = strength.toFloat().pow(1.5f)
         var rangedPower = rangedStrength.toFloat().pow(1.45f)
 
-        // Value ranged naval units less
-        if (isWaterUnit) {
-            rangedPower /= 2
-        }
-        if (rangedPower > 0)
-            power = rangedPower
+        if (dllPower) {
+            power = power.toInt().toFloat()
+            rangedPower = rangedPower.toInt().toFloat()
+            // Naval ranged attacks are less useful
+            if (isWaterUnit) rangedPower = (rangedPower.toInt() * 3 / 4).toFloat()
+            if (rangedPower > power) power = rangedPower
+            if (movement <= 0) return 0
+            // The mobility term min(1, moves)^0.3 is 1: the original's comment says moves should matter, but they do not
+        } else {
+            // Value ranged naval units less
+            if (isWaterUnit) {
+                rangedPower /= 2
+            }
+            if (rangedPower > 0)
+                power = rangedPower
 
-        // Replicates the formula from civ V, which is a lower multiplier than probably intended, because math
-        // They did fix it in BNW so it was completely bugged and always 1, again math
-        power = (power * movement.toFloat().pow(0.3f))
+            // Replicates the formula from civ V, which is a lower multiplier than probably intended, because math
+            power = (power * movement.toFloat().pow(0.3f))
+        }
 
         if (hasUnique(UniqueType.SelfDestructs))
             power /= 2

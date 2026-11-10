@@ -380,7 +380,7 @@ class CivAi : IsPartOfGameInfoSerialization {
     /**
      *  CvPlayer::GetMilitaryMight (calculateMilitaryMight), computed once per turn: per unit the unit type's power, × (1000 + 125 × level) / 1000,
      *  × health / 100, halved for water units; the sum × min(2, 1 + √gold / 100).
-     *  The unit type's power (CvUnitEntry::GetPower) is Unciv's port of it, [com.unciv.models.ruleset.unit.BaseUnit.getForceEvaluation];
+     *  The unit type's power is [com.unciv.models.ruleset.unit.BaseUnit.getAiPower] (CvUnitEntry::GetPower);
      *  the unit level is 1 + its promotions gained by experience (CvUnit::getLevel starts at 1).
      */
     fun militaryMight(): Int {
@@ -388,7 +388,7 @@ class CivAi : IsPartOfGameInfoSerialization {
         if (militaryMightTurn == turn) return militaryMightCache
         var sum = 0
         for (unit in civ.units.getCivUnits()) {
-            var power = unit.baseUnit.getForceEvaluation()
+            var power = unit.baseUnit.getAiPower()
             if (power == 0) continue
             val level = 1 + unit.promotions.numberOfPromotions
             power = power * (1000 + level * 125) / 1000

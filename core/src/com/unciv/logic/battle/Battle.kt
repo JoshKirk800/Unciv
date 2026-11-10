@@ -205,7 +205,7 @@ object Battle {
     ) {
         if (defender.isDefeated() && defender is MapUnitCombatant && !defender.unit.isCivilian()) {
             // CvUnit::kill: the war damage the diplomacy AIs note
-            DiplomacyEvents.onUnitKilled(defender.getCivInfo(), attacker.getCivInfo(), defender.unit.baseUnit.getForceEvaluation())
+            DiplomacyEvents.onUnitKilled(defender.getCivInfo(), attacker.getCivInfo(), defender.unit.baseUnit.getAiPower())
             tryEarnFromKilling(attacker, defender)
             tryHealAfterKilling(attacker, defender)
 
@@ -213,7 +213,7 @@ object Battle {
             triggerDefeatUniques(defender, attacker, attackedTile)
 
         } else if (attacker.isDefeated() && attacker is MapUnitCombatant && !attacker.unit.isCivilian()) {
-            DiplomacyEvents.onUnitKilled(attacker.getCivInfo(), defender.getCivInfo(), attacker.unit.baseUnit.getForceEvaluation())
+            DiplomacyEvents.onUnitKilled(attacker.getCivInfo(), defender.getCivInfo(), attacker.unit.baseUnit.getAiPower())
             tryEarnFromKilling(defender, attacker)
             tryHealAfterKilling(defender, attacker)
 

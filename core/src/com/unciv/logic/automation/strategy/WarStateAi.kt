@@ -59,7 +59,7 @@ class WarStateMemory : IsPartOfGameInfoSerialization {
  *    [turnsAtWar] (GetPlayerNumTurnsAtWar);
  *  - [numberCivsAtWarWith] (CvMilitaryAI::GetNumberCivsAtWarWith), [isPlayerValid] (CvDiplomacyAI::IsPlayerValid).
  *
- *  Unciv mapping: unit power is [com.unciv.models.ruleset.unit.BaseUnit.getForceEvaluation] (CvUnitEntry::GetPower) × (1000 + 125 × level) / 1000
+ *  Unciv mapping: unit power is [com.unciv.models.ruleset.unit.BaseUnit.getAiPower] (CvUnitEntry::GetPower) × (1000 + 125 × level) / 1000
  *  × health / 100 (CvUnit::GetPower, level = 1 + promotions); city power is the city's combat strength ^ 1.5 (CvCity::GetPower);
  *  CvPlayer::getPower is [CivAi.militaryMight] plus the economic might (5 + population + production + gold of all cities).
  *  Unciv has no teams: "team" checks are per civilization.
@@ -328,7 +328,7 @@ object WarStateAi {
     //region Power (CvUnit::GetPower, CvCity::GetPower, CvPlayer::getPower)
 
     fun unitPower(unit: MapUnit): Int {
-        var power = unit.baseUnit.getForceEvaluation()
+        var power = unit.baseUnit.getAiPower()
         if (power == 0) return 0
         val level = 1 + unit.promotions.numberOfPromotions
         power = power * (1000 + level * 125) / 1000

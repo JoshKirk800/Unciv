@@ -371,7 +371,7 @@ class MilitaryAi : IsPartOfGameInfoSerialization {
                 if (isLand && baseUnit.isBuildable(civ)) continue
                 val obsoleteTech = baseUnit.obsoleteTech ?: continue
                 if (!civ.tech.isResearched(obsoleteTech)) continue
-                if (baseUnit.getForceEvaluation() * 2 >= strongestBuildable) continue
+                if (baseUnit.getAiPower() * 2 >= strongestBuildable) continue
                 if (state > DefenseState.Neutral) {
                     val upgradeTo = baseUnit.upgradesTo?.let { civ.getEquivalentUnit(it) }
                     if (upgradeTo != null && upgradeTo.getResourceRequirementsPerTurn(civ.state).keys.any { civ.getResourceAmount(it) > 0 })
@@ -417,7 +417,7 @@ class MilitaryAi : IsPartOfGameInfoSerialization {
             var best = 0
             for (baseUnit in civ.gameInfo.ruleset.units.values) {
                 if (isLand && !baseUnit.isLandUnit || !isLand && !baseUnit.isWaterUnit) continue
-                val power = baseUnit.getForceEvaluation()
+                val power = baseUnit.getAiPower()
                 if (power > best && baseUnit.isBuildable(civ)) best = power
             }
             return best
@@ -425,7 +425,7 @@ class MilitaryAi : IsPartOfGameInfoSerialization {
 
         /** CvUnit::GetPower: the unit type's power x (1000 + 125 x level) / 1000, x health / 100 (level = 1 + promotions) */
         fun unitPower(unit: MapUnit): Int {
-            var power = unit.baseUnit.getForceEvaluation()
+            var power = unit.baseUnit.getAiPower()
             power = power * (1000 + (1 + unit.promotions.numberOfPromotions) * 125) / 1000
             return power * unit.health / 100
         }
