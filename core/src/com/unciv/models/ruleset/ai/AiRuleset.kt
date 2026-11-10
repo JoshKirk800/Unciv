@@ -52,6 +52,8 @@ class AiRuleset {
     var tacticalMoves = ArrayList<TacticalMoveDef>()
     /** The UnitPromotions CvUnit::AI_promotionValue reads, in XML order */
     var promotionAi = ArrayList<PromotionAiDef>()
+    /** CvUnitEntry::GetPower (DoUpdatePower, promotion modifiers included) by Unciv unit name, computed from the XML; units without an entry use [BaseUnit.getAiPower]'s fallback */
+    var unitPower = LinkedHashMap<String, Int>()
 
     /** The ruleset this belongs to - needed to derive flavors of objects without a table entry */
     @Transient lateinit var ruleset: Ruleset
@@ -101,6 +103,7 @@ class AiRuleset {
         mergeByName(handicaps, other.handicaps)
         for (name in other.coastalCivilizations) if (name !in coastalCivilizations) coastalCivilizations.add(name)
         featureStartingLocationWeights.putAll(other.featureStartingLocationWeights)
+        unitPower.putAll(other.unitPower)
         mergeByName(policyBranches, other.policyBranches)
         mergeByName(eraDiplomacy, other.eraDiplomacy)
         mergeByName(gameSpeedDiplomacy, other.gameSpeedDiplomacy)
@@ -137,6 +140,7 @@ class AiRuleset {
         multiUnitFormations.clear()
         tacticalMoves.clear()
         promotionAi.clear()
+        unitPower.clear()
         clearCaches()
     }
 

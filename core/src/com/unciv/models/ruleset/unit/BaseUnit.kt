@@ -537,14 +537,17 @@ class BaseUnit : RulesetObject(), INonPerpetualConstruction {
     }
 
     /**
-     *  CvUnitEntry::GetPower (DoUpdatePower), what the original's military AI compares: strength^1.5, or ranged strength^1.45 (naval ranged x3/4)
-     *  when that is higher, each truncated to a whole number; the mobility term min(1, moves)^0.3 is 1 for every unit that can move at all;
-     *  suicide units halved, nukes +4000, then the promotion modifiers. The modifiers are Unciv's reading of the unit's uniques, as in [getForceEvaluation].
+     *  CvUnitEntry::GetPower (`CvUnitEntry::DoUpdatePower`), what the original's military AI compares: the value the ruleset's AI.json
+     *  computed from the XML ([com.unciv.models.ruleset.ai.AiRuleset.unitPower], the promotion modifiers of the unit's free promotions included).
+     *
+     *  Fallback for units the table lacks (mods, units the XML has not got) only: the main part of DoUpdatePower (strength^1.5, or ranged
+     *  strength^1.45 (naval ranged x3/4) when higher, each truncated; mobility factor min(1, moves)^0.3 = 1; suicide /2; nukes +4000),
+     *  then Unciv's own reading of the unit's uniques as in [getForceEvaluation] - an approximation of the promotion modifiers, not a port.
      */
     @Readonly
     fun getAiPower(): Int {
         if (cachedAiPower < 0)
-            cachedAiPower = evaluateForce(dllPower = true)
+            cachedAiPower = ruleset.ai.unitPower[name] ?: evaluateForce(dllPower = true)
         return cachedAiPower
     }
 
