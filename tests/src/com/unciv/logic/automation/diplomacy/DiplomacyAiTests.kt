@@ -216,7 +216,7 @@ class DiplomacyAiTests {
         for (major in listOf(a, b, c)) meet(major, cityState)
         cityState.getDiplomacyManager(a)!!.declareWar()
         cityState.getDiplomacyManager(b)!!.declareWar()
-        val power = game.ruleset.units.getValue("Warrior").getForceEvaluation()
+        val power = game.ruleset.units.getValue("Warrior").getAiPower()
         DiplomacyEvents.onUnitKilled(cityState, b, power)
         assertTrue("a is at war with the city-state too", a.ai.diplomacy.memoryOf(b).commonFoeValue > 0)
         assertEquals("c is not", 0, c.ai.diplomacy.memoryOf(b).commonFoeValue)
