@@ -74,6 +74,21 @@ class ProductionChoiceTests {
     }
 
     @Test
+    fun `turns left are counted in hundredths of the city's production, not its rounded value`() {
+        val building = game.createBuilding().apply { cost = 40 }
+        city.cityConstructions.setCurrentConstruction(building.name)
+        val work = city.cityConstructions.getRemainingWork(building.name)
+        // CvCity::getProductionTurnsLeft with 4.6 production per turn: (work x 100 - 460) / 460 rounded up, plus the first turn
+        city.cityStats.currentCityStats.production = 4.6f
+        val left = work * 100 - 460
+        assertEquals((left + 459) / 460 + 1, ProductionAi.turnsLeft(city, building))
+        // the queue's own estimate counts whole points, as the city really adds them
+        assertEquals((work + 4) / 5, city.cityConstructions.turnsToConstruction(building.name))
+        city.cityStats.currentCityStats.production = 0f
+        assertEquals(work * 100 + 1, ProductionAi.turnsLeft(city, building))
+    }
+
+    @Test
     fun `the pick is a weighted roll among the top two on Prince`() {
         val automation = ConstructionAutomation(city.cityConstructions)
         val counts = HashMap<String, Int>()
@@ -149,7 +164,7 @@ class ProductionChoiceTests {
     }
 
     @Test
-    fun `turns left are those of the production the city makes building that very item, rounded as the game adds it`() {
+    fun `turns left are those of the production the city makes building that very item, in hundredths`() {
         civ.ai.setPersonalityFlavor(Flavor.Culture, 5)
         // CvCity::getProductionTurnsLeft: the base production with the modifiers of that item - here +20% for everything and
         // +100% more for wonders - and the production left over that, not the city's current production for every item
@@ -161,8 +176,12 @@ class ProductionChoiceTests {
         val wonder = game.createWonder().apply { cost = 60; culture = 1f }
 
         val base = city.cityStats.baseStatTree.totalStats.production
-        assertTrue("base production $base", base >= 4f && base * 1.2f % 1f > 0.5f) // truncating 4.8 to 4 would be wrong
-        fun turns(cost: Int, modifier: Float) = Math.ceil(cost / Math.round(base * modifier).toDouble()).toInt()
+        assertTrue("base production $base", base >= 4f && base * 1.2f % 1f > 0.5f) // a whole-point rounding would give another turn count
+        fun turns(cost: Int, modifier: Float): Int {
+            val production100 = Math.round(base * modifier * 100f)
+            val left = cost * 100 - production100
+            return (left + production100 - 1) / production100 + 1
+        }
 
         val candidates = ConstructionAutomation(city.cityConstructions).getBuildables().associateBy { it.construction.name }
         assertEquals(turns(60, 1.2f), candidates[building.name]!!.turns)
