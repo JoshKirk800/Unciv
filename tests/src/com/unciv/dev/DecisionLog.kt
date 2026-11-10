@@ -1,6 +1,8 @@
 package com.unciv.dev
 
 import com.unciv.logic.GameInfo
+import com.unciv.logic.automation.civilization.DiplomacyAutomation
+import com.unciv.logic.automation.diplomacy.OpinionAi
 import java.io.File
 
 /**
@@ -8,18 +10,20 @@ import java.io.File
  * original Brave New World game (`tools/attach_bnw_observer.py`), so the two games' war timing and approaches can be compared.
  *
  *     AI_CIV  turn  name  cities  militaryMight  militaryUnits
- *     AI_PAIR turn  name  other  atWar  majorCivApproach  landDispute  victoryDispute  warmongerThreat  numWarsFought
+ *     AI_PAIR turn  name  other  atWar  majorCivApproach  landDispute  victoryDispute  warmongerThreat  numWarsFought  doF  opinion  doFWeight  tooEarly
  *
  * Approach is the index of CvDiplomacyAI's MajorCivApproachTypes (War, Hostile, Deceptive, Guarded, Afraid, Friendly, Neutral); the dispute
  * and threat levels are 0..4 as in the original (None, Weak/Minor, Strong/Major, Fierce/Severe, Critical). A pair is listed only when
  * the civilizations have met. Victory disputes are not kept by the port (the original's read feeds only the grand strategy) and are written as -1.
+ * doF is 1 while a Declaration of Friendship stands; opinion is the index of MajorCivOpinionTypes (Unforgivable, Enemy, Competitor, Neutral,
+ * Favorable, Friend, Ally), which the Lua API of the original does not expose.
  * Written once per turn after the turn has been played, so a row for turn N is the state the original's observer sees at the start of turn N+1.
  */
 class DecisionLog(private val game: GameInfo, private val file: File) {
     init {
         file.writeText(
             "# AI_CIV\tturn\tname\tcities\tmilitaryMight\tmilitaryUnits\n" +
-                "# AI_PAIR\tturn\tname\tother\tatWar\tmajorCivApproach\tlandDispute\tvictoryDispute\twarmongerThreat\tnumWarsFought\n"
+                "# AI_PAIR\tturn\tname\tother\tatWar\tmajorCivApproach\tlandDispute\tvictoryDispute\twarmongerThreat\tnumWarsFought\tdoF\topinion\tdoFWeight\ttooEarly\n"
         )
     }
 
@@ -36,7 +40,11 @@ class DecisionLog(private val game: GameInfo, private val file: File) {
                     .append(ai.approachTowards(other).ordinal).append('\t')
                     .append(ai.landDisputeLevel(other).ordinal).append("\t-1\t")
                     .append(ai.warmongerThreat(other).ordinal).append('\t')
-                    .append(ai.memoryOf(other).numWarsFought).append('\n')
+                    .append(ai.memoryOf(other).numWarsFought).append('\t')
+                    .append(if (OpinionAi.isDoFAccepted(civ, other)) 1 else 0).append('\t')
+                    .append(ai.opinionOf(other).ordinal).append('\t')
+                    .append(DiplomacyAutomation.doFWeight(civ, other)).append('\t')
+                    .append(if (DiplomacyAutomation.isTooEarlyForDoF(civ, other)) 1 else 0).append('\n')
             }
         }
         file.appendText(text.toString())
