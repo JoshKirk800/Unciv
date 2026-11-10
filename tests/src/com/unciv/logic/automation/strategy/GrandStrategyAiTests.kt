@@ -120,6 +120,20 @@ class GrandStrategyAiTests {
     }
 
     @Test
+    fun `the era the original's AI reads ends with its last era`() {
+        val civ = neutralCiv()
+        civ.ai.setPersonalityFlavor(Flavor.Science, 10)
+        civ.tech.era = game.ruleset.eras["Information era"]!!
+        // XML eras: ... Postmodern 6, Future 7; Unciv's Information era (7) and Future era (8) are both its Future
+        assertEquals(7, civ.getEraNumber())
+        assertEquals(105, GrandStrategyAi.spaceshipPriority(civ, def(GrandStrategyAi.SPACESHIP)))
+        civ.tech.era = game.ruleset.eras["Future era"]!!
+        assertEquals(8, civ.getEraNumber())
+        // era * flavor * 150 / 100 with era 7
+        assertEquals(105, GrandStrategyAi.spaceshipPriority(civ, def(GrandStrategyAi.SPACESHIP)))
+    }
+
+    @Test
     fun `the Apollo bonus stays after the program building is lost`() {
         val civ = neutralCiv()
         for (flavor in Flavor.entries) civ.ai.setPersonalityFlavor(flavor, 0)
