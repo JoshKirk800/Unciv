@@ -1,3 +1,7 @@
 {
     "isBaseRuleset": true,
+    "constants": {
+        // CvCity::GetJONSCultureThreshold
+        "cultureCostLikeCivV": true
+    },
 }
