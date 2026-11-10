@@ -95,12 +95,27 @@ class ConstructionAutomation(val cityConstructions: CityConstructions) {
             picked.construction
         } ?: return@timeThis
         setConstruction(chosen)
+        if (chosen is PerpetualConstruction) fallThroughToOperationUnit()
     }
 
     /** CITY_BUILDABLE_UNIT_FOR_OPERATION chosen: CvCity::CommitToBuildingUnitForOperation, then the skipped-over count starts over */
     private fun commitToOperationUnit(picked: Buildable) {
         val offer = picked.slotOffer ?: return
         civInfo.ai.operations.commitToBuild(city, offer, picked.turns)
+        civInfo.ai.military.numberOfTimesOpsBuildSkippedOver = 0
+    }
+
+    /**
+     *  CvCityStrategyAI::ChooseProduction's switch has no break after CITY_BUILDABLE_PROCESS, so a chosen process falls into
+     *  CITY_BUILDABLE_UNIT_FOR_OPERATION: the city also commits to the unit the next open slot of an operation needs (pushed in front of the
+     *  process, which goes on after it), and the skipped-over count starts over whether or not there was one.
+     */
+    fun fallThroughToOperationUnit() {
+        val offer = civInfo.ai.operations.nextUnitForOperationSlot(city)?.takeIf { isAllowed(it.unit) }
+        if (offer != null && cityConstructions.canAddToQueue(offer.unit)) {
+            cityConstructions.addToQueue(offer.unit, addToTop = true)
+            civInfo.ai.operations.commitToBuild(city, offer, ProductionAi.turnsLeft(city, offer.unit))
+        }
         civInfo.ai.military.numberOfTimesOpsBuildSkippedOver = 0
     }
 
