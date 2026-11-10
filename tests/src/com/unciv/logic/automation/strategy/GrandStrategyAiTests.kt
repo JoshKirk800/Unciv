@@ -9,10 +9,12 @@ import com.unciv.models.ruleset.ai.EconomicStrategyDef
 import com.unciv.models.ruleset.ai.Flavor
 import com.unciv.models.ruleset.ai.GrandStrategyDef
 import com.unciv.models.ruleset.ai.MajorCivApproach
+import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.models.stats.Stats
 import com.unciv.testing.GdxTestRunner
 import com.unciv.testing.TestGame
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -65,6 +67,24 @@ class GrandStrategyAiTests {
     }
 
     @Test
+    fun `a met major that is dead still counts as met`() {
+        val civ = neutralCiv()
+        game.addCity(civ, game.getTile(0, 0))
+        game.gameInfo.turns = 30
+        // AI_GRAND_STRATEGY_CONQUEST_NOBODY_MET_WEIGHT -50 from turn AI_GS_CONQUEST_NOBODY_MET_FIRST_TURN 20 when no major has been met
+        assertEquals(-50, GrandStrategyAi.conquestPriority(civ, def(GrandStrategyAi.CONQUEST)))
+        val other = neutralCiv()
+        game.addCity(other, game.getTile(3, 0))
+        civ.diplomacyFunctions.makeCivilizationsMeet(other)
+        assertEquals(0, GrandStrategyAi.conquestPriority(civ, def(GrandStrategyAi.CONQUEST)))
+        // the original loops over the teams: the dead one has still been met
+        other.cities = listOf()
+        other.hasEverOwnedOriginalCapital = true
+        assertTrue(other.isDefeated())
+        assertEquals(0, GrandStrategyAi.conquestPriority(civ, def(GrandStrategyAi.CONQUEST)))
+    }
+
+    @Test
     fun `culture priority adds the culture-ahead weight over the flavor term`() {
         val civ = neutralCiv()
         civ.ai.setPersonalityFlavor(Flavor.Culture, 5)
@@ -97,6 +117,20 @@ class GrandStrategyAiTests {
         for (flavor in Flavor.entries) apollo.ai.setPersonalityFlavor(flavor, 0)
         assertEquals(150, GrandStrategyAi.spaceshipPriority(apollo, def(GrandStrategyAi.SPACESHIP)))
         assertEquals(0, GrandStrategyAi.spaceshipPriority(neutralCiv(), def(GrandStrategyAi.SPACESHIP)))
+    }
+
+    @Test
+    fun `the Apollo bonus stays after the program building is lost`() {
+        val civ = neutralCiv()
+        for (flavor in Flavor.entries) civ.ai.setPersonalityFlavor(flavor, 0)
+        val city = game.addCity(civ, game.getTile(0, 0))
+        val apollo = game.createBuilding("Enables construction of Spaceship parts")
+        city.cityConstructions.addBuilding(apollo)
+        assertEquals(150, GrandStrategyAi.spaceshipPriority(civ, def(GrandStrategyAi.SPACESHIP)))
+        // the original counts the project built, not the building standing
+        city.cityConstructions.removeBuilding(apollo)
+        assertFalse(civ.hasUnique(UniqueType.EnablesConstructionOfSpaceshipParts))
+        assertEquals(150, GrandStrategyAi.spaceshipPriority(civ, def(GrandStrategyAi.SPACESHIP)))
     }
 
     @Test
