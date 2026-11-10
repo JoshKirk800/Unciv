@@ -259,13 +259,13 @@ object WarStateAi {
             var enemyInMyLands = 0
             for (unit in civ.units.getCivUnits()) {
                 val tile = unit.getTile()
-                if (isHomeFrontFor(tile, civ, homeFrontRange)) myLocal += unitPower(unit)
-                if (isHomeFrontFor(tile, other, homeFrontRange)) myForeign += unitPower(unit)
+                if (isHomeFrontFor(tile, civ, homeFrontRange)) myLocal += unit.getAiPower()
+                if (isHomeFrontFor(tile, other, homeFrontRange)) myForeign += unit.getAiPower()
             }
             for (unit in other.units.getCivUnits()) {
                 val tile = unit.getTile()
-                if (isHomeFrontFor(tile, civ, homeFrontRange)) enemyInMyLands += unitPower(unit)
-                if (isHomeFrontFor(tile, other, homeFrontRange)) enemyInHisLands += unitPower(unit)
+                if (isHomeFrontFor(tile, civ, homeFrontRange)) enemyInMyLands += unit.getAiPower()
+                if (isHomeFrontFor(tile, other, homeFrontRange)) enemyInHisLands += unit.getAiPower()
             }
             for (city in civ.cities) myLocal += cityPower(city) * healthPercent(city) / 100 / 100
             for (city in other.cities) enemyInHisLands += cityPower(city) * healthPercent(city) / 100 / 100
@@ -326,14 +326,6 @@ object WarStateAi {
     //endregion
 
     //region Power (CvUnit::GetPower, CvCity::GetPower, CvPlayer::getPower)
-
-    fun unitPower(unit: MapUnit): Int {
-        var power = unit.baseUnit.getAiPower()
-        if (power == 0) return 0
-        val level = 1 + unit.promotions.numberOfPromotions
-        power = power * (1000 + level * 125) / 1000
-        return power * unit.health / 100
-    }
 
     fun cityPower(city: City): Int = CityCombatant(city).getCityStrength().toDouble().pow(1.5).toInt()
 

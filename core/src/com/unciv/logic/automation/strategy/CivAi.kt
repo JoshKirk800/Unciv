@@ -388,11 +388,7 @@ class CivAi : IsPartOfGameInfoSerialization {
         if (militaryMightTurn == turn) return militaryMightCache
         var sum = 0
         for (unit in civ.units.getCivUnits()) {
-            var power = unit.baseUnit.getAiPower()
-            if (power == 0) continue
-            val level = 1 + unit.promotions.numberOfPromotions
-            power = power * (1000 + level * 125) / 1000
-            power = power * unit.health / 100
+            var power = unit.getAiPower()
             if (unit.baseUnit.isWaterUnit) power /= 2
             sum += power
         }

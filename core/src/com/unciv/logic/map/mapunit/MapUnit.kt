@@ -803,6 +803,16 @@ class MapUnit : IsPartOfGameInfoSerialization {
         return power
     }
 
+    /**
+     *  CvUnit::GetPower: the unit type's power ([BaseUnit.getAiPower]) x (1000 + 125 x level) / 1000, x health / maximum health.
+     *  The level is 1 + the promotions gained (CvUnit::getLevel starts at 1); Unciv's health is out of 100.
+     */
+    @Readonly
+    fun getAiPower(): Int {
+        val power = baseUnit.getAiPower() * (1000 + (1 + promotions.numberOfPromotions) * 125) / 1000
+        return power * health / 100
+    }
+
     @Readonly
     fun getOtherEscortUnit(): MapUnit? {
         if (!::currentTile.isInitialized) return null // In some cases we might not have the unit placed on the map yet

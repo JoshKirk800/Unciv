@@ -378,7 +378,7 @@ class MilitaryAi : IsPartOfGameInfoSerialization {
                         continue // we'll wait and try to upgrade this one
                 }
             }
-            val score = unitPower(unit)
+            val score = unit.getAiPower()
             if (score < bestScore) {
                 bestScore = score
                 best = unit
@@ -421,13 +421,6 @@ class MilitaryAi : IsPartOfGameInfoSerialization {
                 if (power > best && baseUnit.isBuildable(civ)) best = power
             }
             return best
-        }
-
-        /** CvUnit::GetPower: the unit type's power x (1000 + 125 x level) / 1000, x health / 100 (level = 1 + promotions) */
-        fun unitPower(unit: MapUnit): Int {
-            var power = unit.baseUnit.getAiPower()
-            power = power * (1000 + (1 + unit.promotions.numberOfPromotions) * 125) / 1000
-            return power * unit.health / 100
         }
     }
 }

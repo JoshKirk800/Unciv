@@ -63,7 +63,7 @@ object UseGoldAutomation {
             if (unit.isDestroyed || isInArmy(unit)) continue
             val upgrade = upgradeFor(unit) ?: continue
             val canUpgradeNow = unit.upgrade.canPerformUpgrade(upgrade, isFree = false)
-            var priority = UPGRADE_THIS_TURN_PRIORITY_BOOST - unit.baseUnit.getForceEvaluation()
+            var priority = UPGRADE_THIS_TURN_PRIORITY_BOOST - unit.baseUnit.getAiPower()
             if (canUpgradeNow) priority += UPGRADE_THIS_TURN_PRIORITY_BOOST
             else if (unit.getTile().getOwner() == civ) priority += UPGRADE_IN_TERRITORY_PRIORITY_BOOST
             candidates.add(Candidate(unit, upgrade, canUpgradeNow, priority))
