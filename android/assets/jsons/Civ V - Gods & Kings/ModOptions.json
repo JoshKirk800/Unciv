@@ -1,3 +1,10 @@
 {
     "isBaseRuleset": true,
+    // CvTreasury::CalculateUnitCost with the GlobalDefines UNIT_MAINTENANCE_GAME_MULTIPLIER 8 and UNIT_MAINTENANCE_GAME_EXPONENT_DIVISOR 7;
+    // no unit is free (the handicaps have GoldFreeUnits 0)
+    "constants": {
+        "unitMaintenanceFreeUnits": 0,
+        "unitMaintenanceGameMultiplier": 8,
+        "unitMaintenanceExponentDivisor": 7
+    },
 }

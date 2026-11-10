@@ -42,6 +42,13 @@ class ModConstants {
     // unitSupplyBase, unitSupplyPerCity and unitSupplyPerPopulation can also be increased through uniques
     var unitSupplyPerPopulation = 0.5
 
+    // Gold maintenance of units (CvTreasury::CalculateUnitCost), with 0.5 gold per unit that is not free:
+    // cost = (paidUnits * 0.5 * (1 + unitMaintenanceGameMultiplier * progress)) ^ (1 + progress / unitMaintenanceExponentDivisor)
+    // where progress is the turn divided by the number of turns of the game speed. The defaults are the original Unciv values; the Civ V rulesets use 0, 8 and 7.
+    var unitMaintenanceFreeUnits = 3
+    var unitMaintenanceGameMultiplier = 1f
+    var unitMaintenanceExponentDivisor = 3f
+
     // The minimal distance that must be between any two cities, not counting the tiles cities are on
     // The number is the amount of tiles between two cities, not counting the tiles the cities are on.
     // e.g. "C__C", where "C" is a tile with a city and "_" is a tile without a city, has a distance of 2.

@@ -7,6 +7,11 @@
         "scoreFromGreatWorks": 4,
         // CvMinorCivAI::CalculateBullyMetric: up to 75 for the military rank, up to 125 for the military near the City-State
         "tributeGlobalModifier": 75,
-        "tributeLocalModifier": 125
+        "tributeLocalModifier": 125,
+        // CvTreasury::CalculateUnitCost: GlobalDefines UNIT_MAINTENANCE_GAME_MULTIPLIER 8 and UNIT_MAINTENANCE_GAME_EXPONENT_DIVISOR 7;
+        // no unit is free (the handicaps have GoldFreeUnits 0)
+        "unitMaintenanceFreeUnits": 0,
+        "unitMaintenanceGameMultiplier": 8,
+        "unitMaintenanceExponentDivisor": 7
     },
 }

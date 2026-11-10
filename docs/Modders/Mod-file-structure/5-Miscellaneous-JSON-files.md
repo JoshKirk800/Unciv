@@ -269,6 +269,9 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | cityExpandRange                          | Int    | 5                             | [^Z]  |
 | cityAirUnitCapacity                      | Int    | 6                             | [^W]  |
 | unitSupplyPerPopulation                  | Float  | 0.5                           | [^C]  |
+| unitMaintenanceFreeUnits                 | Int    | 3                             | [^U]  |
+| unitMaintenanceGameMultiplier            | Float  | 1.0                           | [^U]  |
+| unitMaintenanceExponentDivisor           | Float  | 3.0                           | [^U]  |
 | minimalCityDistance                      | Int    | 3                             | [^D]  |
 | minimalCityDistanceOnDifferentContinents | Int    | 2                             | [^D]  |
 | unitUpgradeCost                          | Object | [See below](#unitupgradecost) | [^J]  |
@@ -358,6 +361,10 @@ Legend:
     unitSupplyPerPopulation \* amountOfPopulationInAllCities
     unitSupplyBase and unitSupplyPerCity can be found in difficulties.json
     unitSupplyBase, unitSupplyPerCity and unitSupplyPerPopulation can also be increased through uniques
+- [^U]: Formula for the gold maintenance of units (0.5 gold per unit that is not free):
+    cost = (paidUnits \* 0.5 \* (1 + unitMaintenanceGameMultiplier \* progress)) ^ (1 + progress / unitMaintenanceExponentDivisor)
+    progress is the turn divided by the number of turns of the game speed, paidUnits is the number of units minus unitMaintenanceFreeUnits and the units made free by uniques.
+    The Civ V rulesets use 0, 8 and 7.
 - [^D]: The minimal distance that must be between any two cities, not counting the tiles cities are on
     The number is the amount of tiles between two cities, not counting the tiles the cities are on.
     e.g. "C__C", where "C" is a tile with a city and "_" is a tile without a city, has a distance of 2.
