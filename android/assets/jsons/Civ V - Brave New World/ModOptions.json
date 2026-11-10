@@ -12,6 +12,8 @@
         // no unit is free (the handicaps have GoldFreeUnits 0)
         "unitMaintenanceFreeUnits": 0,
         "unitMaintenanceGameMultiplier": 8,
-        "unitMaintenanceExponentDivisor": 7
+        "unitMaintenanceExponentDivisor": 7,
+        // CvCity::GetJONSCultureThreshold
+        "cultureCostLikeCivV": true
     },
 }

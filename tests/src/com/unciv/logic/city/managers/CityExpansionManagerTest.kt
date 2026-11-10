@@ -3,6 +3,7 @@ package com.unciv.logic.city.managers
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.HexCoord
+import com.unciv.models.metadata.BaseRuleset
 import com.unciv.testing.BaseTestRunner
 import com.unciv.testing.TestGame
 import org.junit.Assert.assertEquals
@@ -20,7 +21,8 @@ class CityExpansionManagerTest {
     private lateinit var city: City
     private val cityExpansionManager = CityExpansionManager()
 
-    private val testGame = TestGame()
+    // Vanilla keeps the default culture cost formula; the Civ V rulesets use the original's (see CultureCostLikeCivVTests)
+    private val testGame = TestGame(baseRuleset = BaseRuleset.Civ_V_Vanilla)
 
     @Before
     fun setUp() {
