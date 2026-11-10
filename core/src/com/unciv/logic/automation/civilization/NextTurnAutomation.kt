@@ -157,8 +157,7 @@ object NextTurnAutomation {
         val requestingCiv = civInfo.gameInfo.getCivilization(popupAlert.value)
         if (requestingCiv.isDefeated()) return
         val diploManager = civInfo.getDiplomacyManager(requestingCiv)!!
-        if (civInfo.diplomacyFunctions.canSignDeclarationOfFriendshipWith(requestingCiv)
-            && DiplomacyAutomation.isDoFAcceptable(civInfo, requestingCiv)) {
+        if (DiplomacyAutomation.answerDoFRequest(civInfo, requestingCiv)) {
             diploManager.signDeclarationOfFriendship()
             requestingCiv.addNotification("We have signed a Declaration of Friendship with [${civView.civName}]!", NotificationCategory.Diplomacy, NotificationIcon.Diplomacy, civView.civName)
         } else {
