@@ -266,6 +266,23 @@ class OperationTests {
         assertEquals(OperationState.ABORTED, operation.state)
         assertEquals(OperationAbortReason.HALF_STRENGTH, operation.abortReason)
     }
+
+    @Test
+    fun `the AI does not scrap an obsolete unit that is in an army`() {
+        val base = game.createBaseUnit("Sword")
+        base.movement = 2
+        base.strength = 1
+        base.obsoleteTech = "Pottery"
+        civ.tech.addTechnology("Pottery")
+        val obsolete = unit(base.name)
+        assertEquals(obsolete, civ.ai.military.findBestUnitToScrap(civ, isLand = true)?.first)
+        // CvMilitaryAI::FindBestUnitToScrap: "Is it in an army?" - skipped; the game forcing a disband (the deficit) does not look
+        val operation = closeDefense()
+        ops.nextUnitForOperationSlot(city)
+        ops.addUnit(operation.firstArmy!!, obsolete, 0)
+        assertNull(civ.ai.military.findBestUnitToScrap(civ, isLand = true))
+        assertEquals(obsolete, civ.ai.military.findBestUnitToScrap(civ, isLand = true, deficitForced = true)?.first)
+    }
     //endregion
 
     //region Operations against cities
