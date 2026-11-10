@@ -1,6 +1,7 @@
 package com.unciv.logic.automation.strategy
 
 import com.unciv.json.json
+import com.unciv.logic.city.managers.CityConquestFunctions
 import com.unciv.logic.civilization.Civilization
 import com.unciv.models.metadata.BaseRuleset
 import com.unciv.models.ruleset.RulesetCache
@@ -251,6 +252,27 @@ class GrandStrategyAiTests {
         assertEquals(20, flavors[Flavor.Culture.ordinal])
         assertEquals(20, flavors[Flavor.CityDefense.ordinal])
         assertEquals(0, flavors[Flavor.Science.ordinal])
+    }
+
+    @Test
+    fun `a major is remembered as a conqueror when it takes a last city, not when the civilization dies`() {
+        val conqueror = neutralCiv()
+        val observer = neutralCiv()
+        val victim = neutralCiv()
+        game.addCity(conqueror, game.getTile(0, 0))
+        game.addCity(observer, game.getTile(0, 3))
+        observer.diplomacyFunctions.makeCivilizationsMeet(conqueror)
+        val first = game.addCity(victim, game.getTile(2, 0))
+        val last = game.addCity(victim, game.getTile(-2, 0))
+        // a unit and no original capital: Unciv still counts it as alive, the original has "killed" it (CvPlayer::acquireCity: no city left)
+        victim.hasEverOwnedOriginalCapital = false
+        game.addUnit("Warrior", victim, game.getTile(0, -3))
+
+        CityConquestFunctions(first).puppetCity(conqueror)
+        assertEquals("the victim still has a city", 0, observer.ai.aggressionOf(conqueror).majorsConquered)
+        CityConquestFunctions(last).puppetCity(conqueror)
+        assertFalse(victim.isDefeated())
+        assertEquals(1, observer.ai.aggressionOf(conqueror).majorsConquered)
     }
 
     @Test
