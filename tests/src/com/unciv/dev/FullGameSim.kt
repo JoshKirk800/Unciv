@@ -9,6 +9,7 @@ import com.unciv.logic.civilization.PlayerType
 import com.unciv.logic.files.UncivFiles
 import com.unciv.logic.map.MapParameters
 import com.unciv.logic.map.MapSize
+import com.unciv.logic.map.MapShape
 import com.unciv.logic.map.MapType
 import com.unciv.models.metadata.BaseRuleset
 import com.unciv.models.metadata.GameParameters
@@ -38,6 +39,8 @@ import java.util.UUID
  * FULL_SIM_MAX_TURNS (default 700), FULL_SIM_WALL_MINUTES (default 150), FULL_SIM_PLAY_ON (any value: keep playing after a victory),
  * FULL_SIM_CIVS (8), FULL_SIM_CITYSTATES (8), FULL_SIM_SEED (7), FULL_SIM_RULESET (default Civ V - Brave New World),
  * FULL_SIM_MAPSIZE (Tiny, Small, Medium, Large or Huge; default Medium), FULL_SIM_MAPTYPE (default Small Continents).
+ * FULL_SIM_MAPWIDTH and FULL_SIM_MAPHEIGHT together select a custom rectangular map; FULL_SIM_WORLD_WRAP enables horizontal wrap.
+ * FULL_SIM_WATER_THRESHOLD sets the generated map's water threshold (default 0).
  * FULL_SIM_NATIONS = comma-separated exact names of major nations (`The Huns,Babylon`): these play instead of the first FULL_SIM_CIVS
  * majors (an unknown or non-major name stops the run). FULL_SIM_VICTORIES = comma-separated victory type names that replace the default
  * (every selectable victory without a turn limit; an unknown name stops the run). FULL_SIM_START_UNITS = `Nation=Unit,Unit;Nation2=Unit`:
@@ -115,13 +118,23 @@ class FullGameSim {
         }
         val mapParameters = MapParameters().apply {
             type = env("FULL_SIM_MAPTYPE", MapType.smallContinents)
-            mapSize = when (env("FULL_SIM_MAPSIZE", "Medium")) {
-                "Tiny" -> MapSize.Tiny
-                "Small" -> MapSize.Small
-                "Large" -> MapSize.Large
-                "Huge" -> MapSize.Huge
-                else -> MapSize.Medium
+            val width = env("FULL_SIM_MAPWIDTH", "").toIntOrNull()
+            val height = env("FULL_SIM_MAPHEIGHT", "").toIntOrNull()
+            if (width != null || height != null) {
+                require(width != null && height != null && width > 0 && height > 0) { "FULL_SIM_MAPWIDTH and FULL_SIM_MAPHEIGHT must both be positive" }
+                shape = MapShape.rectangular
+                mapSize = MapSize(width, height)
+            } else {
+                mapSize = when (env("FULL_SIM_MAPSIZE", "Medium")) {
+                    "Tiny" -> MapSize.Tiny
+                    "Small" -> MapSize.Small
+                    "Large" -> MapSize.Large
+                    "Huge" -> MapSize.Huge
+                    else -> MapSize.Medium
+                }
             }
+            worldWrap = System.getenv("FULL_SIM_WORLD_WRAP") != null
+            waterThreshold = env("FULL_SIM_WATER_THRESHOLD", "0").toFloat()
             seed = env("FULL_SIM_SEED", "7").toLong()
         }
         val game = GameStarter.startNewGame(GameSetupInfo(parameters, mapParameters), gameId = UUID.nameUUIDFromBytes("full-sim-${mapParameters.seed}".toByteArray()).toString())
@@ -241,6 +254,8 @@ class FullGameSim {
         text.appendLine("nations: ${players(game).joinToString(", ") { it.civName }}")
         val map = game.tileMap.mapParameters
         text.appendLine("map: ${map.mapSize.name}, ${map.type}, ${game.tileMap.tileList.size} tiles, seed ${map.seed}, ${game.civilizations.count { it.isCityState }} city-states")
+        if (map.mapSize.name == MapSize.custom)
+            text.appendLine("map geometry: ${map.mapSize}, ${map.shape}, ${game.tileMap.tileList.count { it.isLand }} land tiles, wrap=${map.worldWrap}, water threshold=${map.waterThreshold}")
         text.appendLine("victories: ${game.gameParameters.victoryTypes.joinToString(", ")}")
         text.appendLine("start units: ${env("FULL_SIM_START_UNITS", "").ifEmpty { "none" }}")
         text.appendLine()
