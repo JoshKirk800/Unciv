@@ -29,6 +29,10 @@ object DeclareWar {
         val otherCiv = diplomacyManager.otherCiv
         val otherCivDiplomacy = diplomacyManager.otherCivDiplomacy()
 
+        // CvTeam::declareWar: every war a civilization other than a city-state declares on a city-state counts as an attack on a minor,
+        // however it came about (the same city-state again too), except through a defensive pact
+        if (otherCiv.isCityState && !civInfo.isCityState && declareWarReason.warType != WarType.DefensivePactWar)
+            civInfo.numMinorCivsAttacked += 1
         if (otherCiv.isCityState && declareWarReason.warType == WarType.DirectWar)
             handleCityStateDirectAttack(diplomacyManager)
 
@@ -77,7 +81,6 @@ object DeclareWar {
         val otherCivDiplomacy = diplomacyManager.otherCivDiplomacy()
 
         otherCivDiplomacy.setInfluence(-60f)
-        civInfo.numMinorCivsAttacked += 1
         otherCiv.cityStateFunctions.cityStateAttacked(civInfo)
 
         // You attacked your own ally, you're a right bastard

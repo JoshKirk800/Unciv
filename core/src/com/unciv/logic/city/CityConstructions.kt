@@ -26,6 +26,7 @@ import com.unciv.models.ruleset.PerpetualConstruction
 import com.unciv.models.ruleset.RejectionReasonType
 import com.unciv.models.ruleset.Ruleset
 import com.unciv.models.ruleset.tile.TileImprovement
+import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unique.UniqueMap
 import com.unciv.models.ruleset.unique.UniqueTriggerActivation
 import com.unciv.models.ruleset.unique.UniqueType
@@ -663,6 +664,8 @@ class CityConstructions : IsPartOfGameInfoSerialization {
         }
         builtBuildingObjects = builtBuildingObjects.withItem(building)
         builtBuildings.add(buildingName)
+        if (building.hasUnique(UniqueType.EnablesConstructionOfSpaceshipParts, GameContext.IgnoreConditionals))
+            civ.ai.apolloProgramBuilt = true
 
         updateUniques()
 

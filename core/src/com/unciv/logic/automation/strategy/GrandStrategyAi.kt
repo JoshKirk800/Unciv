@@ -132,8 +132,9 @@ object GrandStrategyAi {
             ai.majorCivApproachBias(MajorCivApproach.War)) - ai.majorCivApproachBias(MajorCivApproach.Friendly)
         priority += (ai.diplomacyValue(DiplomacyPersonality.Boldness) + approachModifier) * (12 - civ.getEraNumber())
 
+        // CvGrandStrategyAI::GetConquestPriority loops over the teams, so a major that has been met counts whether or not it is still alive
         if (elapsedTurns >= rules.define(AiDefine.AI_GS_CONQUEST_NOBODY_MET_FIRST_TURN)
-            && civ.getKnownCivs().none { it.isMajorCiv })
+            && gameInfo.civilizations.none { it.isMajorCiv && !it.isSpectator && it != civ && civ.knows(it) })
             priority += rules.define(AiDefine.AI_GRAND_STRATEGY_CONQUEST_NOBODY_MET_WEIGHT)
 
         if (elapsedTurns >= rules.define(AiDefine.AI_GS_CONQUEST_MILITARY_STRENGTH_FIRST_TURN)) {
@@ -294,7 +295,8 @@ object GrandStrategyAi {
         return priority
     }
 
-    private fun hasApolloProgram(civ: Civilization) = civ.hasUnique(UniqueType.EnablesConstructionOfSpaceshipParts)
+    /** GetTeam()->getProjectCount(PROJECT_APOLLO_PROGRAM) > 0: counts from the turn it was built, even if the city is lost later */
+    fun hasApolloProgram(civ: Civilization) = civ.ai.apolloProgramBuilt || civ.hasUnique(UniqueType.EnablesConstructionOfSpaceshipParts)
 
     //region Guessing other players' grand strategies
 

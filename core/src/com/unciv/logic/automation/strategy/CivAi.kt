@@ -83,6 +83,8 @@ class CivAi : IsPartOfGameInfoSerialization {
     /** The active grand strategy (AIGRANDSTRATEGY_* name), null before the first [GrandStrategyAi.doTurn] */
     var grandStrategy: String? = null
     var turnsSinceGrandStrategySet = 0
+    /** The team's project count of the Apollo Program never goes down; the building can be lost with its city, this stays (set in [com.unciv.logic.city.CityConstructions.addBuilding]) */
+    var apolloProgramBuilt = false
     /** Last computed priority per grand strategy name */
     var grandStrategyPriorities = LinkedHashMap<String, Int>()
     /** Guesses of other majors' grand strategies, by civID */
@@ -156,6 +158,7 @@ class CivAi : IsPartOfGameInfoSerialization {
         toReturn.personalityInitialized = personalityInitialized
         toReturn.grandStrategy = grandStrategy
         toReturn.turnsSinceGrandStrategySet = turnsSinceGrandStrategySet
+        toReturn.apolloProgramBuilt = apolloProgramBuilt
         toReturn.grandStrategyPriorities.putAll(grandStrategyPriorities)
         for ((civId, guess) in grandStrategyGuesses) toReturn.grandStrategyGuesses[civId] = guess.clone()
         toReturn.economicStrategies.putAll(economicStrategies)
