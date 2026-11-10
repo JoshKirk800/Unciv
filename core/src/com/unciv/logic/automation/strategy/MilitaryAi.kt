@@ -353,8 +353,8 @@ class MilitaryAi : IsPartOfGameInfoSerialization {
     /**
      *  CvMilitaryAI::FindBestUnitToScrap: among military units of the domain the one with the lowest power (CvUnit::GetPower: level and
      *  health), null if none. Not [deficitForced] (the AI deciding to disband): skipping all if that domain's defense state is CRITICAL,
-     *  land units we can still build, units without a researched obsolete tech, units with at least half the power of the strongest unit
-     *  we can build in the domain, and units whose upgrade needs a resource we have while that domain's state is worse than NEUTRAL.
+     *  land units we can still build, units in an army, units without a researched obsolete tech, units with at least half the power of the
+     *  strongest unit we can build in the domain, and units whose upgrade needs a resource we have while that domain's state is worse than NEUTRAL.
      *  When the game forces the disbanding (CvPlayer::DoDeficit), none of that applies.
      */
     fun findBestUnitToScrap(civ: Civilization, isLand: Boolean, deficitForced: Boolean = false): Pair<MapUnit, Int>? {
@@ -368,6 +368,7 @@ class MilitaryAi : IsPartOfGameInfoSerialization {
             val baseUnit = unit.baseUnit
             if (isLand && !baseUnit.isLandUnit || !isLand && !baseUnit.isWaterUnit) continue
             if (!deficitForced) {
+                if (civ.ai.operations.armyOf(unit) != null) continue
                 if (isLand && baseUnit.isBuildable(civ)) continue
                 val obsoleteTech = baseUnit.obsoleteTech ?: continue
                 if (!civ.tech.isResearched(obsoleteTech)) continue
