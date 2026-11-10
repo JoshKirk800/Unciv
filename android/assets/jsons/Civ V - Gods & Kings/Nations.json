@@ -43,7 +43,6 @@
 		"name": "Greece",
 		"leaderName": "Alexander",
 		"adjective": ["Greek"],
-		"startBias": ["Coast"],
 		"personality": "Alexander",
 
 		"startIntroPart1": "Great King Alexander, leader of the mighty Greek nation, you are truly blessed by the gods. In 480 BC, quarrelsome city-states such as Athens, Sparta, Thebes, found a way to join their forces, allowing Greece to defeat the mighty Persia in the 5th century BC, both on land and sea. Following their example, you lead a Greek coalition and finally struck down the Persian Empire in 331 BC. You conquered almost all the known world, and from Europe to Africa to India, you built an empire unmatched by any before it.",
@@ -227,7 +226,6 @@
 		"name": "Rome",
 		"leaderName": "Augustus Caesar",
 		"adjective": ["Roman"],
-		"startBias":["Avoid [Tundra]","Avoid [Desert]"],
 		"personality": "Augustus Caesar",
 
 
@@ -986,7 +984,6 @@
 		"name": "Ethiopia",
 		"leaderName": "Haile Selassie",
 		"adjective": ["ethiopian"],
-		"startBias": ["Jungle"],
 		"personality": "Haile Selassie",
 
         "startIntroPart1": "May God bless you, wise and righteous Emperor of Ethiopia, Haile Selassie. As one of Ethiopia's greatest rulers and a spiritual leader of the Rastafarian movement, your good influence on diplomacy and political cooperation are praised throughout the world. You created Ethiopia's first written constitution, and favorized democracy for years to come, your great wisdom making Ethiopia enter as a charter member in the United Nations. Always aiming to reform and modernize your nation, you changed Ethiopian destiny for the best.",
@@ -1019,7 +1016,6 @@
 		"name": "The Maya",
 		"leaderName": "Pacal",
 		"adjective": ["mayan"],
-		"startBias": ["Jungle"],
 		"personality": "Pacal",
 
         "startIntroPart1": "Kneel before King Pacal the Great, son of the gods and protector of the Palenque domain! After your kingdom has been harassed for years by neighboring rivals, you struck back at the enemies of your people, defeating each of them and sacrificing their leaders as a retribution to the insults made to your ancestors. Your wisdom and hard will not only restored the glory of Palenque, but turned it into a magnificient city, as your people built the greatest monuments and architecture the world has ever known.",
