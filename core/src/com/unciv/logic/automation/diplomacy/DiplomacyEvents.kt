@@ -1,5 +1,6 @@
 package com.unciv.logic.automation.diplomacy
 
+import com.unciv.logic.automation.strategy.GrandStrategyAi
 import com.unciv.logic.automation.strategy.WarStateAi
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
@@ -251,13 +252,18 @@ object DiplomacyEvents {
         }
     }
 
-    /** CvDiplomacyAI::DoPlayerKilledSomeone: [killer] eliminated [dead]; protectors of a dead city-state remember */
-    fun onCivDestroyed(killer: Civilization, dead: Civilization) {
-        if (!dead.isCityState) return
-        val protectors = dead.cityStateFunctions.getProtectorCivs()
-        for (observer in protectors) {
-            if (!observer.isMajorCiv || observer == killer || !WarStateAi.isPlayerValid(observer, killer)) continue
-            val memory = observer.ai.diplomacy.memoryOf(killer)
+    /**
+     *  CvPlayer::acquireCity -> CvDiplomacyAI::DoPlayerKilledSomeone: [newOwner] took the last city of [oldOwner]. Only a major notifies anyone
+     *  (not a city-state, not the barbarians); every other living major that has met it counts one minor or major conquered, and the
+     *  protectors of a dead city-state remember the killing.
+     */
+    fun onLastCityTaken(newOwner: Civilization, oldOwner: Civilization) {
+        if (!newOwner.isMajorCiv) return
+        GrandStrategyAi.onCivDestroyed(newOwner, oldOwner)
+        if (!oldOwner.isCityState) return
+        for (observer in oldOwner.cityStateFunctions.getProtectorCivs()) {
+            if (!observer.isMajorCiv || observer == newOwner || !observer.isAlive() || !observer.knows(newOwner) || !WarStateAi.isPlayerValid(observer, newOwner)) continue
+            val memory = observer.ai.diplomacy.memoryOf(newOwner)
             memory.turnsSinceKilledProtectedMinor = 0
             memory.numProtectedMinorsKilled++
         }

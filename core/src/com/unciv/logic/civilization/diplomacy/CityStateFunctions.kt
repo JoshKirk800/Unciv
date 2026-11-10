@@ -754,8 +754,6 @@ class CityStateFunctions(val civInfo: Civilization) {
     fun cityStateDestroyed(attacker: Civilization) {
         if (!civInfo.isCityState) return // What are we doing here?
 
-        // What the protectors' diplomacy AI remembers (CvDiplomacyAI::DoPlayerKilledSomeone)
-        DiplomacyEvents.onCivDestroyed(attacker, civInfo)
         for (protector in civInfo.cityStateFunctions.getProtectorCivs()) {
             if (!protector.knows(attacker)) // Who?
                 continue

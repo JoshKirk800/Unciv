@@ -5,7 +5,6 @@ import com.unciv.models.metadata.GameSettings
 import com.unciv.Constants
 import com.unciv.UncivGame
 import com.unciv.logic.automation.civilization.CityConquestAutomation
-import com.unciv.logic.automation.strategy.GrandStrategyAi
 import com.unciv.logic.city.City
 import com.unciv.logic.civilization.*
 import com.unciv.logic.map.HexCoord
@@ -811,8 +810,6 @@ object Battle {
         if (attackedCiv.isDefeated()) {
             if (attackedCiv.isCityState)
                 attackedCiv.cityStateFunctions.cityStateDestroyed(attacker)
-            // What the other majors' grand strategy AI remembers (CvDiplomacyAI::DoPlayerKilledSomeone)
-            GrandStrategyAi.onCivDestroyed(attacker, attackedCiv)
             attackedCiv.destroy(notificationLocation)
             attacker.popupAlerts.add(PopupAlert(AlertType.Defeated, attackedCiv.civID))
         }
