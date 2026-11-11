@@ -1,6 +1,9 @@
 package com.unciv.logic.map
 
 import com.unciv.logic.map.mapgenerator.CivVContinentsLandmass
+import com.unciv.logic.map.mapgenerator.HexGeometry
+import com.unciv.logic.map.mapgenerator.PointyHexGeometry
+import com.unciv.logic.map.mapgenerator.UncivHexGeometry
 import com.unciv.logic.map.mapgenerator.CivVFractal
 import com.unciv.logic.map.mapgenerator.CivVTerrainGenerator
 import com.unciv.logic.map.mapgenerator.MapGenerator
@@ -25,31 +28,62 @@ class CivVTerrainPortTests {
         for (y in 1 until 63) assertTrue("row $y", (60..127).minOf { f.getHeight(it, y) } <= 8)
     }
 
-    @Test
-    fun `ridges are high where the cells of the Voronoi diagram meet and keep the share of the blend`() {
-        val f = CivVFractal(128, 64, 3, true, false, Random(2))
-        f.buildRidges(Random(3), numSeeds = 12, biased = true, blendRidge = 1, blendFract = 0)
-        val values = (0 until 128).flatMap { x -> (0 until 64).map { y -> f.getHeight(x, y) } }
-        // Closest over second closest: never above 255, and close to it only along the borders, near 0 at the seeds
-        assertTrue(values.max() <= 255)
-        assertTrue("share above 200: ${values.count { it > 200 } / values.size.toDouble()}", values.count { it > 200 } / values.size.toDouble() < 0.5)
-        assertTrue(values.min() < 60)
+    private fun assertHexGrid(geometry: HexGeometry) {
+        val (width, height) = geometry.width to geometry.height
+        var interior = 0
+        for (x in 0 until width) for (y in 0 until height) {
+            val (cx, cy) = geometry.center(x, y)
+            val neighbors = geometry.neighbors(x, y)
+            for ((nx, ny) in neighbors) {
+                val (mx, my) = geometry.center(nx, ny)
+                val d = kotlin.math.hypot(mx - cx, my - cy)
+                // across the wrap of the pointy grid the centres are a width apart
+                if (d < 1.5) assertEquals("($x,$y)-($nx,$ny)", 1.0, d, 0.02)
+                assertTrue("not symmetric", (x to y) in geometry.neighbors(nx, ny))
+                assertEquals(1, geometry.distance(x, y, nx, ny))
+            }
+            if (neighbors.size == 6) interior++
+        }
+        assertTrue(interior > width * height / 2)
     }
 
     @Test
-    fun `the Continents landmass leaves a sea path up the middle and has hills and a few mountains`() {
-        val w = 100
-        val h = 64
-        val result = CivVContinentsLandmass(w, h, true, Random(8)).generate { true }
-        // The centre rift wanders within a quarter of the height of the middle (+ the drift)
-        val lo = w / 2 - h / 4 - 8
-        val hi = w / 2 + h / 4 + 8
-        for (y in 1 until h - 1) assertTrue("row $y has no sea in the middle", (lo..hi).any { !result.land[it][y] })
-        val land = result.land.sumOf { column -> column.count { it } }
-        val hills = result.hills.sumOf { column -> column.count { it } } / land.toDouble()
-        val peaks = result.mountains.sumOf { column -> column.count { it } } / land.toDouble()
-        assertTrue("hills $hills", hills in 0.12..0.40)
-        assertTrue("mountains $peaks", peaks in 0.01..0.10)
+    fun `the grids of the scripts and of Unciv are hex grids, neighbours a step apart and symmetric`() {
+        assertHexGrid(PointyHexGeometry(40, 30, wrapX = true))
+        val game = TestGame(baseRuleset = BaseRuleset.Civ_V_BNW)
+        game.makeRectangularMap(newHeight = 30, newWidth = 40, baseTerrain = "Grassland")
+        val geometry = UncivHexGeometry(game.tileMap)
+        assertEquals(40, geometry.width)
+        assertHexGrid(geometry)
+    }
+
+    @Test
+    fun `the centre rift runs from the bottom to the top over cells that touch, on either grid`() {
+        val game = TestGame(baseRuleset = BaseRuleset.Civ_V_BNW)
+        game.makeRectangularMap(newHeight = 60, newWidth = 100, baseTerrain = "Grassland")
+        for (geometry in listOf(PointyHexGeometry(100, 60, true), UncivHexGeometry(game.tileMap))) {
+            val landmass = CivVContinentsLandmass(geometry, false, Random(12))
+            landmass.generate { true }
+            val rift = landmass.centreRift
+            assertEquals("starts at the bottom", 0, rift.first().second)
+            assertEquals("ends at the top", geometry.height - 1, rift.last().second)
+            for (i in 1 until rift.size)
+                assertTrue("${rift[i - 1]} and ${rift[i]} do not touch", rift[i] in geometry.neighbors(rift[i - 1].first, rift[i - 1].second))
+        }
+    }
+
+    @Test
+    fun `ridges follow the steps of the grid, so hills and mountains are the same share on either`() {
+        val game = TestGame(baseRuleset = BaseRuleset.Civ_V_BNW)
+        game.makeRectangularMap(newHeight = 60, newWidth = 100, baseTerrain = "Grassland")
+        for (geometry in listOf(PointyHexGeometry(100, 60, true), UncivHexGeometry(game.tileMap))) {
+            val result = CivVContinentsLandmass(geometry, true, Random(5)).generate { true }
+            val land = result.land.sumOf { column -> column.count { it } }
+            val hills = result.hills.sumOf { column -> column.count { it } } / land.toDouble()
+            val peaks = result.mountains.sumOf { column -> column.count { it } } / land.toDouble()
+            assertTrue("hills $hills", hills in 0.12..0.40)
+            assertTrue("mountains $peaks", peaks in 0.01..0.10)
+        }
     }
 
     @Test
