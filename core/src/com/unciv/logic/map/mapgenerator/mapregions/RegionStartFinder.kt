@@ -20,6 +20,9 @@ import yairm210.purity.annotations.Pure
 import kotlin.math.roundToInt
 
 object RegionStartFinder {
+    /** AssignStartingPlots `centerBias` and `middleBias`: the share of a region's size examined first and second */
+    private const val CENTER_BIAS_PERCENT = 34
+    private const val MIDDLE_BIAS_PERCENT = 67
 
     /** Attempts to find a good start close to the center of [region]. Calls setRegionStart with the position*/
     internal fun findStart(region: Region, tileData: TileDataMap) {
@@ -27,10 +30,10 @@ object RegionStartFinder {
         // Priority: 1. Adjacent to river, 2. Adjacent to coast or fresh water, 3. Other.
 
         // First check center rect, then middle. Only check the outer area if no good sites found
-        val centerTiles = region.tileMap.getTilesInRectangle(getCentralRectangle(region.rect, 0.33f)).toSet()
+        val centerTiles = region.tileMap.getTilesInRectangle(getCentralRectangle(region.rect, CENTER_BIAS_PERCENT)).toSet()
         if (findGoodPosition(centerTiles, region, tileData, fallbackTiles)) return
         
-        val middleDonut = region.tileMap.getTilesInRectangle(getCentralRectangle(region.rect, 0.67f))
+        val middleDonut = region.tileMap.getTilesInRectangle(getCentralRectangle(region.rect, MIDDLE_BIAS_PERCENT))
             .filterNot { it in centerTiles }.toSet()
         if (findGoodPosition(middleDonut, region, tileData, fallbackTiles)) return 
 
@@ -83,6 +86,8 @@ object RegionStartFinder {
     ): Boolean {
         val dryTiles = HashSet<Tile>()
         for (tile in outerDonut) {
+            if (tileData[tile]!!.isTwoFromCoast)
+                continue // Don't even consider tiles two from coast, in any zone (AssignStartingPlots:FindStart)
             if (region.continentID != -1 && region.continentID != tile.getContinent())
                 continue // Wrong continent
             if (tile.isLand && !tile.isImpassible()) {
@@ -118,8 +123,9 @@ object RegionStartFinder {
         tileData: TileDataMap,
         region: Region
     ) {
-        // Fallback time. Just pick the one with best score
-        val fallbackPosition = fallbackTiles.maxByOrNull { tileData[it]!!.startScore }
+        // Fallback time. Just pick the one with best score, as long as it is above 0 (AssignStartingPlots:FindStart)
+        val fallbackPosition = fallbackTiles.filter { tileData[it]!!.startScore > 0 }
+            .maxByOrNull { tileData[it]!!.startScore }
         if (fallbackPosition != null) {
             setRegionStart(region, fallbackPosition.position, tileData)
             return
@@ -133,25 +139,23 @@ object RegionStartFinder {
         setRegionStart(region, panicPosition, tileData)
     }
     
-    /** @returns a scaled according to [proportion] Rectangle centered over [originalRect] */
+    /** @returns a Rectangle centered over [originalRect] that is [biasPercent] of its size, as AssignStartingPlots:FindStart
+     *  calculates its center and middle areas: the margin is half the rest rounded down, the area takes the remainder */
     @Pure
-    private fun getCentralRectangle(originalRect: Rectangle, proportion: Float): Rectangle {
-        val scaledRect = Rectangle(originalRect)
-
-        scaledRect.width = (originalRect.width * proportion)
-        scaledRect.height = (originalRect.height * proportion)
-        scaledRect.x = originalRect.x + (originalRect.width - scaledRect.width) / 2
-        scaledRect.y = originalRect.y + (originalRect.height - scaledRect.height) / 2
-
-        // round values
-        scaledRect.x = scaledRect.x.roundToInt().toFloat()
-        scaledRect.y = scaledRect.y.roundToInt().toFloat()
-        scaledRect.width = scaledRect.width.roundToInt().toFloat()
-        scaledRect.height = scaledRect.height.roundToInt().toFloat()
-
-        return scaledRect
+    fun getCentralRectangle(originalRect: Rectangle, biasPercent: Int): Rectangle {
+        val width = originalRect.width.toInt()
+        val height = originalRect.height.toInt()
+        val marginX = ((width - biasPercent / 100.0 * width) / 2).toInt()
+        val marginY = ((height - biasPercent / 100.0 * height) / 2).toInt()
+        return Rectangle(originalRect.x + marginX, originalRect.y + marginY,
+            (width - 2 * marginX).toFloat(), (height - 2 * marginY).toFloat())
     }
 
+
+    /** The production that counts for the second ring: more than twice the food cannot be used without the food, so it counts as half the food (rounded up) */
+    @Pure
+    fun effectiveSecondRingProduction(totalFood: Int, totalProd: Int) =
+        if (totalFood * 2 < totalProd) (totalFood + 1) / 2 else totalProd
 
     /** Evaluates a tile for starting position, setting isGoodStart and startScore in
      *  MapGenTileData. Assumes that all tiles have corresponding MapGenTileData. */
@@ -166,11 +170,15 @@ object RegionStartFinder {
         var totalScore = 0
 
         if (tile.isAdjacentToCoast()) totalScore += 40
+        // The candidate's own river side, which AssignStartingPlots:EvaluateCandidatePlot (not the ring's tile) counts for the 2nd and 3rd ring
+        val candidateIsRiverSide = tile.isAdjacentToRiver()
 
         // Go through all rings
         for (ring in 1..3) {
             // Sum up the values for this ring
+            var tilesInRing = 0
             tile.forEachTileAtDistance(ring) { outerTile ->
+                tilesInRing++
                 val outerTileData = tileData[outerTile]!!
                 if (outerTileData.isJunk)
                     totalJunk++
@@ -178,9 +186,10 @@ object RegionStartFinder {
                     if (outerTileData.isFood) totalFood++
                     if (outerTileData.isProd) totalProd++
                     if (outerTileData.isGood) totalGood++
-                    if (outerTile.isAdjacentToRiver()) totalRivers++
+                    if (if (ring == 1) outerTile.isAdjacentToRiver() else candidateIsRiverSide) totalRivers++
                 }
             }
+            totalJunk += 6 * ring - tilesInRing // Off the map counts as junk
             // Check for minimum levels. We still keep on calculating final score in case of failure
             if (totalFood < minimumFoodForRing[ring]!!
                 || totalProd < minimumProdForRing[ring]!!
@@ -198,8 +207,7 @@ object RegionStartFinder {
                 2 -> {
                     val foodScore = if (totalFood > 10) secondRingFoodScores.last()
                     else secondRingFoodScores[totalFood]
-                    val effectiveTotalProd = if (totalProd >= totalFood * 2) totalProd
-                    else (totalFood + 1) / 2 // Can't use all that production without food
+                    val effectiveTotalProd = effectiveSecondRingProduction(totalFood, totalProd)
                     val prodScore = if (effectiveTotalProd > 5) secondRingProdScores.last()
                     else secondRingProdScores[effectiveTotalProd]
                     totalScore += foodScore + prodScore + totalRivers+ (totalGood * 2) - (totalJunk * 3)
@@ -217,7 +225,7 @@ object RegionStartFinder {
         // Finally check if this is near another start
         if (localData.closeStartPenalty > 0) {
             localData.isGoodStart = false
-            totalScore -= (totalScore * localData.closeStartPenalty) / 100
+            totalScore -= Math.floorDiv(totalScore * localData.closeStartPenalty, 100)
         }
         localData.startScore = totalScore
     }
