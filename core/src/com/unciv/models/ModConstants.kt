@@ -63,6 +63,11 @@ class ModConstants {
     // Number of air units that can be stationed in a city
     var cityAirUnitCapacity = 6
 
+    /** AssignStartingPlots:PlaceOilInTheSea. The strategic resource that is also found in the sea, but only as many deposits as
+     *  a quarter of the half of the units of it on land (one in the sea per 4 units of the Coast deposit, Civ V: "Oil").
+     *  Empty: the resource is placed in the sea like on any terrain, by its "Generated with weight" rule for it. */
+    var seaDepositsOfLandResource = ""
+
     /** Normalize starts as AssignStartingPlots:NormalizeStartLocation and NormalizeCityState do (see CivVStartNormalizer).
      *  It names the terrains and resources of the Civ V rulesets, so it only makes sense for them. */
     var startNormalizerLikeCivV = false
