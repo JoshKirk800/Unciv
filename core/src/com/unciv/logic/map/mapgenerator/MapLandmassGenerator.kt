@@ -284,20 +284,16 @@ class MapLandmassGenerator(
      */
     private fun createContinentsLikeCivV() {
         val tiles = tileMap.values.toList()
-        val minColumn = tiles.minOf { it.getColumn() }
-        val minRow = tiles.minOf { it.getRow() }
-        val width = tiles.maxOf { it.getColumn() } - minColumn + 1
-        val height = tiles.maxOf { it.getRow() } - minRow + 1
-        val cellOf = { tile: Tile -> tile.getColumn() - minColumn to tile.getRow() - minRow }
+        val geometry = UncivHexGeometry(tileMap)
         val seaLevel = when {
             waterThreshold < -0.15 -> 67
             waterThreshold > 0.15 -> 76
             else -> CONTINENTS_WATER_PERCENT
         }
-        val generator = CivVContinentsLandmass(width, height, tileMap.mapParameters.worldWrap, randomness.RNG, seaLevel)
+        val generator = CivVContinentsLandmass(geometry, tileMap.mapParameters.worldWrap, randomness.RNG, seaLevel)
         val result = generator.generate { land ->
             for (tile in tiles) {
-                val (x, y) = cellOf(tile)
+                val (x, y) = geometry.cellOf(tile)
                 tile.baseTerrain = if (land[x][y]) landTerrainName else waterTerrainName
             }
             for (tile in tiles) tile.setTerrainTransients()
@@ -306,7 +302,7 @@ class MapLandmassGenerator(
             (tileMap.continentSizes.values.maxOrNull() ?: 0) <= landTiles * 0.58
         }
         for (tile in tiles) {
-            val (x, y) = cellOf(tile)
+            val (x, y) = geometry.cellOf(tile)
             tile.baseTerrain = when {
                 result.mountains[x][y] -> Constants.mountain
                 result.land[x][y] -> landTerrainName

@@ -14,7 +14,7 @@ import kotlin.random.Random
  *
  *  With [polar] the edges that do not wrap are zero in every pass (the scripts' land fields use it to leave the poles in the sea).
  *  With [rifts] (another field) two long valleys are cut into the finished field, wandering around a quarter and three quarters of the
- *  way across (Fractal.CreateRifts: tectonicAction), and [buildRidges] blends in the ridges of a Voronoi diagram (CvFractal::ridgeBuilder).
+ *  way across (Fractal.CreateRifts: tectonicAction).
  */
 class CivVFractal(
     private val width: Int,
@@ -96,72 +96,6 @@ class CivVFractal(
             }
         }
         for (y in 0..fracY) grid[fracX][y] = grid[0][y]
-    }
-
-    /**
-     *  CvFractal::ridgeBuilder: [numSeeds] (at least 3) random points, each with a weakness, a favoured direction and its strength;
-     *  every cell is given by how near its closest seed is compared to the second closest (255 x closest / second closest: low in the
-     *  middle of a region, high on the borders between regions: ridges), blended with the old value as
-     *  (ridge x [blendRidge] + old x [blendFract]) / (sum). [biased] adds the seeds' weakness, a little noise and the direction bias to the distance.
-     */
-    fun buildRidges(rng: Random, numSeeds: Int, biased: Boolean, blendRidge: Int, blendFract: Int) {
-        val seedsCount = maxOf(numSeeds, 3)
-        class Seed(var x: Int, var y: Int, val weakness: Int, val direction: Int, val strength: Int)
-        fun toHexX(x: Int, y: Int) = x - (if (y >= 0) y shr 1 else (y - 1) / 2)
-        fun hexDistance(dx: Int, dy: Int): Int =
-            if ((dx >= 0) == (dy >= 0)) kotlin.math.abs(dx) + kotlin.math.abs(dy) else maxOf(kotlin.math.abs(dx), kotlin.math.abs(dy))
-        val displacements = arrayOf(0.5 to 0.866025, 1.0 to 0.0, 0.5 to -0.866025, -0.5 to -0.866025, -1.0 to 0.0, -0.5 to 0.866025)
-        fun estimateDirection(dx: Int, dy: Int): Int {
-            var best = 0.0
-            var index = -1
-            for ((i, d) in displacements.withIndex()) {
-                val dot = dx * d.first + dy * d.second
-                if (dot > best) { best = dot; index = i }
-            }
-            return index
-        }
-
-        val seeds = ArrayList<Seed>()
-        for (i in 0 until seedsCount) {
-            val y = rng.nextInt(fracY)
-            val seed = Seed(toHexX(rng.nextInt(fracX), y), y, maxOf(0, rng.nextInt(7) - 3), rng.nextInt(6), maxOf(0, rng.nextInt(8) - 4))
-            var recheck: Boolean
-            do {
-                recheck = false
-                for (other in seeds) {
-                    if (hexDistance(seed.x - other.x, seed.y - other.y) < 7) {
-                        seed.x = rng.nextInt(fracX)
-                        seed.y = rng.nextInt(fracY)
-                        recheck = true
-                        break
-                    }
-                }
-            } while (recheck)
-            seeds.add(seed)
-        }
-
-        for (x in 0 until fracX) {
-            for (y in 0 until fracY) {
-                val hx = toHexX(x, y)
-                var closest = Int.MAX_VALUE
-                var nextClosest = Int.MAX_VALUE
-                for (seed in seeds) {
-                    var distance = hexDistance(hx - seed.x, y - seed.y)
-                    if (biased) {
-                        distance += seed.weakness
-                        distance += rng.nextInt(3)
-                        val direction = estimateDirection(seed.x - hx, seed.y - y)
-                        if (direction == seed.direction) distance -= seed.strength
-                        else if (direction == (seed.direction + 3) % 6) distance += seed.strength
-                        distance = maxOf(1, distance)
-                    }
-                    if (distance < closest) { nextClosest = closest; closest = distance }
-                    else if (distance < nextClosest) nextClosest = distance
-                }
-                val ridge = (255 * closest) / nextClosest
-                grid[x][y] = (ridge * blendRidge + grid[x][y] * blendFract) / maxOf(blendRidge + blendFract, 1)
-            }
-        }
     }
 
     /** The height 0..255 at the tile ([x], [y]) of a map of the size the field was made for */
