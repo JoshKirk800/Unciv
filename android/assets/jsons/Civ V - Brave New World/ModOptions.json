@@ -24,6 +24,8 @@
         // TerrainGenerator.lua and FeatureGenerator.lua
         "terrainGeneratorLikeCivV": true,
         // AssignStartingPlots.lua of Brave New World (the Gods & Kings one differs: no cocoa, other counts)
-        "luxuryPlacementLikeCivV": true
+        "luxuryPlacementLikeCivV": true,
+        // AssignStartingPlots:BalanceAndAssign of Brave New World (it differs from the Gods & Kings one by the civs placed first)
+        "startAssignmentLikeCivV": true
     },
 }

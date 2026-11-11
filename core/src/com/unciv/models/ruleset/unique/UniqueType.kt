@@ -400,6 +400,7 @@ enum class UniqueType(
     StartingTech("Starting tech", UniqueTarget.Tech),
     StartsWithTech("Starts with [tech]", UniqueTarget.Nation),
     StartsWithPolicy("Starts with [policy] adopted", UniqueTarget.Nation),
+    StartsFirstAlongOcean("Chooses its start region before the other civilizations with a Coast start bias", UniqueTarget.Nation, flags = UniqueFlag.setOfHiddenToUsers),
     StartBias("Start bias [terrainFilter]", UniqueTarget.Nation, UniqueTarget.CityState,
         docDescription = "Same effect as a Nation startBias field entry. Merged with the startBias field " +
             "and, for city-states, with matching uniques on their CityStateType. " +
@@ -794,10 +795,13 @@ enum class UniqueType(
     OverrideFertility("Always Fertility [amount] for Map Generation", UniqueTarget.Terrain, flags = UniqueFlag.setOfHiddenToUsers),
     AddFertility("[amount] to Fertility for Map Generation", UniqueTarget.Terrain, flags = UniqueFlag.setOfHiddenToUsers),
 
-    RegionRequirePercentSingleType("A Region is formed with at least [amount]% [simpleTerrain] tiles, with priority [amount]", UniqueTarget.Terrain, flags = UniqueFlag.setOfHiddenToUsers),
-    RegionRequirePercentTwoTypes("A Region is formed with at least [amount]% [simpleTerrain] tiles and [simpleTerrain] tiles, with priority [amount]",
+    RegionRequirePercentSingleType("A Region is formed with at least [fraction]% [simpleTerrain] tiles, with priority [amount]", UniqueTarget.Terrain, flags = UniqueFlag.setOfHiddenToUsers),
+    RegionRequirePercentTwoTypes("A Region is formed with at least [fraction]% [simpleTerrain] tiles and [simpleTerrain] tiles, with priority [amount]",
         UniqueTarget.Terrain, flags = UniqueFlag.setOfHiddenToUsers),
     RegionRequireFirstLessThanSecond("A Region can not contain more [simpleTerrain] tiles than [simpleTerrain] tiles", UniqueTarget.Terrain, flags = UniqueFlag.setOfHiddenToUsers),
+    RegionRequireFirstBelowShareOfSecond("A Region can not contain more [simpleTerrain] tiles than [fraction]% of its [simpleTerrain] tiles",
+        UniqueTarget.Terrain, flags = UniqueFlag.setOfHiddenToUsers),
+    RegionTwoTypesMinimumOwnShare("A Region formed by two types needs at least [fraction]% tiles of this type", UniqueTarget.Terrain, flags = UniqueFlag.setOfHiddenToUsers),
     IgnoreBaseTerrainForRegion("Base Terrain on this tile is not counted for Region determination", UniqueTarget.Terrain, flags = UniqueFlag.setOfHiddenToUsers),
     RegionExtraResource("Starts in regions of this type receive an extra [resource]", UniqueTarget.Terrain, flags = UniqueFlag.setOfHiddenToUsers),
     BlocksResources("Never receives any resources", UniqueTarget.Terrain, flags = UniqueFlag.setOfHiddenToUsers),

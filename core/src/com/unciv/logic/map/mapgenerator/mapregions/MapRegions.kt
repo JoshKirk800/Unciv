@@ -274,6 +274,12 @@ class MapRegions (val ruleset: Ruleset) {
             StartNormalizer.normalizeStart(tileMap[region.startPosition!!], tileMap, tileData, ruleset, isMinorCiv = false)
         }
 
+        if (ruleset.modOptions.constants.startAssignmentLikeCivV) {
+            CivVStartAssignment.assign(regions, civilizations, ruleset, tileMap, gameParameters.noStartBias,
+                GameContext(gameInfo = tileMap.gameInfo).stateBasedRandom("MapRegions.assignRegionsLikeCivV")) { civ, region -> assignCivToRegion(civ, region) }
+            return
+        }
+
         val civBiases = civilizations.associateWith {
             ruleset.nations[it.civName]!!.getStartBias(ruleset, it.getGameContextForStartBias())
         }
@@ -417,20 +423,26 @@ class MapRegions (val ruleset: Ruleset) {
 
         for (region in regions) {
             region.countTerrains()
+            // The share is of the tiles that are not mountains (AssignStartingPlots:MeasureTerrainInRegions counts those as the area)
+            val areaTiles = region.tiles.count { it.baseTerrain != Constants.mountain }.coerceAtLeast(1)
 
             for (type in regionTypes) {
                 // Test exclusion criteria first
                 if (type.getMatchingUniques(UniqueType.RegionRequireFirstLessThanSecond).any {
                         region.getTerrainAmount(it.params[0]) >= region.getTerrainAmount(it.params[1])
+                    } || type.getMatchingUniques(UniqueType.RegionRequireFirstBelowShareOfSecond).any {
+                        region.getTerrainAmount(it.params[0]) * 100f >= it.params[1].toFloat() * region.getTerrainAmount(it.params[2])
                     }) {
                     continue
                 }
-                // Test inclusion criteria
+                // Test inclusion criteria (a share of a fraction of a tile counts as a whole one: the original compares with a decimal)
+                val ownShareFloor = type.getMatchingUniques(UniqueType.RegionTwoTypesMinimumOwnShare).firstOrNull()?.params?.get(0)?.toFloat()
                 if (type.getMatchingUniques(UniqueType.RegionRequirePercentSingleType).any {
-                        region.getTerrainAmount(it.params[1]) >= (it.params[0].toInt() * region.tiles.size) / 100
+                        region.getTerrainAmount(it.params[1]) * 100f >= it.params[0].toFloat() * areaTiles
                     }
                     || type.getMatchingUniques(UniqueType.RegionRequirePercentTwoTypes).any {
-                        region.getTerrainAmount(it.params[1]) + region.getTerrainAmount(it.params[2]) >= (it.params[0].toInt() * region.tiles.size) / 100
+                        region.getTerrainAmount(it.params[1]) + region.getTerrainAmount(it.params[2]) >= it.params[0].toFloat() * areaTiles / 100f &&
+                            (ownShareFloor == null || region.getTerrainAmount(type.name) * 100f >= ownShareFloor * areaTiles)
                     }
                 ) {
                     region.type = type.name

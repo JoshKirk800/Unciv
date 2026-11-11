@@ -1569,6 +1569,11 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Nation
 
+??? example  "Chooses its start region before the other civilizations with a Coast start bias"
+	This unique is automatically hidden from users.
+
+	Applicable to: Nation
+
 ??? example  "Start bias [terrainFilter]"
 	Same effect as a Nation startBias field entry. Merged with the startBias field and, for city-states, with matching uniques on their CityStateType. Conditionals run against GameInfo only during map generation / start placement (no Civilization — it may be only partially initialized). Do not use conditionals that require tiles, cities, or units.
 
@@ -3308,15 +3313,15 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Terrain
 
-??? example  "A Region is formed with at least [amount]% [simpleTerrain] tiles, with priority [amount]"
-	Example: "A Region is formed with at least [3]% [Elevated] tiles, with priority [3]"
+??? example  "A Region is formed with at least [fraction]% [simpleTerrain] tiles, with priority [amount]"
+	Example: "A Region is formed with at least [0.5]% [Elevated] tiles, with priority [3]"
 
 	This unique is automatically hidden from users.
 
 	Applicable to: Terrain
 
-??? example  "A Region is formed with at least [amount]% [simpleTerrain] tiles and [simpleTerrain] tiles, with priority [amount]"
-	Example: "A Region is formed with at least [3]% [Elevated] tiles and [Elevated] tiles, with priority [3]"
+??? example  "A Region is formed with at least [fraction]% [simpleTerrain] tiles and [simpleTerrain] tiles, with priority [amount]"
+	Example: "A Region is formed with at least [0.5]% [Elevated] tiles and [Elevated] tiles, with priority [3]"
 
 	This unique is automatically hidden from users.
 
@@ -3324,6 +3329,20 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 ??? example  "A Region can not contain more [simpleTerrain] tiles than [simpleTerrain] tiles"
 	Example: "A Region can not contain more [Elevated] tiles than [Elevated] tiles"
+
+	This unique is automatically hidden from users.
+
+	Applicable to: Terrain
+
+??? example  "A Region can not contain more [simpleTerrain] tiles than [fraction]% of its [simpleTerrain] tiles"
+	Example: "A Region can not contain more [Elevated] tiles than [0.5]% of its [Elevated] tiles"
+
+	This unique is automatically hidden from users.
+
+	Applicable to: Terrain
+
+??? example  "A Region formed by two types needs at least [fraction]% tiles of this type"
+	Example: "A Region formed by two types needs at least [0.5]% tiles of this type"
 
 	This unique is automatically hidden from users.
 

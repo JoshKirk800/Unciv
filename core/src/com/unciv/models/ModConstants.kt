@@ -63,6 +63,10 @@ class ModConstants {
     // Number of air units that can be stationed in a city
     var cityAirUnitCapacity = 6
 
+    /** Deal the regions to the civs as AssignStartingPlots:BalanceAndAssign does (see CivVStartAssignment): a random one of the fitting regions
+     *  for each civ, by groups (the sea, preferred, avoided types), civs with the `Chooses its start region before...` unique first. */
+    var startAssignmentLikeCivV = false
+
     /** Assign and place the luxuries as AssignStartingPlots.lua does (see CivVLuxuryPlacement). It names the luxuries of Civ V.
      *  false: the generic placement of the resources' `Generated with weight` rules. */
     var luxuryPlacementLikeCivV = false
