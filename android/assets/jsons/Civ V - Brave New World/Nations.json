@@ -1274,6 +1274,7 @@
 		"favoredReligion": "Christianity",
 		"uniqueName": "Serenissima",
 		"uniques": ["May not annex cities",
+			"Chooses its start region before the other civilizations with a Coast start bias",
 			"May buy items in puppet cities",
 			"Cannot build [Settler] units",
 			"Free [Merchant of Venice] appears <upon discovering [Optics] technology>",

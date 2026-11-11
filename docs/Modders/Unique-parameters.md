@@ -240,8 +240,8 @@ Since mapUnitFilter contains civFilter, that means civFilter can be applied to c
 Used for dividing the world into regions in each of which a single player is placed at the start of the game.
 Allowed values are `Hybrid` and the name of any terrain that has one of the following two uniques:
 
-- `A Region is formed with at least [amount]% [simpleTerrain] tiles, with priority [amount]`
-- `A Region is formed with at least [amount]% [simpleTerrain] tiles and [simpleTerrain] tiles, with priority [amount]`
+- `A Region is formed with at least [fraction]% [simpleTerrain] tiles, with priority [amount]`
+- `A Region is formed with at least [fraction]% [simpleTerrain] tiles and [simpleTerrain] tiles, with priority [amount]`
 
 ## simpleTerrain
 
