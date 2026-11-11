@@ -272,6 +272,7 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | startNormalizerLikeCivV                  | Boolean | false                        | [^G]  |
 | coastExpansionDice                       | List<Int> | empty                      | [^T]  |
 | seaDepositsOfLandResource                | String  | empty                        | [^SeaOil] |
+| terrainGeneratorLikeCivV                 | Boolean | false                        | [^CivVTerrain] |
 | unitSupplyPerPopulation                  | Float  | 0.5                           | [^C]  |
 | unitMaintenanceFreeUnits                 | Int    | 3                             | [^U]  |
 | unitMaintenanceGameMultiplier            | Float  | 1.0                           | [^U]  |
@@ -376,6 +377,7 @@ Legend:
     The rules name the terrains and resources of the Civ V rulesets (Grassland, Plains, Hill, Wheat, Cattle, ...), so it only fits them. false: the generic rules, which use the yields of the tiles.
 - [^T]: How the map generator widens the coast. Empty: `maxCoastExtension` passes, each ocean tile next to a coast tile becomes coast with 1 in 2. Otherwise ocean next to land becomes coast, then for each entry one pass in which an ocean tile next to a coast tile becomes coast with 1 in that number (Civ V: `[4, 4]`, so coast reaches 3 tiles from land at most).
 - [^SeaOil]: A strategic resource that is also found in the sea (it needs a `Deposits in [Coast] tiles always provide [n] resources` unique), placed after the land deposits: half of the units on land divided by n deposits, on coast tiles away from each other. Civ V: Oil. The resource then needs no `Generated with weight` rule for Coast. Empty: no such rule.
+- [^CivVTerrain]: Whether the map generator makes the base terrain of land and its features as the Civ V map scripts do: by latitude (snow from 75 % of the way to the pole, tundra from 60 %, grassland near the equator, desert and plains in the bands between from fractal noise), and jungle, forest, marsh, oases, flood plains and ice from fractal thresholds. It names the terrains and features of the Civ V rulesets (Grassland, Plains, Desert, Tundra, Snow, Forest, Jungle, Marsh, Oasis, Flood plains, Ice, Hill). false: the temperature and humidity ranges of the terrain definitions.
 - [^D]: The minimal distance that must be between any two cities, not counting the tiles cities are on
     The number is the amount of tiles between two cities, not counting the tiles the cities are on.
     e.g. "C__C", where "C" is a tile with a city and "_" is a tile without a city, has a distance of 2.

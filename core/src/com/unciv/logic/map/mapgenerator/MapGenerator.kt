@@ -186,20 +186,29 @@ class MapGenerator(val ruleset: Ruleset, private val coroutineScope: CoroutineSc
         runAndMeasure("spawnLakesAndCoasts") {
             spawnLakesAndCoasts(map)
         }
-        runAndMeasure("spawnVegetation") {
-            spawnVegetation(map)
-        }
-        runAndMeasure("spawnRareFeatures") {
-            spawnRareFeatures(map)
-        }
-        runAndMeasure("spawnIce") {
-            spawnIce(map)
-        }
-        runAndMeasure("assignContinents") {
-            map.assignContinents(TileMap.AssignContinentsMode.Assign)
-        }
-        runAndMeasure("RiverGenerator") {
-            RiverGenerator(map, randomness, ruleset).spawnRivers()
+        if (ruleset.modOptions.constants.terrainGeneratorLikeCivV) {
+            // As the Civ V scripts: terrain by latitude, then rivers, then the features that depend on them
+            val civVTerrain = CivVTerrainGenerator(map, randomness.RNG)
+            runAndMeasure("CivVTerrainGenerator.generateBaseTerrain") { civVTerrain.generateBaseTerrain() }
+            runAndMeasure("assignContinents") { map.assignContinents(TileMap.AssignContinentsMode.Assign) }
+            runAndMeasure("RiverGenerator") { RiverGenerator(map, randomness, ruleset).spawnRivers() }
+            runAndMeasure("CivVTerrainGenerator.addFeatures") { civVTerrain.addFeatures() }
+        } else {
+            runAndMeasure("spawnVegetation") {
+                spawnVegetation(map)
+            }
+            runAndMeasure("spawnRareFeatures") {
+                spawnRareFeatures(map)
+            }
+            runAndMeasure("spawnIce") {
+                spawnIce(map)
+            }
+            runAndMeasure("assignContinents") {
+                map.assignContinents(TileMap.AssignContinentsMode.Assign)
+            }
+            runAndMeasure("RiverGenerator") {
+                RiverGenerator(map, randomness, ruleset).spawnRivers()
+            }
         }
         convertTerrains(map.values)
 

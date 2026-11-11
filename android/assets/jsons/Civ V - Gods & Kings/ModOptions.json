@@ -13,6 +13,8 @@
         // MapGenerator.lua GenerateCoasts: expansion_diceroll_table {4, 4}
         "coastExpansionDice": [4, 4],
         // AssignStartingPlots:PlaceOilInTheSea
-        "seaDepositsOfLandResource": "Oil"
+        "seaDepositsOfLandResource": "Oil",
+        // TerrainGenerator.lua and FeatureGenerator.lua
+        "terrainGeneratorLikeCivV": true
     },
 }

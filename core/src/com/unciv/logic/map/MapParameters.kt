@@ -39,6 +39,8 @@ object MapType {
     const val fourCorners = "Four Corners"
     const val boreal = "Boreal"
     const val spiral = "Spiral"
+    /** The Continents map script of Civ V, see [com.unciv.logic.map.mapgenerator.MapLandmassGenerator] */
+    const val continentsLikeCivV = "Continents (Civ V)"
     
     // ordered based on popularity poll
     val allValues = listOf(
@@ -54,7 +56,8 @@ object MapType {
         lakes,
         fourCorners,
         spiral,
-        boreal
+        boreal,
+        continentsLikeCivV
     )
 
     // All ocean tiles

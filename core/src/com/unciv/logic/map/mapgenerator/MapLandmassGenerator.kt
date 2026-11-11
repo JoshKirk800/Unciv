@@ -32,6 +32,9 @@ class MapLandmassGenerator(
     //endregion
 
     companion object {
+        /** Continents.lua: sea level normal, the share of the fractal's cells under water */
+        private const val CONTINENTS_WATER_PERCENT = 72
+
         // this is called from TileMap constructors as well
         internal fun getInitializationTerrain(ruleset: Ruleset, type: TerrainType) =
             ruleset.terrains.values.firstOrNull { it.type == type && !it.hasUnique(UniqueType.NoNaturalGeneration) }?.name
@@ -63,6 +66,7 @@ class MapLandmassGenerator(
             MapType.boreal -> createBoreal()
             MapType.smallContinents -> createSmallContinents()
             MapType.spiral -> createSpiral()
+            MapType.continentsLikeCivV -> createContinentsLikeCivV()
         }
 
         if (tileMap.mapParameters.shape == MapShape.flatEarth) {
@@ -271,6 +275,61 @@ class MapLandmassGenerator(
             tileMap.assignContinents(TileMap.AssignContinentsMode.Reassign) // to support largeContinents above
         }
         tileMap.assignContinents(TileMap.AssignContinentsMode.Clear)
+    }
+
+    /**
+     *  ContinentsFractalWorld:GeneratePlotTypes of Continents.lua (the land only; the hills and mountains come from the
+     *  elevation generator as for every type): a [CivVFractal] with 72 % of its cells under water and the edges of the map at
+     *  zero (so no land at the poles), re-drawn until the biggest landmass has at most 58 % of the land, then shifted
+     *  horizontally and vertically so the map edge runs through the emptiest columns and rows.
+     *  Not ported: the rifts (`Fractal.CreateRifts`) and `GenerateCenterRift`, which split the continents further.
+     */
+    private fun createContinentsLikeCivV() {
+        val tiles = tileMap.values.toList()
+        val minColumn = tiles.minOf { it.getColumn() }
+        val minRow = tiles.minOf { it.getRow() }
+        val width = tiles.maxOf { it.getColumn() } - minColumn + 1
+        val height = tiles.maxOf { it.getRow() } - minRow + 1
+        val byCell = HashMap<Pair<Int, Int>, Tile>()
+        for (tile in tiles) byCell[tile.getColumn() - minColumn to tile.getRow() - minRow] = tile
+        val rng = randomness.RNG
+
+        var land = Array(width) { BooleanArray(height) }
+        for (attempt in 1..20) {
+            val grain = if (rng.nextInt(7) < 4) 2 else 1
+            val fractal = CivVFractal(width, height, grain, wrapX = false, wrapY = false, rng = rng, polar = true)
+            val level = fractal.getHeightFromPercent(CONTINENTS_WATER_PERCENT)
+            land = Array(width) { x -> BooleanArray(height) { y -> fractal.getHeight(x, y) > level } }
+            land = shiftToEmptiestEdge(land, width, height)
+
+            for (tile in tiles)
+                tile.baseTerrain = if (land[tile.getColumn() - minColumn][tile.getRow() - minRow]) landTerrainName else waterTerrainName
+            for (tile in tiles) tile.setTerrainTransients()
+            tileMap.assignContinents(TileMap.AssignContinentsMode.Reassign)
+            val landTiles = tiles.count { it.isLand }
+            val biggest = tileMap.continentSizes.values.maxOrNull() ?: 0
+            if (biggest <= landTiles * 0.58) break
+        }
+        tileMap.assignContinents(TileMap.AssignContinentsMode.Clear)
+    }
+
+    /** FractalWorld:ShiftPlotTypes: the group of columns (a tenth of the width on each side of its middle) with the least land
+     *  becomes the new left edge, likewise the group of rows (a fifteenth of the height) the new bottom edge */
+    private fun shiftToEmptiestEdge(land: Array<BooleanArray>, width: Int, height: Int): Array<BooleanArray> {
+        fun emptiestStart(totals: IntArray, radius: Int): Int {
+            val n = totals.size
+            var best = Int.MAX_VALUE
+            var bestIndex = 0
+            for (i in 0 until n) {
+                var sum = 0
+                for (d in -radius..radius) sum += totals[Math.floorMod(i + 1 + d, n).let { if (it == 0) n - 1 else it - 1 }]
+                if (sum < best) { best = sum; bestIndex = i }
+            }
+            return bestIndex
+        }
+        val shiftX = emptiestStart(IntArray(width) { x -> land[x].count { it } }, width / 10)
+        val shiftY = emptiestStart(IntArray(height) { y -> (0 until width).count { x -> land[x][y] } }, height / 15)
+        return Array(width) { x -> BooleanArray(height) { y -> land[(x + shiftX) % width][(y + shiftY) % height] } }
     }
 
     private fun createInnerSea() {
