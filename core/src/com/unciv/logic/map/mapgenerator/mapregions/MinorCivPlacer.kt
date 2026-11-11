@@ -369,7 +369,9 @@ object MinorCivPlacer {
         tileData.placeImpact(MapRegions.ImpactType.Strategic,tile, 0)
         tileData.placeImpact(MapRegions.ImpactType.Bonus,   tile, 3)
 
-        StartNormalizer.normalizeStart(tile, tileMap, tileData, ruleset, isMinorCiv = true)
+        // As the original does, the city states of the Civ V start normalizer are improved after all resources are placed (see MapRegions)
+        if (!ruleset.modOptions.constants.startNormalizerLikeCivV)
+            StartNormalizer.normalizeStart(tile, tileMap, tileData, ruleset, isMinorCiv = true)
     }
 
 }

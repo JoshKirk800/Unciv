@@ -63,6 +63,11 @@ class ModConstants {
     // Number of air units that can be stationed in a city
     var cityAirUnitCapacity = 6
 
+    /** The extras of the Civ V resource placement (see CivVResourceExtras): a bonus at the third ring of each start, more bonuses in hills regions,
+     *  small coal, oil or aluminum at the city states, top-ups of iron, horses, coal, oil, aluminum and uranium per civ, and no sugar on jungle.
+     *  Replaces Unciv's own versions of these. It names the resources of Civ V. */
+    var resourceExtrasLikeCivV = false
+
     /** Deal the regions to the civs as AssignStartingPlots:BalanceAndAssign does (see CivVStartAssignment): a random one of the fitting regions
      *  for each civ, by groups (the sea, preferred, avoided types), civs with the `Chooses its start region before...` unique first. */
     var startAssignmentLikeCivV = false
