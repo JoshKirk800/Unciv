@@ -77,6 +77,8 @@ class CivVRegionTests {
         assertEquals("Plains", regionType(decorate = plainsAndGrass(0.8)))
         // 50 % each: neither is under 70 % of the other: nothing
         assertEquals("Hybrid", regionType(decorate = plainsAndGrass(0.5)))
+        // 55 % plains, 45 % grass: more plains than grass, but the grass is not under 70 % of the plains (it used to be a plains region)
+        assertEquals("Hybrid", regionType(decorate = plainsAndGrass(0.55)))
     }
 
     // region: who gets which region
