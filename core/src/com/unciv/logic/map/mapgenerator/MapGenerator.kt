@@ -180,7 +180,8 @@ class MapGenerator(val ruleset: Ruleset, private val coroutineScope: CoroutineSc
         runAndMeasure("applyHumidityAndTemperature") {
             applyHumidityAndTemperature(map)
         }
-        runAndMeasure("raiseMountainsAndHills") {
+        // The Civ V Continents type brings its own ridges
+        if (mapType != MapType.continentsLikeCivV) runAndMeasure("raiseMountainsAndHills") {
             MapElevationGenerator(map, ruleset, terrainConditions, randomness).raiseMountainsAndHills()
         }
         runAndMeasure("spawnLakesAndCoasts") {
@@ -191,7 +192,10 @@ class MapGenerator(val ruleset: Ruleset, private val coroutineScope: CoroutineSc
             val civVTerrain = CivVTerrainGenerator(map, randomness.RNG)
             runAndMeasure("CivVTerrainGenerator.generateBaseTerrain") { civVTerrain.generateBaseTerrain() }
             runAndMeasure("assignContinents") { map.assignContinents(TileMap.AssignContinentsMode.Assign) }
-            runAndMeasure("RiverGenerator") { RiverGenerator(map, randomness, ruleset).spawnRivers() }
+            val civVRivers = CivVRiverGenerator(map, randomness.RNG)
+            runAndMeasure("CivVRiverGenerator") { civVRivers.spawnRivers() }
+            runAndMeasure("CivVRiverGenerator.addLakes") { civVRivers.addLakes() }
+            runAndMeasure("assignContinents again") { map.assignContinents(TileMap.AssignContinentsMode.Reassign) }
             runAndMeasure("CivVTerrainGenerator.addFeatures") { civVTerrain.addFeatures() }
         } else {
             runAndMeasure("spawnVegetation") {

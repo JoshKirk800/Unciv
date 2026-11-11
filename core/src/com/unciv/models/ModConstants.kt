@@ -64,8 +64,9 @@ class ModConstants {
     var cityAirUnitCapacity = 6
 
     /** Make the terrain and the features of land as the Civ V map scripts do (see CivVTerrainGenerator): the base terrain by latitude
-     *  with fractal noise, jungle, forest, marsh, oases, flood plains and ice from fractal thresholds. It names the terrains and
-     *  features of the Civ V rulesets. false: the temperature and humidity of the terrain definitions. */
+     *  with fractal noise, rivers and lakes as MapGenerator.lua places them, then jungle, forest, marsh, oases, flood plains, ice and atolls
+     *  from fractal thresholds. It names the terrains and features of the Civ V rulesets.
+     *  false: the temperature and humidity of the terrain definitions, and the generic rivers. */
     var terrainGeneratorLikeCivV = false
 
     /** AssignStartingPlots:PlaceOilInTheSea. The strategic resource that is also found in the sea, but only as many deposits as
