@@ -88,7 +88,8 @@ class MapRegions (val ruleset: Ruleset) {
 
     }
 
-    private val regions = ArrayList<Region>()
+    /** The regions [generateRegions] made, in the order they were cut */
+    val regions = ArrayList<Region>()
     private lateinit var tileData: TileDataMap
     
 
