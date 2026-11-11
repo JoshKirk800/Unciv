@@ -29,6 +29,13 @@ object StartNormalizer {
             }
         }
 
+        if (ruleset.modOptions.constants.startNormalizerLikeCivV) {
+            if (isMinorCiv) CivVStartNormalizer.normalizeCityState(startTile, ruleset)
+            else CivVStartNormalizer.normalizeMajor(
+                startTile, ruleset, tileData, tileMap.mapParameters.getLegendaryStart(), tileMap.mapParameters.getStrategicBalance())
+            return
+        }
+
         if (!isMinorCiv && tileMap.mapParameters.getStrategicBalance())
             placeStrategicBalanceResources(startTile, ruleset, tileData)
 

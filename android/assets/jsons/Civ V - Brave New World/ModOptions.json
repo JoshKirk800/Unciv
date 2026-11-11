@@ -14,6 +14,8 @@
         "unitMaintenanceGameMultiplier": 8,
         "unitMaintenanceExponentDivisor": 7,
         // CvCity::GetJONSCultureThreshold
-        "cultureCostLikeCivV": true
+        "cultureCostLikeCivV": true,
+        // AssignStartingPlots:NormalizeStartLocation and NormalizeCityState
+        "startNormalizerLikeCivV": true
     },
 }
