@@ -16,6 +16,7 @@
         "seaDepositsOfLandResource": "Oil",
         // TerrainGenerator.lua and FeatureGenerator.lua
         "terrainGeneratorLikeCivV": true,
-        "naturalWondersLikeCivV": true
+        "naturalWondersLikeCivV": true,
+        "ancientRuinsLikeCivV": true
     },
 }

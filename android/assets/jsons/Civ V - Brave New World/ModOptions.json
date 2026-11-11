@@ -29,6 +29,7 @@
         "startAssignmentLikeCivV": true,
         // AddExtraBonusesToHillsRegions, PlaceSexyBonusAtCivStarts, AddModernMinorStrategicsToCityStates, the strategic top-ups, FixSugarJungles
         "resourceExtrasLikeCivV": true,
-        "naturalWondersLikeCivV": true
+        "naturalWondersLikeCivV": true,
+        "ancientRuinsLikeCivV": true
     },
 }
