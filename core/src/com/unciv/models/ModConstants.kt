@@ -124,6 +124,11 @@ class ModConstants {
 
     // MapGenerator.spreadAncientRuins: number of ruins = suitable tile count * this
     var ancientRuinCountMultiplier = 0.025f
+    /** Place the ancient ruins as AddGoodies of the Civ V scripts does: per landmass of at least 3 tiles one per [tilesPerAncientRuinLikeCivV]
+     *  land tiles (rounded to nearest), on tiles at least 3 away from each other and more than 3 from any start, without resource.
+     *  Replaces [ancientRuinCountMultiplier] and the spreading over the whole map. */
+    var ancientRuinsLikeCivV = false
+    var tilesPerAncientRuinLikeCivV = 40
     // MapGenerator.spawnLakesAndCoasts: Water bodies up to this tile count become Lakes
     var maxLakeSize = 10
     // RiverGenerator: river frequency and length bounds

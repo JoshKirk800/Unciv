@@ -491,6 +491,10 @@ class MapGenerator(val ruleset: Ruleset, private val coroutineScope: CoroutineSc
 
         val suitableTiles = map.values.filter { it.isLand && !it.isImpassible()
                 && ruinsEquivalents.values.any { improvement -> isPlaceable(improvement, it) } }
+        if (ruleset.modOptions.constants.ancientRuinsLikeCivV) {
+            spreadAncientRuinsLikeCivV(map, ruinsEquivalents.values, suitableTiles, ::isPlaceable)
+            return
+        }
         val locations = randomness.chooseSpreadOutLocations(
                 (suitableTiles.size * ruleset.modOptions.constants.ancientRuinCountMultiplier).roundToInt(),
                 suitableTiles,
@@ -499,6 +503,37 @@ class MapGenerator(val ruleset: Ruleset, private val coroutineScope: CoroutineSc
             val rng = GameContext(tile = tile).stateBasedRandom("MapGenerator.spreadAncientRuins")
             val ruins = ruinsEquivalents.values.filter { isPlaceable(it, tile) }.random(rng)
             tile.setImprovementBasic(ruins)
+        }
+    }
+
+    /**
+     *  AddGoodies: on every landmass of at least 3 tiles one ruin per 40 land tiles (rounded to nearest: (tiles + 20) / 40), each on a random
+     *  tile that has no resource, no improvement and is at least 3 tiles away from every other ruin and more than 3 from every start.
+     */
+    private fun spreadAncientRuinsLikeCivV(
+        map: TileMap,
+        ruins: Collection<TileImprovement>,
+        suitableTiles: List<Tile>,
+        isPlaceable: (TileImprovement, Tile) -> Boolean
+    ) {
+        val starts = map.startingLocationsByNation.values.flatten()
+        val placed = ArrayList<Tile>()
+        val tilesPerGoody = ruleset.modOptions.constants.tilesPerAncientRuinLikeCivV
+        val byContinent = suitableTiles.groupBy { it.getContinent() }
+        for ((continent, tiles) in byContinent.entries.sortedBy { it.key }) {
+            val size = map.continentSizes[continent] ?: tiles.size
+            if (size < 3) continue
+            val wanted = (size + tilesPerGoody / 2) / tilesPerGoody
+            var count = 0
+            for (tile in tiles.shuffled(randomness.RNG)) {
+                if (count >= wanted) break
+                if (tile.resource != null || tile.improvement != null) continue
+                if (placed.any { it.aerialDistanceTo(tile) < 3 } || starts.any { it.aerialDistanceTo(tile) <= 3 }) continue
+                val improvement = ruins.filter { isPlaceable(it, tile) }.randomOrNull(randomness.RNG) ?: continue
+                tile.setImprovementBasic(improvement)
+                placed.add(tile)
+                count++
+            }
         }
     }
 

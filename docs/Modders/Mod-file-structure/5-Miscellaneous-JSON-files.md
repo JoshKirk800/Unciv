@@ -277,6 +277,8 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | startAssignmentLikeCivV                 | Boolean | false                        | [^CivVAssign] |
 | resourceExtrasLikeCivV                  | Boolean | false                        | [^CivVExtras] |
 | naturalWondersLikeCivV                  | Boolean | false                        | [^CivVWonders] |
+| ancientRuinsLikeCivV                    | Boolean | false                        | [^CivVRuins] |
+| tilesPerAncientRuinLikeCivV              | Int     | 40                           | Land tiles per ancient ruin when `ancientRuinsLikeCivV` is set |
 | unitSupplyPerPopulation                  | Float  | 0.5                           | [^C]  |
 | unitMaintenanceFreeUnits                 | Int    | 3                             | [^U]  |
 | unitMaintenanceGameMultiplier            | Float  | 1.0                           | [^U]  |
@@ -386,6 +388,7 @@ Legend:
 - [^CivVAssign]: Whether the start regions are dealt to the civilizations as the Civ V map scripts do: civilizations with a `Coast` start bias take a random region by the sea (those with the unique `Chooses its start region before the other civilizations with a Coast start bias` first), else by a lake, else by a river; those with preferred terrains a random region of that type (one preferred type first, then more, in the order of the types; none of the type left: the region with the most of that terrain); those that avoid terrains a random region without them; the rest at random. false: the generic assignment (the region with most of the wanted terrain).
 - [^CivVExtras]: The extra steps of the Civ V resource placement: one bonus resource of the kind of the region on the third ring of every start (two sheep in hills regions), more bonus resources in hills regions, a small deposit of coal, oil or aluminum at 3 in 4 City-States, top-ups of iron, horses, coal, aluminum, oil and uranium by the number of civilizations (on land tiles that can hold them), and no sugar on jungle. It names the resources of Civ V, and replaces the corresponding generic steps.
 - [^CivVWonders]: Natural wonders are chosen and placed as the Civ V map scripts do: as many as the world size gives (2 on Duel up to 7 on Huge; fewer if fewer wonders have a candidate tile), drawn one by one by their `weight` from the wonders that have a candidate tile, and placed in the order drawn. A wonder that fails to be placed is replaced by the next one drawn. The generic way draws the number by map radius first and places the ones with the fewest candidate tiles first.
+- [^CivVRuins]: Ancient ruins are placed as the Civ V map scripts place goody huts: on every landmass of at least 3 tiles one ruin per `tilesPerAncientRuinLikeCivV` land tiles (rounded to nearest), on tiles without a resource that are at least 3 tiles from every other ruin and more than 3 tiles from every start. Replaces `ancientRuinCountMultiplier`.
 - [^D]: The minimal distance that must be between any two cities, not counting the tiles cities are on
     The number is the amount of tiles between two cities, not counting the tiles the cities are on.
     e.g. "C__C", where "C" is a tile with a city and "_" is a tile without a city, has a distance of 2.
