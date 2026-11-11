@@ -499,6 +499,10 @@ class MapRegions (val ruleset: Ruleset) {
             LuxuryResourcePlacementLogic.placeLuxuries(regions, tileMap, tileData, ruleset, cityStateLuxuries, randomLuxuries)
         }
         StrategicBonusResourcePlacementLogic.placeStrategicAndBonuses(tileMap, regions, tileData)
+        // NormalizeCityStateLocations comes last in PlaceResourcesAndCityStates
+        if (ruleset.modOptions.constants.startNormalizerLikeCivV)
+            for (start in tileMap.startingLocationsByNation.filterKeys { ruleset.nations[it]!!.isCityState }.values.map { it.first() })
+                StartNormalizer.normalizeStart(start, tileMap, tileData, ruleset, isMinorCiv = true)
     }
 
     /** Places impacts from NWs that have been generated just prior to this step. */

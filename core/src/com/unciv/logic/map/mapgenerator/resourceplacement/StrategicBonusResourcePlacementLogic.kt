@@ -70,14 +70,21 @@ object StrategicBonusResourcePlacementLogic {
         val totalPlaced = HashMap<TileResource, Int>()
         strategicResources.forEach { totalPlaced[it] = 0 }
 
+        val extras = if (ruleset.modOptions.constants.resourceExtrasLikeCivV)
+            CivVResourceExtras(tileMap, regions, tileData, ruleset, GameContext(gameInfo = tileMap.gameInfo).stateBasedRandom("CivVResourceExtras")) else null
         placeMajorDepositsOnLand(ruleset, ruleLists, totalPlaced, tileData, fallbackStrategic)
-        placeSmallDepositsOfModernStrategicResourcesOnCityStates(ruleset, strategicResources, tileMap, totalPlaced, tileData)
+        if (extras != null) extras.addModernMinorStrategicsToCityStates()
+        else placeSmallDepositsOfModernStrategicResourcesOnCityStates(ruleset, strategicResources, tileMap, totalPlaced, tileData)
         placeMinorDepositsOnLand(bonusMultiplier, landList, tileData, strategicResources, fallbackStrategic, totalPlaced)
         placeSeaDepositsOfLandResource(ruleset, tileMap, tileData, totalPlaced)
         placeMajorDepositsOnWater(ruleset, ruleLists, totalPlaced, tileData, fallbackStrategic)
-        ensureMinimumResourcesPerCiv(strategicResources, regions, totalPlaced, ruleset, landList, tileMap, tileData)
+        if (extras != null) {
+            extras.topUpStrategics()
+            extras.placeBonusAtStarts()
+            extras.addBonusesToHillsRegions()
+        } else ensureMinimumResourcesPerCiv(strategicResources, regions, totalPlaced, ruleset, landList, tileMap, tileData)
         placeBonusResources(ruleset, ruleLists, tileData, bonusMultiplier, tileMap)
-        placeBonusInThirdRingOfStart(regions, ruleset, tileMap, tileData)
+        if (extras != null) extras.fixSugarJungles() else placeBonusInThirdRingOfStart(regions, ruleset, tileMap, tileData)
     }
 
     /** AssignStartingPlots:PlaceOilInTheSea: half of the units of the resource on land, divided by the amount of a deposit
