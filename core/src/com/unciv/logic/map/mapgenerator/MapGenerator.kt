@@ -372,6 +372,24 @@ class MapGenerator(val ruleset: Ruleset, private val coroutineScope: CoroutineSc
         }
     }
 
+    /** GenerateCoasts of MapGenerator.lua: every ocean tile next to land is coast, then for each of [dice] the ocean tiles next to
+     *  a coast tile (as it was before the pass) become coast with 1 in that number. */
+    private fun spreadCoastLikeCivV(map: TileMap, coasts: List<TerrainOccursRange>, dice: List<Int>) {
+        fun makeCoast(tiles: List<Tile>) {
+            for (tile in tiles) {
+                val coast = coasts.filter { it.matchesHumidityAndTemp(tile) }.ifEmpty { coasts }.random(randomness.RNG)
+                tile.baseTerrain = coast.name
+                tile.setTransients()
+            }
+        }
+        makeCoast(map.values.filter { tile -> tile.isOcean && tile.neighbors.any { it.isLand } })
+        for (oneIn in dice) {
+            makeCoast(map.values.filter { tile ->
+                tile.isOcean && tile.neighbors.any { it.getBaseTerrain().isCoast } && randomness.RNG.nextInt(oneIn) == 0
+            })
+        }
+    }
+
     private fun spreadCoast(map: TileMap, coasts: List<TerrainOccursRange>) {
         for (i in 1..map.mapParameters.maxCoastExtension) {
             val toCoast = mutableListOf<Tile>()
@@ -443,7 +461,9 @@ class MapGenerator(val ruleset: Ruleset, private val coroutineScope: CoroutineSc
         //Coasts
         val coasts = terrainConditions.filter { it.isCoast && !it.rareFeature }
         if (coasts.isNotEmpty()) {
-            spreadCoast(map, coasts)
+            val dice = ruleset.modOptions.constants.coastExpansionDice
+            if (dice.isEmpty()) spreadCoast(map, coasts)
+            else spreadCoastLikeCivV(map, coasts, dice)
         }
     }
 
