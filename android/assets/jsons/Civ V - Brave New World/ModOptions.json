@@ -28,6 +28,7 @@
         // AssignStartingPlots:BalanceAndAssign of Brave New World (it differs from the Gods & Kings one by the civs placed first)
         "startAssignmentLikeCivV": true,
         // AddExtraBonusesToHillsRegions, PlaceSexyBonusAtCivStarts, AddModernMinorStrategicsToCityStates, the strategic top-ups, FixSugarJungles
-        "resourceExtrasLikeCivV": true
+        "resourceExtrasLikeCivV": true,
+        "naturalWondersLikeCivV": true
     },
 }
