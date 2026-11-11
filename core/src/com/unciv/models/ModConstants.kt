@@ -63,6 +63,10 @@ class ModConstants {
     // Number of air units that can be stationed in a city
     var cityAirUnitCapacity = 6
 
+    /** Assign and place the luxuries as AssignStartingPlots.lua does (see CivVLuxuryPlacement). It names the luxuries of Civ V.
+     *  false: the generic placement of the resources' `Generated with weight` rules. */
+    var luxuryPlacementLikeCivV = false
+
     /** Make the terrain and the features of land as the Civ V map scripts do (see CivVTerrainGenerator): the base terrain by latitude
      *  with fractal noise, rivers and lakes as MapGenerator.lua places them, then jungle, forest, marsh, oases, flood plains, ice and atolls
      *  from fractal thresholds. It names the terrains and features of the Civ V rulesets.

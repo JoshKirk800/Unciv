@@ -6,6 +6,7 @@ import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.MapShape
 import com.unciv.logic.map.TileMap
 import com.unciv.logic.map.mapgenerator.mapregions.MapRegions.BiasTypes.PositiveFallback
+import com.unciv.logic.map.mapgenerator.resourceplacement.CivVLuxuryPlacement
 import com.unciv.logic.map.mapgenerator.resourceplacement.LuxuryResourcePlacementLogic
 import com.unciv.logic.map.mapgenerator.resourceplacement.StrategicBonusResourcePlacementLogic
 import com.unciv.logic.map.tile.Tile
@@ -474,9 +475,17 @@ class MapRegions (val ruleset: Ruleset) {
     fun placeResourcesAndMinorCivs(tileMap: TileMap, minorCivs: List<Civilization>) {
         placeNaturalWonderImpacts(tileMap)
 
-        val (cityStateLuxuries, randomLuxuries) = LuxuryResourcePlacementLogic.assignLuxuries(regions, tileData, ruleset)
-        MinorCivPlacer.placeMinorCivs(regions, tileMap, minorCivs, tileData, ruleset)
-        LuxuryResourcePlacementLogic.placeLuxuries(regions, tileMap, tileData, ruleset, cityStateLuxuries, randomLuxuries)
+        if (ruleset.modOptions.constants.luxuryPlacementLikeCivV) {
+            val luxuries = CivVLuxuryPlacement(regions, tileMap, tileData, ruleset,
+                GameContext(gameInfo = tileMap.gameInfo).stateBasedRandom("MapRegions.placeResourcesAndMinorCivs"))
+            luxuries.assignRoles()
+            MinorCivPlacer.placeMinorCivs(regions, tileMap, minorCivs, tileData, ruleset)
+            luxuries.placeLuxuries()
+        } else {
+            val (cityStateLuxuries, randomLuxuries) = LuxuryResourcePlacementLogic.assignLuxuries(regions, tileData, ruleset)
+            MinorCivPlacer.placeMinorCivs(regions, tileMap, minorCivs, tileData, ruleset)
+            LuxuryResourcePlacementLogic.placeLuxuries(regions, tileMap, tileData, ruleset, cityStateLuxuries, randomLuxuries)
+        }
         StrategicBonusResourcePlacementLogic.placeStrategicAndBonuses(tileMap, regions, tileData)
     }
 

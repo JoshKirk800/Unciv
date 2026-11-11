@@ -406,7 +406,7 @@
 					"Generated with weight [5] <in [Plains] Regions>",
 					"Generated with weight [10] <in [Grassland] Regions>",
 					"Generated with weight [20] <in [Hybrid] Regions>",
-					"Generated near City States with weight [10]"]
+					"Generated near City States with weight [15]"]
 	},
 	{
 		"name": "Pearls",
@@ -491,7 +491,13 @@
 		"terrainsCanBeFoundOn": ["Jungle"], // only on grassland or plains jungle
 		"food": 1,
 		"gold": 1,
-		"improvement": "Plantation"
+		"improvement": "Plantation",
+		// AssignStartingPlots.lua luxury_region_weights and luxury_city_state_weights
+		"uniques": ["Generated with weight [35] <in [Jungle] Regions>",
+					"Generated with weight [5] <in [Forest] Regions>",
+					"Generated with weight [10] <in [Grassland] Regions>",
+					"Generated with weight [10] <in [Hybrid] Regions>",
+					"Generated near City States with weight [10]"]
 	},
 	{
 		"name": "Crab",
