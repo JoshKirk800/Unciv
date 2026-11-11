@@ -166,4 +166,21 @@ class CivVTerrainPortTests {
             assertEquals("seed $seed", 0, wet)
         }
     }
+
+    @Test
+    fun `a young world has more mountains and hills than an old one`() {
+        fun count(age: Int, pick: (CivVContinentsLandmass.Result) -> Array<BooleanArray>): Int {
+            val geometry = PointyHexGeometry(128, 80, true)
+            return (1..3).sumOf { seed ->
+                val result = CivVContinentsLandmass(geometry, true, Random(seed), 72, age).generate { true }
+                pick(result).sumOf { column -> column.count { it } }
+            }
+        }
+        val youngMountains = count(3) { it.mountains }
+        val oldMountains = count(5) { it.mountains }
+        assertTrue("mountains $youngMountains young, $oldMountains old", youngMountains > oldMountains * 1.3)
+        val youngHills = count(3) { it.hills }
+        val oldHills = count(5) { it.hills }
+        assertTrue("hills $youngHills young, $oldHills old", youngHills > oldHills)
+    }
 }
