@@ -22,6 +22,8 @@
         // AssignStartingPlots:PlaceOilInTheSea
         "seaDepositsOfLandResource": "Oil",
         // TerrainGenerator.lua and FeatureGenerator.lua
-        "terrainGeneratorLikeCivV": true
+        "terrainGeneratorLikeCivV": true,
+        // AssignStartingPlots.lua of Brave New World (the Gods & Kings one differs: no cocoa, other counts)
+        "luxuryPlacementLikeCivV": true
     },
 }
