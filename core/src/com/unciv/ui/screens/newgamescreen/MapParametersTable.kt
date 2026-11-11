@@ -524,6 +524,9 @@ class MapParametersTable(
         addSlider("Water level", {mapParameters.waterThreshold}, -0.1f, 0.1f)
         { mapParameters.waterThreshold = it }
 
+        addSlider("World age (billion years)", {mapParameters.worldAge.toFloat()}, 3f, 5f)
+        { mapParameters.worldAge = it.toInt() }.apply { stepSize = 1f }
+
         addTextButton("Reset to defaults", true) {
             mapParameters.resetAdvancedSettings()
             seedTextField.value = mapParameters.seed
