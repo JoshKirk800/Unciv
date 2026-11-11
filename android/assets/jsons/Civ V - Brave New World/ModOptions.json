@@ -16,6 +16,8 @@
         // CvCity::GetJONSCultureThreshold
         "cultureCostLikeCivV": true,
         // AssignStartingPlots:NormalizeStartLocation and NormalizeCityState
-        "startNormalizerLikeCivV": true
+        "startNormalizerLikeCivV": true,
+        // MapGenerator.lua GenerateCoasts: expansion_diceroll_table {4, 4}
+        "coastExpansionDice": [4, 4]
     },
 }
