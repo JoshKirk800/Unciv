@@ -63,6 +63,10 @@ class ModConstants {
     // Number of air units that can be stationed in a city
     var cityAirUnitCapacity = 6
 
+    /** Normalize starts as AssignStartingPlots:NormalizeStartLocation and NormalizeCityState do (see CivVStartNormalizer).
+     *  It names the terrains and resources of the Civ V rulesets, so it only makes sense for them. */
+    var startNormalizerLikeCivV = false
+
     // The culture a city needs for its next tile. false: 6 x (tiles claimed + 1.4813)^1.3 with the percentages multiplied.
     // true: the formula of Civ V (CvCity::GetJONSCultureThreshold), 15 + (10 x tiles gained by culture)^1.1, x 1.5 for city-states,
     // the percentages added and at least -85, x game speed, rounded down to 5
