@@ -77,7 +77,7 @@ object DiplomacyTurn {
         var count = 0
         for (other in civ.gameInfo.civilizations) {
             if (other.isSpectator || !other.isAlive()) continue
-            sum += other.getEraNumber()
+            sum += other.getAiEraNumber()
             count++
         }
         val eraNumber = if (count == 0) 0 else sum / count
@@ -149,7 +149,7 @@ object DiplomacyTurn {
             if (city.isOriginalCapital) currentValue = currentValue * 3 / 2   // as the original: scales the running total
         }
         val typicalPower = powerOfStrongestBuildableLandUnit(civ)
-        for (unit in civ.units.getCivUnits()) currentValue += warValueOfUnit(unit.baseUnit.getForceEvaluation(), typicalPower, rules)
+        for (unit in civ.units.getCivUnits()) currentValue += warValueOfUnit(unit.baseUnit.getAiPower(), typicalPower, rules)
         for (other in others) {
             val memory = civ.ai.diplomacy.memoryOf(other)
             val lost = memory.warValueLost
@@ -178,7 +178,7 @@ object DiplomacyTurn {
         var best = 0
         for (unit in civ.gameInfo.ruleset.units.values) {
             if (!unit.isLandUnit || !unit.isMilitary) continue
-            val power = unit.getForceEvaluation()
+            val power = unit.getAiPower()
             if (power > best && unit.isBuildable(civ)) best = power
         }
         return best

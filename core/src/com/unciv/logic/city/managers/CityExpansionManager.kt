@@ -23,9 +23,14 @@ class CityExpansionManager : IsPartOfGameInfoSerialization {
     lateinit var city: City
     var cultureStored: Int = 0
 
+    /** The number of tiles this city gained from its culture (CvCity::m_iJONSCultureLevel): bought tiles and tiles from other sources do not count.
+     *  Negative in a saved game from before the counter existed; [setTransients] then derives it from the tiles. */
+    var cultureLevel: Int = -1
+
     fun clone(): CityExpansionManager {
         val toReturn = CityExpansionManager()
         toReturn.cultureStored = cultureStored
+        toReturn.cultureLevel = cultureLevel
         return toReturn
     }
 
@@ -36,14 +41,14 @@ class CityExpansionManager : IsPartOfGameInfoSerialization {
         return city.tiles.count { it != city.location && it !in tilesAroundCity}
     }
 
-    // This one has conflicting sources -
-    // http://civilization.wikia.com/wiki/Mathematics_of_Civilization_V says it's 20+(10(t-1))^1.1
-    // https://www.reddit.com/r/civ/comments/58rxkk/how_in_gods_name_do_borders_expand_in_civ_vi/ has it
-    //   (per game XML files) at 6*(t+0.4813)^1.3
-    // The second seems to be more based, so I'll go with that
-    // -- Note (added later) that this last link is specific to civ VI and not civ V
+    // The formula of the original is CvCity::GetJONSCultureThreshold (GlobalDefines CULTURE_COST_FIRST_PLOT 15, ..._LATER_PLOT_MULTIPLIER 10, ..._EXPONENT 1.1,
+    // CULTURE_PLOT_COST_MOD_MINIMUM -85, CULTURE_COST_VISIBLE_DIVISOR 5): 15 + (10 x level)^1.1, x 1.5 for a city-state, x (100 + the sum of the modifiers, at least -85) %,
+    // x the game speed, rounded down to 5. The Civ V rulesets turn it on with the ModConstants cultureCostLikeCivV.
+    // Other rulesets keep the older formula: 6 x (claimed tiles + 1.4813)^1.3, which is the Civ VI one ("Mathematics of Civilization V" has 20 + (10 (t-1))^1.1).
     @Readonly
     fun getCultureToNextTile(): Int {
+        if (city.getRuleset().modOptions.constants.cultureCostLikeCivV) return getCultureToNextTileLikeCivV()
+
         var cultureToNextTile = 6 * (max(0, tilesClaimed()) + 1.4813).pow(1.3)
 
         cultureToNextTile *= city.civ.gameInfo.speed.cultureCostModifier
@@ -57,6 +62,23 @@ class CityExpansionManager : IsPartOfGameInfoSerialization {
         }
 
         return cultureToNextTile.roundToInt()
+    }
+
+    @Readonly
+    private fun getCultureToNextTileLikeCivV(): Int {
+        val level = if (cultureLevel >= 0) cultureLevel else tilesClaimed()
+        var cost = 15 + (10.0 * level).pow(1.1).toInt()
+        if (city.civ.isCityState) cost = cost * 150 / 100
+
+        var percent = 0
+        city.forEachMatchingUnique(UniqueType.BorderGrowthPercentage) { unique ->
+            if (city.matchesFilter(unique.params[1])) percent += unique.params[0].toInt()
+        }
+        if (percent != 0) cost = cost * (100 + max(percent, -85)) / 100
+
+        cost = (cost * city.civ.gameInfo.speed.cultureCostModifier).toInt()
+        if (cost > 10) cost -= cost % 5
+        return cost
     }
 
     @Readonly
@@ -189,6 +211,7 @@ class CityExpansionManager : IsPartOfGameInfoSerialization {
 
     //region state-changing functions
     fun reset() {
+        cultureLevel = 0
         for (tile in city.getTiles())
             relinquishOwnership(tile)
 
@@ -207,6 +230,7 @@ class CityExpansionManager : IsPartOfGameInfoSerialization {
         val chosenTile = chooseNewTileToOwn()
         if (chosenTile != null) {
             cultureStored -= getCultureToNextTile()
+            cultureLevel = (if (cultureLevel >= 0) cultureLevel else tilesClaimed()) + 1
             takeOwnership(chosenTile)
             return chosenTile.position
         }
@@ -291,6 +315,7 @@ class CityExpansionManager : IsPartOfGameInfoSerialization {
     }
 
     fun setTransients() {
+        if (cultureLevel < 0) cultureLevel = tilesClaimed() // saved game from before the counter existed
         val tiles = city.getTiles()
         for (tile in tiles)
             tile.setOwningCity(city)

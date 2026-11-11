@@ -64,12 +64,11 @@ class MapRegions (val ruleset: Ruleset) {
         val secondRingFoodScores = listOf(0, 2, 5, 10, 20, 25, 28, 30, 32, 34, 35)
         val secondRingProdScores = listOf(0, 10, 20, 25, 30, 35)
 
+        // AssignStartingPlots:PlaceImpactAndRipples: the start itself and 8 rings, nothing beyond
         val closeStartPenaltyForRing = mapOf(
                 0 to 99, 1 to 97, 2 to 95,
                 3 to 92, 4 to 89, 5 to 69,
-                6 to 57, 7 to 24, 8 to 20,
-                9 to 16, 10 to 12, 11 to 8, 
-                12 to 6, 13 to 4) //at 14, both of us can settle a min distance expand without competing for tiles
+                6 to 57, 7 to 24, 8 to 15)
 
         val randomLuxuryRatios = mapOf(
                 1 to listOf(1f),
@@ -88,7 +87,8 @@ class MapRegions (val ruleset: Ruleset) {
 
     }
 
-    private val regions = ArrayList<Region>()
+    /** The regions [generateRegions] made, in the order they were cut */
+    val regions = ArrayList<Region>()
     private lateinit var tileData: TileDataMap
     
 
@@ -138,7 +138,7 @@ class MapRegions (val ruleset: Ruleset) {
         // Assign regions to the best continents, giving half value for region #2 etc
         repeat(numRegions) {
             val bestContinent = continents
-                    .maxByOrNull { continentFertility[it]!! / (1 + (civsAddedToContinent[it] ?: 0)) }!!
+                    .maxByOrNull { continentFertility[it]!!.toFloat() / (1 + (civsAddedToContinent[it] ?: 0)) }!!
             civsAddedToContinent[bestContinent] = (civsAddedToContinent[bestContinent] ?: 0) + 1
         }
 
@@ -159,6 +159,23 @@ class MapRegions (val ruleset: Ruleset) {
         }
     }
 
+    /** How AssignStartingPlots:DivideIntoRegions cuts a region of a given number of civs.
+     *  A prime above 3 is cut once, unevenly: [firstPercent] of the fertility goes to the first part, which is divided in [subdivisions], the rest in [laterDivisions].
+     *  Other numbers are cut in [parts] equal parts (2 or 3), each divided further. */
+    private class DivisionScheme(val parts: Int, val subdivisions: Int, val firstPercent: Double = 0.0, val laterDivisions: Int = 0)
+
+    private fun getDivisionScheme(numDivisions: Int): DivisionScheme = when (numDivisions) {
+        5 -> DivisionScheme(2, 3, 59.2, 2)
+        7 -> DivisionScheme(2, 3, 42.2, 4)
+        11 -> DivisionScheme(2, 3, 27.0, 8)
+        13 -> DivisionScheme(2, 5, 38.1, 8)
+        17 -> DivisionScheme(2, 9, 52.8, 8)
+        19 -> DivisionScheme(2, 7, 36.7, 12)
+        2, 4, 8, 10, 14, 16, 20, 22 -> DivisionScheme(2, numDivisions / 2)
+        3, 6, 9, 12, 15, 18, 21 -> DivisionScheme(3, numDivisions / 3)
+        else -> DivisionScheme(2, numDivisions / 2, 100.0 * (numDivisions / 2) / numDivisions, numDivisions - numDivisions / 2) // More civs than the original game has tables for
+    }
+
     /** Recursive function, divides a region into [numDivisions] pars of equal-ish fertility */
     private fun divideRegion(region: Region, numDivisions: Int) {
         if (numDivisions <= 1) {
@@ -167,31 +184,41 @@ class MapRegions (val ruleset: Ruleset) {
             return
         }
 
-        val firstDivisions = numDivisions / 2 // Since int division rounds down, works for all numbers
-        val splitRegions = splitRegion(region, (100 * firstDivisions) / numDivisions)
-        divideRegion(splitRegions.first, firstDivisions)
-        divideRegion(splitRegions.second, numDivisions - firstDivisions)
+        val scheme = getDivisionScheme(numDivisions)
+        if (scheme.laterDivisions > 0) {
+            // The shares are undershot on purpose: the cut always overshoots, so this evens out
+            val (first, second) = splitRegion(region, scheme.firstPercent)
+            divideRegion(first, scheme.subdivisions)
+            divideRegion(second, scheme.laterDivisions)
+        } else if (scheme.parts == 2) {
+            val (first, second) = splitRegion(region, 49.5)
+            divideRegion(first, scheme.subdivisions)
+            divideRegion(second, scheme.subdivisions)
+        } else {
+            val (first, rest) = splitRegion(region, 33.0)
+            val (second, third) = splitRegion(rest, 48.5)
+            divideRegion(first, scheme.subdivisions)
+            divideRegion(second, scheme.subdivisions)
+            divideRegion(third, scheme.subdivisions)
+        }
     }
 
-    /** Splits a region in 2, with the first having [firstPercent] of total fertility */
-    private fun splitRegion(regionToSplit: Region, firstPercent: Int): Pair<Region, Region> {
-        val targetFertility = (regionToSplit.totalFertility * firstPercent) / 100
+    /** Splits a region in 2 along its longer side (columns when it is not taller than wide, as the original),
+     *  ending the first part at the first column or row where it has reached [firstPercent] of the total fertility. */
+    private fun splitRegion(regionToSplit: Region, firstPercent: Double): Pair<Region, Region> {
+        val targetFertility = regionToSplit.totalFertility * firstPercent / 100
 
         val splitOffRegion = Region(regionToSplit.tileMap, Rectangle(regionToSplit.rect), regionToSplit.continentID)
 
-        val widerThanTall = regionToSplit.rect.width > regionToSplit.rect.height
+        val cutAlongColumns = regionToSplit.rect.height <= regionToSplit.rect.width
 
-        var bestSplitPoint = 1 // will be the size of the split-off region
-        var closestFertility = 0
-        var cumulativeFertility = 0
-
-        val highestPointToTry = if (widerThanTall) regionToSplit.rect.width.toInt()
+        val highestPointToTry = if (cutAlongColumns) regionToSplit.rect.width.toInt()
         else regionToSplit.rect.height.toInt()
-        val pointsToTry = 1..highestPointToTry
-        val halfwayPoint = highestPointToTry/2
 
-        for (splitPoint in pointsToTry) {
-            val nextRect = if (widerThanTall)
+        var cumulativeFertility = 0
+        var splitPoint = 1 // will be the size of the split-off region
+        while (splitPoint < highestPointToTry - 1) { // keeps at least one column or row for the second part
+            val nextRect = if (cutAlongColumns)
                 splitOffRegion.tileMap.getTilesInRectangle(Rectangle(
                         splitOffRegion.rect.x + splitPoint - 1, splitOffRegion.rect.y,
                         1f, splitOffRegion.rect.height))
@@ -205,25 +232,18 @@ class MapRegions (val ruleset: Ruleset) {
             else
                 nextRect.sumOf { if (it.getContinent() == splitOffRegion.continentID) it.getTileFertility(true) else 0 }
 
-            // Better than last try?
-            val bestSplitPointFertilityDeltaFromTarget = abs(closestFertility - targetFertility)
-            val currentSplitPointFertilityDeltaFromTarget = abs(cumulativeFertility - targetFertility)
-            if (currentSplitPointFertilityDeltaFromTarget < bestSplitPointFertilityDeltaFromTarget
-                || (currentSplitPointFertilityDeltaFromTarget == bestSplitPointFertilityDeltaFromTarget // same fertility split but better 'amount of tiles' split
-                        && abs(halfwayPoint- splitPoint) < abs(halfwayPoint- bestSplitPoint) )) { // current split point is closer to the halfway point
-                bestSplitPoint = splitPoint
-                closestFertility = cumulativeFertility
-            }
+            if (cumulativeFertility >= targetFertility) break
+            splitPoint++
         }
 
-        if (widerThanTall) {
-            splitOffRegion.rect.width = bestSplitPoint.toFloat()
+        if (cutAlongColumns) {
+            splitOffRegion.rect.width = splitPoint.toFloat()
             regionToSplit.rect.x = splitOffRegion.rect.x + splitOffRegion.rect.width
-            regionToSplit.rect.width -= bestSplitPoint
+            regionToSplit.rect.width -= splitPoint
         } else {
-            splitOffRegion.rect.height = bestSplitPoint.toFloat()
+            splitOffRegion.rect.height = splitPoint.toFloat()
             regionToSplit.rect.y = splitOffRegion.rect.y + splitOffRegion.rect.height
-            regionToSplit.rect.height -= bestSplitPoint
+            regionToSplit.rect.height -= splitPoint
         }
         splitOffRegion.updateTiles()
         regionToSplit.updateTiles()
@@ -246,8 +266,8 @@ class MapRegions (val ruleset: Ruleset) {
             tileData[tile] = newData
         }
 
-        // Sort regions by fertility so the worse regions get to pick first
-        val sortedRegions = regions.sortedBy { it.totalFertility }
+        // Sort regions by average fertility per plot of the region's rectangle so the worse regions get to pick first (AssignStartingPlots:ChooseLocations)
+        val sortedRegions = regions.sortedBy { it.totalFertility.toFloat() / (it.rect.width * it.rect.height).coerceAtLeast(1f) }
         for (region in sortedRegions) RegionStartFinder.findStart(region, tileData)
         for (region in regions) {
             StartNormalizer.normalizeStart(tileMap[region.startPosition!!], tileMap, tileData, ruleset, isMinorCiv = false)
@@ -531,5 +551,5 @@ internal fun getTerrainRule(terrain: Terrain, ruleset: Ruleset): Unique {
                 .filter { it.type == TerrainType.TerrainFeature && it.hasUnique(UniqueType.VisibilityElevation) }
                 .joinToString(separator = " ") { "<in tiles without [${it.name}]>" })
     } else
-        Unique("RULE <in [Featureless] [${terrain.name}] tiles>")
+        Unique("RULE <in [{Featureless} {${terrain.name}}] tiles>")
 }

@@ -248,7 +248,7 @@ class TacticalMap(private val civ: Civilization, state: TacticalState) {
         var count = 0
         for (other in civ.gameInfo.civilizations) {
             if (other.isBarbarian || other.isSpectator || !other.isAlive()) continue
-            sum += other.getEraNumber()
+            sum += other.getAiEraNumber()
             count++
         }
         return if (count == 0) 0 else sum / count

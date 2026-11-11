@@ -266,6 +266,44 @@ class OperationTests {
         assertEquals(OperationState.ABORTED, operation.state)
         assertEquals(OperationAbortReason.HALF_STRENGTH, operation.abortReason)
     }
+
+    @Test
+    fun `the AI does not scrap an obsolete unit that is in an army`() {
+        val base = game.createBaseUnit("Sword")
+        base.movement = 2
+        base.strength = 1
+        base.obsoleteTech = "Pottery"
+        civ.tech.addTechnology("Pottery")
+        val obsolete = unit(base.name)
+        assertEquals(obsolete, civ.ai.military.findBestUnitToScrap(civ, isLand = true)?.first)
+        // CvMilitaryAI::FindBestUnitToScrap: "Is it in an army?" - skipped; the game forcing a disband (the deficit) does not look
+        val operation = closeDefense()
+        ops.nextUnitForOperationSlot(city)
+        ops.addUnit(operation.firstArmy!!, obsolete, 0)
+        assertNull(civ.ai.military.findBestUnitToScrap(civ, isLand = true))
+        assertEquals(obsolete, civ.ai.military.findBestUnitToScrap(civ, isLand = true, deficitForced = true)?.first)
+    }
+
+    @Test
+    fun `a city that chose a process also builds the unit of an open operation slot`() {
+        closeDefense()
+        civ.ai.military.numberOfTimesOpsBuildSkippedOver = 3
+        city.cityConstructions.setCurrentConstruction(PerpetualConstruction.Gold.name)
+        ConstructionAutomation(city.cityConstructions).fallThroughToOperationUnit()
+        // CvCityStrategyAI::ChooseProduction: the process case has no break; the unit goes in front, the process stays behind it
+        assertEquals(listOf("Warrior", PerpetualConstruction.Gold.name), city.cityConstructions.constructionQueue)
+        assertEquals("Warrior", ops.commitmentOf(city)?.unitName)
+        assertEquals(0, civ.ai.military.numberOfTimesOpsBuildSkippedOver)
+    }
+
+    @Test
+    fun `a process with no slot open leaves the queue alone and still resets the skipped-over count`() {
+        civ.ai.military.numberOfTimesOpsBuildSkippedOver = 3
+        city.cityConstructions.setCurrentConstruction(PerpetualConstruction.Gold.name)
+        ConstructionAutomation(city.cityConstructions).fallThroughToOperationUnit()
+        assertEquals(listOf(PerpetualConstruction.Gold.name), city.cityConstructions.constructionQueue)
+        assertEquals(0, civ.ai.military.numberOfTimesOpsBuildSkippedOver)
+    }
     //endregion
 
     //region Operations against cities

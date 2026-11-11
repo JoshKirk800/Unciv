@@ -397,7 +397,7 @@ object DealAi {
     fun getResearchAgreementValue(us: Civilization, them: Civilization, fromMe: Boolean, useEvenValue: Boolean): Int {
         var value = 100
         if (fromMe) {
-            value += 100 * max(0, them.getEraNumber() - us.getEraNumber())
+            value += 100 * max(0, them.getAiEraNumber() - us.getAiEraNumber())
             value *= when (us.ai.diplomacy.approachTowards(them, true)) {
                 MajorCivApproach.Hostile -> 1000
                 MajorCivApproach.Afraid -> 80
@@ -429,7 +429,7 @@ object DealAi {
             WarProjection.Unknown -> 250
             else -> 200
         }
-        value += us.getEraNumber() * 50
+        value += us.getAiEraNumber() * 50
         if (!third.isCityState) {
             when (us.ai.diplomacy.opinionOf(third)) {
                 MajorCivOpinion.Unforgivable -> value = value * 300 / 100
@@ -470,7 +470,7 @@ object DealAi {
             projection == WarProjection.Stalemate -> 1000
             else -> 50000
         }
-        value += us.getEraNumber() * 50
+        value += us.getAiEraNumber() * 50
         val warBias = us.define(AiDefine.DEFAULT_FLAVOR_VALUE) - warBiasWeight
         value += warBias * 10 * value / 100
         if (third.isCityState) {

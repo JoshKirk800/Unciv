@@ -21,6 +21,7 @@ import com.unciv.models.ruleset.ai.MinorCivApproach
 import com.unciv.models.ruleset.ai.StrategyDef
 import com.unciv.utils.hashOf
 import org.jetbrains.annotations.VisibleForTesting
+import yairm210.purity.annotations.Cache
 import yairm210.purity.annotations.Readonly
 import kotlin.math.max
 import kotlin.math.min
@@ -83,6 +84,8 @@ class CivAi : IsPartOfGameInfoSerialization {
     /** The active grand strategy (AIGRANDSTRATEGY_* name), null before the first [GrandStrategyAi.doTurn] */
     var grandStrategy: String? = null
     var turnsSinceGrandStrategySet = 0
+    /** The team's project count of the Apollo Program never goes down; the building can be lost with its city, this stays (set in [com.unciv.logic.city.CityConstructions.addBuilding]) */
+    var apolloProgramBuilt = false
     /** Last computed priority per grand strategy name */
     var grandStrategyPriorities = LinkedHashMap<String, Int>()
     /** Guesses of other majors' grand strategies, by civID */
@@ -139,8 +142,8 @@ class CivAi : IsPartOfGameInfoSerialization {
     @Transient internal var strategyVersion = 0
         private set
 
-    @Transient private var militaryMightTurn = -1
-    @Transient private var militaryMightCache = 0
+    @Transient @Cache private var militaryMightTurn = -1
+    @Transient @Cache private var militaryMightCache = 0
     @Transient private var tourismTurn = -1
     @Transient private var tourismCache = 0
     @Transient private var plotDangerTurn = -1
@@ -156,6 +159,7 @@ class CivAi : IsPartOfGameInfoSerialization {
         toReturn.personalityInitialized = personalityInitialized
         toReturn.grandStrategy = grandStrategy
         toReturn.turnsSinceGrandStrategySet = turnsSinceGrandStrategySet
+        toReturn.apolloProgramBuilt = apolloProgramBuilt
         toReturn.grandStrategyPriorities.putAll(grandStrategyPriorities)
         for ((civId, guess) in grandStrategyGuesses) toReturn.grandStrategyGuesses[civId] = guess.clone()
         toReturn.economicStrategies.putAll(economicStrategies)
@@ -380,19 +384,15 @@ class CivAi : IsPartOfGameInfoSerialization {
     /**
      *  CvPlayer::GetMilitaryMight (calculateMilitaryMight), computed once per turn: per unit the unit type's power, × (1000 + 125 × level) / 1000,
      *  × health / 100, halved for water units; the sum × min(2, 1 + √gold / 100).
-     *  The unit type's power (CvUnitEntry::GetPower) is Unciv's port of it, [com.unciv.models.ruleset.unit.BaseUnit.getForceEvaluation];
+     *  The unit type's power is [com.unciv.models.ruleset.unit.BaseUnit.getAiPower] (CvUnitEntry::GetPower);
      *  the unit level is 1 + its promotions gained by experience (CvUnit::getLevel starts at 1).
      */
-    fun militaryMight(): Int {
+    @Readonly fun militaryMight(): Int {
         val turn = civ.gameInfo.turns
         if (militaryMightTurn == turn) return militaryMightCache
         var sum = 0
         for (unit in civ.units.getCivUnits()) {
-            var power = unit.baseUnit.getForceEvaluation()
-            if (power == 0) continue
-            val level = 1 + unit.promotions.numberOfPromotions
-            power = power * (1000 + level * 125) / 1000
-            power = power * unit.health / 100
+            var power = unit.getAiPower()
             if (unit.baseUnit.isWaterUnit) power /= 2
             sum += power
         }

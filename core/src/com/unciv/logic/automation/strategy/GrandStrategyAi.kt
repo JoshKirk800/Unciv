@@ -130,10 +130,11 @@ object GrandStrategyAi {
 
         val approachModifier = max(max(ai.majorCivApproachBias(MajorCivApproach.Deceptive), ai.majorCivApproachBias(MajorCivApproach.Hostile)),
             ai.majorCivApproachBias(MajorCivApproach.War)) - ai.majorCivApproachBias(MajorCivApproach.Friendly)
-        priority += (ai.diplomacyValue(DiplomacyPersonality.Boldness) + approachModifier) * (12 - civ.getEraNumber())
+        priority += (ai.diplomacyValue(DiplomacyPersonality.Boldness) + approachModifier) * (12 - civ.getAiEraNumber())
 
+        // CvGrandStrategyAI::GetConquestPriority loops over the teams, so a major that has been met counts whether or not it is still alive
         if (elapsedTurns >= rules.define(AiDefine.AI_GS_CONQUEST_NOBODY_MET_FIRST_TURN)
-            && civ.getKnownCivs().none { it.isMajorCiv })
+            && gameInfo.civilizations.none { it.isMajorCiv && !it.isSpectator && it != civ && civ.knows(it) })
             priority += rules.define(AiDefine.AI_GRAND_STRATEGY_CONQUEST_NOBODY_MET_WEIGHT)
 
         if (elapsedTurns >= rules.define(AiDefine.AI_GS_CONQUEST_MILITARY_STRENGTH_FIRST_TURN)) {
@@ -192,7 +193,7 @@ object GrandStrategyAi {
         if (!isVictoryValid(civ, def)) return -100
         val ai = civ.ai
         val rules = ai.rules
-        var priority = (10 - civ.getEraNumber()) * ai.personality(Flavor.Culture) * 200 / 100
+        var priority = (10 - civ.getAiEraNumber()) * ai.personality(Flavor.Culture) * 200 / 100
 
         val ourCulture = culturePerTurn(civ)
         val ourTourism = ai.tourism()
@@ -233,7 +234,7 @@ object GrandStrategyAi {
         var unalliedCityStates = 0
         if (league == null) {
             // Before the World Congress, weight by flavor
-            priority += (10 - civ.getEraNumber()) * ai.personality(Flavor.Diplomacy) * 150 / 100
+            priority += (10 - civ.getAiEraNumber()) * ai.personality(Flavor.Diplomacy) * 150 / 100
         } else {
             votesNeeded = league.getVotesNeededForWorldLeader()
             votesControlled = league.getDelegates(civ)
@@ -289,12 +290,13 @@ object GrandStrategyAi {
     fun spaceshipPriority(civ: Civilization, def: GrandStrategyDef): Int {
         if (!isVictoryValid(civ, def)) return -100
         val ai = civ.ai
-        var priority = civ.getEraNumber() * ai.personality(Flavor.Science) * 150 / 100
+        var priority = civ.getAiEraNumber() * ai.personality(Flavor.Science) * 150 / 100
         if (hasApolloProgram(civ)) priority += ai.rules.define(AiDefine.AI_GS_SS_HAS_APOLLO_PROGRAM)
         return priority
     }
 
-    private fun hasApolloProgram(civ: Civilization) = civ.hasUnique(UniqueType.EnablesConstructionOfSpaceshipParts)
+    /** GetTeam()->getProjectCount(PROJECT_APOLLO_PROGRAM) > 0: counts from the turn it was built, even if the city is lost later */
+    fun hasApolloProgram(civ: Civilization) = civ.ai.apolloProgramBuilt || civ.hasUnique(UniqueType.EnablesConstructionOfSpaceshipParts)
 
     //region Guessing other players' grand strategies
 

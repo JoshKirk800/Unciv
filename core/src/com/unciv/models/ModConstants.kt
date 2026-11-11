@@ -42,6 +42,13 @@ class ModConstants {
     // unitSupplyBase, unitSupplyPerCity and unitSupplyPerPopulation can also be increased through uniques
     var unitSupplyPerPopulation = 0.5
 
+    // Gold maintenance of units (CvTreasury::CalculateUnitCost), with 0.5 gold per unit that is not free:
+    // cost = (paidUnits * 0.5 * (1 + unitMaintenanceGameMultiplier * progress)) ^ (1 + progress / unitMaintenanceExponentDivisor)
+    // where progress is the turn divided by the number of turns of the game speed. The defaults are the original Unciv values; the Civ V rulesets use 0, 8 and 7.
+    var unitMaintenanceFreeUnits = 3
+    var unitMaintenanceGameMultiplier = 1f
+    var unitMaintenanceExponentDivisor = 3f
+
     // The minimal distance that must be between any two cities, not counting the tiles cities are on
     // The number is the amount of tiles between two cities, not counting the tiles the cities are on.
     // e.g. "C__C", where "C" is a tile with a city and "_" is a tile without a city, has a distance of 2.
@@ -55,6 +62,11 @@ class ModConstants {
     
     // Number of air units that can be stationed in a city
     var cityAirUnitCapacity = 6
+
+    // The culture a city needs for its next tile. false: 6 x (tiles claimed + 1.4813)^1.3 with the percentages multiplied.
+    // true: the formula of Civ V (CvCity::GetJONSCultureThreshold), 15 + (10 x tiles gained by culture)^1.1, x 1.5 for city-states,
+    // the percentages added and at least -85, x game speed, rounded down to 5
+    var cultureCostLikeCivV = false
 
     // Constants used to calculate Unit Upgrade gold Cost (can only be modded all-or-nothing)
     // This is a data class for one reason only: The equality implementation enables Gdx Json to omit it when default (otherwise only the individual fields are omitted)

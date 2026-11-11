@@ -149,7 +149,7 @@ object MilitaryTargets {
         for (unit in owner.units.getCivUnits()) {
             val distance = unit.getTile().aerialDistanceTo(tile)
             if (distance > 5) continue
-            if (unit.isMilitary()) power += MilitaryAi.unitPower(unit)
+            if (unit.isMilitary()) power += unit.getAiPower()
             if (unit.isGreatPersonOfType("War")) general = true
         }
         return if (general) power * 11 / 10 else power

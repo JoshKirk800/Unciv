@@ -377,5 +377,5 @@ object TacticalBombards {
         return best
     }
 
-    private fun score(candidate: Candidate) = 10000 - candidate.distance * 1000 + candidate.unit.getForceEvaluation()
+    private fun score(candidate: Candidate) = 10000 - candidate.distance * 1000 + candidate.unit.getAiPower()
 }

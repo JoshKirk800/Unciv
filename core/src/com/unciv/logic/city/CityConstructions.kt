@@ -26,6 +26,7 @@ import com.unciv.models.ruleset.PerpetualConstruction
 import com.unciv.models.ruleset.RejectionReasonType
 import com.unciv.models.ruleset.Ruleset
 import com.unciv.models.ruleset.tile.TileImprovement
+import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unique.UniqueMap
 import com.unciv.models.ruleset.unique.UniqueTriggerActivation
 import com.unciv.models.ruleset.unique.UniqueType
@@ -304,7 +305,11 @@ class CityConstructions : IsPartOfGameInfoSerialization {
     }
 
     @Readonly
-    fun productionForConstruction(constructionName: String): Int {
+    fun productionForConstruction(constructionName: String): Int = productionForConstructionExact(constructionName).roundToInt()
+
+    /** What the city would produce per turn while building [constructionName], before the whole-number rounding of what is added each turn */
+    @Readonly
+    fun productionForConstructionExact(constructionName: String): Float {
         val cityStatsForConstruction: Stats
         if (currentConstructionName() == constructionName) cityStatsForConstruction = city.cityStats.currentCityStats
         else {
@@ -326,7 +331,7 @@ class CityConstructions : IsPartOfGameInfoSerialization {
             cityStatsForConstruction = cityStats.currentCityStats
         }
 
-        return cityStatsForConstruction.production.roundToInt()
+        return cityStatsForConstruction.production
     }
 
     @Readonly
@@ -663,6 +668,8 @@ class CityConstructions : IsPartOfGameInfoSerialization {
         }
         builtBuildingObjects = builtBuildingObjects.withItem(building)
         builtBuildings.add(buildingName)
+        if (building.hasUnique(UniqueType.EnablesConstructionOfSpaceshipParts, GameContext.IgnoreConditionals))
+            civ.ai.apolloProgramBuilt = true
 
         updateUniques()
 

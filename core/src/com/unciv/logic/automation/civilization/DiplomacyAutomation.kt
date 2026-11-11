@@ -176,6 +176,25 @@ object DiplomacyAutomation {
         return met >= 0 && civ.gameInfo.turns - met < civ.gameInfo.ruleset.ai.define(AiDefine.DOF_TURN_BUFFER)
     }
 
+    /** CvDiplomacyAI::IsDoFMessageTooSoon: [other] has asked us to work with them within the last DOF_TURN_BUFFER turns */
+    fun isDoFMessageTooSoon(civ: Civilization, other: Civilization): Boolean {
+        val counter = civ.ai.diplomacy.memoryOf(other).doFCounter
+        return counter >= 0 && counter < civ.gameInfo.ruleset.ai.define(AiDefine.DOF_TURN_BUFFER)
+    }
+
+    /**
+     *  CvDiplomacyAI::DoFromUIDiploEvent (HUMAN_DISCUSSION_WORK_WITH_US): whether [civ] signs the Declaration of Friendship [human] asked for.
+     *  Too early to know them: no, and both counters restart. Asked within the last DOF_TURN_BUFFER turns: no, the counters stay.
+     *  Otherwise both counters restart and the answer is [isDoFAcceptable].
+     */
+    fun answerDoFRequest(civ: Civilization, human: Civilization): Boolean {
+        if (!civ.diplomacyFunctions.canSignDeclarationOfFriendshipWith(human)) return false
+        if (isDoFMessageTooSoon(civ, human) && !isTooEarlyForDoF(civ, human)) return false
+        civ.ai.diplomacy.memoryOf(human).doFCounter = 0
+        human.ai.diplomacy.memoryOf(civ).doFCounter = 0
+        return isDoFAcceptable(civ, human)
+    }
+
     /** The weight of CvDiplomacyAI::IsDoFAcceptable before its random 0..4: DoFWillingness, approach, opinion */
     fun doFWeight(civ: Civilization, other: Civilization): Int {
         val ai = civ.ai.diplomacy
@@ -459,7 +478,7 @@ object DiplomacyAutomation {
         val ai = civ.ai.diplomacy
         if (ai.demandTarget != other.civID || !ai.demandReady) return false
         if (!TradeEvaluation.hasMutualDeclarationOfFriendship(civ, other)) return false
-        val gold = minOf(other.gold, 200 + other.getEraNumber() * 150)
+        val gold = minOf(other.gold, 200 + other.getAiEraNumber() * 150)
         if (gold <= 0) return false
         if (turnsSinceStatement(civ, ai.memoryOf(other), DiploStatement.Demand) < 40) return false
         val tribute = TradeOffer(Constants.flatGold, TradeOfferType.Gold, gold, civ.gameInfo.speed)

@@ -96,7 +96,7 @@ object GreatPersonAutomation {
     fun preparingForWar(civ: Civilization): Boolean = civ.ai.isMilitaryStrategyActive(MILITARY_WAR_MOBILIZATION)
 
     /** EconomicAIHelpers::IsTestStrategy_GS_SpaceshipHomestretch: the Apollo Program is built */
-    fun isSpaceshipHomestretch(civ: Civilization): Boolean = civ.hasUnique(UniqueType.EnablesConstructionOfSpaceshipParts)
+    fun isSpaceshipHomestretch(civ: Civilization): Boolean = GrandStrategyAi.hasApolloProgram(civ)
 
     /** CvPlayerPolicies::CanGetAdvancedTenet: a tenet of level 2 or more of our ideology that we can adopt now (cost included) */
     fun canGetAdvancedTenet(civ: Civilization): Boolean {

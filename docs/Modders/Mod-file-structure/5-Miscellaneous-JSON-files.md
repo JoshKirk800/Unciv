@@ -268,7 +268,11 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | cityWorkRange                            | Int    | 3                             | [^Y]  |
 | cityExpandRange                          | Int    | 5                             | [^Z]  |
 | cityAirUnitCapacity                      | Int    | 6                             | [^W]  |
+| cultureCostLikeCivV                      | Boolean | false                        | [^V]  |
 | unitSupplyPerPopulation                  | Float  | 0.5                           | [^C]  |
+| unitMaintenanceFreeUnits                 | Int    | 3                             | [^U]  |
+| unitMaintenanceGameMultiplier            | Float  | 1.0                           | [^U]  |
+| unitMaintenanceExponentDivisor           | Float  | 3.0                           | [^U]  |
 | minimalCityDistance                      | Int    | 3                             | [^D]  |
 | minimalCityDistanceOnDifferentContinents | Int    | 2                             | [^D]  |
 | unitUpgradeCost                          | Object | [See below](#unitupgradecost) | [^J]  |
@@ -358,6 +362,13 @@ Legend:
     unitSupplyPerPopulation \* amountOfPopulationInAllCities
     unitSupplyBase and unitSupplyPerCity can be found in difficulties.json
     unitSupplyBase, unitSupplyPerCity and unitSupplyPerPopulation can also be increased through uniques
+- [^U]: Formula for the gold maintenance of units (0.5 gold per unit that is not free):
+    cost = (paidUnits \* 0.5 \* (1 + unitMaintenanceGameMultiplier \* progress)) ^ (1 + progress / unitMaintenanceExponentDivisor)
+    progress is the turn divided by the number of turns of the game speed, paidUnits is the number of units minus unitMaintenanceFreeUnits and the units made free by uniques.
+    The Civ V rulesets use 0, 8 and 7.
+- [^V]: The culture a city needs for its next tile. false: 6 \* (tilesClaimed + 1.4813) ^ 1.3, the percentages of "Culture cost of natural border growth" multiplied.
+    true: the formula of Civ V, 15 + (10 \* tilesGainedByCulture) ^ 1.1, times 1.5 for City-States, the percentages added up (at least -85), times the game speed, rounded down to a multiple of 5.
+    The tiles gained by culture do not count tiles that were bought. The Civ V rulesets set true.
 - [^D]: The minimal distance that must be between any two cities, not counting the tiles cities are on
     The number is the amount of tiles between two cities, not counting the tiles the cities are on.
     e.g. "C__C", where "C" is a tile with a city and "_" is a tile without a city, has a distance of 2.

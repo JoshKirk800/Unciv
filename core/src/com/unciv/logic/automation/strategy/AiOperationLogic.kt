@@ -827,10 +827,10 @@ object AiOperationLogic {
         if (!operation.civilianRescue && operation.state != OperationState.RECRUITING_UNITS) {
             // If down below the strength of the camp, abort
             val army = operation.firstArmy
-            val defender = target.getUnits().filter { it.isMilitary() }.maxByOrNull { MilitaryAi.unitPower(it) }
+            val defender = target.getUnits().filter { it.isMilitary() }.maxByOrNull { it.getAiPower() }
             if (army != null && defender != null) {
-                val power = armyUnits(civ, army).sumOf { MilitaryAi.unitPower(it.second) }
-                if (power < MilitaryAi.unitPower(defender)) return true
+                val power = armyUnits(civ, army).sumOf { it.second.getAiPower() }
+                if (power < defender.getAiPower()) return true
             }
         }
         return false

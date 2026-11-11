@@ -59,7 +59,7 @@ class WarStateMemory : IsPartOfGameInfoSerialization {
  *    [turnsAtWar] (GetPlayerNumTurnsAtWar);
  *  - [numberCivsAtWarWith] (CvMilitaryAI::GetNumberCivsAtWarWith), [isPlayerValid] (CvDiplomacyAI::IsPlayerValid).
  *
- *  Unciv mapping: unit power is [com.unciv.models.ruleset.unit.BaseUnit.getForceEvaluation] (CvUnitEntry::GetPower) × (1000 + 125 × level) / 1000
+ *  Unciv mapping: unit power is [com.unciv.models.ruleset.unit.BaseUnit.getAiPower] (CvUnitEntry::GetPower) × (1000 + 125 × level) / 1000
  *  × health / 100 (CvUnit::GetPower, level = 1 + promotions); city power is the city's combat strength ^ 1.5 (CvCity::GetPower);
  *  CvPlayer::getPower is [CivAi.militaryMight] plus the economic might (5 + population + production + gold of all cities).
  *  Unciv has no teams: "team" checks are per civilization.
@@ -259,13 +259,13 @@ object WarStateAi {
             var enemyInMyLands = 0
             for (unit in civ.units.getCivUnits()) {
                 val tile = unit.getTile()
-                if (isHomeFrontFor(tile, civ, homeFrontRange)) myLocal += unitPower(unit)
-                if (isHomeFrontFor(tile, other, homeFrontRange)) myForeign += unitPower(unit)
+                if (isHomeFrontFor(tile, civ, homeFrontRange)) myLocal += unit.getAiPower()
+                if (isHomeFrontFor(tile, other, homeFrontRange)) myForeign += unit.getAiPower()
             }
             for (unit in other.units.getCivUnits()) {
                 val tile = unit.getTile()
-                if (isHomeFrontFor(tile, civ, homeFrontRange)) enemyInMyLands += unitPower(unit)
-                if (isHomeFrontFor(tile, other, homeFrontRange)) enemyInHisLands += unitPower(unit)
+                if (isHomeFrontFor(tile, civ, homeFrontRange)) enemyInMyLands += unit.getAiPower()
+                if (isHomeFrontFor(tile, other, homeFrontRange)) enemyInHisLands += unit.getAiPower()
             }
             for (city in civ.cities) myLocal += cityPower(city) * healthPercent(city) / 100 / 100
             for (city in other.cities) enemyInHisLands += cityPower(city) * healthPercent(city) / 100 / 100
@@ -326,14 +326,6 @@ object WarStateAi {
     //endregion
 
     //region Power (CvUnit::GetPower, CvCity::GetPower, CvPlayer::getPower)
-
-    fun unitPower(unit: MapUnit): Int {
-        var power = unit.baseUnit.getForceEvaluation()
-        if (power == 0) return 0
-        val level = 1 + unit.promotions.numberOfPromotions
-        power = power * (1000 + level * 125) / 1000
-        return power * unit.health / 100
-    }
 
     fun cityPower(city: City): Int = CityCombatant(city).getCityStrength().toDouble().pow(1.5).toInt()
 

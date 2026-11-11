@@ -151,6 +151,8 @@ class CityConquestFunctions(val city: City) {
         destroyBuildingsOnCapture()
 
         city.moveToCiv(receivingCiv)
+        // CvPlayer::acquireCity: the old owner is "killed" when this was its last city, whatever becomes of its units
+        if (conqueredCiv.cities.isEmpty()) DiplomacyEvents.onLastCityTaken(receivingCiv, conqueredCiv)
 
         Battle.destroyIfDefeated(conqueredCiv, conqueringCiv, city.location.toHexCoord())
 

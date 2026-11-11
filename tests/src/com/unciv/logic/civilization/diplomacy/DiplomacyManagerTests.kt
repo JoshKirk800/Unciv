@@ -152,6 +152,23 @@ class DiplomacyManagerTests {
     }
 
     @Test
+    fun `every war on a city-state counts as a minor attacked except through a defensive pact`() {
+        // CvTeam::declareWar: ChangeNumMinorCivsAttacked(1) unless bDefensivePact, whatever the reason for the war; two make an aggressor
+        val first = addCiv(cityStateType = "Militaristic", testGame.getTile(HexCoord.Zero))
+        val second = addCiv(cityStateType = "Maritime", testGame.getTile(HexCoord(1, 0)))
+        for (cityState in listOf(first, second)) { meet(a, cityState); meet(b, cityState) }
+
+        a.getDiplomacyManager(first)!!.declareWar(DeclareWarReason(WarType.ProtectedCityStateWar, c))
+        assertFalse(a.isMinorCivAggressor())
+        a.getDiplomacyManager(second)!!.declareWar(DeclareWarReason(WarType.ProtectedCityStateWar, c))
+        assertTrue(a.isMinorCivAggressor())
+
+        b.getDiplomacyManager(first)!!.declareWar(DeclareWarReason(WarType.DefensivePactWar, c))
+        b.getDiplomacyManager(second)!!.declareWar(DeclareWarReason(WarType.DefensivePactWar, c))
+        assertFalse(b.isMinorCivAggressor())
+    }
+
+    @Test
     fun `should gain previous influence in city state after indirect war`() {
         // given
         val cityState = addCiv(cityStateType = "Militaristic", testGame.getTile(HexCoord.Zero)) // making peace tries to move units around, so we need to initialize their positions

@@ -350,7 +350,7 @@ class BeliefScoringContext(val civ: Civilization) {
         }
 
         val living = civ.gameInfo.civilizations.filter { it.isAlive() && !it.isSpectator }
-        gameEra = if (living.isEmpty()) 0 else living.sumOf { it.getEraNumber() } / living.size
+        gameEra = if (living.isEmpty()) 0 else living.sumOf { it.getAiEraNumber() } / living.size
 
         val enhanced = civ.gameInfo.civilizations.count { it.religionManager.religionState == ReligionState.EnhancedReligion }
         religionsEnhancedPercent = 100 * enhanced / max(1, civ.religionManager.maxNumberOfReligions())

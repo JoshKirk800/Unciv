@@ -158,7 +158,7 @@ class PlotDanger(private val civ: Civilization) {
     /** CvMilitaryAI::GetPowerOfStrongestBuildableUnit(DOMAIN_LAND), with Unciv's force evaluation as the unit power */
     private fun strongestBuildableLandUnitPower(): Int = civ.gameInfo.ruleset.units.values.asSequence()
         .filter { it.isLandUnit && it.isMilitary && it.isBuildable(civ) }
-        .maxOfOrNull { it.getForceEvaluation() } ?: 0
+        .maxOfOrNull { it.getAiPower() } ?: 0
 
     companion object {
         private const val NOT_COMPUTED = -1

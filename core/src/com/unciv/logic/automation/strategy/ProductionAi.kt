@@ -8,6 +8,8 @@ import com.unciv.models.ruleset.ai.Flavor
 import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.models.ruleset.unit.BaseUnit
+import kotlin.math.max
+import kotlin.math.roundToInt
 
 /**
  *  The item weights of a city's production AIs: CvBuildingProductionAI, CvUnitProductionAI, CvProjectProductionAI and CvProcessProductionAI.
@@ -52,9 +54,21 @@ object ProductionAi {
             || building.hasUnique(UniqueType.EnablesNuclearWeapons, GameContext.IgnoreConditionals)
     }
 
-    /** CvCity::getProductionTurnsLeft: at least 1 */
-    fun turnsLeft(city: City, construction: INonPerpetualConstruction): Int =
-        city.cityConstructions.turnsToConstruction(construction.name).coerceAtLeast(1)
+    /**
+     *  CvCity::getProductionTurnsLeft, in hundredths as the original: the production still needed less what the city makes (the first turn
+     *  with the overflow), divided by what it makes (rounded up), plus the first turn; at least 1. Without production it is the
+     *  hundredths still needed plus 1. Unciv adds whole points each turn, so the queue's own estimate (CityConstructions.turnsToConstruction)
+     *  can differ by a turn.
+     */
+    fun turnsLeft(city: City, construction: INonPerpetualConstruction): Int {
+        val constructions = city.cityConstructions
+        val production100 = (constructions.productionForConstructionExact(construction.name) * 100f).roundToInt()
+        val left = max(0, constructions.getRemainingWork(construction.name) * 100 - production100 - constructions.productionOverflow * 100)
+        if (production100 <= 0) return left + 1
+        var turns = left / production100
+        if (turns * production100 < left) turns++
+        return max(1, turns + 1)
+    }
 
     /**
      *  CvUnitProductionAI::RecommendUnit: among the units the city can train that may take the unit AI [type] (CvUnitEntry::GetUnitAIType),

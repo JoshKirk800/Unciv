@@ -41,10 +41,11 @@ object StrategicBonusResourcePlacementLogic {
         val ruleset = tileMap.ruleset!!
         val strategicResources = ruleset.tileResources.values.filter { it.resourceType == ResourceType.Strategic }
         // As usual, if there are any relevant json definitions, assume they are complete
+        // The rules are conditional, so the conditionals have to be ignored to see that they exist
         val fallbackStrategic = ruleset.tileResources.values.none {
             it.resourceType == ResourceType.Strategic &&
-                    it.hasUnique(UniqueType.ResourceWeighting) ||
-                    it.hasUnique(UniqueType.MinorDepositWeighting)
+                    (it.hasUnique(UniqueType.ResourceWeighting, GameContext.IgnoreConditionals) ||
+                    it.hasUnique(UniqueType.MinorDepositWeighting, GameContext.IgnoreConditionals))
         }
 
         // Determines number tiles per resource
@@ -94,8 +95,12 @@ object StrategicBonusResourcePlacementLogic {
             // If this region has an explicit "this is the bonus" unique go with that, else random appropriate
             val resource = if (resourceUnique != null) ruleset.tileResources[resourceUnique.params[0]]!!
             else {
-                val possibleResources =
-                    ruleset.tileResources.values.filter { it.resourceType == ResourceType.Bonus && terrain in it.terrainsCanBeFoundOn }
+                // The archaeological sites are bonus resources too, but they are not part of the map, see ArchaeologyFunctions.spawnSites
+                val constants = ruleset.modOptions.constants
+                val possibleResources = ruleset.tileResources.values.filter {
+                    it.resourceType == ResourceType.Bonus && terrain in it.terrainsCanBeFoundOn &&
+                        it.name != constants.archaeologySiteResource && it.name != constants.archaeologyHiddenSiteResource
+                }
                 if (possibleResources.isEmpty()) continue
                 possibleResources.random(rng)
             }
@@ -123,7 +128,7 @@ object StrategicBonusResourcePlacementLogic {
     ) {
         val rng = GameContext(gameInfo = tileMap.gameInfo).stateBasedRandom("StrategicBonusResourcePlacementLogic.placeBonusResources")
         // Figure out if bonus generation rates are defined in json. Assume that if there are any, the definitions are complete.
-        val useFallbackBonuses = ruleset.tileResources.values.none { it.hasUnique(UniqueType.ResourceFrequency) }
+        val useFallbackBonuses = ruleset.tileResources.values.none { it.hasUnique(UniqueType.ResourceFrequency, GameContext.IgnoreConditionals) }
         
         // Water-based bonuses go last and have extra impact, because coasts are very common and we don't want too much clustering
         val sortedResourceList = ruleset.tileResources.values.sortedBy { isWaterOnlyResource(it, ruleset) }
@@ -351,7 +356,7 @@ object StrategicBonusResourcePlacementLogic {
                 val fallbackRule = if (terrain.type == TerrainType.TerrainFeature)
                     Unique("RULE <in [${terrain.name}] tiles>")
                 else
-                    Unique("RULE <in [Featureless] [${terrain.name}] tiles>")
+                    Unique("RULE <in [{Featureless} {${terrain.name}}] tiles>")
                 if (ruleLists.keys.none { it.text == fallbackRule.text }) // Need to do text comparison since the uniques will not be equal otherwise
                     ruleLists[fallbackRule] = ArrayList()
             }

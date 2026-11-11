@@ -248,7 +248,7 @@ object BarbarianMoves {
         if (civilianMove == target) {
             // Can we reach our target this turn? See which defender is stronger
             val defender = target.militaryUnit?.takeIf { it.civ == civilian.civ }
-            if (escort != null && (defender == null || MilitaryAi.unitPower(escort) > MilitaryAi.unitPower(defender))) {
+            if (escort != null && (defender == null || escort.getAiPower() > defender.getAiPower())) {
                 if (defender == null || TacticalMoves.executeMoveOfBlockingUnit(ctx, defender)) together(target, "escort takes over camp defense")
                 else { moveSafely(ctx, civilian, target); ctx.log { "moving ${civilian.name} to camp, ${target.position}" } }
             } else {
