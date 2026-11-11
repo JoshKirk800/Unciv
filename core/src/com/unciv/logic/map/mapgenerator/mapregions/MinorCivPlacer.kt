@@ -47,7 +47,7 @@ object MinorCivPlacer {
 
         assignCityStatesToRegionsWithCommonLuxuries(regions, unassignedCivs)
         spreadCityStatesEvenlyBetweenRegions(unassignedCivs, regions)
-        assignRemainingCityStatesToWorstFertileRegions(regions, unassignedCivs)
+        assignRemainingCityStatesToWorstFertileRegions(regions, unassignedCivs, ruleset.modOptions.constants.startAssignmentLikeCivV)
 
         // After we've finished assigning, NOW we actually place them
         placeAssignedMinorCivs(
@@ -95,7 +95,9 @@ object MinorCivPlacer {
         val maxByUninhabited =
             (3 * civs.size * numUninhabitedTiles) / (numInhabitedTiles + numUninhabitedTiles)
         val maxByRatio = (civs.size + 1) / 2
-        val targetForUninhabited = min(maxByRatio, maxByUninhabited)
+        // AssignCityStatesToRegionsOrToUninhabited only hands out what the regions did not take already
+        val targetForUninhabited = if (ruleset.modOptions.constants.startAssignmentLikeCivV)
+            minOf(maxByRatio, maxByUninhabited, unassignedCivs.size) else min(maxByRatio, maxByUninhabited)
         // Prefer Coast-bias CS for wilderness slots (often coastal).
         val ordered = unassignedCivs.filter { prefersCoastalStart(it, ruleset) } +
             unassignedCivs.filterNot { prefersCoastalStart(it, ruleset) }
@@ -147,10 +149,14 @@ object MinorCivPlacer {
         Sort regions by fertility and put extra city states in the worst ones. */
     private fun assignRemainingCityStatesToWorstFertileRegions(
         regions: List<Region>,
-        unassignedCivs: MutableList<Civilization>
+        unassignedCivs: MutableList<Civilization>,
+        fertilityPerLandTile: Boolean
     ) {
         if (unassignedCivs.isEmpty()) return
-        val worstRegions = regions.sortedBy { it.totalFertility }.take(unassignedCivs.size)
+        // Civ V: the regions with the least fertility per land tile, not the least in total
+        val worstRegions = if (fertilityPerLandTile)
+            regions.sortedBy { region -> region.totalFertility.toFloat() / region.tiles.count { it.isLand }.coerceAtLeast(1) }.take(unassignedCivs.size)
+        else regions.sortedBy { it.totalFertility }.take(unassignedCivs.size)
         worstRegions.forEach {
             val civToAssign = unassignedCivs.first()
             unassignedCivs.remove(civToAssign)

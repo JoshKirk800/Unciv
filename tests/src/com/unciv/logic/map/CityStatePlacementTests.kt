@@ -3,7 +3,9 @@ package com.unciv.logic.map
 import com.unciv.logic.map.mapgenerator.mapregions.MapGenTileData
 import com.unciv.logic.map.mapgenerator.mapregions.MapRegions
 import com.unciv.logic.map.mapgenerator.mapregions.MinorCivPlacer
+import com.unciv.logic.map.mapgenerator.mapregions.Region
 import com.unciv.logic.map.mapgenerator.mapregions.TileDataMap
+import com.badlogic.gdx.math.Rectangle
 import com.unciv.models.metadata.BaseRuleset
 import com.unciv.testing.GdxTestRunner
 import com.unciv.testing.TestGame
@@ -41,5 +43,31 @@ class CityStatePlacementTests {
             assertTrue("city state in column $column of ${region.rect.width.toInt()}",
                 column < band || column >= region.rect.width.toInt() - band)
         }
+    }
+
+    private fun leftoverCityStateGoesTo(baseRuleset: BaseRuleset): Pair<Region, Region> {
+        val game = TestGame(baseRuleset = baseRuleset)
+        game.makeRectangularMap(newHeight = 40, newWidth = 40, baseTerrain = "Grassland")
+        game.tileMap.assignContinents(TileMap.AssignContinentsMode.Reassign)
+        // Several equal landmasses (an archipelago), so that no city state is sent to an uninhabited one
+        game.tileMap.continentSizes.clear()
+        for (c in 0..4) game.tileMap.continentSizes[c] = 100
+        // Big: 100 land tiles, 1000 fertility (10 per tile). Small: 10 land tiles, 500 (50 per tile): less in total, more per tile
+        val big = Region(game.tileMap, Rectangle(0f, 0f, 10f, 10f))
+        val small = Region(game.tileMap, Rectangle(20f, 20f, 5f, 2f))
+        big.tiles.addAll(game.tileMap.getTilesInRectangle(big.rect)); big.totalFertility = 1000
+        small.tiles.addAll(game.tileMap.getTilesInRectangle(small.rect)); small.totalFertility = 500
+        val tileData = TileDataMap(game.tileMap.values.size)
+        for (tile in game.tileMap.values) tileData[tile] = MapGenTileData(tile, big, game.ruleset)
+        val civ = game.addCiv(cityStateType = "Cultured")
+        MinorCivPlacer.placeMinorCivs(listOf(big, small), game.tileMap, listOf(civ), tileData, game.ruleset)
+        return big to small
+    }
+
+    @Test
+    fun `a city state left over goes to the region with the least fertility per land tile in Civ V, in total otherwise`() {
+        val (big, small) = leftoverCityStateGoesTo(BaseRuleset.Civ_V_BNW)
+        assertEquals("big region", 1, big.assignedMinorCivs.size)
+        assertEquals("small region", 0, small.assignedMinorCivs.size)
     }
 }
