@@ -1,5 +1,6 @@
 package com.unciv.logic.map.mapgenerator
 
+import com.unciv.Constants
 import com.unciv.logic.map.*
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.ruleset.Ruleset
@@ -278,11 +279,8 @@ class MapLandmassGenerator(
     }
 
     /**
-     *  ContinentsFractalWorld:GeneratePlotTypes of Continents.lua (the land only; the hills and mountains come from the
-     *  elevation generator as for every type): a [CivVFractal] with 72 % of its cells under water and the edges of the map at
-     *  zero (so no land at the poles), re-drawn until the biggest landmass has at most 58 % of the land, then shifted
-     *  horizontally and vertically so the map edge runs through the emptiest columns and rows.
-     *  Not ported: the rifts (`Fractal.CreateRifts`) and `GenerateCenterRift`, which split the continents further.
+     *  Continents.lua, see [CivVContinentsLandmass]: land, hills and mountains. The sea level of the script's options comes from
+     *  [MapParameters.waterThreshold] (below -0.15 low: 67 % of the cells water, above 0.15 high: 76 %, else 72 %).
      */
     private fun createContinentsLikeCivV() {
         val tiles = tileMap.values.toList()
@@ -290,46 +288,34 @@ class MapLandmassGenerator(
         val minRow = tiles.minOf { it.getRow() }
         val width = tiles.maxOf { it.getColumn() } - minColumn + 1
         val height = tiles.maxOf { it.getRow() } - minRow + 1
-        val byCell = HashMap<Pair<Int, Int>, Tile>()
-        for (tile in tiles) byCell[tile.getColumn() - minColumn to tile.getRow() - minRow] = tile
-        val rng = randomness.RNG
-
-        var land = Array(width) { BooleanArray(height) }
-        for (attempt in 1..20) {
-            val grain = if (rng.nextInt(7) < 4) 2 else 1
-            val fractal = CivVFractal(width, height, grain, wrapX = false, wrapY = false, rng = rng, polar = true)
-            val level = fractal.getHeightFromPercent(CONTINENTS_WATER_PERCENT)
-            land = Array(width) { x -> BooleanArray(height) { y -> fractal.getHeight(x, y) > level } }
-            land = shiftToEmptiestEdge(land, width, height)
-
-            for (tile in tiles)
-                tile.baseTerrain = if (land[tile.getColumn() - minColumn][tile.getRow() - minRow]) landTerrainName else waterTerrainName
+        val cellOf = { tile: Tile -> tile.getColumn() - minColumn to tile.getRow() - minRow }
+        val seaLevel = when {
+            waterThreshold < -0.15 -> 67
+            waterThreshold > 0.15 -> 76
+            else -> CONTINENTS_WATER_PERCENT
+        }
+        val generator = CivVContinentsLandmass(width, height, tileMap.mapParameters.worldWrap, randomness.RNG, seaLevel)
+        val result = generator.generate { land ->
+            for (tile in tiles) {
+                val (x, y) = cellOf(tile)
+                tile.baseTerrain = if (land[x][y]) landTerrainName else waterTerrainName
+            }
             for (tile in tiles) tile.setTerrainTransients()
             tileMap.assignContinents(TileMap.AssignContinentsMode.Reassign)
             val landTiles = tiles.count { it.isLand }
-            val biggest = tileMap.continentSizes.values.maxOrNull() ?: 0
-            if (biggest <= landTiles * 0.58) break
+            (tileMap.continentSizes.values.maxOrNull() ?: 0) <= landTiles * 0.58
+        }
+        for (tile in tiles) {
+            val (x, y) = cellOf(tile)
+            tile.baseTerrain = when {
+                result.mountains[x][y] -> Constants.mountain
+                result.land[x][y] -> landTerrainName
+                else -> waterTerrainName
+            }
+            if (result.hills[x][y]) tile.setTerrainFeatures(listOf(Constants.hill))
+            tile.setTerrainTransients()
         }
         tileMap.assignContinents(TileMap.AssignContinentsMode.Clear)
-    }
-
-    /** FractalWorld:ShiftPlotTypes: the group of columns (a tenth of the width on each side of its middle) with the least land
-     *  becomes the new left edge, likewise the group of rows (a fifteenth of the height) the new bottom edge */
-    private fun shiftToEmptiestEdge(land: Array<BooleanArray>, width: Int, height: Int): Array<BooleanArray> {
-        fun emptiestStart(totals: IntArray, radius: Int): Int {
-            val n = totals.size
-            var best = Int.MAX_VALUE
-            var bestIndex = 0
-            for (i in 0 until n) {
-                var sum = 0
-                for (d in -radius..radius) sum += totals[Math.floorMod(i + 1 + d, n).let { if (it == 0) n - 1 else it - 1 }]
-                if (sum < best) { best = sum; bestIndex = i }
-            }
-            return bestIndex
-        }
-        val shiftX = emptiestStart(IntArray(width) { x -> land[x].count { it } }, width / 10)
-        val shiftY = emptiestStart(IntArray(height) { y -> (0 until width).count { x -> land[x][y] } }, height / 15)
-        return Array(width) { x -> BooleanArray(height) { y -> land[(x + shiftX) % width][(y + shiftY) % height] } }
     }
 
     private fun createInnerSea() {

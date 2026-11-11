@@ -755,6 +755,9 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
         return isAdjacentToRiver
     }
 
+    /** For code that sets the river edge flags directly (the map generators): forget what [isAdjacentToRiver] returned before */
+    fun forgetAdjacentToRiver() = resetAdjacentToRiverTransient(false)
+
     /** Allows resetting the cached value [isAdjacentToRiver] will return
      *  @param isKnownTrue Set this to indicate you need to update the cache due to **adding** a river edge
      *         (removing would need to look at other edges, and that is what isAdjacentToRiver will do)

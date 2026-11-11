@@ -98,9 +98,12 @@ class RiverGenerator(
      * such that always the north-most hex and one of the two clock directions 5 / 7 o'clock are used. */
     class RiverCoordinate(
         private val tileMap: TileMap,
-        private val position: HexCoord,
-        private val bottomRightOrLeft: BottomRightOrLeft
+        val position: HexCoord,
+        val bottomRightOrLeft: BottomRightOrLeft
     ) {
+        override fun equals(other: Any?) = other is RiverCoordinate && position == other.position && bottomRightOrLeft == other.bottomRightOrLeft
+        override fun hashCode() = position.hashCode() * 31 + bottomRightOrLeft.ordinal
+
         enum class BottomRightOrLeft {
             /** 7 O'Clock of the tile */
             BottomLeft,
