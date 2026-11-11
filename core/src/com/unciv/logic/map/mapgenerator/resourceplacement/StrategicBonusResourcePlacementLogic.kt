@@ -73,10 +73,29 @@ object StrategicBonusResourcePlacementLogic {
         placeMajorDepositsOnLand(ruleset, ruleLists, totalPlaced, tileData, fallbackStrategic)
         placeSmallDepositsOfModernStrategicResourcesOnCityStates(ruleset, strategicResources, tileMap, totalPlaced, tileData)
         placeMinorDepositsOnLand(bonusMultiplier, landList, tileData, strategicResources, fallbackStrategic, totalPlaced)
+        placeSeaDepositsOfLandResource(ruleset, tileMap, tileData, totalPlaced)
         placeMajorDepositsOnWater(ruleset, ruleLists, totalPlaced, tileData, fallbackStrategic)
         ensureMinimumResourcesPerCiv(strategicResources, regions, totalPlaced, ruleset, landList, tileMap, tileData)
         placeBonusResources(ruleset, ruleLists, tileData, bonusMultiplier, tileMap)
         placeBonusInThirdRingOfStart(regions, ruleset, tileMap, tileData)
+    }
+
+    /** AssignStartingPlots:PlaceOilInTheSea: half of the units of the resource on land, divided by the amount of a deposit
+     *  in the sea, deposits on coast tiles outside the strategic impact of the others (radius 4 to 7). */
+    fun placeSeaDepositsOfLandResource(
+        ruleset: Ruleset, tileMap: TileMap, tileData: TileDataMap, totalPlaced: HashMap<TileResource, Int>
+    ) {
+        val resource = ruleset.tileResources[ruleset.modOptions.constants.seaDepositsOfLandResource] ?: return
+        val seaAmount = resource.getMatchingUniques(UniqueType.ResourceAmountOnTiles, GameContext.IgnoreConditionals)
+            .firstOrNull { it.params[0] == "Coast" }?.params?.get(1)?.toInt() ?: return
+        // All the units placed so far, as the original counts them (the city states' modern deposits included)
+        val landUnits = tileMap.values.filter { it.tileResource == resource }.sumOf { it.resourceAmount }
+        val rng = GameContext(gameInfo = tileMap.gameInfo).stateBasedRandom("StrategicBonusResourcePlacementLogic.placeSeaDepositsOfLandResource")
+        val coast = tileMap.values.filter { it.isWater && it.getBaseTerrain().isCoast && it.terrainFeatures.isEmpty() }.shuffled(rng)
+        repeat(landUnits / 2 / seaAmount) {
+            totalPlaced[resource] = totalPlaced[resource]!! + MapRegionResources.tryAddingResourceToTiles(
+                tileData, resource, 1, coast.asSequence(), respectImpacts = true, baseImpact = 4, randomImpact = 3, majorDeposit = true)
+        }
     }
 
     private fun placeBonusInThirdRingOfStart(
