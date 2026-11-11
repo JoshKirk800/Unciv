@@ -104,6 +104,9 @@ class MapParameters : IsPartOfGameInfoSerialization {
     var resourceRichness = 0.1f
     var waterThreshold = 0.0f
 
+    /** Age of the world in billions of years, 3 to 5: young worlds have more and higher mountains, old ones are worn down. Only the Civ V continents map type uses it. */
+    var worldAge = 4
+
     /** Shifts temperature (after random, latitude and temperatureintensity).*/
     var temperatureShift = 0f
 
@@ -131,6 +134,7 @@ class MapParameters : IsPartOfGameInfoSerialization {
         toReturn.rareFeaturesRichness = rareFeaturesRichness
         toReturn.resourceRichness = resourceRichness
         toReturn.waterThreshold = waterThreshold
+        toReturn.worldAge = worldAge
         toReturn.mirroring = mirroring
         toReturn.createdWithVersion = createdWithVersion
         return toReturn
@@ -151,6 +155,7 @@ class MapParameters : IsPartOfGameInfoSerialization {
         rareFeaturesRichness = 0.05f
         resourceRichness = 0.1f
         waterThreshold = 0f
+        worldAge = 4
     }
 
     fun getMapResources() = MapResourceSetting.safeValueOf(mapResources)
@@ -198,6 +203,7 @@ class MapParameters : IsPartOfGameInfoSerialization {
         yield(", {Max Coast extension}=$maxCoastExtension")
         yield(", {Biome size}=$tilesPerBiomeArea")
         yield(", {Water level}=" + waterThreshold.niceToString(2))
+        if (type == MapType.continentsLikeCivV) yield(", {World age (billion years)}=$worldAge")
     }.joinToString("")
 
     @Readonly

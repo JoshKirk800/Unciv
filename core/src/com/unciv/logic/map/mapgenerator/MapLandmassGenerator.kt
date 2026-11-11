@@ -280,17 +280,17 @@ class MapLandmassGenerator(
 
     /**
      *  Continents.lua, see [CivVContinentsLandmass]: land, hills and mountains. The sea level of the script's options comes from
-     *  [MapParameters.waterThreshold] (below -0.15 low: 67 % of the cells water, above 0.15 high: 76 %, else 72 %).
+     *  [MapParameters.waterThreshold] (below -0.05 low: 67 % of the cells water, above 0.05 high: 76 %, else 72 %: the slider goes from -0.1 to 0.1) and the world age from [MapParameters.worldAge].
      */
     private fun createContinentsLikeCivV() {
         val tiles = tileMap.values.toList()
         val geometry = UncivHexGeometry(tileMap)
         val seaLevel = when {
-            waterThreshold < -0.15 -> 67
-            waterThreshold > 0.15 -> 76
+            waterThreshold < -0.05 -> 67
+            waterThreshold > 0.05 -> 76
             else -> CONTINENTS_WATER_PERCENT
         }
-        val generator = CivVContinentsLandmass(geometry, tileMap.mapParameters.worldWrap, randomness.RNG, seaLevel)
+        val generator = CivVContinentsLandmass(geometry, tileMap.mapParameters.worldWrap, randomness.RNG, seaLevel, tileMap.mapParameters.worldAge)
         val result = generator.generate { land ->
             for (tile in tiles) {
                 val (x, y) = geometry.cellOf(tile)

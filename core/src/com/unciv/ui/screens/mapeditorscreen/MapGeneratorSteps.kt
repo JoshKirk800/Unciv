@@ -6,6 +6,7 @@ private object MapGeneratorStepsHelpers {
     val applyLandmass = fun(newParameters: MapParameters, actualParameters: MapParameters) {
         actualParameters.type = newParameters.type
         actualParameters.waterThreshold = newParameters.waterThreshold
+        actualParameters.worldAge = newParameters.worldAge
         actualParameters.seed = newParameters.seed
     }
     val applyElevation = fun(newParameters: MapParameters, actualParameters: MapParameters) {

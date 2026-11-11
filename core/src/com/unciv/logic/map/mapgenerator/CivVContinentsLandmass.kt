@@ -83,7 +83,9 @@ class CivVContinentsLandmass(
     private val geometry: HexGeometry,
     private val wrapX: Boolean,
     private val rng: Random,
-    private val seaLevelPercent: Int = 72
+    private val seaLevelPercent: Int = 72,
+    /** In billions of years: 3 (young: more hills, more and sharper mountains, more ridges), 4 (normal), 5 (old: fewer, worn down) */
+    private val worldAge: Int = 4
 ) {
     private val width = geometry.width
     private val height = geometry.height
@@ -311,7 +313,8 @@ class CivVContinentsLandmass(
 
     /** The hills and mountains of Continents.lua: two ridge fields (the world age is the normal one) */
     private fun elevate(land: Array<BooleanArray>): Result {
-        val adjustment = 3
+        val adjustment = when { worldAge <= 3 -> 5; worldAge == 4 -> 3; else -> 2 }
+        val numPlates = worldSize.plates * when { worldAge <= 3 -> 1.5f; worldAge == 4 -> 1f; else -> 0.75f }
         val hillsBottom1 = 28 - adjustment
         val hillsTop1 = 28 + adjustment
         val hillsBottom2 = 72 - adjustment
@@ -321,8 +324,8 @@ class CivVContinentsLandmass(
 
         val hillsBase = CivVFractal(width, height, worldSize.continentsGrain, wrapX, false, rng)
         val mountainsBase = CivVFractal(width, height, worldSize.continentsGrain, wrapX, false, rng)
-        val hillsField = ridgeField(hillsBase, worldSize.plates, wrapX, 1, 2)
-        val mountainsField = ridgeField(mountainsBase, worldSize.plates * 2 / 3, wrapX, 6, 1)
+        val hillsField = ridgeField(hillsBase, numPlates.toInt(), wrapX, 1, 2)
+        val mountainsField = ridgeField(mountainsBase, (numPlates * 2 / 3).toInt(), wrapX, 6, 1)
         val bottom1 = percent(hillsField, hillsBottom1)
         val top1 = percent(hillsField, hillsTop1)
         val bottom2 = percent(hillsField, hillsBottom2)
