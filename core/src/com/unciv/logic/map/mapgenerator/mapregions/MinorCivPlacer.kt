@@ -9,6 +9,8 @@ import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.models.translations.equalsPlaceholderText
 import com.unciv.models.translations.getPlaceholderParameters
 import yairm210.purity.annotations.Readonly
+import com.unciv.logic.map.HexMath
+import kotlin.math.ceil
 import kotlin.math.min
 
 object MinorCivPlacer {
@@ -182,10 +184,86 @@ object MinorCivPlacer {
 
         // Now place the ones assigned to specific regions.
         for (region in regions) {
-            tryPlaceMinorCivsInTiles(
-                region.assignedMinorCivs, tileMap, region.tiles.toMutableList(), tileData, ruleset
+            // More constrained biases (and coastal) first so they do not lose scarce matching tiles.
+            val ordered = region.assignedMinorCivs.sortedWith(
+                compareByDescending<Civilization> {
+                    it.nation.getStartBias(ruleset, it.getGameContextForStartBias()).size
+                }.thenByDescending { prefersCoastalStart(it, ruleset) }
             )
+            val unplaced = ordered.filterNot { placeMinorCivInRegionLikeCivV(it, region, tileMap, tileData, ruleset) }
+                .toMutableList()
+            // Only if nothing in the region was free, even when forced
+            tryPlaceMinorCivsInTiles(unplaced, tileMap, region.tiles.toMutableList(), tileData, ruleset)
         }
+    }
+
+    /**
+     *  AssignStartingPlots:PlaceCityStateInRegion: looks for a place along the outer band of the region first
+     *  (the 16.7 % of its longer side, and once that fails for the band of what is left inside it), a coastal tile
+     *  before an inland one. The tiles must be free of the impact of any start, then (forced) may be within the
+     *  impact but not on a start, then may be on one.
+     *  The way the original shrinks the part it looks at is kept: a region that is wider than tall is searched
+     *  along its left and right edges but shrinks at the top and bottom, and the other way around.
+     *  @return whether a place was found
+     */
+    private fun placeMinorCivInRegionLikeCivV(
+        civ: Civilization, region: Region, tileMap: TileMap, tileData: TileDataMap, ruleset: Ruleset
+    ): Boolean {
+        val biases = civ.nation.getStartBias(ruleset, civ.getGameContextForStartBias())
+        val rng = GameContext(gameInfo = tileMap.gameInfo).stateBasedRandom("MinorCivPlacer.placeMinorCivInRegionLikeCivV")
+
+        for ((force, ignoreCollisions) in listOf(false to false, true to false, true to true)) {
+            var x = region.rect.x.toInt()
+            var y = region.rect.y.toInt()
+            var width = region.rect.width.toInt()
+            var height = region.rect.height.toInt()
+            var reachedMiddle = false
+            while (!reachedMiddle) {
+                if (width <= 0 || height <= 0) break
+                if (width < 4 || height < 4) reachedMiddle = true
+                val taller = height > width
+                val rowsToCheck = ceil(0.167 * (if (taller) height else width)).toInt()
+
+                val coastal = ArrayList<Tile>()
+                val inland = ArrayList<Tile>()
+                for (row in y until y + height) {
+                    for (column in x until x + width) {
+                        val inBand = reachedMiddle ||
+                            if (taller) row < y + rowsToCheck || row >= y + height - rowsToCheck
+                            else column < x + rowsToCheck || column >= x + width - rowsToCheck
+                        if (!inBand) continue
+                        val coords = HexMath.getTileCoordsFromColumnRow(column, row)
+                        val tile = tileMap.getIfTileExistsOrNull(coords.x.toInt(), coords.y.toInt()) ?: continue
+                        if (!canPlaceMinorCivInRegion(tile, region, tileData, force, ignoreCollisions)) continue
+                        if (tile.isAdjacentToCoast()) coastal.add(tile) else inland.add(tile)
+                    }
+                }
+                if (taller) {
+                    x += rowsToCheck
+                    width -= 2 * rowsToCheck
+                } else {
+                    y += rowsToCheck
+                    height -= 2 * rowsToCheck
+                }
+
+                val candidates = sequenceOf(coastal, inland).map { list ->
+                    filterTilesByStartBias(list, biases).ifEmpty { list }
+                }.firstOrNull { it.isNotEmpty() } ?: continue
+                placeMinorCiv(civ, tileMap, candidates.random(rng), tileData, ruleset)
+                return true
+            }
+        }
+        return false
+    }
+
+    /** AssignStartingPlots:CanPlaceCityStateAt */
+    @Readonly
+    private fun canPlaceMinorCivInRegion(tile: Tile, region: Region, tileData: TileDataMap, force: Boolean, ignoreCollisions: Boolean): Boolean {
+        if (region.continentID != -1 && tile.getContinent() != region.continentID) return false
+        if (!canPlaceMinorCiv(tile, tileData)) return false
+        val impact = tileData[tile]!!.impacts[MapRegions.ImpactType.MinorCiv] ?: return true
+        if (!force) return false
+        return ignoreCollisions || impact != 99 // 99 is a start itself
     }
 
     private fun assignMinorCivsDirectlyToRegions(
