@@ -27,6 +27,7 @@ class NaturalWonderGenerator(val ruleset: Ruleset, val randomness: MapGeneration
     fun spawnNaturalWonders(tileMap: TileMap) {
         if (tileMap.mapParameters.noNaturalWonders)
             return
+        if (ruleset.modOptions.constants.naturalWondersLikeCivV) return spawnLikeCivV(tileMap)
         val mapRadius = tileMap.mapParameters.mapSize.radius
         // number of Natural Wonders scales linearly with mapRadius
         val numberToSpawn = ruleset.modOptions.constants.run {
@@ -83,6 +84,31 @@ class NaturalWonderGenerator(val ruleset: Ruleset, val randomness: MapGeneration
         }
 
         debug("Natural Wonders for this game: %s", spawned)
+    }
+
+    /** PlaceNaturalWonders: the number by world size, the order of a weighted draw among the wonders that have a candidate tile */
+    private fun spawnLikeCivV(tileMap: TileMap) {
+        val tilesTooCloseToSpawnLocations = tileMap.startingLocationsByNation.values.flatten().flatMap { it.getTilesInDistance(5) }.toSet()
+        val candidates = ruleset.terrains.values.filter { it.type == TerrainType.NaturalWonder }
+            .associateWith { getCandidateTilesForWonder(tileMap, it, tilesTooCloseToSpawnLocations) }
+            .filterValues { it.isNotEmpty() }
+        val target = minOf(CivVWorldSize.forTiles(tileMap.values.size).naturalWonders, candidates.size)
+
+        val pool = candidates.keys.toMutableList()
+        val order = ArrayList<Terrain>()
+        while (pool.isNotEmpty()) {
+            var roll = randomness.RNG.nextInt(pool.sumOf { it.weight }.coerceAtLeast(1))
+            val chosen = pool.firstOrNull { roll -= it.weight; roll < 0 } ?: pool.last()
+            order.add(chosen)
+            pool.remove(chosen)
+        }
+
+        var placed = 0
+        for (wonder in order) {
+            if (placed >= target) break
+            if (trySpawnOnSuitableLocation(candidates[wonder]!!.filter { it !in blockedTiles }, wonder)) placed++
+        }
+        debug("Natural Wonders for this game: %s", placed)
     }
 
     private fun getCandidateTilesForWonder(tileMap: TileMap, naturalWonder: Terrain, tilesTooCloseToSpawnLocations: Set<Tile>): Collection<Tile> {

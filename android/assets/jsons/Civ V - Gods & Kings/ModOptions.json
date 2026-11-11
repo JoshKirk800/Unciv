@@ -15,6 +15,7 @@
         // AssignStartingPlots:PlaceOilInTheSea
         "seaDepositsOfLandResource": "Oil",
         // TerrainGenerator.lua and FeatureGenerator.lua
-        "terrainGeneratorLikeCivV": true
+        "terrainGeneratorLikeCivV": true,
+        "naturalWondersLikeCivV": true
     },
 }

@@ -90,6 +90,10 @@ class ModConstants {
     /** Normalize starts as AssignStartingPlots:NormalizeStartLocation and NormalizeCityState do (see CivVStartNormalizer).
      *  It names the terrains and resources of the Civ V rulesets, so it only makes sense for them. */
     var startNormalizerLikeCivV = false
+    /** Choose and place the natural wonders as PlaceNaturalWonders does: as many as the world size gives (2 on Duel to 7 on Huge, or fewer if
+     *  fewer have a candidate tile), drawn one by one by their weights from the wonders that have a candidate tile and placed in the order drawn,
+     *  not the order of the fewest candidate tiles. The wonders that fail to place are replaced by the next ones drawn. */
+    var naturalWondersLikeCivV = false
     /** How the map generator widens the coast. Empty: the generic way (`maxCoastExtension` passes, an ocean tile next to a coast tile
      *  becomes coast with 1 in 2). Otherwise as GenerateCoasts of MapGenerator.lua: ocean next to land becomes coast, then one pass
      *  for each entry in which an ocean tile next to a coast tile becomes coast with 1 in that number (Civ V: 4 and 4). */

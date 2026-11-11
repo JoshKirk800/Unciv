@@ -3,13 +3,13 @@ package com.unciv.logic.map.mapgenerator
 import kotlin.random.Random
 
 /** The sizes of world of Civ V (Duel to Huge) by the number of tiles of Unciv's map, to pick the values the scripts keep per world size */
-enum class CivVWorldSize(val grainChange: Int, val continentsGrain: Int, val plates: Int, val atolls: Int) {
-    Duel(-1, 3, 6, 2),
-    Tiny(-1, 3, 9, 4),
-    Small(0, 4, 12, 5),
-    Standard(0, 4, 18, 7),
-    Large(1, 5, 24, 9),
-    Huge(1, 5, 30, 12);
+enum class CivVWorldSize(val grainChange: Int, val continentsGrain: Int, val plates: Int, val atolls: Int, val naturalWonders: Int) {
+    Duel(-1, 3, 6, 2, 2),
+    Tiny(-1, 3, 9, 4, 3),
+    Small(0, 4, 12, 5, 4),
+    Standard(0, 4, 18, 7, 5),
+    Large(1, 5, 24, 9, 6),
+    Huge(1, 5, 30, 12, 7);
 
     companion object {
         fun forTiles(tiles: Int) = when {
