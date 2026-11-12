@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx
 import com.unciv.UncivGame
 import com.unciv.logic.GameInfo
 import com.unciv.logic.GameStarter
+import com.unciv.logic.automation.strategy.FlavorManager
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.civilization.PlayerType
 import com.unciv.logic.files.UncivFiles
@@ -40,7 +41,9 @@ import java.util.UUID
  * FULL_SIM_CIVS (8), FULL_SIM_CITYSTATES (8), FULL_SIM_SEED (7), FULL_SIM_RULESET (default Civ V - Brave New World),
  * FULL_SIM_MAPSIZE (Tiny, Small, Medium, Large or Huge; default Medium), FULL_SIM_MAPTYPE (default Small Continents).
  * FULL_SIM_MAPWIDTH and FULL_SIM_MAPHEIGHT together select a custom rectangular map; FULL_SIM_WORLD_WRAP enables horizontal wrap.
- * FULL_SIM_WATER_THRESHOLD sets the generated map's water threshold (default 0).
+ * FULL_SIM_WATER_THRESHOLD sets the generated map's water threshold (default 0). FULL_SIM_MAP_FILE = a premade map file (see [BnwMapClone]) that
+ * replaces the generated one, with its starting locations; FULL_SIM_HUMAN_SLOT = comma-separated nations that get the personality of a human
+ * player's slot (every flavor and personality value at its default, not randomized) although the AI plays them.
  * FULL_SIM_NATIONS = comma-separated exact names of major nations (`The Huns,Babylon`): these play instead of the first FULL_SIM_CIVS
  * majors (an unknown or non-major name stops the run). FULL_SIM_VICTORIES = comma-separated victory type names that replace the default
  * (every selectable victory without a turn limit; an unknown name stops the run). FULL_SIM_START_UNITS = `Nation=Unit,Unit;Nation2=Unit`:
@@ -139,7 +142,18 @@ class FullGameSim {
             waterThreshold = env("FULL_SIM_WATER_THRESHOLD", "0").toFloat()
             seed = env("FULL_SIM_SEED", "7").toLong()
         }
-        val game = GameStarter.startNewGame(GameSetupInfo(parameters, mapParameters), gameId = UUID.nameUUIDFromBytes("full-sim-${mapParameters.seed}".toByteArray()).toString())
+        val setup = GameSetupInfo(parameters, mapParameters)
+        val mapFile = System.getenv("FULL_SIM_MAP_FILE")
+        if (mapFile != null) {
+            // a premade map (`BnwMapClone`): its terrain, resources and starting locations are used, FULL_SIM_SEED only varies the game
+            mapParameters.name = File(mapFile).nameWithoutExtension
+            setup.mapFile = Gdx.files.absolute(mapFile)
+        }
+        val game = GameStarter.startNewGame(setup, gameId = UUID.nameUUIDFromBytes("full-sim-${mapParameters.seed}".toByteArray()).toString())
+        for (nation in list("FULL_SIM_HUMAN_SLOT")) {
+            val civ = game.civilizations.firstOrNull { it.civName == nation && it.isMajorCiv } ?: error("FULL_SIM_HUMAN_SLOT: '$nation' does not play in this game")
+            FlavorManager.initializePersonalityAsHuman(civ)
+        }
         for ((nation, units) in startUnits) {
             val civ = game.civilizations.first { it.civName == nation }
             val position = civ.units.getCivUnits().firstOrNull()?.getTile()?.position ?: error("FULL_SIM_START_UNITS: $nation has no unit to place its units next to")

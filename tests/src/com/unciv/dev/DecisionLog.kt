@@ -64,7 +64,9 @@ class DecisionLog(private val game: GameInfo, private val file: File) {
             }
             if (turn % 5 == 0) for (city in civ.cities) {
                 val tile = city.getCenterTile()
-                text.append("AI_CITY\t$turn\t${civ.civName}\t${tile.getColumn()}\t${tile.getRow()}\t${city.population.population}\t${if (city.isCapital()) 1 else 0}\n")
+                // on a copy of a Civ V map (BnwMapGrid) the plot's x and y, else the column and the row of Unciv's flat hexes
+                val (column, row) = if (game.tileMap.mapParameters.civVGridWrap) BnwMapGrid.civVOf(tile.position) else tile.getColumn() to tile.getRow()
+                text.append("AI_CITY\t$turn\t${civ.civName}\t$column\t$row\t${city.population.population}\t${if (city.isCapital()) 1 else 0}\n")
             }
         }
         file.appendText(text.toString())
