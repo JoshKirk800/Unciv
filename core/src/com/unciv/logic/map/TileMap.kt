@@ -19,6 +19,7 @@ import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.models.ruleset.unit.BaseUnit
 import com.unciv.utils.addToMapOfSets
 import com.unciv.utils.contains
+import yairm210.purity.annotations.Pure
 import yairm210.purity.annotations.Readonly
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
@@ -385,22 +386,31 @@ class TileMap(initialCapacity: Int = 10) : IsPartOfGameInfoSerialization {
         if (!mapParameters.worldWrap)
             return null
 
-        var radius = mapParameters.mapSize.radius
-        if (mapParameters.shape == MapShape.rectangular)
-            radius = mapParameters.mapSize.width / 2
+        val wrap = wrapVector
 
         // Maybe tile is "outside of the map" in world wrap.
 
         // A. Get tile wrapped around from right to left
-        val rightSideTile = getOrNull(x + radius, y - radius)
+        val rightSideTile = getOrNull(x + wrap.x, y + wrap.y)
         if (rightSideTile != null) return rightSideTile
 
         // B. Get tile wrapped around from left to right
-        val leftSideTile = getOrNull(x - radius, y + radius)
+        val leftSideTile = getOrNull(x - wrap.x, y - wrap.y)
         if (leftSideTile != null) return leftSideTile
 
         return null
     }
+
+    /** The hex coordinate shift between a tile and its twin one world around to the east; the one to the west is the opposite.
+     *  Unciv's rectangular and hexagonal maps wrap along the zigzag of their columns, by (radius, -radius) with the radius half the width,
+     *  and a map with [MapParameters.civVGridWrap] along the straight line of neighbours at 10 o'clock, by (width, 0). */
+    @get:Readonly
+    val wrapVector: HexCoord
+        get() {
+            if (mapParameters.civVGridWrap) return HexCoord.of(mapParameters.mapSize.width, 0)
+            val radius = if (mapParameters.shape == MapShape.rectangular) mapParameters.mapSize.width / 2 else mapParameters.mapSize.radius
+            return HexCoord.of(radius, -radius)
+        }
 
 
     /**
@@ -409,6 +419,7 @@ class TileMap(initialCapacity: Int = 10) : IsPartOfGameInfoSerialization {
      */
     @Readonly
     fun getNeighborTileClockPosition(tile: Tile, otherTile: Tile): Int {
+        if (mapParameters.civVGridWrap) return getNeighborClockPositionOnWrappedGrid(tile, otherTile)
         val radius = if (mapParameters.shape == MapShape.rectangular)
             mapParameters.mapSize.width / 2
         else mapParameters.mapSize.radius
@@ -433,6 +444,30 @@ class TileMap(initialCapacity: Int = 10) : IsPartOfGameInfoSerialization {
             yDifference == -1 || yWrapDifferenceTop == -1 -> 2 // otherTile is top-right
             else -> -1
         }
+    }
+
+    /** [getNeighborTileClockPosition] on a [MapParameters.civVGridWrap] map: the difference of the two positions, as it is or moved by one world around */
+    @Readonly
+    private fun getNeighborClockPositionOnWrappedGrid(tile: Tile, otherTile: Tile): Int {
+        val wrap = wrapVector
+        val dx = tile.position.x - otherTile.position.x
+        val dy = tile.position.y - otherTile.position.y
+        val direct = clockPositionOfDifference(dx, dy)
+        if (direct != -1 || !mapParameters.worldWrap) return direct
+        val east = clockPositionOfDifference(dx - wrap.x, dy - wrap.y)
+        return if (east != -1) east else clockPositionOfDifference(dx + wrap.x, dy + wrap.y)
+    }
+
+    /** The clock position of the other tile seen from a tile, from tile position minus other position, -1 when they are no neighbors */
+    @Pure
+    private fun clockPositionOfDifference(dx: Int, dy: Int): Int = when {
+        dx == 1 && dy == 1 -> 6
+        dx == -1 && dy == -1 -> 12
+        dx == 1 && dy == 0 -> 4
+        dx == 0 && dy == 1 -> 8
+        dx == -1 && dy == 0 -> 10
+        dx == 0 && dy == -1 -> 2
+        else -> -1
     }
 
     /**
@@ -465,12 +500,10 @@ class TileMap(initialCapacity: Int = 10) : IsPartOfGameInfoSerialization {
         if (!contains(position))
             return position //The position is outside the map so its unwrapped already
 
-        val radius = if (mapParameters.shape == MapShape.rectangular)
-            mapParameters.mapSize.width / 2
-        else mapParameters.mapSize.radius
+        val wrap = wrapVector
 
-        val vectorUnwrappedLeft = HexCoord.of(position.x + radius, position.y - radius)
-        val vectorUnwrappedRight = HexCoord.of(position.x - radius, position.y + radius)
+        val vectorUnwrappedLeft = HexCoord.of(position.x + wrap.x, position.y + wrap.y)
+        val vectorUnwrappedRight = HexCoord.of(position.x - wrap.x, position.y - wrap.y)
 
         fun squareSum(hexCoord: HexCoord): Int {
             val x = hexCoord.x
@@ -640,7 +673,8 @@ class TileMap(initialCapacity: Int = 10) : IsPartOfGameInfoSerialization {
 
         val minColumn = tileList.minOf { HexMath.getColumn(it.position) }
         val maxColumn = tileList.maxOf { HexMath.getColumn(it.position) }
-        width = maxColumn - minColumn + 1
+        // On the pointy grid the columns of the flat hexes mean nothing: the width is the number of tiles in a row, all the way round
+        width = if (mapParameters.civVGridWrap) mapParameters.mapSize.width else maxColumn - minColumn + 1
     }
 
     /** Initialize Civilization.neutralRoads based on Tile.roadOwner

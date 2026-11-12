@@ -84,6 +84,11 @@ class MapParameters : IsPartOfGameInfoSerialization {
     var noNaturalWonders = false
     // DO NOT CHANGE DEFAULTS since that changes all existing games to new default!
     var worldWrap = false
+
+    /** The tiles lie on the pointy-hex grid of Civ V's maps and the world wraps along its rows: the east edge is [MapSize.width]
+     *  steps from the west edge in a straight line of neighbours, and not along the zigzag of Unciv's flat hexes
+     *  (see [TileMap.wrapVector]). Only maps built tile by tile, such as a copy of a Civ V map, set it. */
+    var civVGridWrap = false
     var strategicBalance = false
     var legendaryStart = false
 
@@ -120,6 +125,7 @@ class MapParameters : IsPartOfGameInfoSerialization {
         toReturn.noRuins = noRuins
         toReturn.noNaturalWonders = noNaturalWonders
         toReturn.worldWrap = worldWrap
+        toReturn.civVGridWrap = civVGridWrap
         toReturn.strategicBalance = strategicBalance
         toReturn.legendaryStart = legendaryStart
         toReturn.mods = LinkedHashSet(mods)

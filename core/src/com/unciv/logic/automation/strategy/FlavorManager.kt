@@ -30,6 +30,17 @@ object FlavorManager {
         for (civ in civs) civ.ai.personalityInitialized = true
     }
 
+    /**
+     *  The personality of a human player's slot (a human gets DEFAULT_FLAVOR_VALUE for every flavor and personality value, not randomized)
+     *  for a civilization that an AI plays: the Brave New World game whose first slot is a human one that the game's AutoPlay hands to the AI.
+     *  Set up as a human's would be after [initializeNewGame]: the flavors, the map adjustment, the diplomacy personality.
+     */
+    fun initializePersonalityAsHuman(civ: Civilization) {
+        initPersonalityFlavors(civ, asHuman = true)
+        adjustWeightsForMap(civ)
+        initDiplomacyPersonality(civ, asHuman = true)
+    }
+
     /** The same set-up for one civilization joining later or loaded from a save without AI state */
     fun initializePersonality(civ: Civilization, adjustForMap: Boolean) {
         initPersonalityFlavors(civ)
@@ -45,11 +56,11 @@ object FlavorManager {
      *  personality as its first flavor broadcast (when the recipient is registered). Deviation: a city-state's CvMinorCivAI::DoPickPersonality
      *  broadcast is not counted; city-states never choose wonders.
      */
-    internal fun initPersonalityFlavors(civ: Civilization) {
+    internal fun initPersonalityFlavors(civ: Civilization, asHuman: Boolean = civ.isHuman()) {
         val ai = civ.ai
         val rules = civ.gameInfo.ruleset.ai
         val default = rules.define(AiDefine.DEFAULT_FLAVOR_VALUE)
-        val vector = if (civ.isHuman()) IntArray(Flavor.count) { default }
+        val vector = if (asHuman) IntArray(Flavor.count) { default }
         else {
             val source = if (civ.isCityState) rules.minorCivFlavorsOf(civ.civName)?.flavors
                 else civ.nation.personality?.let { civ.gameInfo.ruleset.personalities[it] }?.flavors
@@ -113,7 +124,7 @@ object FlavorManager {
      *  GetRandomPersonalityWeight (±FLAVOR_RANDOMIZATION_RANGE, kept within the personality flavor range); a human gets DEFAULT_FLAVOR_VALUE.
      *  Values the leader lacks are DEFAULT_FLAVOR_VALUE before randomizing.
      */
-    internal fun initDiplomacyPersonality(civ: Civilization) {
+    internal fun initDiplomacyPersonality(civ: Civilization, asHuman: Boolean = civ.isHuman()) {
         val ai = civ.ai
         val rules = civ.gameInfo.ruleset.ai
         val default = rules.define(AiDefine.DEFAULT_FLAVOR_VALUE)
@@ -123,7 +134,7 @@ object FlavorManager {
         val min = rules.define(AiDefine.PERSONALITY_FLAVOR_MIN_VALUE)
         val max = rules.define(AiDefine.PERSONALITY_FLAVOR_MAX_VALUE)
         fun value(source: Map<String, Int>?, key: String): Int =
-            if (civ.isHuman()) default
+            if (asHuman) default
             else getAdjustedValue(source?.get(key) ?: default, plusMinus, min, max, random)
 
         ai.diplomacyPersonality.clear()
