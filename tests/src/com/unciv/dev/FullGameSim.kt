@@ -43,7 +43,8 @@ import java.util.UUID
  * FULL_SIM_MAPWIDTH and FULL_SIM_MAPHEIGHT together select a custom rectangular map; FULL_SIM_WORLD_WRAP enables horizontal wrap.
  * FULL_SIM_WATER_THRESHOLD sets the generated map's water threshold (default 0). FULL_SIM_MAP_FILE = a premade map file (see [BnwMapClone]) that
  * replaces the generated one, with its starting locations; FULL_SIM_HUMAN_SLOT = comma-separated nations that get the personality of a human
- * player's slot (every flavor and personality value at its default, not randomized) although the AI plays them.
+ * player's slot (every flavor and personality value at its default, not randomized) although the AI plays them. FULL_SIM_SEED_DOF =
+ * `Turn:Nation+Nation,...`: Declarations of Friendship signed by the harness from that turn on, once the two have met and are free to sign.
  * FULL_SIM_NATIONS = comma-separated exact names of major nations (`The Huns,Babylon`): these play instead of the first FULL_SIM_CIVS
  * majors (an unknown or non-major name stops the run). FULL_SIM_VICTORIES = comma-separated victory type names that replace the default
  * (every selectable victory without a turn limit; an unknown name stops the run). FULL_SIM_START_UNITS = `Nation=Unit,Unit;Nation2=Unit`:
@@ -351,7 +352,23 @@ class FullGameSim {
         val militaryGone = HashMap<String, Int>()
         val cityOwners = HashMap<String, String>()
 
+        // FULL_SIM_SEED_DOF: Declarations of Friendship that the AI did not make, signed as soon as the two have met, from the named turn on
+        val pendingDoF = env("FULL_SIM_SEED_DOF", "").split(',').map { it.trim() }.filter { it.isNotEmpty() }.map { entry ->
+            val turn = entry.substringBefore(':').toIntOrNull() ?: error("FULL_SIM_SEED_DOF: '$entry' is not Turn:Nation+Nation")
+            val names = entry.substringAfter(':').split('+')
+            require(names.size == 2) { "FULL_SIM_SEED_DOF: '$entry' is not Turn:Nation+Nation" }
+            val civs = names.map { name -> game.civilizations.firstOrNull { it.civName == name && it.isMajorCiv } ?: error("FULL_SIM_SEED_DOF: '$name' does not play in this game") }
+            Triple(turn, civs[0], civs[1])
+        }.toMutableList()
+
         for (turn in 1..maxTurns) {
+            for ((from, first, second) in pendingDoF.toList()) {
+                if (from > turn || !first.knows(second) || !first.diplomacyFunctions.canSignDeclarationOfFriendshipWith(second)
+                    || !second.diplomacyFunctions.canSignDeclarationOfFriendshipWith(first)) continue
+                first.getDiplomacyManager(second)!!.signDeclarationOfFriendship()
+                pendingDoF.remove(Triple(from, first, second))
+                event(turn, "seeded Declaration of Friendship ${first.civName} + ${second.civName} (asked for turn $from)")
+            }
             try {
                 performance.beforeTurn()
                 game.nextTurn()
