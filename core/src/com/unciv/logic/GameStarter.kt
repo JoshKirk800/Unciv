@@ -274,8 +274,9 @@ class GameStarter private constructor(
             ).filter { it.name !in selectedPlayerNames }
             .shuffled(rng).let { ArrayDeque(it.toList()) }
 
+        // gameInfo.tileMap is not the loaded map yet and the map's startingLocationsByNation is a transient that is not set up yet: read the serialized list
         val civNamesWithStartingLocations =
-            if (existingMap) gameInfo.tileMap.startingLocationsByNation.keys
+            if (existingMap) tileMap.startingLocations.map { it.nation }.toSet()
             else emptySet()
         @LocalState val presetRandomNationsPool = randomNationsPool
             .filter { it.name in civNamesWithStartingLocations }
