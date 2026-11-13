@@ -26,6 +26,8 @@
         // CvPlayer::SetUnitUpgradeCostMod, CvUnit::upgradePrice: UNIT_UPGRADE_COST_DISCOUNT_MAX
         "unitUpgradeCostModsAreSummed": true,
         "unitUpgradeCostDiscountMax": -75,
+        // CvTeam::DoMinorCivTech: MINOR_CIV_TECH_PERCENT
+        "minorCivTechPercent": 40,
         // AssignStartingPlots:NormalizeStartLocation and NormalizeCityState
         "startNormalizerLikeCivV": true,
         // MapGenerator.lua GenerateCoasts: expansion_diceroll_table {4, 4}
