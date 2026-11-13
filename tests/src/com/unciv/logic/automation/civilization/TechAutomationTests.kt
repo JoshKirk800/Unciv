@@ -142,6 +142,27 @@ class TechAutomationTests {
     }
 
     @Test
+    fun `research weights are multiplied instead of divided while the science overflow is more than twice the science`() {
+        val civ = withCity(civWith(Flavor.Religion to 10, Flavor.Gold to 10))
+        civ.stats.statsForNextTurn = Stats(science = 7f)
+        civ.tech.techsInProgress["Pottery"] = 20
+        TechAutomation.rebuildWeights(civ)
+        civ.tech.addScience(14)   // no current research: goes to the overflow; 14 is exactly twice the science, not more
+        assertEquals(14, civ.tech.getOverflowScience())
+        for ((tech, reweighted) in TechAutomation.researchCandidates(civ, freeTech = false)) {
+            val turns = ceil(civ.tech.remainingScienceToTech(tech.name) / 7.0).toInt()
+            assertEquals(tech.name, (weight(civ, tech.name) / turns.toDouble().pow(0.15 + 0.025 * turns)).toInt(), reweighted)
+        }
+        civ.tech.addScience(1)    // 15 > 2 x 7: CvTechAI::ReweightByCost now wants the expensive techs
+        val candidates = TechAutomation.researchCandidates(civ, freeTech = false)
+        assertTrue(candidates.size >= 4)
+        for ((tech, reweighted) in candidates) {
+            val turns = ceil(civ.tech.remainingScienceToTech(tech.name) / 7.0).toInt()
+            assertEquals(tech.name, (weight(civ, tech.name) * turns.toDouble().pow(0.15 + 0.025 * turns)).toInt(), reweighted)
+        }
+    }
+
+    @Test
     fun `the choice is weighted among the best two candidates only`() {
         game.setDifficulty("Prince") // HandicapInfos.TechNumOptionsConsidered 2
         val civ = withCity(civWith(Flavor.Religion to 10, Flavor.Gold to 10, Flavor.Production to 10))
