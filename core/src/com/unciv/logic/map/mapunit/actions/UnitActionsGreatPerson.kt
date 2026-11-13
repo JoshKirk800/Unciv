@@ -12,6 +12,7 @@ import com.unciv.models.ruleset.unit.BaseUnit
 import com.unciv.models.translations.tr
 import com.unciv.ui.components.extensions.toPercent
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 @Suppress("UNUSED_PARAMETER") // references need to have the signature expected by UnitActions.actionTypeToFunctions
 object UnitActionsGreatPerson {
@@ -80,15 +81,24 @@ object UnitActionsGreatPerson {
             val currentName = cityConstructions.currentConstructionName() // Once: the queue can change between two reads
             val currentConstruction = cityConstructions.getConstruction(currentName)
             // CvUnit.cpp:7417-7437: units in production can only be hurried if they are spaceship parts and a policy allows it
+            val hurryLikeCivV = unit.civ.gameInfo.ruleset.modOptions.constants.unitHurryLikeCivV
+            // CvUnit::canHurry: not for production that is done next turn anyway
             val canHurryConstruction = (currentConstruction is Building
                     || currentConstruction is BaseUnit && currentConstruction.hasUnique(UniqueType.SpaceshipPart)
                         && unit.civ.hasUnique(UniqueType.CanSpeedupSpaceshipPartConstruction))
                 && cityConstructions.canBeHurried()
+                && !(hurryLikeCivV && cityConstructions.turnsToConstruction(currentName) == 1)
 
             //http://civilization.wikia.com/wiki/Great_engineer_(Civ5)
-            val productionPointsToAdd = min(
+            val remainingWork = cityConstructions.getRemainingWork(currentName)
+            val productionPointsToAdd = if (hurryLikeCivV) {
+                // CvUnit::getMaxHurryProduction, getHurryProduction: (BaseHurry 300 + HurryMultiplier 30 x population) x UnitHurryPercent of the
+                // game speed / 100 in whole numbers, at most what is left to produce - which can be all of it
+                val speedPercent = (unit.civ.gameInfo.speed.productionCostModifier * 100).roundToInt()
+                min((300 + 30 * tile.getCity()!!.population.population) * speedPercent / 100, remainingWork)
+            } else min(
                 (300 + 30 * tile.getCity()!!.population.population) * unit.civ.gameInfo.speed.productionCostModifier,
-                cityConstructions.getRemainingWork(currentName).toFloat() - 1
+                remainingWork.toFloat() - 1
             ).toInt()
             if (productionPointsToAdd <= 0) continue
 
