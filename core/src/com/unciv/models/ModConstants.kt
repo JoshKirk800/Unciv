@@ -108,6 +108,10 @@ class ModConstants {
     // true: as in Civ V (CvTreasury::DoGold) it is set to 0 and the rest of the deficit is lost; a civilization never has negative gold
     var treasuryNeverNegative = false
 
+    // Whether a city can bombard an enemy city within its range. false: it cannot, only the units outside cities, as in Civ V
+    // (CvCity::canRangeStrikeAt: "I don't want cities attacking each other directly")
+    var citiesCanBombardCities = true
+
     // Constants used to calculate Unit Upgrade gold Cost (can only be modded all-or-nothing)
     // This is a data class for one reason only: The equality implementation enables Gdx Json to omit it when default (otherwise only the individual fields are omitted)
     data class UnitUpgradeCost(
