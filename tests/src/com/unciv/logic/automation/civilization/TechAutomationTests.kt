@@ -150,14 +150,14 @@ class TechAutomationTests {
         civ.tech.addScience(14)   // no current research: goes to the overflow; 14 is exactly twice the science, not more
         assertEquals(14, civ.tech.getOverflowScience())
         for ((tech, reweighted) in TechAutomation.researchCandidates(civ, freeTech = false)) {
-            val turns = ceil(civ.tech.remainingScienceToTech(tech.name) / 7.0).toInt()
+            val turns = maxOf(1, ceil(civ.tech.remainingScienceToTech(tech.name) / 7.0).toInt())
             assertEquals(tech.name, (weight(civ, tech.name) / turns.toDouble().pow(0.15 + 0.025 * turns)).toInt(), reweighted)
         }
         civ.tech.addScience(1)    // 15 > 2 x 7: CvTechAI::ReweightByCost now wants the expensive techs
         val candidates = TechAutomation.researchCandidates(civ, freeTech = false)
         assertTrue(candidates.size >= 4)
         for ((tech, reweighted) in candidates) {
-            val turns = ceil(civ.tech.remainingScienceToTech(tech.name) / 7.0).toInt()
+            val turns = maxOf(1, ceil(civ.tech.remainingScienceToTech(tech.name) / 7.0).toInt())
             assertEquals(tech.name, (weight(civ, tech.name) * turns.toDouble().pow(0.15 + 0.025 * turns)).toInt(), reweighted)
         }
     }
