@@ -176,23 +176,9 @@ object BattleDamage {
                 if (sapperBonus != 0) modifiers["Sapper"] = sapperBonus
             }
 
-            if (attacker.isMelee()) {
-                val numberOfOtherAttackersSurroundingDefender = defender.getTile().neighbors.count {
-                    it.militaryUnit != null && it.militaryUnit != attacker.unit
-                            && it.militaryUnit!!.civ == attacker.getCivInfo()
-                            && MapUnitCombatant(it.militaryUnit!!).isMelee()
-                }
-                if (numberOfOtherAttackersSurroundingDefender > 0) {
-                    var flankingBonus = BattleConstants.BASE_FLANKING_BONUS
-
-                    // e.g., Discipline policy - https://civilization.fandom.com/wiki/Discipline_(Civ5)
-                    attacker.unit.forEachMatchingUnique(UniqueType.FlankAttackBonus, checkCivInfoUniques = true,
-                            gameContext = getGameContext(CombatAction.Attack, attacker, defender)) { unique ->
-                        flankingBonus *= unique.params[0].toPercent()
-                    }
-                    modifiers["Flanking"] =
-                        (flankingBonus * numberOfOtherAttackersSurroundingDefender).toInt()
-                }
+            if (attacker.isMelee() && defender is MapUnitCombatant) {
+                val flanking = getFlankingBonus(attacker, defender, CombatAction.Attack)
+                if (flanking != 0) modifiers["Flanking"] = flanking
             }
 
         }
@@ -258,6 +244,12 @@ object BattleDamage {
         val modifiers = getGeneralModifiers(defender, attacker, CombatAction.Defend, tileToAttackFrom)
         val tile = defender.getTile()
 
+        // Ranged attacks ignore flanking (GetMaxDefenseStrength passes bIgnoreUnitAdjacency = bFromRangedAttack)
+        if (defender is MapUnitCombatant && attacker is MapUnitCombatant && !attacker.isRanged()) {
+            val flanking = getFlankingBonus(defender, attacker, CombatAction.Defend, tileToAttackFrom)
+            if (flanking != 0) modifiers["Flanking"] = flanking
+        }
+
         if (defender is MapUnitCombatant && !defender.unit.isEmbarked()) { // Embarked units get no terrain defensive bonuses
 
             val tileDefenceBonus = tile.getDefensiveBonus(unit = defender.unit)
@@ -272,6 +264,31 @@ object BattleDamage {
         }
 
         return modifiers
+    }
+
+    /**
+     *  CvUnit::GetGenericMaxStrengthModifier, "Flanking": BONUS_PER_ADJACENT_FRIEND for each combat unit next to the [opponent] that is at war
+     *  with it, is on the same domain, is not embarked and is not the [unit] itself (CvUnit::GetNumEnemyUnitsAdjacent) - ranged units and units
+     *  of allies count too, and the defender gets the bonus as well - times the unit's FlankAttackBonus. Zero against a city.
+     *  @param opponentTile where the opponent stands
+     */
+    @Readonly
+    private fun getFlankingBonus(unit: MapUnitCombatant, opponent: MapUnitCombatant, action: CombatAction, opponentTile: Tile = opponent.getTile()): Int {
+        val opponentCiv = opponent.getCivInfo()
+        val domain = opponent.unit.type.getMovementType()
+        val friends = opponentTile.neighbors.sumOf { neighbor ->
+            neighbor.getUnits().count {
+                it != unit.unit && it.isMilitary() && !it.isEmbarked() && it.civ.isAtWarWith(opponentCiv) && it.type.getMovementType() == domain
+            }
+        }
+        if (friends == 0) return 0
+        var flankingBonus = BattleConstants.BASE_FLANKING_BONUS
+        // e.g., Discipline policy - https://civilization.fandom.com/wiki/Discipline_(Civ5)
+        unit.unit.forEachMatchingUnique(UniqueType.FlankAttackBonus, checkCivInfoUniques = true,
+                gameContext = getGameContext(action, unit, opponent)) { unique ->
+            flankingBonus *= unique.params[0].toPercent()
+        }
+        return (flankingBonus * friends).toInt()
     }
 
     /** The sum of the modifiers as a factor; a unit never drops below 10% of its strength (CvUnit::GetMaxAttackStrength: "can't drop below 10%") */
