@@ -108,6 +108,10 @@ class ModConstants {
     // true: as in Civ V (CvTreasury::DoGold) it is set to 0 and the rest of the deficit is lost; a civilization never has negative gold
     var treasuryNeverNegative = false
 
+    // What a damaged city heals each turn. false: 20. true: as in Civ V (CvCity::doTurn) 20 (CITY_HIT_POINTS_HEALED_PER_TURN),
+    // +1 in the capital of a major civilization, + (strength of the city's buildings x 100) / 500
+    var cityHealLikeCivV = false
+
     // Constants used to calculate Unit Upgrade gold Cost (can only be modded all-or-nothing)
     // This is a data class for one reason only: The equality implementation enables Gdx Json to omit it when default (otherwise only the individual fields are omitted)
     data class UnitUpgradeCost(
