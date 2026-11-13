@@ -280,11 +280,13 @@ object TechAutomation {
         val rules = civ.gameInfo.ruleset.ai
         val baseMod = rules.defineFloat(AiDefine.AI_RESEARCH_WEIGHT_BASE_MOD).toDouble()
         val modPerTurn = rules.defineFloat(AiDefine.AI_RESEARCH_WEIGHT_MOD_PER_TURN_LEFT).toDouble()
+        // CvTechAI::ReweightByCost (SDK source, April 2014 balance patch): with lots of science overflow the AI wants an expensive tech
+        val needExpensiveTechs = civ.tech.getOverflowScience() * 100 > (civ.stats.statsForNextTurn.science * 100).toInt() * 2
         val candidates = ArrayList<Pair<Technology, Int>>()
         for (tech in data.techs) {
             if (!civ.tech.canBeResearched(tech.name)) continue
             var weight = weightOf(civ, tech.name)
-            if (!freeTech) weight = reweightByCost(weight, researchTurnsLeft(civ, tech), baseMod, modPerTurn)
+            if (!freeTech) weight = reweightByCost(weight, researchTurnsLeft(civ, tech), baseMod, modPerTurn, needExpensiveTechs)
             candidates.add(tech to weight)
         }
         candidates.sortByDescending { it.second }
@@ -302,7 +304,9 @@ object TechAutomation {
     }
 
     /** CvTechAI::ReweightByCost: weight / turns^(AI_RESEARCH_WEIGHT_BASE_MOD + AI_RESEARCH_WEIGHT_MOD_PER_TURN_LEFT × turns) */
-    private fun reweightByCost(weight: Int, turnsLeft: Int, baseMod: Double, modPerTurn: Double): Int =
-        (weight / turnsLeft.toDouble().pow(baseMod + modPerTurn * turnsLeft)).toInt()
+    private fun reweightByCost(weight: Int, turnsLeft: Int, baseMod: Double, modPerTurn: Double, needExpensiveTechs: Boolean): Int {
+        val factor = turnsLeft.toDouble().pow(baseMod + modPerTurn * turnsLeft)
+        return (if (needExpensiveTechs) weight * factor else weight / factor).toInt()
+    }
     //endregion
 }
