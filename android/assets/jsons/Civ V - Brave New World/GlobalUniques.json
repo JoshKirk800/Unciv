@@ -4,7 +4,8 @@
         "Requires establishing embassies to conduct advanced diplomacy",
         // CvPlayer::IsEmpireUnhappy (< 0), IsEmpireVeryUnhappy (<= -10, VERY_UNHAPPY_THRESHOLD), IsEmpireSuperUnhappy (<= -20): 'below' is strict, so [-9] and [-19]
         "[-75]% growth [in all cities] <when between [-9] and [-1] [Happiness]>",
-        "Nullifies Growth [in all cities] <when below [-9] [Happiness]>",
+        // CvCity::foodDifferenceTimes100 adds VERY_UNHAPPY_GROWTH_PENALTY (-100) to the growth modifier, to which the capital, policy and religion bonuses are added
+        "[-100]% growth [in all cities] <when below [-9] [Happiness]>",
         // BNW: -2% per point of unhappiness, at most -40% (VERY_UNHAPPY_*_PENALTY_PER_UNHAPPY and ..._MAX_..._PENALTY; CvCity::getHappinessModifier, CvUnit::GetUnhappinessCombatPenalty)
         "[-2]% [Production] [in all cities] <for every [min(20, 0 - [Happiness])]>",
         "[-2]% [Gold] [in all cities] <for every [min(20, 0 - [Happiness])]>",

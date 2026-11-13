@@ -75,13 +75,22 @@ class UnhappinessEffectsTests {
         }
     }
 
+    /** CvCity::foodDifferenceTimes100: from -10 on the growth modifier gets -100 added, so other growth bonuses still count */
     @Test
-    fun `growth stops from minus 10 on, like IsEmpireVeryUnhappy`() {
-        fun growthStopped() = civ.cities.first().getMatchingUniques(UniqueType.NullifiesGrowth).any()
-        setHappiness(-9)
-        assertFalse("at -9 growth is only slowed", growthStopped())
-        setHappiness(-10)
-        assertTrue("at -10 growth is nullified", growthStopped())
+    fun `from minus 10 on growth bonuses still apply to what is left of the surplus`() {
+        val growers = game.addCiv("[+10 Food] [in all cities]", "[+50]% growth [in all cities]")
+        val city = game.addCity(growers, game.getTile(-2, 0))
+        fun surplus(happiness: Int): Float {
+            growers.stats.happiness = happiness
+            city.cityStats.update(updateCivStats = false)
+            return city.cityStats.currentCityStats.food
+        }
+        val happy = surplus(5)
+        val unhappy = surplus(-9)
+        val veryUnhappy = surplus(-10)
+        assertTrue("surplus at 5: $happy", happy > 0f)
+        assertEquals("at -9 growth is slowed by 75% (+50%)", happy / 1.5f * 0.75f, unhappy, 0.01f)
+        assertEquals("at -10 only the +50% bonus remains of the surplus", happy / 1.5f * 0.5f, veryUnhappy, 0.01f)
     }
 
     @Test
