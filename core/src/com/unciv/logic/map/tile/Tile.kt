@@ -1001,8 +1001,9 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
 
         unitHeight = allTerrains.flatMap { it.getMatchingUniques(UniqueType.VisibilityElevation) }
             .sumOf { it.params[0].toInt() }
-        tileHeight = if (terrainHasUnique(UniqueType.BlocksLineOfSightAtSameElevation)) unitHeight + 1
-        else unitHeight
+        tileHeight = unitHeight +
+            (if (terrainHasUnique(UniqueType.BlocksLineOfSightAtSameElevation)) 1 else 0) +
+            allTerrains.flatMap { it.getMatchingUniques(UniqueType.BlocksLineOfSightExtraElevation) }.sumOf { it.params[0].toInt() }
     }
 
     fun setBaseTerrain(baseTerrainObject: Terrain){

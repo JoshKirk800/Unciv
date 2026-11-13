@@ -331,6 +331,7 @@
       "Only [improvementFilter] improvements may be built on this tile",
       "Blocks line-of-sight from tiles at same elevation",
       "Has an elevation of [amount] for visibility calculations",
+      "Blocks line-of-sight as if [amount] elevation higher",
       "Always Fertility [amount] for Map Generation",
       "Add Fertility [amount] to Fertility for Map Generation",
       "A Region is formed with at least [amount]% [simpleTerrain] tiles, with priority [amount]",

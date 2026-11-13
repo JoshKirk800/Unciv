@@ -787,6 +787,11 @@ enum class UniqueType(
 
     BlocksLineOfSightAtSameElevation("Blocks line-of-sight from tiles at same elevation", UniqueTarget.Terrain),
     VisibilityElevation("Has an elevation of [amount] for visibility calculations", UniqueTarget.Terrain),
+    BlocksLineOfSightExtraElevation("Blocks line-of-sight as if [amount] elevation higher", UniqueTarget.Terrain,
+        docDescription = "Added to the elevation of this tile when it hides the tiles behind it and when it is looked at, but not to the elevation " +
+            "of a unit standing on it or to what counts for the ring just beyond a unit's sight range " +
+            "(the see-through level of a feature in the original, CvPlot::seeThroughLevel). " +
+            "\"Blocks line-of-sight from tiles at same elevation\" is the same with 1"),
 
     OverrideFertility("Always Fertility [amount] for Map Generation", UniqueTarget.Terrain, flags = UniqueFlag.setOfHiddenToUsers),
     AddFertility("[amount] to Fertility for Map Generation", UniqueTarget.Terrain, flags = UniqueFlag.setOfHiddenToUsers),

@@ -3302,6 +3302,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Terrain
 
+??? example  "Blocks line-of-sight as if [amount] elevation higher"
+	Added to the elevation of this tile when it hides the tiles behind it and when it is looked at, but not to the elevation of a unit standing on it or to what counts for the ring just beyond a unit's sight range (the see-through level of a feature in the original, CvPlot::seeThroughLevel). "Blocks line-of-sight from tiles at same elevation" is the same with 1
+
+	Example: "Blocks line-of-sight as if [3] elevation higher"
+
+	Applicable to: Terrain
+
 ??? example  "Always Fertility [amount] for Map Generation"
 	Example: "Always Fertility [3] for Map Generation"
 
