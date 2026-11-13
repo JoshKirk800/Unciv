@@ -1188,6 +1188,11 @@ class MapUnit : IsPartOfGameInfoSerialization {
         )
     }
 
+    /** CvUnit::GetScrapGold: what disbanding this unit in its own territory gives, with the units it carries */
+    @Readonly
+    fun getScrapGold(): Int = baseUnit.getDisbandGold(civ, health) +
+        currentTile.getUnits().filter { it.isTransported && isTransportTypeOf(it) }.sumOf { it.getScrapGold() }
+
     fun disband() {
         // Safeguard against running on already destroyed instances
         if (isDestroyed) return
@@ -1215,9 +1220,10 @@ class MapUnit : IsPartOfGameInfoSerialization {
                 unit.disband()
         }
 
+        val scrapGold = getScrapGold()
         destroy()
         if (currentTile.getOwner() == civ)
-            civ.addGold(baseUnit.getDisbandGold(civ))
+            civ.addGold(scrapGold)
         if (civ.isDefeated()) civ.destroy()
     }
 

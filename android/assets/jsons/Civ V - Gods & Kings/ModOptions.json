@@ -15,6 +15,8 @@
         "annexedCityFlatUnhappiness": 0,
         // CvUnitCombat::ApplyNuclearExplosionDamage: NUKE_NON_COMBAT_DEATH_THRESHOLD
         "nukeCivilianDeathDamage": 6,
+        // CvUnit::GetScrapGold: DISBAND_UNIT_REFUND_PERCENT
+        "disbandRefundPercent": 25,
         // AssignStartingPlots:NormalizeStartLocation and NormalizeCityState
         "startNormalizerLikeCivV": true,
         // MapGenerator.lua GenerateCoasts: expansion_diceroll_table {4, 4}

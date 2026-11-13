@@ -115,6 +115,9 @@ class ModConstants {
     // The damage (of 100 hit points) from a nuclear blast at which a civilian unit dies. 60: it dies when its health is down to 40 or less.
     // Civ V (CvUnitCombat::ApplyNuclearExplosionDamage, NUKE_NON_COMBAT_DEATH_THRESHOLD): 6, so every civilian in the blast dies
     var nukeCivilianDeathDamage = 60
+    // The gold a disbanded unit gives, in percent of its production cost (times its health left and the game speed, plus what it carries).
+    // 0: 5% of its purchase price, whatever its health. Civ V (CvUnit::GetScrapGold, DISBAND_UNIT_REFUND_PERCENT): 25
+    var disbandRefundPercent = 0
 
     // Constants used to calculate Unit Upgrade gold Cost (can only be modded all-or-nothing)
     // This is a data class for one reason only: The equality implementation enables Gdx Json to omit it when default (otherwise only the individual fields are omitted)
