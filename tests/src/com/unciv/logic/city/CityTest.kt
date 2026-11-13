@@ -73,7 +73,8 @@ class CityTest {
     @Test
     fun `should sell building`() {
         // given
-        val expectedMonumentSellingGoldGain = 4
+        // BNW: CvCityBuildings::GetSellBuildingRefund, a quarter of the production cost (a Monument costs 40)
+        val expectedMonumentSellingGoldGain = 10
         capitalCity.cityConstructions.addBuilding("Monument")
 
         // when

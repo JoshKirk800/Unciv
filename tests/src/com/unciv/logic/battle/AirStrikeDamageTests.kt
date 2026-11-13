@@ -68,7 +68,9 @@ class AirStrikeDamageTests {
         city.health = cityCombatant.getMaxHealth() / 2
         val half = BattleDamage.calculateDamageToAttacker(attacker, cityCombatant, randomnessFactor = 0.5f)
 
-        assertTrue("full $full, half $half", half in (full * 45 / 100)..(full * 55 / 100) + 1)
+        // proportional to the health, but never below MIN_CITY_STRIKE_DAMAGE (CvCity::GetAirStrikeDefenseDamage)
+        val floor = BattleConstants.MIN_CITY_STRIKE_DAMAGE
+        assertTrue("full $full, half $half", half in maxOf(floor, full * 45 / 100)..maxOf(floor, full * 55 / 100 + 1))
     }
 
     @Test

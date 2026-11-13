@@ -38,7 +38,8 @@ class TacticalAttackTests {
     fun setUp() {
         game.makeHexagonalMap(16)
         civ = game.addCiv()
-        enemy = game.addCiv()
+        // supplied, so that the enemy's Swordsmen and Horsemen are not weakened by missing resources (CvUnit::GetStrategicResourceCombatPenalty)
+        enemy = game.addCiv("Provides [100] [Iron]", "Provides [100] [Horses]")
         civ.diplomacyFunctions.makeCivilizationsMeet(enemy)
         civ.getDiplomacyManager(enemy)!!.declareWar()
         for (tile in game.tileMap.values) tile.setExplored(civ, true)
