@@ -3,6 +3,7 @@ package com.unciv.logic.trade
 import com.unciv.Constants
 import com.unciv.logic.automation.civilization.DealAi
 import com.unciv.logic.automation.civilization.LeagueAutomation
+import com.unciv.logic.automation.civilization.VoteCommitmentItem
 import com.unciv.logic.automation.diplomacy.WarGoal
 import com.unciv.logic.city.GreatWorkFunctions
 import com.unciv.logic.civilization.Civilization
@@ -24,6 +25,10 @@ class TradeEvaluation {
             || (tradePartner.hasEverOwnedOriginalCapital && trade.theirOffers.count { it.type == TradeOfferType.City } == tradePartner.cities.size)) {
             return false
         }
+
+        // CvDeal::IsPossibleToTradeItem: a deal cannot hold a second vote commitment of the same civilization
+        if (trade.ourOffers.count { it.type == TradeOfferType.VoteCommitment } > 1
+            || trade.theirOffers.count { it.type == TradeOfferType.VoteCommitment } > 1) return false
         
         val ourWorks = trade.ourOffers.filter { it.type == TradeOfferType.GreatWork }
         val theirWorks = trade.theirOffers.filter { it.type == TradeOfferType.GreatWork }
@@ -104,7 +109,9 @@ class TradeEvaluation {
             TradeOfferType.City -> offerer.cities.any { it.id == tradeOffer.name }
             TradeOfferType.GreatWork -> tradeOffer.amount == 1 &&
                 GreatWorkFunctions.findTradeSlot(offerer, tradeOffer.name) != null
-            TradeOfferType.VoteCommitment -> !offerer.isAtWarWith(tradePartner) && LeagueAutomation.canCommitVote(offerer, tradePartner)
+            TradeOfferType.VoteCommitment -> VoteCommitmentItem.parse(tradeOffer)?.let {
+                LeagueAutomation.isVoteCommitmentPossible(offerer, tradePartner, it.proposalId, it.choice, tradeOffer.amount, it.repeal)
+            } == true
         }
     }
 

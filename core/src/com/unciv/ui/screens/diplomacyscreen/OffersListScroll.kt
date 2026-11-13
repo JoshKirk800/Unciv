@@ -108,7 +108,7 @@ class OffersListScroll(
                 val amountPerClick =
                     when (offer.type) {
                         Gold -> 50
-                        Treaty -> Int.MAX_VALUE
+                        Treaty, VoteCommitment -> Int.MAX_VALUE // all the votes: a deal promises the core votes of the civilization
                         else -> 1
                     }
 

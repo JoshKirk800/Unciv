@@ -50,7 +50,7 @@ data class TradeOffer(val name: String, val type: TradeOfferType, var amount: In
                 city?.run { "{$name} (${population.population})" } ?: "Non-existent city"
             }
             TradeOfferType.VoteCommitment ->
-                VoteCommitmentItem.parse(this)?.let { "Vote [${it.choice}] on proposal [${it.proposalId}]" } ?: name
+                VoteCommitmentItem.parse(this)?.let { VoteCommitmentItem.text(it, UncivGame.Current.gameInfo?.league) } ?: name
             TradeOfferType.GreatWork -> {
                 val slot = UncivGame.Current.gameInfo!!.getCities().asSequence()
                     .flatMap { it.greatWorks.getSlots().asSequence() }
