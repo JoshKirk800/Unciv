@@ -38,6 +38,8 @@
         // CvCity::doCheckProduction, CvCity::popOrder: MAXED_UNIT_GOLD_PERCENT, MAXED_BUILDING_GOLD_PERCENT
         "maxedUnitGoldPercent": 100,
         "maxedBuildingGoldPercent": 100,
+        // CvCity::doTurn: CITY_HIT_POINTS_HEALED_PER_TURN plus capital and building defense
+        "cityHealLikeCivV": true,
         // AssignStartingPlots:NormalizeStartLocation and NormalizeCityState
         "startNormalizerLikeCivV": true,
         // MapGenerator.lua GenerateCoasts: expansion_diceroll_table {4, 4}

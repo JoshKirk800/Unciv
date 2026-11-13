@@ -136,6 +136,17 @@ class CityTurnManager(val city: City) {
     }
 
 
+    /** Hit points a city heals at the end of a turn: 20, and with cityHealLikeCivV also what CvCity::doTurn adds:
+     *  +1 for the capital of a major civilization and the strength of the buildings (100 per point, as the Defense of a Civ V building) / 500 */
+    private fun getHealPerTurn(): Int {
+        var healed = 20
+        if (city.civ.gameInfo.ruleset.modOptions.constants.cityHealLikeCivV) {
+            if (city.isCapital() && city.civ.isMajorCiv) healed++
+            healed += (city.getStrength() * 100).toInt() / 500
+        }
+        return healed
+    }
+
     fun endTurn():Unit = timeThis("CityTurnManager.endTurn") {
         for (unique in city.getTriggeredUniques(UniqueType.TriggerUponTurnEnd, includeCivUniques = false).toList()) {
             UniqueTriggerActivation.triggerUnique(unique, city)
@@ -171,7 +182,7 @@ class CityTurnManager(val city: City) {
         if (city.civ.gameInfo.isReligionEnabled()) city.religion.endTurn()
 
         if (city in city.civ.cities) { // city was not destroyed
-            city.health = (city.health + 20).coerceAtMost(city.getMaxHealth())
+            city.health = (city.health + getHealPerTurn()).coerceAtMost(city.getMaxHealth())
             city.population.unassignExtraPopulation()
         }
         
