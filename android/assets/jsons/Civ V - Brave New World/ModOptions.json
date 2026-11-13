@@ -30,6 +30,9 @@
         "featureOnHillsExtraMovement": 1,
         // CvCityBuildings::GetSellBuildingRefund: BUILDING_SALE_DIVISOR
         "buildingSaleDivisor": 4,
+        // CvPlayer::SetUnitUpgradeCostMod, CvUnit::upgradePrice: UNIT_UPGRADE_COST_DISCOUNT_MAX
+        "unitUpgradeCostModsAreSummed": true,
+        "unitUpgradeCostDiscountMax": -75,
         // AssignStartingPlots:NormalizeStartLocation and NormalizeCityState
         "startNormalizerLikeCivV": true,
         // MapGenerator.lua GenerateCoasts: expansion_diceroll_table {4, 4}

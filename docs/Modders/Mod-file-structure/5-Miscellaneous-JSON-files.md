@@ -276,6 +276,8 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | disbandRefundPercent                     | Int     | 0                            | [^Disband] |
 | featureOnHillsExtraMovement              | Int     | 0                            | [^HillFeature] |
 | buildingSaleDivisor                      | Int     | 10                           | [^SaleDivisor] |
+| unitUpgradeCostModsAreSummed             | Boolean | false                        | [^UpgradeSum] |
+| unitUpgradeCostDiscountMax               | Int     | -75                          | [^UpgradeSum] |
 | startNormalizerLikeCivV                  | Boolean | false                        | [^G]  |
 | coastExpansionDice                       | List<Int> | empty                      | [^T]  |
 | seaDepositsOfLandResource                | String  | empty                        | [^SeaOil] |
@@ -393,6 +395,7 @@ Legend:
     true: the formula of Civ V, 15 + (10 \* tilesGainedByCulture) ^ 1.1, times 1.5 for City-States, the percentages added up (at least -85), times the game speed, rounded down to a multiple of 5.
     The tiles gained by culture do not count tiles that were bought. The Civ V rulesets set true.
 - [^SaleDivisor]: The gold for selling a building. 10: the raw `cost` / 10. Any other value: as in Civ V (`CvCityBuildings::GetSellBuildingRefund`) the production cost of the building for the city's civilization (game speed, start era, unique modifiers) divided by this value; Civ V uses 4.
+- [^UpgradeSum]: How the percentages of the `[relativeAmount]% Gold cost of upgrading` uniques of a civilization combine. false: they are multiplied. true: as in Civ V (`CvPlayer::SetUnitUpgradeCostMod`) they are summed (two times -33% give a factor 0.34), and the sum is not below `unitUpgradeCostDiscountMax` (-75, GlobalDefines `UNIT_UPGRADE_COST_DISCOUNT_MAX`); the limit is only used when the percentages are summed.
 - [^G]: Whether the start of a civilization or City-State is improved with the rules of Civ V (how many bonus resources, when a hill or a horse/iron is added, stone on grass starts).
     The rules name the terrains and resources of the Civ V rulesets (Grassland, Plains, Hill, Wheat, Cattle, ...), so it only fits them. false: the generic rules, which use the yields of the tiles.
 - [^T]: How the map generator widens the coast. Empty: `maxCoastExtension` passes, each ocean tile next to a coast tile becomes coast with 1 in 2. Otherwise ocean next to land becomes coast, then for each entry one pass in which an ocean tile next to a coast tile becomes coast with 1 in that number (Civ V: `[4, 4]`, so coast reaches 3 tiles from land at most).

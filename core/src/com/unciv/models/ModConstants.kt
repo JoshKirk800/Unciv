@@ -136,6 +136,12 @@ class ModConstants {
     )
     var unitUpgradeCost = UnitUpgradeCost()
 
+    // How the "[relativeAmount]% Gold cost of upgrading" uniques of a civilization combine. false: they are multiplied (-33% twice gives x0.4489).
+    // true: as in Civ V (CvPlayer::SetUnitUpgradeCostMod, CvUnit::upgradePrice) the percentages are summed (-33% twice gives x0.34) and the sum is at least [unitUpgradeCostDiscountMax]
+    var unitUpgradeCostModsAreSummed = false
+    // The lowest sum of the percentages of the upgrade cost uniques, only used with unitUpgradeCostModsAreSummed (GlobalDefines UNIT_UPGRADE_COST_DISCOUNT_MAX)
+    var unitUpgradeCostDiscountMax = -75
+
     // NaturalWonderGenerator uses these to determine the number of Natural Wonders to spawn for a given map size.
     // With these values, radius * mul + add gives a 1-2-3-4-5 progression for Unciv predefined map sizes and a 2-3-4-5-6-7 progression for the original Civ5 map sizes.
     // 0.124 = (Civ5.Huge.getHexagonalRadiusForArea(w*h) - Civ5.Duel.getHexagonalRadiusForArea(w*h)) / 5 (if you do not round in the radius function)
