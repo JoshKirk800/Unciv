@@ -112,6 +112,9 @@ class ModConstants {
     // The Civ V rulesets: citizens x UNHAPPINESS_PER_OCCUPIED_POPULATION (1.34, CvPlayer::GetUnhappinessFromOccupiedCities) and no extra term
     var annexedCityCitizenUnhappinessFactor = 2f
     var annexedCityFlatUnhappiness = 2f
+    // The damage (of 100 hit points) from a nuclear blast at which a civilian unit dies. 60: it dies when its health is down to 40 or less.
+    // Civ V (CvUnitCombat::ApplyNuclearExplosionDamage, NUKE_NON_COMBAT_DEATH_THRESHOLD): 6, so every civilian in the blast dies
+    var nukeCivilianDeathDamage = 60
 
     // Constants used to calculate Unit Upgrade gold Cost (can only be modded all-or-nothing)
     // This is a data class for one reason only: The equality implementation enables Gdx Json to omit it when default (otherwise only the individual fields are omitted)
