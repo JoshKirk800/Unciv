@@ -19,6 +19,8 @@
         "cultureCostLikeCivV": true,
         // CvTreasury::DoGold
         "treasuryNeverNegative": true,
+        // CvPlayer::AddIncomingUnit: MINOR_UNIT_GIFT_TRAVEL_TURNS
+        "unitGiftTravelTurns": 3,
         // CvPlayer::GetUnhappinessFromOccupiedCities: UNHAPPINESS_PER_OCCUPIED_POPULATION, no flat term
         "annexedCityCitizenUnhappinessFactor": 1.34,
         "annexedCityFlatUnhappiness": 0,

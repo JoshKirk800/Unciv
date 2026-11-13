@@ -70,6 +70,7 @@ class TurnManager(val civInfo: Civilization) {
         if (civInfo.isMajorCiv && civInfo.isHuman()) civInfo.gameInfo.league?.notifyStartTurn(civInfo)
         startTurnFlags()
         updateRevolts()
+        civInfo.cityStateFunctions.deliverIncomingUnitGifts()
         updateCityRevolts()
 
         civInfo.forEachTriggeredUnique(UniqueType.TriggerUponTurnStart, civInfo.state, ignoreCities = true) { unique ->

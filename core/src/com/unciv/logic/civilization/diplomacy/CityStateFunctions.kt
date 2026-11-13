@@ -7,6 +7,7 @@ import com.unciv.logic.automation.diplomacy.DiplomacyEvents
 import com.unciv.logic.battle.CityCombatant
 import com.unciv.logic.city.managers.SpyFleeReason
 import com.unciv.logic.civilization.*
+import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.models.Spy
 import com.unciv.models.SpyAction
 import com.unciv.models.ruleset.Ruleset
@@ -209,6 +210,61 @@ class CityStateFunctions(val civInfo: Civilization) {
             militaryUnit.name
         )
     }
+
+    //region Units gifted from afar (CvUnit::CanDistanceGift, CvPlayer::DoDistanceGift, AddIncomingUnit, DoIncomingUnits)
+
+    /** CvUnit::CanDistanceGift: whether [unit] can be sent to this city-state from anywhere on the map (needs `unitGiftTravelTurns`) */
+    fun canReceiveUnitGiftFromAfar(unit: MapUnit): Boolean {
+        val giver = unit.civ
+        if (civInfo.gameInfo.ruleset.modOptions.constants.unitGiftTravelTurns <= 0) return false
+        if (!civInfo.isCityState || !civInfo.isAlive() || !giver.isMajorCiv) return false
+        if (civInfo.isAtWarWith(giver) || unit.isTransported) return false
+        // No settlers and no scouts; combat units only, except a great person that the giver's uniques make worth an influence gift
+        if (unit.hasUnique(UniqueType.FoundCity) || unit.hasUnique(UniqueType.FoundPuppetCity)) return false
+        if ((unit.baseUnit.replaces ?: unit.baseUnit.name) == "Scout") return false
+        if (!unit.isMilitary() && unit.getMatchingUniques(UniqueType.GainInfluenceWithUnitGiftToCityState, checkCivInfoUniques = true)
+                .none { unit.matchesFilter(it.params[1]) }) return false
+        // One unit at a time on its way from each civilization
+        return giver.civName !in civInfo.incomingUnitGifts
+    }
+
+    /**
+     *  CvPlayer::AddIncomingUnit: [unit] (and what it carries, which are put in first) leaves its owner now; only the first of them is kept,
+     *  as a unit of the same type that arrives after `unitGiftTravelTurns` of this city-state's turns (see [deliverIncomingUnitGifts]).
+     */
+    fun receiveUnitGiftFromAfar(unit: MapUnit) {
+        val giverName = unit.civ.civName
+        val travelTurns = civInfo.gameInfo.ruleset.modOptions.constants.unitGiftTravelTurns
+        val cargo = unit.currentTile.getUnits().filter { it.isTransported && unit.isTransportTypeOf(it) }.toList()
+        for (gifted in cargo + unit) {
+            if (giverName !in civInfo.incomingUnitGifts)
+                civInfo.incomingUnitGifts[giverName] = IncomingUnitGift(gifted.baseUnit.name, travelTurns)
+            gifted.destroy(destroyTransportedUnit = false)
+        }
+    }
+
+    /**
+     *  CvPlayer::DoIncomingUnits, at the start of this city-state's turn: the countdowns go down, and a unit whose time is up appears next to
+     *  the capital (a great person is only worth its influence, as CvMinorCivAI::DoUnitGiftFromMajor); the giver gets the influence of the gift then.
+     *  Nothing comes of it if the city-state has lost its capital.
+     */
+    fun deliverIncomingUnitGifts() {
+        for ((giverName, gift) in civInfo.incomingUnitGifts.entries.toList()) {
+            if (--gift.turnsLeft > 0) continue
+            civInfo.incomingUnitGifts.remove(giverName)
+            val baseUnit = civInfo.gameInfo.ruleset.units[gift.unitName] ?: continue
+            val capital = civInfo.getCapital() ?: continue
+            if (!baseUnit.isGreatPerson) civInfo.units.placeUnitNearTile(capital.location.toHexCoord(), baseUnit)
+            val giver = civInfo.gameInfo.civilizations.firstOrNull { it.civName == giverName }
+            if (giver == null || !giver.isAlive()) continue
+            // The same worth as a gift inside the borders: 5 influence, or what the first matching unique says
+            val influence = giver.getMatchingUniques(UniqueType.GainInfluenceWithUnitGiftToCityState)
+                .firstOrNull { baseUnit.matchesFilter(it.params[1]) }?.params?.get(0)?.toFloat() ?: 5f
+            civInfo.getDiplomacyManager(giver)?.addInfluence(influence)
+        }
+    }
+
+    //endregion
 
     @Readonly
     fun influenceGainedByGift(donorCiv: Civilization, giftAmount: Int): Int {

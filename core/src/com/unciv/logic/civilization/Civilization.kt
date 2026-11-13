@@ -374,6 +374,7 @@ class Civilization : IsPartOfGameInfoSerialization {
         toReturn.naturalWonders.addAll(naturalWonders)
         toReturn.cityStatePersonality = cityStatePersonality
         toReturn.cityStateResource = cityStateResource
+        toReturn.incomingUnitGifts.putAll(incomingUnitGifts.mapValues { it.value.clone() })
         toReturn.cityStateUniqueUnit = cityStateUniqueUnit
         toReturn.flagsCountdown.putAll(flagsCountdown)
         temporaryUniques.mapTo(toReturn.temporaryUniques) { it.clone() }
@@ -480,6 +481,8 @@ class Civilization : IsPartOfGameInfoSerialization {
     val cityStateType: CityStateType by lazy { gameInfo.ruleset.cityStateTypes[nation.cityStateType!!]!! }
     var cityStatePersonality: CityStatePersonality = CityStatePersonality.Neutral
     var cityStateResource: String? = null
+    /** CvPlayer::m_aiIncomingUnitTypes, m_aiIncomingUnitCountdowns: units gifted to this city-state from afar and still on their way, by the name of the giver */
+    var incomingUnitGifts = HashMap<String, IncomingUnitGift>()
     var cityStateUniqueUnit: String? = null // Unique unit for militaristic city state. Might still be null if there are no appropriate units
     
     @Readonly fun hasMetCivTerritory(otherCiv: Civilization): Boolean =
@@ -1418,6 +1421,11 @@ class CivilizationInfoPreview() {
         turnsPlayedAsHuman = civilization.turnsPlayedAsHuman
         isAlive = civilization.isAlive()
     }
+}
+
+/** A unit gifted to a city-state from afar (see [CityStateFunctions.receiveUnitGiftFromAfar]): [unitName] arrives in [turnsLeft] turns of the city-state */
+class IncomingUnitGift(var unitName: String = "", var turnsLeft: Int = 0) : IsPartOfGameInfoSerialization {
+    fun clone() = IncomingUnitGift(unitName, turnsLeft)
 }
 
 enum class CivFlags {

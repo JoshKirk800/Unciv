@@ -108,6 +108,11 @@ class ModConstants {
     // true: as in Civ V (CvTreasury::DoGold) it is set to 0 and the rest of the deficit is lost; a civilization never has negative gold
     var treasuryNeverNegative = false
 
+    // Units that are gifted to a city-state from anywhere on the map ("Gift unit to [city-state]"), not only inside its borders.
+    // 0: not possible. Civ V (CvPlayer::AddIncomingUnit, MINOR_UNIT_GIFT_TRAVEL_TURNS): 3. The unit leaves its owner at once, a new unit of
+    // the same type appears next to the city-state's capital after that many of the city-state's turns, and the influence comes then
+    var unitGiftTravelTurns = 0
+
     // The happiness an annexed city of a conquered civilization costs. Default: its citizens count double, and the city costs 2 more ("Occupied City").
     // The Civ V rulesets: citizens x UNHAPPINESS_PER_OCCUPIED_POPULATION (1.34, CvPlayer::GetUnhappinessFromOccupiedCities) and no extra term
     var annexedCityCitizenUnhappinessFactor = 2f
