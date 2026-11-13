@@ -108,6 +108,13 @@ class ModConstants {
     // true: as in Civ V (CvTreasury::DoGold) it is set to 0 and the rest of the deficit is lost; a civilization never has negative gold
     var treasuryNeverNegative = false
 
+    // Where the small deposits of strategic resources ("Minor deposits generated with weight") may be put, and how many.
+    // minorDepositsOnFlatLandOnly false: on any land tile that is not blocked. true: as in AssignStartingPlots:GenerateGlobalResourcePlotLists
+    // and PlaceSmallQuantitiesOfStrategics, only on land_list: flat land (no hills, mountains, marsh, flood plains, oasis or wonders) that has no feature
+    // but forest or jungle, no resource and is no start. minorDepositFrequency: one deposit for this many tiles of that list (Civ V: 23)
+    var minorDepositsOnFlatLandOnly = false
+    var minorDepositFrequency = 30
+
     // The happiness an annexed city of a conquered civilization costs. Default: its citizens count double, and the city costs 2 more ("Occupied City").
     // The Civ V rulesets: citizens x UNHAPPINESS_PER_OCCUPIED_POPULATION (1.34, CvPlayer::GetUnhappinessFromOccupiedCities) and no extra term
     var annexedCityCitizenUnhappinessFactor = 2f

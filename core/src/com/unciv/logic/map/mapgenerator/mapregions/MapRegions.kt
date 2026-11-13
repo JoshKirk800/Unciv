@@ -81,11 +81,6 @@ class MapRegions (val ruleset: Ruleset) {
                 7 to listOf(0.20f, 0.20f, 0.15f, 0.15f, 0.10f, 0.10f, 0.10f),
                 8 to listOf(0.20f, 0.15f, 0.15f, 0.10f, 0.10f, 0.10f, 0.10f, 0.10f)
         )
-
-        // This number is 23 in G&K, but there's a bug where hills are exempt so this number brings
-        // the result closer to the density and distribution that was probably intended.
-        const val baseMinorDepositFrequency = 30
-
     }
 
     /** The regions [generateRegions] made, in the order they were cut */
