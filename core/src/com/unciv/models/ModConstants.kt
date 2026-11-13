@@ -108,6 +108,12 @@ class ModConstants {
     // true: as in Civ V (CvTreasury::DoGold) it is set to 0 and the rest of the deficit is lost; a civilization never has negative gold
     var treasuryNeverNegative = false
 
+    // What taking tiles of a city-state ([UniqueType.OneTimeTakeOverTilesInRadius], the culture bomb) does to its influence with the taker.
+    // The change is applied for each tile taken, or if cityStateInfluenceOncePerTilesTaken once for each city-state tiles were taken from
+    // (CvUnit::PerformCultureBomb: CULTURE_BOMB_MINOR_FRIENDSHIP_CHANGE -50)
+    var cityStateInfluenceChangeForTilesTaken = -15f
+    var cityStateInfluenceOncePerTilesTaken = false
+
     // Constants used to calculate Unit Upgrade gold Cost (can only be modded all-or-nothing)
     // This is a data class for one reason only: The equality implementation enables Gdx Json to omit it when default (otherwise only the individual fields are omitted)
     data class UnitUpgradeCost(

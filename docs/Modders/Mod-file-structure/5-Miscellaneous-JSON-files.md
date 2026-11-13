@@ -270,6 +270,8 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | cityAirUnitCapacity                      | Int    | 6                             | [^W]  |
 | cultureCostLikeCivV                      | Boolean | false                        | [^V]  |
 | treasuryNeverNegative                    | Boolean | false                        | [^Treasury] |
+| cityStateInfluenceChangeForTilesTaken    | Float   | -15                          | [^TilesTaken] |
+| cityStateInfluenceOncePerTilesTaken      | Boolean | false                        | [^TilesTaken] |
 | startNormalizerLikeCivV                  | Boolean | false                        | [^G]  |
 | coastExpansionDice                       | List<Int> | empty                      | [^T]  |
 | seaDepositsOfLandResource                | String  | empty                        | [^SeaOil] |
@@ -378,6 +380,7 @@ Legend:
     progress is the turn divided by the number of turns of the game speed, paidUnits is the number of units minus unitMaintenanceFreeUnits and the units made free by uniques.
     The Civ V rulesets use 0, 8 and 7.
 - [^V]: The culture a city needs for its next tile. false: 6 \* (tilesClaimed + 1.4813) ^ 1.3, the percentages of "Culture cost of natural border growth" multiplied.
+- [^TilesTaken]: The change of a city-state's influence with a civilization that takes tiles from it with "Gain control over [tileFilter] tiles in a [nonNegativeAmount]-tile radius" (the culture bomb of a Great Artist or a Citadel). false: `cityStateInfluenceChangeForTilesTaken` for each tile taken. true: as in Civ V (`CvUnit::PerformCultureBomb`, -50) once for each city-state tiles were taken from.
 - [^Treasury]: What happens to the treasury when the turn's income would take it below zero. false: the civilization goes into debt, which costs science. true: as in Civ V (`CvTreasury::DoGold`) the treasury is set to 0 and the rest of the deficit is lost, so the gold of a civilization is never negative. Units are disbanded under a deficit in both cases.
     true: the formula of Civ V, 15 + (10 \* tilesGainedByCulture) ^ 1.1, times 1.5 for City-States, the percentages added up (at least -85), times the game speed, rounded down to a multiple of 5.
     The tiles gained by culture do not count tiles that were bought. The Civ V rulesets set true.
