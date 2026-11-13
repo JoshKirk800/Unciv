@@ -623,7 +623,7 @@
     "OPINION_THRESHOLD_FRIEND": -30,
     "OPINION_THRESHOLD_UNFORGIVABLE": 50,
     "OPINION_WEIGHT_ASKED_NO_SETTLE": 20,
-    "OPINION_WEIGHT_ASSIST_MAX": -30,
+    "OPINION_WEIGHT_ASSIST_MAX": 30,
     "OPINION_WEIGHT_ATTACKED_MANY_PROTECTED_MINORS": 35,
     "OPINION_WEIGHT_ATTACKED_PROTECTED_MINOR_RECENTLY": 20,
     "OPINION_WEIGHT_ATTACKED_PROTECTED_MINOR_WHILE_AGO": 15,
@@ -7237,23 +7237,23 @@
   "gameSpeedDiplomacy": [
     {
       "name": "Marathon",
-      "relationshipDuration": 0,
-      "opinionDurationPercent": 0
+      "relationshipDuration": 150,
+      "opinionDurationPercent": 300
     },
     {
       "name": "Epic",
-      "relationshipDuration": 0,
-      "opinionDurationPercent": 0
+      "relationshipDuration": 75,
+      "opinionDurationPercent": 150
     },
     {
       "name": "Standard",
-      "relationshipDuration": 0,
-      "opinionDurationPercent": 0
+      "relationshipDuration": 50,
+      "opinionDurationPercent": 100
     },
     {
       "name": "Quick",
-      "relationshipDuration": 0,
-      "opinionDurationPercent": 0
+      "relationshipDuration": 50,
+      "opinionDurationPercent": 67
     }
   ],
   "worldSizes": [
