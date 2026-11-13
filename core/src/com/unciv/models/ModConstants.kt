@@ -108,6 +108,10 @@ class ModConstants {
     // true: as in Civ V (CvTreasury::DoGold) it is set to 0 and the rest of the deficit is lost; a civilization never has negative gold
     var treasuryNeverNegative = false
 
+    // Where a city-state may be placed in its region. false: not on land that is undesirable for a start (desert outside desert regions, snow, mountains),
+    // not on tiles at the edge of the map. true: as AssignStartingPlots:CanPlaceCityStateAt: on any land tile that is no mountain and no snow
+    var cityStateSitesLikeCivV = false
+
     // The happiness an annexed city of a conquered civilization costs. Default: its citizens count double, and the city costs 2 more ("Occupied City").
     // The Civ V rulesets: citizens x UNHAPPINESS_PER_OCCUPIED_POPULATION (1.34, CvPlayer::GetUnhappinessFromOccupiedCities) and no extra term
     var annexedCityCitizenUnhappinessFactor = 2f

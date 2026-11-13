@@ -1,5 +1,6 @@
 package com.unciv.logic.map.mapgenerator.mapregions
 
+import com.unciv.Constants
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.TileMap
 import com.unciv.logic.map.tile.Tile
@@ -78,9 +79,10 @@ object MinorCivPlacer {
         }.keys
         var numInhabitedTiles = 0
         var numUninhabitedTiles = 0
+        val sitesLikeCivV = ruleset.modOptions.constants.cityStateSitesLikeCivV
         // Go through the entire map to build the data
         for (tile in tileMap.values) {
-            if (!canPlaceMinorCiv(tile, tileData)) continue
+            if (!canPlaceMinorCiv(tile, tileData, sitesLikeCivV)) continue
             val continent = tile.getContinent()
             if (continent in uninhabitedContinents) {
                 if (tile.isAdjacentToCoast())
@@ -93,7 +95,8 @@ object MinorCivPlacer {
         }
         // Determine how many minor civs to put on uninhabited continents.
         val maxByUninhabited =
-            (3 * civs.size * numUninhabitedTiles) / (numInhabitedTiles + numUninhabitedTiles)
+            if (numInhabitedTiles + numUninhabitedTiles == 0) 0
+            else (3 * civs.size * numUninhabitedTiles) / (numInhabitedTiles + numUninhabitedTiles)
         val maxByRatio = (civs.size + 1) / 2
         // AssignCityStatesToRegionsOrToUninhabited only hands out what the regions did not take already
         val targetForUninhabited = if (ruleset.modOptions.constants.startAssignmentLikeCivV)
@@ -217,6 +220,7 @@ object MinorCivPlacer {
     ): Boolean {
         val biases = civ.nation.getStartBias(ruleset, civ.getGameContextForStartBias())
         val rng = GameContext(gameInfo = tileMap.gameInfo).stateBasedRandom("MinorCivPlacer.placeMinorCivInRegionLikeCivV")
+        val sitesLikeCivV = ruleset.modOptions.constants.cityStateSitesLikeCivV
 
         for ((force, ignoreCollisions) in listOf(false to false, true to false, true to true)) {
             var x = region.rect.x.toInt()
@@ -240,7 +244,7 @@ object MinorCivPlacer {
                         if (!inBand) continue
                         val coords = HexMath.getTileCoordsFromColumnRow(column, row)
                         val tile = tileMap.getIfTileExistsOrNull(coords.x.toInt(), coords.y.toInt()) ?: continue
-                        if (!canPlaceMinorCivInRegion(tile, region, tileData, force, ignoreCollisions)) continue
+                        if (!canPlaceMinorCivInRegion(tile, region, tileData, force, ignoreCollisions, sitesLikeCivV)) continue
                         if (tile.isAdjacentToCoast()) coastal.add(tile) else inland.add(tile)
                     }
                 }
@@ -262,11 +266,14 @@ object MinorCivPlacer {
         return false
     }
 
-    /** AssignStartingPlots:CanPlaceCityStateAt */
+    /** AssignStartingPlots:CanPlaceCityStateAt: land of the region's landmass that [canPlaceMinorCiv] allows, free of the impact of another start
+     *  (or, when [force]d, free of a start itself). */
     @Readonly
-    private fun canPlaceMinorCivInRegion(tile: Tile, region: Region, tileData: TileDataMap, force: Boolean, ignoreCollisions: Boolean): Boolean {
+    private fun canPlaceMinorCivInRegion(
+        tile: Tile, region: Region, tileData: TileDataMap, force: Boolean, ignoreCollisions: Boolean, sitesLikeCivV: Boolean
+    ): Boolean {
         if (region.continentID != -1 && tile.getContinent() != region.continentID) return false
-        if (!canPlaceMinorCiv(tile, tileData)) return false
+        if (!canPlaceMinorCiv(tile, tileData, sitesLikeCivV)) return false
         val impact = tileData[tile]!!.impacts[MapRegions.ImpactType.MinorCiv] ?: return true
         if (!force) return false
         return ignoreCollisions || impact != 99 // 99 is a start itself
@@ -362,11 +369,15 @@ object MinorCivPlacer {
     fun prefersCoastalStart(civ: Civilization, ruleset: Ruleset): Boolean =
         "Coast" in civ.nation.getStartBias(ruleset, civ.getGameContextForStartBias())
 
+    /** The land a city-state may be put on. [sitesLikeCivV]: land that is no mountain and no snow (AssignStartingPlots:CanPlaceCityStateAt).
+     *  Else land that is not undesirable for a start (no snow hills, no desert outside desert regions) and not at the edge of the map. */
     @Readonly
-    private fun canPlaceMinorCiv(tile: Tile, tileData: TileDataMap) = !tile.isWater && !tile.isImpassible() &&
-        !tileData[tile]!!.isJunk &&
-        tile.getBaseTerrain().getMatchingUniques(UniqueType.HasQuality).none { it.params[0] == "Undesirable" } && // So we don't get snow hills
-        tile.neighbors.count() == 6 // Avoid map edges
+    private fun canPlaceMinorCiv(tile: Tile, tileData: TileDataMap, sitesLikeCivV: Boolean) =
+        if (sitesLikeCivV) !tile.isWater && !tile.isImpassible() && tile.baseTerrain != Constants.snow
+        else !tile.isWater && !tile.isImpassible() &&
+            !tileData[tile]!!.isJunk &&
+            tile.getBaseTerrain().getMatchingUniques(UniqueType.HasQuality).none { it.params[0] == "Undesirable" } && // So we don't get snow hills
+            tile.neighbors.count() == 6 // Avoid map edges
 
     private fun placeMinorCiv(civ: Civilization, tileMap: TileMap, tile: Tile, tileData: TileDataMap, ruleset: Ruleset) {
         tileMap.addStartingLocation(civ.civID, tile)
