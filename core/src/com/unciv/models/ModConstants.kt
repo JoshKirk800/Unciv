@@ -108,6 +108,11 @@ class ModConstants {
     // true: as in Civ V (CvTreasury::DoGold) it is set to 0 and the rest of the deficit is lost; a civilization never has negative gold
     var treasuryNeverNegative = false
 
+    // The chance of an air unit (fighter, missile...) to intercept an air attack. false: the "chance to intercept air attacks" of its uniques,
+    // whatever its health. true: as in Civ V (CvUnit::currInterceptionProbability) that chance times its health / 100, rounded down,
+    // for the choice of the best interceptor too; an interceptor with no chance left is not picked
+    var airInterceptionChanceScalesWithHealth = false
+
     // The happiness an annexed city of a conquered civilization costs. Default: its citizens count double, and the city costs 2 more ("Occupied City").
     // The Civ V rulesets: citizens x UNHAPPINESS_PER_OCCUPIED_POPULATION (1.34, CvPlayer::GetUnhappinessFromOccupiedCities) and no extra term
     var annexedCityCitizenUnhappinessFactor = 2f
