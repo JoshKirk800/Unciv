@@ -10,6 +10,7 @@ import com.unciv.models.ruleset.unique.UniqueTriggerActivation
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.ui.components.extensions.toPercent
 import yairm210.purity.annotations.Readonly
+import kotlin.math.roundToInt
 
 class GoldenAgeManager : IsPartOfGameInfoSerialization {
     @Transient
@@ -35,10 +36,12 @@ class GoldenAgeManager : IsPartOfGameInfoSerialization {
 
     @Readonly
     fun happinessRequiredForNextGoldenAge(): Int {
-        var cost = (500 + numberOfGoldenAges * 250).toFloat()
-        cost *= civInfo.cities.size.toPercent()  //https://forums.civfanatics.com/resources/complete-guide-to-happiness-vanilla.25584/
-        cost *= civInfo.gameInfo.speed.modifier
-        return cost.toInt()
+        // CvPlayer::GetGoldenAgeProgressThreshold, integer arithmetic as there: 500 + 250 per golden age so far, 1% of that for every city
+        // after the first, x the game speed's GreatPeoplePercent, rounded down to a multiple of 5 (GOLDEN_AGE_VISIBLE_THRESHOLD_DIVISOR)
+        var cost = 500 + numberOfGoldenAges * 250
+        cost += (cost * (civInfo.cities.size - 1) * 0.01).toInt()
+        cost = cost * (civInfo.gameInfo.speed.modifier * 100).roundToInt() / 100
+        return cost / 5 * 5
     }
 
     @Readonly
