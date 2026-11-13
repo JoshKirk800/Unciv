@@ -8,6 +8,7 @@ import com.unciv.logic.civilization.*
 import com.unciv.logic.civilization.diplomacy.DiplomacyFlags
 import com.unciv.logic.civilization.managers.EspionageManager
 import com.unciv.logic.civilization.managers.InfluenceLevel
+import com.unciv.logic.civilization.managers.IntrigueFunctions
 import com.unciv.logic.map.HexCoord
 import com.unciv.models.ruleset.unique.Unique
 import com.unciv.models.ruleset.unique.UniqueType
@@ -110,7 +111,7 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
                     setAction(SpyAction.EstablishNetwork, civInfo.culture.getSurveillanceTurns(getCity().civ))
             }
             SpyAction.MakingIntroductions -> setAction(SpyAction.Schmoozing)
-            SpyAction.Schmoozing -> return
+            SpyAction.Schmoozing -> IntrigueFunctions.uncover(this) // CvPlayerEspionage::ProcessSpy, SPY_STATE_SCHMOOZE
             SpyAction.EstablishNetwork -> {
                 val city = getCity() // This should never throw an exception, as going to the hideout sets your action to None.
                 if (city.civ.isCityState)
@@ -121,10 +122,12 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
                     // CvPlayerEspionage::ProcessSpy: the potential seen when surveillance is established is remembered for the AI
                     espionageManager.lastBasePotential[city.id] = espionageManager.getBaseStealRateTimes100(city)
                     startStealingTech()
+                    IntrigueFunctions.uncover(this) // surveillance is established: ProcessSpy calls UncoverIntrigue
                 }
             }
             SpyAction.Surveillance -> {
                 if (!getCity().civ.isMajorCiv) return
+                IntrigueFunctions.uncover(this) // ProcessSpy, SPY_STATE_SURVEILLANCE with its goal reached
                 if (canStealTech() != CanStealTech.Yes) return // nope
                 setAction(SpyAction.StealingTech) // There are new techs to steal!
             }
@@ -283,7 +286,10 @@ class Spy private constructor() : IsPartOfGameInfoSerialization {
             killSpy()
             // if they kill your spy they should know that you are spying on them and able to demande to not be speid on.
             demandToNotBeSpiedOn(otherCiv)
-        } else startStealingTech()  // reset progress
+        } else {
+            startStealingTech()  // reset progress
+            IntrigueFunctions.uncover(this) // ProcessSpy calls UncoverIntrigue after a theft unless the spy died
+        }
 
         if (spyResult >= 100) {
             demandToNotBeSpiedOn(otherCiv)

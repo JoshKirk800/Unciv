@@ -8,6 +8,7 @@ import com.unciv.logic.automation.strategy.OperationAbortReason
 import com.unciv.logic.automation.diplomacy.AggressivePosture
 import com.unciv.logic.automation.diplomacy.CoopWarAi
 import com.unciv.logic.automation.diplomacy.CoopWarState
+import com.unciv.logic.automation.diplomacy.IntrigueAi
 import com.unciv.logic.automation.diplomacy.DiploStatement
 import com.unciv.logic.automation.diplomacy.DiplomacyTurn
 import com.unciv.logic.automation.diplomacy.MajorCivMemory
@@ -77,12 +78,13 @@ object DiplomacyAutomation {
         for (other in players) contactPlayer(civ, other, rules)
     }
 
-    /** DoContactPlayer after the offers: DoRequest */
+    /** DoContactPlayer after the offers: DoShareIntrigueStatement, DoRequest */
     fun contactMajorCivsAfterOffers(civ: Civilization) {
         val rules = civ.gameInfo.ruleset.ai
         for (other in DiplomacyTurn.validPlayers(civ)) {
             if (!other.isMajorCiv || civ.isAtWarWith(other) || !canContact(civ, other)) continue
             if (civ.ai.diplomacy.hasMadeStatementThisTurn(other)) continue
+            if (IntrigueAi.doShareIntrigueStatement(civ, other)) continue
             doRequest(civ, other, rules)
         }
     }

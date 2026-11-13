@@ -17,7 +17,7 @@ import com.unciv.models.ruleset.ai.MajorCivApproach
  *
  *  The terms are written each turn into the [DiplomacyManager.diplomaticModifiers] of the pair, sign flipped (Unciv shows positive = good), so the
  *  diplomacy screen lists them and [DiplomacyManager.opinionOfOtherCiv] equals minus the weight. Terms the original computes but that Unciv has no game
- *  action for are left out: forgave for spying, intrigue shared, gave assistance / paid tribute (always 0 in the original), the city-state attack and
+ *  action for are left out: forgave for spying, gave assistance / paid tribute (always 0 in the original), the city-state attack and
  *  bully promises (no such request in Unciv), the scenario modifiers.
  */
 object OpinionAi {
@@ -87,6 +87,8 @@ object OpinionAi {
             if (write.hasModifier(DiplomaticModifiers.ReceivedEmbassy)) write.setModifier(DiplomaticModifiers.ReceivedEmbassy, 0f)
         }
         if (hasEmbassyWith(civ, other)) total += rules.define(AiDefine.OPINION_WEIGHT_EMBASSY)
+
+        term(DiplomaticModifiers.SharedIntrigue, memory.numTimesIntrigueShared * rules.define(AiDefine.OPINION_WEIGHT_INTRIGUE_SHARED_BY))
 
         // Asked us to do things we don't like
         term(DiplomaticModifiers.AskedUsNotToSettle, if (memory.noSettleRequestEverAsked) rules.define(AiDefine.OPINION_WEIGHT_ASKED_NO_SETTLE) else 0)
