@@ -269,7 +269,7 @@ class CivInfoTransientCache(val civInfo: Civilization) {
 
             if (!statsGained.isEmpty() && naturalWonder != null) {
                 civInfo.addStats(statsGained)
-                civInfo.addNotification("We have received [${statsGained}] for discovering [${naturalWonder}]",
+                civInfo.addNotification("We have received [${statsGained.toStringForNotifications()}] for discovering [${naturalWonder}]",
                     Notification.NotificationCategory.General, statsGained.toString()
                     )
             }
@@ -407,7 +407,7 @@ class CivInfoTransientCache(val civInfo: Civilization) {
         val newResourceUniqueMap = UniqueMap()
         for (resource in summarizedResourceSupply)
             if (resource.amount > 0)
-                newResourceUniqueMap.addUniques(resource.resource.uniqueObjects)
+                newResourceUniqueMap.addUniques(resource.resource.uniqueObjects.filterNot { it.isLocalEffect })
         
         civInfo.detailedCivResources = newDetailedCivResources
         civInfo.summarizedCivResourceSupply = summarizedResourceSupply

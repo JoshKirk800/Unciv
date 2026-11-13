@@ -434,6 +434,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: UnitTriggerable
 
+??? example  "[unitTriggerTarget] takes over the City-State owning the tile it's standing on"
+	Only allows taking over City-States not at war with the unit's root nation. Does not require a friendship or an alliance with the target City-State.
+
+	Example: "[This Unit] takes over the City-State owning the tile it's standing on"
+
+	Applicable to: UnitTriggerable
+
 ??? example  "[unitTriggerTarget] gets a name from the [unitNameGroup] group"
 	Example: "[This Unit] gets a name from the [Scientist] group"
 
@@ -736,20 +743,6 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Global
 
-??? example  "[amount] Influence per turn with City-States we could demand tribute from"
-	Added to the per-turn influence change with each City-State from which our tribute demand would currently succeed (the same check as the Afraid relationship), scaled by the gold gift modifier of the game speed. Unlike the normal recovery, it is not capped at the resting point.
-
-	Example: "[3] Influence per turn with City-States we could demand tribute from"
-
-	Applicable to: Global
-
-??? example  "[relativeAmount]% strength when intimidating City-States"
-	Increases the military part of the willingness of City-States to pay tribute (military rank and military presence near the City-State) by this percentage.
-
-	Example: "[+20]% strength when intimidating City-States"
-
-	Applicable to: Global
-
 ??? example  "Allied City-States provide [stat] equal to [relativeAmount]% of what they produce for themselves"
 	Example: "Allied City-States provide [Culture] equal to [+20]% of what they produce for themselves"
 
@@ -766,6 +759,16 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 	Applicable to: Global
 
 ??? example  "City-State Influence recovers at twice the normal rate"
+	Applicable to: Global
+
+??? example  "Gain [positiveAmount] Influence per turn with City-States you could demand tribute from"
+	Example: "Gain [3] Influence per turn with City-States you could demand tribute from"
+
+	Applicable to: Global
+
+??? example  "Units are [relativeAmount]% more effective at intimidating City-States"
+	Example: "Units are [+20]% more effective at intimidating City-States"
+
 	Applicable to: Global
 
 ??? example  "[relativeAmount]% growth [cityFilter]"

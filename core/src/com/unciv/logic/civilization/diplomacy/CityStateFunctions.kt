@@ -422,6 +422,64 @@ class CityStateFunctions(val civInfo: Civilization) {
         }
         civInfo.destroy(notificationLocation.toHexCoord())
     }
+    
+    fun hostileTakeover(otherCiv: Civilization) {
+        val notificationLocation = civInfo.getCapital()!!.location
+        otherCiv.addNotification("We have bought the City-State of [${civInfo.civName}], bringing them under our control!",
+            notificationLocation,
+            NotificationCategory.Diplomacy, civInfo.civName,
+            NotificationIcon.Diplomacy, otherCiv.civName)
+
+        for (civ in civInfo.gameInfo.civilizations.filter { it != otherCiv })
+            civ.addNotification("[${otherCiv.civName}] has bought the City-State of [${civInfo.civName}], bringing them under their control.",
+                notificationLocation,
+                NotificationCategory.Diplomacy, civInfo.civName,
+                NotificationIcon.Diplomacy, otherCiv.civName)
+        
+        // OPTIONAL: Make other civs angry because you circumvented their protection pledge/stole their alliance
+        // Merchants of Venice in base BNW don't anger other civs when you puppet CSes, but considering how you can buy any CS regardless of influence, I felt it'd be appropriate to cause a bit of tension.
+        /* val allyCiv = civInfo.allyCiv
+        if (allyCiv != null && allyCiv.knows(otherCiv)) {
+            val allyDiplomacy = allyCiv.getDiplomacyManager(otherCiv)!!
+            allyDiplomacy.addModifier(DiplomaticModifiers.StoleOurAlly, -60f)
+
+            if (allyCiv.playerType != PlayerType.Human)
+                otherCiv.addNotification(
+                    "[${allyCiv.civName}] is outraged that you bought out [${civInfo.civName}], whom they were allied with!",
+                    NotificationCategory.Diplomacy, NotificationIcon.Diplomacy, allyCiv.civName
+                )
+        }
+            
+        for (protector in civInfo.cityStateFunctions.getProtectorCivs().filter { allyCiv != null && it != allyCiv }) {
+            val protectorDiplomacy = protector.getDiplomacyManager(otherCiv) ?: continue
+            protectorDiplomacy.addModifier(
+                DiplomaticModifiers.DestroyedProtectedMinor,
+                -20f,
+                limit = -100f
+            )
+            if (protector.playerType != PlayerType.Human)   // Humans can have their own emotions
+                otherCiv.addNotification(
+                    "[${protector.civName}] is angry that you bought out [${civInfo.civName}], whom they had pledged to protect!",
+                    NotificationCategory.Diplomacy, NotificationIcon.Diplomacy, protector.civName
+                )
+        } */
+
+        for (unit in civInfo.units.getCivUnits())
+            unit.gift(otherCiv)
+
+        // Make sure this CS can never be liberated
+        for (it in civInfo.gameInfo.getCities().filter { it.foundingCivObject == civInfo }) {
+            it.foundingCivObject = null
+            it.isOriginalCapital = false
+        }
+
+        for (city in civInfo.cities) {
+            city.espionage.removeAllPresentSpies(SpyFleeReason.CityBought)
+            city.moveToCiv(otherCiv)
+            city.isPuppet = true // Human players get a popup that allows them to annex instead
+        }
+        civInfo.destroy(notificationLocation.toHexCoord())
+    }
 
     @Readonly
     fun getTributeWillingness(demandingCiv: Civilization, demandingWorker: Boolean = false): Int {
@@ -462,11 +520,9 @@ class CityStateFunctions(val civInfo: Civilization) {
             modifiers["Influence below -30"] = -300
 
         // CvMinorCivAI::CalculateBullyMetric (CvMinorCivAI.cpp:7963-7982): the policy modifier (Gunboat Diplomacy) is applied to the sum of the
-        // global military score (our rank) and the local power score (force near the City-State), which here is scaling both entries.
-        // Unlike the original the bonus is not a separate entry of the table, so it is not shown separately in the diplomacy screen.
+        // global military score (our rank) and the local power score (force near the City-State); here it is its own entry of the table
         var intimidationPercent = 0
-        demandingCiv.forEachMatchingUnique(UniqueType.CityStateIntimidationStrength) { intimidationPercent += it.params[0].toInt() }
-        fun intimidationStrength(value: Int) = if (intimidationPercent == 0) value else value * max(100 + intimidationPercent, 0) / 100
+        demandingCiv.forEachMatchingUnique(UniqueType.CityStateEasilyIntimidatedByForce) { intimidationPercent += it.params[0].toInt() }
 
         // Slight optimization, we don't do the expensive stuff if we have no chance of getting a >= 0 result (not with a bonus to the military parts)
         val canShortcut = !requireWholeList && intimidationPercent <= 0
@@ -478,8 +534,8 @@ class CityStateFunctions(val civInfo: Civilization) {
         val mightRank = majors.sortedByDescending { it.ai.militaryMight() }.indexOf(demandingCiv)
         val globalModifier = civInfo.gameInfo.ruleset.modOptions.constants.tributeGlobalModifier
         // (int)((float)(count - rank) / (float)count * 75): the best of them gets all of it, the worst a share
-        modifiers["Military Rank"] = intimidationStrength(
-            if (mightRank < 0) 0 else ((majors.size - mightRank).toFloat() / majors.size.toFloat() * globalModifier).toInt())
+        val rankScore = if (mightRank < 0) 0 else ((majors.size - mightRank).toFloat() / majors.size.toFloat() * globalModifier).toInt()
+        modifiers["Military Rank"] = rankScore
 
         if (canShortcut && modifiers.values.sum() < -100)
             return modifiers
@@ -494,14 +550,17 @@ class CityStateFunctions(val civInfo: Civilization) {
         val powerRatio = bullyPower.toFloat() / csPower.toFloat()
         val localModifier = civInfo.gameInfo.ruleset.modOptions.constants.tributeLocalModifier
 
-        modifiers["Military near City-State"] = intimidationStrength(when {
+        val localScore = when {
             powerRatio >= 3f -> localModifier
             powerRatio >= 2f -> localModifier * 4/5
             powerRatio >= 1.5f -> localModifier * 3/5
             powerRatio >= 1f -> localModifier * 2/5
             powerRatio >= 0.5f -> localModifier / 5
             else -> 0
-        })
+        }
+        modifiers["Military near City-State"] = localScore
+        if (intimidationPercent != 0)
+            modifiers["From Uniques"] = (rankScore + localScore) * max(intimidationPercent, -100) / 100
 
         return modifiers
     }

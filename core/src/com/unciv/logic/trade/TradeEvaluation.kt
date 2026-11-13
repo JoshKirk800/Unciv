@@ -53,20 +53,23 @@ class TradeEvaluation {
             || ourDiploManager.hasModifier(DiplomaticModifiers.SharedEmbassies)))
             return false
 
+        // One side can hand the other the gold for a research agreement in the same trade
+        val goldFromThem = trade.theirOffers.filter { it.type == TradeOfferType.Gold }.sumOf { it.amount }
+        val goldFromUs = trade.ourOffers.filter { it.type == TradeOfferType.Gold }.sumOf { it.amount }
         for (offer in trade.ourOffers)
-            if (!isOfferValid(offer, offerer, tradePartner, trade.isPeaceTreaty())) {
+            if (!isOfferValid(offer, offerer, tradePartner, trade.isPeaceTreaty(), goldFromThem - goldFromUs)) {
                 return false
             }            
 
         for (offer in trade.theirOffers)
-            if (!isOfferValid(offer, tradePartner, offerer, trade.isPeaceTreaty())) {
+            if (!isOfferValid(offer, tradePartner, offerer, trade.isPeaceTreaty(), goldFromUs - goldFromThem)) {
                 return false
             }
         return true
     }
 
     @Readonly @Suppress("purity") // the vote commitment check reads the league AI
-    private fun isOfferValid(tradeOffer: TradeOffer, offerer: Civilization, tradePartner: Civilization, isPeaceDeal: Boolean): Boolean {
+    private fun isOfferValid(tradeOffer: TradeOffer, offerer: Civilization, tradePartner: Civilization, isPeaceDeal: Boolean, netGoldReceived: Int): Boolean {
 
         @Readonly
         fun hasResource(tradeOffer: TradeOffer): Boolean {
@@ -84,7 +87,7 @@ class TradeEvaluation {
                 //   these are a safeguard against future automation changes 
                 when (tradeOffer.name) {
                     Constants.peaceTreaty -> offerer.isAtWarWith(tradePartner)
-                    Constants.researchAgreement -> !offerer.getDiplomacyManager(tradePartner)!!.hasFlag(DiplomacyFlags.ResearchAgreement)
+                    Constants.researchAgreement -> !offerer.getDiplomacyManager(tradePartner)!!.hasFlag(DiplomacyFlags.ResearchAgreement) && offerer.gold + netGoldReceived >= tradeOffer.amount
                     Constants.defensivePact -> !offerer.getDiplomacyManager(tradePartner)!!.hasFlag(DiplomacyFlags.DefensivePact)
                     else -> true // potentional future treaties
                 }

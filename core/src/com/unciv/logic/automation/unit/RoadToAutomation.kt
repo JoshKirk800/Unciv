@@ -50,24 +50,16 @@ class RoadToAutomation(val civInfo: Civilization) {
 
         val destinationTile = unit.civ.gameInfo.tileMap[unit.automatedRoadConnectionDestination!!]
 
-        var pathToDest: List<HexCoord>? = unit.automatedRoadConnectionPath
-
-        // The path does not exist, create it
-        if (pathToDest == null) {
-            val foundPath: List<Tile>? = unit.movement.getRoadPath(destinationTile)
-            if (foundPath == null) {
-                Log.debug("WorkerAutomation: $unit -> connect road failed")
-                stopAndCleanAutomation(unit)
-                notify("Connect road failed!")
-                return
-            }
-
-            pathToDest = foundPath // Convert to a list of positions for serialization
-                .map { it.position }
-
-            unit.automatedRoadConnectionPath = pathToDest
-            debug("WorkerAutomation: $unit -> found connect road path to destination tile: %s, %s", destinationTile, pathToDest)
+        // The path is rebuilt on every call (upstream dropped the cached path, which broke saves), so it starts from wherever the worker is now
+        val foundPath: List<Tile>? = unit.movement.getRoadPath(destinationTile)
+        if (foundPath == null) {
+            Log.debug("WorkerAutomation: $unit -> connect road failed")
+            stopAndCleanAutomation(unit)
+            notify("Connect road failed!")
+            return
         }
+        val pathToDest: List<HexCoord> = foundPath.map { it.position }
+        debug("WorkerAutomation: $unit -> found connect road path to destination tile: %s, %s", destinationTile, pathToDest)
 
         val currTileIndex = pathToDest.indexOf(currentTile.position)
 
@@ -131,7 +123,6 @@ class RoadToAutomation(val civInfo: Civilization) {
         unit.automated = false
         unit.action = null
         unit.automatedRoadConnectionDestination = null
-        unit.automatedRoadConnectionPath = null
         if (unit.currentTile.getTileImprovementInProgress()?.isRoad() == true)
             unit.currentTile.stopWorkingOnImprovement()
     }

@@ -144,6 +144,11 @@ class GreatPersonManager : IsPartOfGameInfoSerialization {
         return leading
     }
 
+    /** Add [amount] points for [name] to the capital's progress, or the first city's without a capital (used in dev console) */
+    fun addGreatPersonPoints(name: String, amount: Int) {
+        (civInfo.getCapital() ?: civInfo.cities.firstOrNull())?.greatPersonProgress?.add(name, amount)
+    }
+
     fun triggerMayanGreatPerson() {
         if (civInfo.isSpectator) return
         val greatPeople = getGreatPeople()
@@ -206,5 +211,4 @@ class GreatPersonManager : IsPartOfGameInfoSerialization {
         for (city in civInfo.cities) greatPersonPoints.add(city.getGreatPersonPoints())
         return greatPersonPoints
     }
-
 }

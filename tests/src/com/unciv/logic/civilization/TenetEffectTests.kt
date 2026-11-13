@@ -88,8 +88,8 @@ class TenetEffectTests {
     }
 
     @Test
-    fun `Gunboat Diplomacy makes the military rank count more in the tribute willingness`() {
-        val gunboats = game.addCiv("[+50]% strength when intimidating City-States")
+    fun `Gunboat Diplomacy adds half of the military part of the tribute willingness`() {
+        val gunboats = game.addCiv("Units are [+50]% more effective at intimidating City-States")
         val rival = game.addCiv()
         game.addCity(rival, game.tileMap[0, -6], replacePalace = true)
         game.addCity(gunboats, game.tileMap[4, -6], replacePalace = true)
@@ -101,9 +101,12 @@ class TenetEffectTests {
         rival.diplomacyFunctions.makeCivilizationsMeet(cs)
         for ((x, y) in listOf(3 to -3, 3 to -2, 4 to -4)) game.addUnit(base.name, gunboats, game.getTile(x, y))
         val global = game.ruleset.modOptions.constants.tributeGlobalModifier
-        // the strongest of the civilizations: the whole of the global modifier, and half of it more
-        assertEquals(global * 3 / 2, cs.cityStateFunctions.getTributeModifiers(gunboats, requireWholeList = true)["Military Rank"]!!)
-        assertEquals("the weaker of two civilizations gets half of it, and no policy changes that", global / 2,
-            cs.cityStateFunctions.getTributeModifiers(rival, requireWholeList = true)["Military Rank"]!!)
+        // the strongest of the civilizations: the whole of the global modifier; the policy adds half of rank and local force together
+        val modifiers = cs.cityStateFunctions.getTributeModifiers(gunboats, requireWholeList = true)
+        assertEquals(global, modifiers["Military Rank"]!!)
+        assertEquals((global + modifiers["Military near City-State"]!!) / 2, modifiers["From Uniques"]!!)
+        val rivalModifiers = cs.cityStateFunctions.getTributeModifiers(rival, requireWholeList = true)
+        assertEquals("the weaker of two civilizations gets half of it", global / 2, rivalModifiers["Military Rank"]!!)
+        assertEquals("and no policy entry", null, rivalModifiers["From Uniques"])
     }
 }

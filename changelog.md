@@ -1,3 +1,53 @@
+## 5.0.0
+
+Web version of Unciv! - By YosefLm
+
+skip "player ready" screen for hotseat when changing options
+
+Automated Settlers can think a tile is good but it's actually unsettleable, if so, explore for a different tile
+
+By mvanhorn:
+- Keep marble wonder production bonuses local to the owning city 
+- Prevent carrier healing moves from failing during payload placement 
+
+Research agreement trade is only valid while the offerer can pay - By Qualia-Li
+
+New CS bullying uniques for BNW's Gunboat Diplomacy - By HungLTL
+
+Do not match "in cities following our religion" when neither side has a religion - By ibrahim-iqbal
+
+## 4.22.19
+
+Preparations for web version :)
+
+By ibrahim-iqbal: 
+- Add an "Off" label for the automatic promotions setting 
+
+By Qualia-Li:
+- Fix loading screenshots darkening the map between turns 
+- Exclude foreign ships from AI naval defence counts 
+- Resolve reachable movement when approaching enemy cities 
+
+Fix GreatPerson quest completion conditions - By TinyClayMan
+
+## 4.22.18
+
+CPU performance improvements
+
+Avoid ANRs in edgecases
+
+Coastal oil placed regularly
+
+Civ-specific tile filters work in console
+
+Construction queue: MaxNumberBuildable counting and thread-safe queue access - By JoshKirk800
+
+"Estimated time until turn" improvements - By unciv-loof  
+
+Translate the Natural Wonder bonus notification - By ibrahim-iqbal
+
+New Hostile Takeover unit unique - By HungLTL
+
 ## 4.22.17
 
 Reduced memory when downloading games from multiplayer server

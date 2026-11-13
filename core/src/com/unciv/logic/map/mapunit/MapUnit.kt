@@ -76,9 +76,6 @@ class MapUnit : IsPartOfGameInfoSerialization {
     @Cache private var escorting: Boolean = false
 
     var automatedRoadConnectionDestination: HexCoord? = null
-    // Temp disable, since this data broke saves
-    @Transient
-    var automatedRoadConnectionPath: List<HexCoord>? = null
 
     var attacksThisTurn = 0
     var promotions = UnitPromotions()
@@ -152,7 +149,7 @@ class MapUnit : IsPartOfGameInfoSerialization {
     @Transient
     lateinit var currentTile: Tile
 
-    fun hasTile() = ::currentTile.isInitialized
+    @Readonly fun hasTile() = ::currentTile.isInitialized
 
     @Transient
     private var tempUniquesMap = UniqueMap()
@@ -249,7 +246,6 @@ class MapUnit : IsPartOfGameInfoSerialization {
         toReturn.automated = automated
         toReturn.escorting = escorting
         toReturn.automatedRoadConnectionDestination = automatedRoadConnectionDestination
-        toReturn.automatedRoadConnectionPath = automatedRoadConnectionPath
         toReturn.attacksThisTurn = attacksThisTurn
         toReturn.turnsFortified = turnsFortified
         toReturn.promotions = promotions.clone(toReturn)
@@ -677,9 +673,15 @@ class MapUnit : IsPartOfGameInfoSerialization {
      *  Returns the free capacity of [this] carrier for [unit] or units matching the same Unique filters.
      *
      *  - Uses an optimizing algorithm that ensures complex overlapping filters are used to the max.
+     *  - [carriedUnits] defaults to transported aircraft on the current tile. Movement passes the
+     *    destination's prospective transported occupants instead, so a whole payload can be checked
+     *    before any unit changes tile.
      *  - See issue [#15087](https://github.com/yairm210/Unciv/issues/15087)
      */
-    fun checkCarryCapacity(unit: MapUnit): Int {
+    fun checkCarryCapacity(
+        unit: MapUnit,
+        carriedUnits: Sequence<MapUnit> = currentTile.airUnits.asSequence().filter { it.isTransported }
+    ): Int {
         // Fetch ALL "slots", not only those the new unit could occupy - otherwise we couldn't count optimally
         @LocalState
         val slots = mutableListOf<CarrierSlotMatcher.SlotRule>()
@@ -694,7 +696,7 @@ class MapUnit : IsPartOfGameInfoSerialization {
 
         return CarrierSlotMatcher.availableCapacity(
             slotRules = slots,
-            carriedUnits = currentTile.airUnits.asSequence().filter { it.isTransported },
+            carriedUnits = carriedUnits,
             newUnit = unit
         )
     }

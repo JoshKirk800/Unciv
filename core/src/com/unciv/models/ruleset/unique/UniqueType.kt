@@ -155,17 +155,13 @@ enum class UniqueType(
     CityStateInfluenceWithTradeRoute("[amount] Influence per turn with City-States we have a trade route with", UniqueTarget.Global,
         docDescription = "Added to the per-turn influence change with each City-State that is connected to us by a trade route in either direction, " +
             "scaled by the gold gift modifier of the game speed. Unlike the normal recovery, it is not capped at the resting point."),
-    CityStateInfluenceWhenAfraid("[amount] Influence per turn with City-States we could demand tribute from", UniqueTarget.Global,
-        docDescription = "Added to the per-turn influence change with each City-State from which our tribute demand would currently succeed " +
-            "(the same check as the Afraid relationship), scaled by the gold gift modifier of the game speed. Unlike the normal recovery, it is not capped at the resting point."),
-    CityStateIntimidationStrength("[relativeAmount]% strength when intimidating City-States", UniqueTarget.Global,
-        docDescription = "Increases the military part of the willingness of City-States to pay tribute (military rank and military presence near the City-State) by this percentage."),
 
     CityStateStatPercent("Allied City-States provide [stat] equal to [relativeAmount]% of what they produce for themselves", UniqueTarget.Global),
     CityStateResources("[relativeAmount]% resources gifted by City-States",  UniqueTarget.Global),
     CityStateLuxuryHappiness("[relativeAmount]% Happiness from luxury resources gifted by City-States", UniqueTarget.Global),
     CityStateInfluenceRecoversTwiceNormalRate("City-State Influence recovers at twice the normal rate", UniqueTarget.Global),
-
+    CityStateInfluenceGainWhenAfraid("Gain [positiveAmount] Influence per turn with City-States you could demand tribute from", UniqueTarget.Global),
+    CityStateEasilyIntimidatedByForce("Units are [relativeAmount]% more effective at intimidating City-States", UniqueTarget.Global),
     // endregion
 
     /////// region Other global uniques
@@ -1165,6 +1161,8 @@ enum class UniqueType(
                 "Turns left on the status decrease at the *start of turn*, so bonuses applied for 1 turn are stll applied during other civ's turns."),
     OneTimeUnitLoseStatus("[unitTriggerTarget] loses the [promotion] status", UniqueTarget.UnitTriggerable),
     OneTimeUnitDestroyed("[unitTriggerTarget] is destroyed", UniqueTarget.UnitTriggerable),
+    OneTimeUnitTakeOverCityState("[unitTriggerTarget] takes over the City-State owning the tile it's standing on", UniqueTarget.UnitTriggerable,
+        docDescription = "Only allows taking over City-States not at war with the unit's root nation. Does not require a friendship or an alliance with the target City-State."),
     OneTimeUnitGetsName("[unitTriggerTarget] gets a name from the [unitNameGroup] group", UniqueTarget.UnitTriggerable),
     //endregion
 

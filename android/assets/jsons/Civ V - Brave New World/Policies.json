@@ -961,8 +961,8 @@
                 "name": "Gunboat Diplomacy",
                 "uniques": [
                     "Tenet Level 3",
-                    "[+6] Influence per turn with City-States we could demand tribute from",
-                    "[+50]% strength when intimidating City-States",
+                    "Gain [6] Influence per turn with City-States you could demand tribute from",
+                    "Units are [+50]% more effective at intimidating City-States",
                     "Only available <when number of [[Adopted [Tenet Level 2] Policies] - [Adopted [Tenet Level 3] Policies]] is more than [1]>"
                 ],
                 "row": 3,

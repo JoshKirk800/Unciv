@@ -88,8 +88,8 @@ object DiplomacyTurnManager {
 
         // POLICYMOD_AFRAID_INFLUENCE: CanMajorBullyGold is "bully metric >= 0". The closest equivalent here is a tribute willingness of
         // at least 0 for gold (the same threshold that enables the Demand Tribute button), not the "> 0" that shows the Afraid relationship
-        if (otherCiv.hasUnique(UniqueType.CityStateInfluenceWhenAfraid) && civInfo.cityStateFunctions.getTributeWillingness(otherCiv) >= 0)
-            otherCiv.forEachMatchingUnique(UniqueType.CityStateInfluenceWhenAfraid) { bonus += it.params[0].toInt() }
+        if (otherCiv.hasUnique(UniqueType.CityStateInfluenceGainWhenAfraid) && civInfo.cityStateFunctions.getTributeWillingness(otherCiv) >= 0)
+            otherCiv.forEachMatchingUnique(UniqueType.CityStateInfluenceGainWhenAfraid) { bonus += it.params[0].toInt() }
 
         // "Mod everything by game speed": GetGoldGiftMod
         return bonus * civInfo.gameInfo.speed.goldGiftModifier

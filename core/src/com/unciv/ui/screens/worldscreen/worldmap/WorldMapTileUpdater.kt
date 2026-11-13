@@ -1,5 +1,6 @@
 package com.unciv.ui.screens.worldscreen.worldmap
 
+import com.unciv.view.getFutureAutomatedRoadConnectionTiles
 import com.unciv.view.getNukeBlastRadius
 import com.unciv.view.isAirUnit
 import com.unciv.view.isMilitary
@@ -91,14 +92,13 @@ object WorldMapTileUpdater {
 
         // Fade out less relevant images if a military unit is selected
         if (unitView.isMilitary()) {
-            val unit = unitView.getUnit()
             for (group in tileGroups.values) {
 
                 // Fade out population icons
                 group.layerMisc.dimPopulation(true)
 
                 val shownImprovementName = group.tileView.getShownImprovement()
-                val shownImprovement = unit.civ.gameInfo.ruleset.tileImprovements[shownImprovementName]
+                val shownImprovement = group.tileView.getRuleset().tileImprovements[shownImprovementName]
 
                 // Fade out improvement icons (but not barb camps or ruins)
                 if (shownImprovement != null &&
