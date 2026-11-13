@@ -131,10 +131,15 @@ class UnitUpgradeManager(val unit: MapUnit) {
         // the UniqueType being allowed on a BaseUnit - we don't have a MapUnit in the loop.
         // Actually instantiating every intermediate to support such mods: todo
         var civModifier = 1f
+        var summedPercentage = 0f
         val stateForConditionals = unit.cache.state
         unit.civ.forEachMatchingUnique(UniqueType.UnitUpgradeCost, stateForConditionals) { unique ->
             civModifier *= unique.params[0].toPercent()
+            summedPercentage += unique.params[0].toFloat()
         }
+        // CvPlayer::SetUnitUpgradeCostMod sums the percentages and clamps the sum at UNIT_UPGRADE_COST_DISCOUNT_MAX
+        if (ruleset.modOptions.constants.unitUpgradeCostModsAreSummed)
+            civModifier = (100f + summedPercentage.coerceAtLeast(ruleset.modOptions.constants.unitUpgradeCostDiscountMax.toFloat())) / 100f
 
         var cost = constants.base
         cost += (constants.perProduction * (unitToUpgradeTo.cost - unit.baseUnit.cost)).coerceAtLeast(0f)
