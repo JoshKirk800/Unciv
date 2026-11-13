@@ -129,9 +129,15 @@ class BattleDamageTest {
         assertEquals(BattleConstants.MISSING_RESOURCES_MALUS, attackModifiers.sumValues())
     }
 
+    private fun makeWar() {
+        attackerCiv.diplomacyFunctions.makeCivilizationsMeet(defenderCiv)
+        attackerCiv.getDiplomacyManager(defenderCiv)!!.declareWar()
+    }
+
     @Test
     fun `should retrieve attacking flank bonus modifiers`() {
         // given
+        makeWar()
         val flankingAttackerTile = testGame.getTile(HexCoord.Zero)
         testGame.addUnit("Warrior", attackerCiv, flankingAttackerTile)
 
@@ -224,5 +230,49 @@ class BattleDamageTest {
         val damage = BattleDamage.calculateDamageToDefender(MapUnitCombatant(defaultAttackerUnit), MapUnitCombatant(target), target.getTile(), 0f)
 
         assertEquals(1, damage)
+    /** CvUnit::GetGenericMaxStrengthModifier: the defender is flanked as well, by the attacker's side's units next to it */
+    @Test
+    fun `a defender gets the flanking bonus from its own units next to the melee attacker`() {
+        makeWar()
+        val behindAttacker = defaultAttackerTile.neighbors.first { it != defaultDefenderTile && it.militaryUnit == null }
+        testGame.addUnit("Warrior", defenderCiv, behindAttacker)
+
+        val defenceModifiers = BattleDamage.getDefenceModifiers(MapUnitCombatant(defaultAttackerUnit), MapUnitCombatant(defaultDefenderUnit), defaultAttackerTile)
+
+        assertEquals(BattleConstants.BASE_FLANKING_BONUS.toInt(), defenceModifiers["Flanking"])
+    }
+
+    @Test
+    fun `a ranged attack gives the defender no flanking bonus`() {
+        makeWar()
+        val archer = testGame.addUnit("Archer", attackerCiv, defaultAttackerTile.neighbors.first { it != defaultDefenderTile && it.militaryUnit == null && it.getUnits().none() })
+        val behindArcher = archer.getTile().neighbors.first { it != defaultDefenderTile && it.militaryUnit == null && it.getUnits().none() }
+        testGame.addUnit("Warrior", defenderCiv, behindArcher)
+
+        val defenceModifiers = BattleDamage.getDefenceModifiers(MapUnitCombatant(archer), MapUnitCombatant(defaultDefenderUnit), archer.getTile())
+
+        assertEquals(0, defenceModifiers["Flanking"])
+    }
+
+    @Test
+    fun `a ranged unit next to the defender counts for the attacker's flanking bonus`() {
+        makeWar()
+        val archerTile = defaultDefenderTile.neighbors.first { it != defaultAttackerTile && it.militaryUnit == null }
+        testGame.addUnit("Archer", attackerCiv, archerTile)
+
+        val attackModifiers = BattleDamage.getAttackModifiers(MapUnitCombatant(defaultAttackerUnit), MapUnitCombatant(defaultDefenderUnit), defaultAttackerTile)
+
+        assertEquals(BattleConstants.BASE_FLANKING_BONUS.toInt(), attackModifiers["Flanking"])
+    }
+
+    @Test
+    fun `a unit of a civilization not at war with the defender does not flank`() {
+        makeWar()
+        val thirdCiv = testGame.addCiv()
+        testGame.addUnit("Warrior", thirdCiv, defaultDefenderTile.neighbors.first { it != defaultAttackerTile && it.militaryUnit == null })
+
+        val attackModifiers = BattleDamage.getAttackModifiers(MapUnitCombatant(defaultAttackerUnit), MapUnitCombatant(defaultDefenderUnit), defaultAttackerTile)
+
+        assertEquals(0, attackModifiers["Flanking"])
     }
 }
