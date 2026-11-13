@@ -49,7 +49,7 @@ object AirInterception {
         // Pick highest chance interceptor
         for (interceptor in potentialInterceptors
             .shuffled(kotlin.random.Random(attacker.getCivInfo().gameInfo.turns * 31L + attackedTile.position.hashCode()))  // randomize Civ, the same way on every run
-            .sortedByDescending { it.interceptChance() }) {
+            .sortedByDescending { it.currentInterceptChance() }) {
             // No chance of Interceptor to miss (unlike regular Interception). Always want to deal damage
             // pairs of LocationAction for Notification
             val locations = LocationAction(
@@ -156,8 +156,8 @@ object AirInterception {
 
         // Pick highest chance interceptor
         val interceptor = interceptingCiv.units.getCivUnits()
-            .filter { it.canIntercept(attackedTile) }
-            .sortedByDescending { it.interceptChance() }
+            .filter { it.canIntercept(attackedTile) && it.currentInterceptChance() > 0 } // CvUnit::GetBestInterceptor needs a value above 0
+            .sortedByDescending { it.currentInterceptChance() }
             .firstOrNull { unit ->
                 // Can't intercept if we have a unique preventing it
                 val conditionalState = GameContext(interceptingCiv, ourCombatant = MapUnitCombatant(unit), theirCombatant = attacker, combatAction = CombatAction.Intercept, attackedTile = attackedTile)
@@ -170,7 +170,7 @@ object AirInterception {
 
         interceptor.attacksThisTurn++  // even if you miss, you took the shot
         // Does Intercept happen? If not, exit
-        if (rng.nextFloat() > interceptor.interceptChance() / 100f)
+        if (rng.nextFloat() > interceptor.currentInterceptChance() / 100f)
             return Battle.DamageDealt.None
 
         // CvUnit::GetInterceptionDamage: proportional to the interceptor's full health, not a third of its health loss

@@ -129,6 +129,10 @@ class ModConstants {
     // 0: not possible. Civ V (CvPlayer::AddIncomingUnit, MINOR_UNIT_GIFT_TRAVEL_TURNS): 3. The unit leaves its owner at once, a new unit of
     // the same type appears next to the city-state's capital after that many of the city-state's turns, and the influence comes then
     var unitGiftTravelTurns = 0
+    // The chance of an air unit (fighter, missile...) to intercept an air attack. false: the "chance to intercept air attacks" of its uniques,
+    // whatever its health. true: as in Civ V (CvUnit::currInterceptionProbability) that chance times its health / 100, rounded down,
+    // for the choice of the best interceptor too; an interceptor with no chance left is not picked
+    var airInterceptionChanceScalesWithHealth = false
 
     // The happiness an annexed city of a conquered civilization costs. Default: its citizens count double, and the city costs 2 more ("Occupied City").
     // The Civ V rulesets: citizens x UNHAPPINESS_PER_OCCUPIED_POPULATION (1.34, CvPlayer::GetUnhappinessFromOccupiedCities) and no extra term

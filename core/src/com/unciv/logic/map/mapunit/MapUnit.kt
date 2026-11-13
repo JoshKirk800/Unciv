@@ -641,6 +641,17 @@ class MapUnit : IsPartOfGameInfoSerialization {
         return getMatchingUniques(UniqueType.ChanceInterceptAirAttacks).sumOf { it.params[0].toInt() }
     }
 
+    /**
+     *  CvUnit::currInterceptionProbability: [interceptChance], and for an air unit, if the ruleset says so (airInterceptionChanceScalesWithHealth),
+     *  scaled by its health (integer arithmetic, rounded down). Used to pick the best interceptor and to roll the interception.
+     */
+    @Readonly
+    fun currentInterceptChance(): Int {
+        val chance = interceptChance().coerceAtLeast(0)
+        if (!baseUnit.isAirUnit() || !civ.gameInfo.ruleset.modOptions.constants.airInterceptionChanceScalesWithHealth) return chance
+        return chance * health / 100
+    }
+
     @Readonly
     fun interceptDamagePercentBonus(): Int {
         return getMatchingUniques(UniqueType.DamageWhenIntercepting)
