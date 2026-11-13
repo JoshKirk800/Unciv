@@ -137,6 +137,11 @@ class TurnManager(val civInfo: Civilization) {
             if (!civInfo.flagsCountdown.containsKey(flag)) continue
             // City revolts only tick while super unhappy with ideological unhappiness.
             if (flag == CivFlags.CityRevoltCountdown.name) continue
+            // With uprisingCounterLikeCivV the countdown is civInfo.uprisingCounter; a flag of an older save is dropped
+            if (flag == CivFlags.RevoltSpawning.name && civInfo.gameInfo.ruleset.modOptions.constants.uprisingCounterLikeCivV) {
+                civInfo.removeFlag(flag)
+                continue
+            }
 
             if (flag == CivFlags.CityStateGreatPersonGift.name) {
                 val rng = civInfo.state.stateBasedRandom("TurnManager.startTurnFlags")
@@ -197,9 +202,14 @@ class TurnManager(val civInfo: Civilization) {
     }
 
 
-    private fun updateRevolts() {
+    fun updateRevolts() {
         if (civInfo.gameInfo.civilizations.none { it.isBarbarian }) {
             // Can't spawn revolts without barbarians ¯\_(ツ)_/¯
+            return
+        }
+
+        if (civInfo.gameInfo.ruleset.modOptions.constants.uprisingCounterLikeCivV) {
+            updateUprisingCounter()
             return
         }
 
@@ -212,6 +222,23 @@ class TurnManager(val civInfo: Civilization) {
             civInfo.addFlag(CivFlags.RevoltSpawning.name, getTurnsBeforeRevolt().coerceAtLeast(1))
             return
         }
+    }
+
+    /**
+     *  CvPlayer::DoUpdateUprisings: while the empire is very unhappy (the rebel unique) the counter winds down, and an uprising comes when it
+     *  hits 0; otherwise it stays as it is, it is not reset. A counter at 0 is seeded when the empire is very unhappy, with half the length
+     *  the first time (CvPlayer::DoResetUprisingCounter); after an uprising it starts over at full length.
+     */
+    private fun updateUprisingCounter() {
+        if (!civInfo.hasUnique(UniqueType.SpawnRebels)) return
+        if (civInfo.uprisingCounter <= 0) {
+            civInfo.uprisingCounter = (getTurnsBeforeRevolt() / 2).coerceAtLeast(1)
+            return
+        }
+        civInfo.uprisingCounter--
+        if (civInfo.uprisingCounter > 0) return
+        doRevoltSpawn()
+        civInfo.uprisingCounter = getTurnsBeforeRevolt().coerceAtLeast(1)
     }
 
     /**

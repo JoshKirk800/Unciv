@@ -260,6 +260,9 @@ class Civilization : IsPartOfGameInfoSerialization {
     // For Aggressor, Warmonger status
     internal var numMinorCivsAttacked = 0
 
+    /** CvPlayer::m_iUprisingCounter, used with uprisingCounterLikeCivV: the turns of very high unhappiness until rebels spawn, 0 = not seeded yet */
+    var uprisingCounter = 0
+
     /** All the culture the civilization has made in the whole game, which is what its influence on others is measured against. Counted in [PolicyManager.addCulture] */
     var totalCultureForContests = 0
     var totalFaithForContests = 0
@@ -380,6 +383,7 @@ class Civilization : IsPartOfGameInfoSerialization {
         toReturn.hasEverOwnedOriginalCapital = hasEverOwnedOriginalCapital
         toReturn.passableImpassables.addAll(passableImpassables)
         toReturn.numMinorCivsAttacked = numMinorCivsAttacked
+        toReturn.uprisingCounter = uprisingCounter
         toReturn.totalCultureForContests = totalCultureForContests
         toReturn.totalFaithForContests = totalFaithForContests
         toReturn.attacksSinceTurnStart = attacksSinceTurnStart.copy()

@@ -108,6 +108,11 @@ class ModConstants {
     // true: as in Civ V (CvTreasury::DoGold) it is set to 0 and the rest of the deficit is lost; a civilization never has negative gold
     var treasuryNeverNegative = false
 
+    // How the countdown to the rebels of a very unhappy empire runs. false: a flag that starts over (full length) whenever the empire is not
+    // very unhappy at the start of a turn. true: as in Civ V (CvPlayer::DoUpdateUprisings, DoResetUprisingCounter) a counter that only winds
+    // down while the empire is very unhappy and keeps its value otherwise, seeded with half the length the first time and after an uprising with the full length
+    var uprisingCounterLikeCivV = false
+
     // The happiness an annexed city of a conquered civilization costs. Default: its citizens count double, and the city costs 2 more ("Occupied City").
     // The Civ V rulesets: citizens x UNHAPPINESS_PER_OCCUPIED_POPULATION (1.34, CvPlayer::GetUnhappinessFromOccupiedCities) and no extra term
     var annexedCityCitizenUnhappinessFactor = 2f
