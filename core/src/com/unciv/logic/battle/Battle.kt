@@ -11,6 +11,7 @@ import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.UnitActionType
 import com.unciv.models.ruleset.ArtifactClasses
+import com.unciv.models.ruleset.unique.Conditionals
 import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unique.Unique
 import com.unciv.models.ruleset.unique.UniqueTriggerActivation
@@ -832,17 +833,35 @@ object Battle {
     }
     
     private fun hasWithdrawnFromMelee(attacker: ICombatant, defender: ICombatant, attackedTile: Tile): Boolean {
-        return (attacker is MapUnitCombatant && attacker.isMelee() && defender is MapUnitCombatant
-                && defender.unit.hasUnique(UniqueType.WithdrawsBeforeMeleeCombat, gameContext = GameContext(
+        if (attacker !is MapUnitCombatant || !attacker.isMelee() || defender !is MapUnitCombatant) return false
+        val state = GameContext(
             civInfo = defender.getCivInfo(),
             ourCombatant = defender,
             theirCombatant = attacker,
             tile = attackedTile
-        )) 
-                && doWithdrawFromMeleeAbility(attacker, defender))
+        )
+        if (!defender.getCivInfo().gameInfo.ruleset.modOptions.constants.withdrawLikeCivV)
+            return defender.unit.hasUnique(UniqueType.WithdrawsBeforeMeleeCombat, gameContext = state)
+                && doWithdrawFromMeleeAbility(attacker, defender, null)
+        val baseChance = getWithdrawBaseChance(defender, state) ?: return false
+        return doWithdrawFromMeleeAbility(attacker, defender, baseChance)
     }
 
-    private fun doWithdrawFromMeleeAbility(attacker: MapUnitCombatant, defender: MapUnitCombatant): Boolean {
+    /** CvUnit::getExtraWithdrawal: the withdraw chances of all the unit's matching uniques added up (a unique without "with [n]% chance" counts 100),
+     *  or null if it has none. The chance conditional is not rolled here, [doWithdrawFromMeleeAbility] rolls once for the sum. */
+    private fun getWithdrawBaseChance(defender: MapUnitCombatant, state: GameContext): Int? {
+        var chance: Int? = null
+        defender.unit.forEachMatchingUnique(UniqueType.WithdrawsBeforeMeleeCombat, GameContext.IgnoreConditionals) { unique ->
+            val otherModifiersApply = unique.modifiers.all { it.type == UniqueType.ConditionalChance || Conditionals.conditionalApplies(unique, it, state) }
+            if (otherModifiersApply)
+                chance = (chance ?: 0) + (unique.getModifiers(UniqueType.ConditionalChance).firstOrNull()?.params?.get(0)?.toInt() ?: 100)
+        }
+        return chance
+    }
+
+    /** [baseChance] null: the retreat of the ruleset's own rules (a random tile behind the unit, the unique's chance already rolled).
+     *  Otherwise CvUnit::CanWithdrawFromMelee and DoWithdrawFromMelee: the chance is lowered for the attacker's movement and for retreat tiles that are blocked. */
+    private fun doWithdrawFromMeleeAbility(attacker: MapUnitCombatant, defender: MapUnitCombatant, baseChance: Int?): Boolean {
         if (defender.unit.isEmbarked()) return false
         if (defender.unit.cache.cannotMove) return false
         if (defender.unit.isEscorting()) return false // running away and leaving the escorted unit defeats the purpose of escorting
@@ -857,14 +876,27 @@ object Battle {
         @Readonly
         fun canNotWithdrawTo(tile: Tile) = MeleeFallBack.cannotRetreatTo(defender, tile)
 
-        val firstCandidateTiles = fromTile.neighbors.filterNot { it == attackerTile || it in attackerTile.neighbors }
-                .filterNot { canNotWithdrawTo(it) }
-        val secondCandidateTiles = fromTile.neighbors.filter { it in attackerTile.neighbors }
-                .filterNot { canNotWithdrawTo(it) }
-        val toTile: Tile = when {
-            firstCandidateTiles.any() -> firstCandidateTiles.toList().random(rng)
-            secondCandidateTiles.any() -> secondCandidateTiles.toList().random(rng)
-            else -> return false
+        val toTile: Tile
+        if (baseChance == null) {
+            val firstCandidateTiles = fromTile.neighbors.filterNot { it == attackerTile || it in attackerTile.neighbors }
+                    .filterNot { canNotWithdrawTo(it) }
+            val secondCandidateTiles = fromTile.neighbors.filter { it in attackerTile.neighbors }
+                    .filterNot { canNotWithdrawTo(it) }
+            toTile = when {
+                firstCandidateTiles.any() -> firstCandidateTiles.toList().random(rng)
+                secondCandidateTiles.any() -> secondCandidateTiles.toList().random(rng)
+                else -> return false
+            }
+        } else {
+            val constants = defender.getCivInfo().gameInfo.ruleset.modOptions.constants
+            var chance = baseChance
+            val attackerMoves = attacker.unit.getMaxMovement()
+            if (attackerMoves > 0) chance += constants.withdrawModEnemyMoves * (attackerMoves - 2)
+            val blocked = MeleeFallBack.countBlockedBehind(defender, attackerTile)
+            if (blocked >= 3) return false
+            chance += constants.withdrawModBlockedTile * blocked
+            if (rng.nextInt(100) >= chance) return false
+            toTile = MeleeFallBack.getRetreatOrder(fromTile, attackerTile, rng).firstOrNull { !canNotWithdrawTo(it) } ?: return false
         }
         // Withdraw success: Do it - move defender to toTile for no cost
         // NOT defender.unit.movement.moveToTile(toTile) - we want a free teleport

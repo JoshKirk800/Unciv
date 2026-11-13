@@ -5,6 +5,7 @@ import com.unciv.logic.map.tile.Tile
 import com.unciv.models.ruleset.unique.GameContext
 import com.unciv.models.ruleset.unique.UniqueType
 import yairm210.purity.annotations.Readonly
+import kotlin.random.Random
 
 /** Heavy Charge (Brave New World, [UniqueType.HeavyCharge]) and the fall-back of a defender (CvUnit::CanFallBackFromMelee, CvUnit::DoFallBackFromMelee). */
 object MeleeFallBack {
@@ -33,9 +34,26 @@ object MeleeFallBack {
     /** CvUnit::CanFallBackFromMelee: false only if all three tiles behind the defender exist and are blocked. */
     @Readonly
     fun canFallBack(defender: MapUnitCombatant, attackerTile: Tile): Boolean {
+        return countBlockedBehind(defender, attackerTile) < 3
+    }
+
+    /** How many of the three tiles behind the defender (away from the attacker) it cannot retreat to */
+    @Readonly
+    internal fun countBlockedBehind(defender: MapUnitCombatant, attackerTile: Tile): Int {
         val retreat = getRetreat(defender.getTile(), attackerTile)
         val candidates = if (retreat.behind == null) retreat.behindSides else retreat.behindSides + retreat.behind
-        return candidates.count { cannotRetreatTo(defender, it) } < 3
+        return candidates.count { cannotRetreatTo(defender, it) }
+    }
+
+    /** The tiles a defender tries to retreat to, in the order of CvUnit::DoFallBackFromMelee / DoWithdrawFromMelee: the one straight behind it,
+     *  then the two beside that one in random order, then the two next to the attacker. */
+    internal fun getRetreatOrder(defenderTile: Tile, attackerTile: Tile, rng: Random): List<Tile> {
+        val retreat = getRetreat(defenderTile, attackerTile)
+        // Biases 0, -s, +s, -2s, +2s of the original with a random side s: the tile beside the attacker next to the first side is tried before the other
+        val sides = retreat.behindSides.shuffled(rng)
+        val nearAttacker = sides.map { side -> retreat.besideAttacker.firstOrNull { it in side.neighbors } }
+        return listOfNotNull(retreat.behind) + sides + nearAttacker.filterNotNull() +
+            retreat.besideAttacker.filter { it !in nearAttacker }
     }
 
     /** +50% for a Heavy Charge attack on a unit that cannot fall back (CvUnitCombat::GenerateMeleeCombatInfo) */
@@ -56,14 +74,8 @@ object MeleeFallBack {
         if (defender.unit.isEscorting()) return false // leaving the escorted unit behind defeats the escort
 
         val fromTile = defender.getTile()
-        val retreat = getRetreat(fromTile, attacker.getTile())
         val rng = GameContext(attacker, defender, fromTile, CombatAction.Defend).stateBasedRandom("MeleeFallBack.tryHeavyChargeFallBack")
-        // Biases 0, -s, +s, -2s, +2s of the original with a random side s: the tile beside the attacker next to the first side is tried before the other
-        val sides = retreat.behindSides.shuffled(rng)
-        val nearAttacker = sides.map { side -> retreat.besideAttacker.firstOrNull { it in side.neighbors } }
-        val order = listOfNotNull(retreat.behind) + sides + nearAttacker.filterNotNull() +
-            retreat.besideAttacker.filter { it !in nearAttacker }
-        val toTile = order.firstOrNull { !cannotRetreatTo(defender, it) } ?: return false
+        val toTile = getRetreatOrder(fromTile, attacker.getTile(), rng).firstOrNull { !cannotRetreatTo(defender, it) } ?: return false
 
         defender.unit.removeFromTile()
         defender.unit.putInTile(toTile)

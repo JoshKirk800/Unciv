@@ -49,6 +49,8 @@
         // CvPlayer::createGreatGeneral: GREAT_GENERALS_THRESHOLD_INCREASE, and CvPlayer::recomputeGreatPeopleModifiers: COMBAT_EXPERIENCE_IN_BORDERS_PERCENT
         "greatGeneralThresholdLikeCivV": true,
         "greatGeneralPercentInBorders": 100,
+        // CvUnit::CanWithdrawFromMelee: WITHDRAW_MOD_ENEMY_MOVES -20, WITHDRAW_MOD_BLOCKED_TILE -20
+        "withdrawLikeCivV": true,
         // AssignStartingPlots:NormalizeStartLocation and NormalizeCityState
         "startNormalizerLikeCivV": true,
         // MapGenerator.lua GenerateCoasts: expansion_diceroll_table {4, 4}

@@ -248,7 +248,7 @@
 	{
 		"name": "Survivalism III",
 		"prerequisites": ["Survivalism II"],
-		"uniques": ["Unit will heal every turn, even if it performs an action", "Withdraws before melee combat <with [75]% chance>"], // This number is not based on any source
+		"uniques": ["Unit will heal every turn, even if it performs an action", "Withdraws before melee combat <with [50]% chance>"], // CIV5UnitPromotions.xml PROMOTION_SURVIVALISM_3 ExtraWithdrawal
 		"unitTypes": ["Scout"],
         "column": 9,
         "row": 3
