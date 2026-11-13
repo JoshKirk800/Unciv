@@ -385,6 +385,10 @@ class CityConstructions : IsPartOfGameInfoSerialization {
                     // https://forums.civfanatics.com/threads/hammer-overflow.419352/
                     val maxOverflow = maxOf(productionCost, city.cityStats.currentCityStats.production.roundToInt())
                     productionOverflow = min(maxOverflow, potentialOverflow)
+                    // CvCity::popOrder: the part above the cap is converted to gold at MAXED_UNIT_GOLD_PERCENT or MAXED_BUILDING_GOLD_PERCENT
+                    val lostProduction = potentialOverflow - productionOverflow
+                    val lostPercent = maxedGoldPercent(construction)
+                    if (lostProduction > 0 && lostPercent > 0) city.civ.addGold(lostProduction * lostPercent / 100)
                 }
                 else {
                     city.civ.addNotification("No space available to place [${construction.name}] near [${city.name}]",
@@ -500,6 +504,19 @@ class CityConstructions : IsPartOfGameInfoSerialization {
             if (!rejectionReasons.any { it.hasAReasonToBeRemovedFromQueue() }) continue
 
             val workDone = getWorkDone(constructionName)
+            // CvCity::doCheckProduction: production put into a unit or non-wonder building of which the limit is reached is converted to gold
+            // (wonders are handled below, at 100%)
+            if (workDone > 0 && !(construction is Building && construction.isWonder)
+                && rejectionReasons.any { it.type == RejectionReasonType.MaxNumberBuildable }) {
+                val gold = workDone * maxedGoldPercent(construction) / 100
+                if (gold > 0) {
+                    city.civ.addGold(gold)
+                    val icon = if (construction is Building) "BuildingIcons/$constructionName" else "UnitIcons/$constructionName"
+                    city.civ.addNotification(
+                        "Excess production for [$constructionName] converted to [$gold] gold",
+                        city.location, NotificationCategory.Production, NotificationIcon.Gold, icon)
+                }
+            }
             if (construction is Building) {
                 // Production put into wonders gets refunded
                 if (construction.isWonder && workDone != 0) {
@@ -530,6 +547,12 @@ class CityConstructions : IsPartOfGameInfoSerialization {
             }
             inProgressConstructions.remove(constructionName)
         }
+    }
+
+    /** The percentage of production that is converted to gold when a unit or building cannot be completed, see ModConstants.maxedUnitGoldPercent */
+    private fun maxedGoldPercent(construction: INonPerpetualConstruction): Int {
+        val constants = city.getRuleset().modOptions.constants
+        return if (construction is Building) constants.maxedBuildingGoldPercent else constants.maxedUnitGoldPercent
     }
 
     private fun removeImprovementForBuilding(building: Building){
