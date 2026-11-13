@@ -2330,6 +2330,10 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 ??? example  "Removes extra unhappiness from annexed cities"
 	Applicable to: Building
 
+??? example  "Happiness from this building is not limited by the population of the city"
+	Only matters with the ModConstants `localHappinessCappedByPopulation`, which limits the happiness of the buildings of a city to its population. Civ V's `UnmoddedHappiness` buildings (Circus Maximus, Notre Dame, Eiffel Tower, Prora) are exempt from that.
+	Applicable to: Building
+
 ??? example  "Connects trade routes over water"
 	Applicable to: Building
 

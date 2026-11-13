@@ -108,6 +108,11 @@ class ModConstants {
     // true: as in Civ V (CvTreasury::DoGold) it is set to 0 and the rest of the deficit is lost; a civilization never has negative gold
     var treasuryNeverNegative = false
 
+    // Whether the happiness a city has from its buildings, from policies and beliefs for each building of a kind, from the garrison policy and from
+    // beliefs per city or on rivers is limited to the city's population (2/3 of it, rounded, for India). false: no limit, as before.
+    // true: CvCity::GetLocalHappiness. Buildings with "Happiness from this building is not limited by the population of the city" are exempt.
+    var localHappinessCappedByPopulation = false
+
     // The happiness an annexed city of a conquered civilization costs. Default: its citizens count double, and the city costs 2 more ("Occupied City").
     // The Civ V rulesets: citizens x UNHAPPINESS_PER_OCCUPIED_POPULATION (1.34, CvPlayer::GetUnhappinessFromOccupiedCities) and no extra term
     var annexedCityCitizenUnhappinessFactor = 2f
