@@ -160,8 +160,13 @@ object DiplomacyEvents {
     }
 
     /**
-     *  CvPlayer::acquireCity by conquest: the war damage (the conqueror's and the loser's view; everyone else learns it too), the loser forgets
+     *  CvPlayer::acquireCity by conquest: the war damage (the conqueror's and the loser's view), the loser forgets
      *  liberation credit, and the warmonger penalties (CvDiplomacyAIHelpers::ApplyWarmongerPenalties) unless the city was the conqueror's.
+     *
+     *  The original also adds WAR_DAMAGE_LEVEL_CITY_WEIGHT + population x WAR_DAMAGE_LEVEL_UNINVOLVED_CITY_POP_MULTIPLIER to every other
+     *  player's estimate of what the loser lost to the conqueror (OtherPlayerWarValueLost[loser][conqueror]). That is not kept: the only
+     *  readers of those estimates (CvDiplomacyAI::GetWarScore, the taunt about an attacked protected city-state) read [X][me], what X lost
+     *  to the reading player itself, which the conqueror's own record above covers; the third-party entries are read by the log only.
      *  Call before the city changes hands.
      */
     fun onCityConquered(conqueror: Civilization, loser: Civilization, city: City) {
