@@ -186,7 +186,7 @@ object Battle {
         reduceAttackerMovementPointsAndAttacks(attacker, defender, attackedTile)
 
         // Melee attackers get the XP for a city that was already at its minimum health too (CvUnitCombat::GenerateMeleeCombatInfo)
-        if (!isAlreadyDefeatedCity || attacker.isMelee()) postBattleAddXp(attacker, defender)
+        if (!isAlreadyDefeatedCity || attacker.isMelee()) postBattleAddXp(attacker, defender, attackedTile)
 
         if (attacker is CityCombatant) {
             val cityCanBombardNotification = attacker.getCivInfo().notifications
@@ -627,10 +627,20 @@ object Battle {
         attacker.unit.mostRecentMoveType = UnitMovementMemoryType.UnitAttacked
     }
 
-    private fun postBattleAddXp(attacker: ICombatant, defender: ICombatant) {
+    private fun postBattleAddXp(attacker: ICombatant, defender: ICombatant, attackedTile: Tile) {
+        // CvUnitCombat::Generate*CombatInfo setInBorders, quirks included: in a melee attack on a unit each side is "in borders" when the
+        // tile is its own civilization's, but in a melee attack on a city, a ranged attack or an air attack the attacker counts as in
+        // borders when the tile is the defender's, and the defender when it is the attacker's
+        val tileOwner = attackedTile.getOwner()
+        val meleeOnUnit = !defender.isCity() && !attacker.isAirUnit() && !attacker.isRanged()
+        val attackerInBorders = if (defender.isCity()) true
+            else if (meleeOnUnit) tileOwner == attacker.getCivInfo()
+            else tileOwner == defender.getCivInfo()
+        val defenderInBorders = if (meleeOnUnit) tileOwner == defender.getCivInfo() else tileOwner == attacker.getCivInfo()
+
         fun addXp(attackerXp: Int, defenderXp: Int){
-            addXp(attacker, attackerXp, defender)
-            addXp(defender, defenderXp, attacker)
+            addXp(attacker, attackerXp, defender, attackerInBorders)
+            addXp(defender, defenderXp, attacker, defenderInBorders)
         }
         
         if (attacker.isAirUnit()) addXp(4, 2)
@@ -661,7 +671,8 @@ object Battle {
     }
 
     // XP!
-    internal fun addXp(thisCombatant: ICombatant, amount: Int, otherCombatant: ICombatant) {
+    /** [inBorders]: the fight counts as in the territory of [thisCombatant]'s civilization, which raises the Great General points of a land unit */
+    internal fun addXp(thisCombatant: ICombatant, amount: Int, otherCombatant: ICombatant, inBorders: Boolean = false) {
         if (thisCombatant !is MapUnitCombatant) return
         replacePostCombatPromotion(thisCombatant)
         val civ = thisCombatant.getCivInfo()
@@ -704,7 +715,9 @@ object Battle {
                 greatGeneralUnits += civ.gameInfo.ruleset.units["Great General"]!!
 
             for (unit in greatGeneralUnits) {
-                val greatGeneralPointsBonus = thisCombatant
+                // CvUnit::changeExperience: the in-borders percentage is added to the other Great General modifiers, for land units only
+                val inBordersBonus = if (inBorders && thisCombatant.isLandUnit()) modConstants.greatGeneralPercentInBorders else 0
+                val greatGeneralPointsBonus = inBordersBonus + thisCombatant
                     .getMatchingUniques(UniqueType.GreatPersonEarnedFaster, gameContext, true)
                     .filter { unit.matchesFilter(it.params[0], gameContext) }
                     .sumOf { it.params[1].toDouble() }

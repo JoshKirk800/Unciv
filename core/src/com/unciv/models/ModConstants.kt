@@ -108,6 +108,13 @@ class ModConstants {
     // true: as in Civ V (CvTreasury::DoGold) it is set to 0 and the rest of the deficit is lost; a civilization never has negative gold
     var treasuryNeverNegative = false
 
+    // How much more combat points the next Great General or Admiral needs. false: 50 more each. true: as in Civ V
+    // (CvPlayer::createGreatGeneral) the threshold of 200 grows by 100 x (earned / 10 + 1) with the number earned so far
+    var greatGeneralThresholdLikeCivV = false
+    // Percent of extra Great General points a land unit earns from fighting on a tile of its own civilization's territory, added to the
+    // other bonuses (CvPlayer::recomputeGreatPeopleModifiers, CvUnit::changeExperience: COMBAT_EXPERIENCE_IN_BORDERS_PERCENT)
+    var greatGeneralPercentInBorders = 0
+
     // Constants used to calculate Unit Upgrade gold Cost (can only be modded all-or-nothing)
     // This is a data class for one reason only: The equality implementation enables Gdx Json to omit it when default (otherwise only the individual fields are omitted)
     data class UnitUpgradeCost(

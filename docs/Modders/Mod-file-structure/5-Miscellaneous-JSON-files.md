@@ -270,6 +270,8 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | cityAirUnitCapacity                      | Int    | 6                             | [^W]  |
 | cultureCostLikeCivV                      | Boolean | false                        | [^V]  |
 | treasuryNeverNegative                    | Boolean | false                        | [^Treasury] |
+| greatGeneralThresholdLikeCivV            | Boolean | false                        | [^GGThreshold] |
+| greatGeneralPercentInBorders             | Integer | 0                            | [^GGBorders] |
 | startNormalizerLikeCivV                  | Boolean | false                        | [^G]  |
 | coastExpansionDice                       | List<Int> | empty                      | [^T]  |
 | seaDepositsOfLandResource                | String  | empty                        | [^SeaOil] |
@@ -378,6 +380,8 @@ Legend:
     progress is the turn divided by the number of turns of the game speed, paidUnits is the number of units minus unitMaintenanceFreeUnits and the units made free by uniques.
     The Civ V rulesets use 0, 8 and 7.
 - [^V]: The culture a city needs for its next tile. false: 6 \* (tilesClaimed + 1.4813) ^ 1.3, the percentages of "Culture cost of natural border growth" multiplied.
+- [^GGThreshold]: How many more combat points the next Great General or Admiral needs after one is earned. false: 50 more each. true: as in Civ V (`CvPlayer::createGreatGeneral`) the base of 200 grows by 100 x (number earned / 10 + 1) each time, so 300, 400, ... 1100, then steps of 200.
+- [^GGBorders]: Percent of extra Great General points a land unit earns when it fights on a tile owned by its own civilization, added to the other bonuses such as "is earned faster" (`CvUnit::changeExperience`, `COMBAT_EXPERIENCE_IN_BORDERS_PERCENT`, 100 in Civ V).
 - [^Treasury]: What happens to the treasury when the turn's income would take it below zero. false: the civilization goes into debt, which costs science. true: as in Civ V (`CvTreasury::DoGold`) the treasury is set to 0 and the rest of the deficit is lost, so the gold of a civilization is never negative. Units are disbanded under a deficit in both cases.
     true: the formula of Civ V, 15 + (10 \* tilesGainedByCulture) ^ 1.1, times 1.5 for City-States, the percentages added up (at least -85), times the game speed, rounded down to a multiple of 5.
     The tiles gained by culture do not count tiles that were bought. The Civ V rulesets set true.

@@ -34,6 +34,8 @@ class GreatPersonManager : IsPartOfGameInfoSerialization {
 
     var pointsForNextGreatGeneral = 200
     var pointsForNextGreatGeneralCounter = Counter<String>() // Initial values assigned when needed
+    /** How many of each combat Great Person this civilization earned through combat points; see [ModConstants.greatGeneralThresholdLikeCivV] */
+    var greatGeneralsCreatedCounter = Counter<String>()
 
     var greatGeneralPointsCounter = Counter<String>()
     var greatGeneralPoints = 0
@@ -57,6 +59,7 @@ class GreatPersonManager : IsPartOfGameInfoSerialization {
         toReturn.greatPersonPointsCounter = greatPersonPointsCounter.clone()
         toReturn.pointsForNextGreatPersonCounter = pointsForNextGreatPersonCounter.clone()
         toReturn.pointsForNextGreatGeneralCounter = pointsForNextGreatGeneralCounter.clone()
+        toReturn.greatGeneralsCreatedCounter = greatGeneralsCreatedCounter.clone()
         toReturn.greatGeneralPointsCounter = greatGeneralPointsCounter.clone()
         toReturn.pointsForNextGreatGeneral = pointsForNextGreatGeneral
         toReturn.greatGeneralPoints = greatGeneralPoints
@@ -84,6 +87,17 @@ class GreatPersonManager : IsPartOfGameInfoSerialization {
         return base * speedPercent / 100 * gameInfo.getStartingEra().greatPeoplePercent / 100
     }
 
+    /**
+     * By how much the combat points of the next Great General or Admiral rise when [created] of them are earned. Civ V
+     * (CvPlayer::createGreatGeneral): the percentage modifier on the base of 200 grows by 50 x (created / 10 + 1), so +100 for each of
+     * the first nine, +200 for each of the next ten and so on. Otherwise a flat 50.
+     */
+    @Readonly
+    private fun getGreatGeneralThresholdIncrease(created: Int): Int {
+        if (!civInfo.gameInfo.ruleset.modOptions.constants.greatGeneralThresholdLikeCivV) return 50
+        return 200 * 50 * (created / 10 + 1) / 100
+    }
+
     /** A Great General or Admiral whose combat points are reached, if any; takes the points and raises the next threshold */
     fun getNewGreatGeneral(): String? {
         for ((unit, value) in greatGeneralPointsCounter){
@@ -93,7 +107,8 @@ class GreatPersonManager : IsPartOfGameInfoSerialization {
             val requiredPoints = pointsForNextGreatGeneralCounter[unit] * civInfo.gameInfo.getStartingEra().greatPeoplePercent / 100
             if (value >= requiredPoints) {
                 greatGeneralPointsCounter[unit] -= requiredPoints
-                pointsForNextGreatGeneralCounter[unit] += 50
+                greatGeneralsCreatedCounter.add(unit, 1)
+                pointsForNextGreatGeneralCounter[unit] += getGreatGeneralThresholdIncrease(greatGeneralsCreatedCounter[unit])
                 return unit
             }
         }
