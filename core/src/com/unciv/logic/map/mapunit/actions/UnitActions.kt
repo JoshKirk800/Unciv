@@ -90,6 +90,7 @@ object UnitActions {
         UnitActionType.TriggerUnique to UnitActionsFromUniques::getTriggerUniqueActions,
         UnitActionType.AddInCapital to UnitActionsFromUniques::getAddInCapitalActions,
         UnitActionType.GiftUnit to UnitActions::getGiftActions,
+        UnitActionType.GiftUnitToCityState to UnitActions::getGiftToCityStateActions,
         UnitActionType.Pillage to UnitActionsPillage::getPillageActions
     )
 
@@ -249,6 +250,19 @@ object UnitActions {
                 unit.gift(recipient)
         }
         yield(UnitAction(UnitActionType.GiftUnit, action = giftAction))
+    }
+
+    /**
+     *  CvUnit::CanDistanceGift: with `unitGiftTravelTurns` a military unit can be sent to any city-state its civilization knows, wherever the unit is
+     *  (inside the city-state's own borders the plain gift is used instead). The unit goes at once; see [CityStateFunctions.receiveUnitGiftFromAfar].
+     */
+    private fun getGiftToCityStateActions(unit: MapUnit, tile: Tile) = sequence {
+        if (unit.civ.gameInfo.ruleset.modOptions.constants.unitGiftTravelTurns <= 0) return@sequence
+        val here = tile.getOwner()
+        for (cityState in unit.civ.getKnownCivs().filter { it.isCityState && it != here && it.cityStateFunctions.canReceiveUnitGiftFromAfar(unit) }) {
+            yield(UnitAction(UnitActionType.GiftUnitToCityState, "Gift unit to [${cityState.civName}]",
+                action = { cityState.cityStateFunctions.receiveUnitGiftFromAfar(unit) }))
+        }
     }
 
     private suspend fun SequenceScope<UnitAction>.addAutomateActions(unit: MapUnit) {

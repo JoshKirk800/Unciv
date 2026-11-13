@@ -113,6 +113,7 @@ enum class UnitActionType(val value: String) {
     RemoveHeresy("Remove Heresy"),
     EnhanceReligion("Enhance a Religion"),
     GiftUnit("Gift unit"),
+    GiftUnitToCityState("Gift unit to [cityState]"),
     Skip("Skip turn"),
     AddInCapital("Add in capital")
 }

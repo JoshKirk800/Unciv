@@ -125,6 +125,10 @@ class ModConstants {
     // Civ V (CvUnit::visibilityRange): there is no least value, an embarked unit has EMBARKED_VISIBILITY_RANGE (0) plus what its promotions give,
     // so with 0 nothing lifts it back to 1 (with sightBeyondRangeLikeCivV a unit of range 0 still sees the ring of tiles around it)
     var minimumSightRange = 1
+    // Units that are gifted to a city-state from anywhere on the map ("Gift unit to [city-state]"), not only inside its borders.
+    // 0: not possible. Civ V (CvPlayer::AddIncomingUnit, MINOR_UNIT_GIFT_TRAVEL_TURNS): 3. The unit leaves its owner at once, a new unit of
+    // the same type appears next to the city-state's capital after that many of the city-state's turns, and the influence comes then
+    var unitGiftTravelTurns = 0
 
     // The happiness an annexed city of a conquered civilization costs. Default: its citizens count double, and the city costs 2 more ("Occupied City").
     // The Civ V rulesets: citizens x UNHAPPINESS_PER_OCCUPIED_POPULATION (1.34, CvPlayer::GetUnhappinessFromOccupiedCities) and no extra term

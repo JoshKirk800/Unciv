@@ -203,6 +203,7 @@ enum class UiUnitActionType private constructor(
         override fun getDefaultUseFrequency(unit: MapUnit, unitAction: UnitAction?) =
             if (unitAction?.action == null) 1f else defaultUseFrequency
     },
+    GiftUnitToCityState(UnitActionType.GiftUnitToCityState, portrait("Present"), uncivSound = UncivSound.Silent, page = 1, useFrequency = 5f),
     Skip(UnitActionType.Skip, portrait("Skip"), uncivSound = UncivSound.Silent, useFrequency = 0f),
     ShowAdditionalActions("Show more", portrait("ShowMore"), false, useFrequency = 0f),
     HideAdditionalActions("Back", portrait("HideMore"), false, page = 1, useFrequency = 0f),
