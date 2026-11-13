@@ -72,4 +72,28 @@ class ResourcePlacementLikeCivVTests {
         val bonuses = map.values.count { it.resource != null && ruleset.tileResources[it.resource!!]!!.resourceType == ResourceType.Bonus && it.isLand }
         assertTrue("$bonuses bonus resources on $land land tiles", bonuses < land / 10)
     }
+
+    private fun majorDepositsOnHillsOf(vararg features: String): Set<String> {
+        val game = TestGame(baseRuleset = BaseRuleset.Civ_V_BNW)
+        game.makeRectangularMap(newHeight = 30, newWidth = 30)
+        for (tile in game.tileMap.values) game.setTileTerrainAndFeatures(tile.position, "Plains", "Hill", *features)
+        val tileData = TileDataMap(game.tileMap.values.size)
+        for (tile in game.tileMap.values) tileData[tile] = MapGenTileData(tile, null, game.ruleset)
+
+        val placed = MapRegionResources.placeMajorDeposits(
+            tileData, game.ruleset, game.tileMap.values.toList().shuffled(java.util.Random(1)),
+            game.ruleset.terrains["Hill"]!!, fallbackWeightings = false, baseImpact = 2, randomImpact = 2)
+        return placed.filterValues { it > 0 }.keys.map { it.name }.toSet()
+    }
+
+    /** hills_list holds the forested and jungle hills too, and iron 26, coal 35 and aluminum 39 are drawn for every one of them (PlaceStrategicAndBonusResources) */
+    @Test
+    fun `forested hills get major deposits of iron, coal and aluminum`() {
+        assertEquals(setOf("Iron", "Coal", "Aluminum"), majorDepositsOnHillsOf("Forest"))
+    }
+
+    @Test
+    fun `jungle hills get major deposits of iron, coal and aluminum`() {
+        assertEquals(setOf("Iron", "Coal", "Aluminum"), majorDepositsOnHillsOf("Jungle"))
+    }
 }
