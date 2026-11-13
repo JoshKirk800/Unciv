@@ -206,6 +206,39 @@ object LeagueAutomation {
         return member.voteCommitments.isEmpty()
     }
 
+    /**
+     * CvDeal::IsPossibleToTradeItem for TRADE_ITEM_VOTE_COMMITMENT: [civ] promises [toCiv] [votes] votes on [choice] of the proposal [proposalId]
+     * (an enactment, or a repeal if [repeal]). Not while at war; [canCommitVote]; the proposal must be on the table (not on hold) and at least one vote and
+     * at most the core votes of [civ] promised. The original checks the choice nowhere (a todo) and only asserts the votes.
+     */
+    fun isVoteCommitmentPossible(civ: Civilization, toCiv: Civilization, proposalId: Int, choice: String, votes: Int, repeal: Boolean): Boolean {
+        if (civ.isAtWarWith(toCiv) || !canCommitVote(civ, toCiv)) return false
+        val league = civ.gameInfo.league ?: return false
+        if (votes < 1 || votes > league.getCoreVotes(civ)) return false
+        val proposal = league.proposals.firstOrNull { it.id == proposalId && it.repeal == repeal && !it.onHold } ?: return false
+        return choice in choicesOf(league, proposal, civ)
+    }
+
+    /** What the voters of [proposal] choose from: yes or no for a repeal */
+    private fun choicesOf(league: League, proposal: LeagueProposal, civ: Civilization): List<String> {
+        val decision = if (proposal.repeal) ResolutionDecision.YesNo else league.gameInfo.ruleset.resolutions[proposal.resolution]?.voterDecision
+        return if (decision == null) emptyList() else league.getChoices(decision, civ)
+    }
+
+    /**
+     * The vote commitments [civ] could make to [toCiv] in a deal, which the trade screen offers: all its core votes on each choice of each proposal on
+     * the table, if [isVoteCommitmentPossible] allows any. (The original's Lua offers the same items.)
+     */
+    fun availableVoteCommitments(civ: Civilization, toCiv: Civilization): List<VoteCommitment> {
+        val league = civ.gameInfo.league ?: return emptyList()
+        if (civ.isAtWarWith(toCiv) || !canCommitVote(civ, toCiv)) return emptyList()
+        val votes = league.getCoreVotes(civ)
+        if (votes < 1) return emptyList()
+        return league.proposals.filter { !it.onHold }.flatMap { proposal ->
+            choicesOf(league, proposal, civ).map { VoteCommitment(toCiv.civID, proposal.id, it, votes, !proposal.repeal) }
+        }
+    }
+
     /** CvLeagueAI::AddVoteCommitment: a deal secured the votes of [civ] for [toCiv] */
     fun addVoteCommitment(civ: Civilization, toCiv: Civilization, proposalId: Int, choice: String, votes: Int, repeal: Boolean) {
         val member = civ.gameInfo.league?.members?.get(civ.civID) ?: return

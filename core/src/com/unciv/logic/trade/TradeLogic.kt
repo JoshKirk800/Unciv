@@ -38,7 +38,7 @@ class TradeLogic(val ourCivilization: Civilization, val otherCivilization: Civil
         theirAvailableOffers += getAvailableOffers(otherCivilization, ourCivilization)
     }
     
-    @Readonly
+    @Readonly @Suppress("purity") // the vote commitments read the league AI
     private fun getAvailableOffers(civInfo: Civilization, otherCiv: Civilization): TradeOffersList {
         val offers = TradeOffersList()
         if (civInfo.isCityState || otherCiv.isCityState) return offers
@@ -89,6 +89,10 @@ class TradeLogic(val ourCivilization: Civilization, val otherCivilization: Civil
                     if (slot.getWork() != null)
                         offers.add(TradeOffer(GreatWorkFunctions.tradeId(slot), TradeOfferType.GreatWork, speed = civInfo.gameInfo.speed))
 
+        // TRADE_ITEM_VOTE_COMMITMENT: our votes in the World Congress, on each choice of what is proposed
+        for (commitment in LeagueAutomation.availableVoteCommitments(civInfo, otherCiv))
+            offers.add(VoteCommitmentItem.offer(commitment, civInfo.gameInfo.speed))
+
         val otherCivsWeKnow = civInfo.getKnownCivs()
             .filter { it != otherCiv && it.isMajorCiv && !it.isDefeated() }
 
@@ -129,7 +133,10 @@ class TradeLogic(val ourCivilization: Civilization, val otherCivilization: Civil
         // A stale or one-sided request must never execute a partial trade.
         val ourWorks = currentTrade.ourOffers.filter { it.type == TradeOfferType.GreatWork }
         val theirWorks = currentTrade.theirOffers.filter { it.type == TradeOfferType.GreatWork }
-        if ((ourWorks.isNotEmpty() || theirWorks.isNotEmpty())
+        // The same for vote commitments: CvDeal finalizes with IsPossibleToTradeItem for each item
+        val hasVoteCommitment = currentTrade.ourOffers.any { it.type == TradeOfferType.VoteCommitment }
+            || currentTrade.theirOffers.any { it.type == TradeOfferType.VoteCommitment }
+        if ((ourWorks.isNotEmpty() || theirWorks.isNotEmpty() || hasVoteCommitment)
             && !TradeEvaluation().isTradeValid(currentTrade, ourCivilization, otherCivilization)) return
         val theirDiploManager = otherCivilization.getDiplomacyManager(ourCivilization)!!
 
