@@ -108,6 +108,10 @@ class ModConstants {
     // true: as in Civ V (CvTreasury::DoGold) it is set to 0 and the rest of the deficit is lost; a civilization never has negative gold
     var treasuryNeverNegative = false
 
+    // Movement points extra for entering a hill that has a feature (forest, jungle, fallout...) on top, besides the feature's own cost.
+    // 0: the feature's cost only. Civ V (CvUnitMovement::GetCostsForMove, HILLS_EXTRA_MOVEMENT): 1, so a forested hill costs 3
+    var featureOnHillsExtraMovement = 0
+
     // Constants used to calculate Unit Upgrade gold Cost (can only be modded all-or-nothing)
     // This is a data class for one reason only: The equality implementation enables Gdx Json to omit it when default (otherwise only the individual fields are omitted)
     data class UnitUpgradeCost(
