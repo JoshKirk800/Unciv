@@ -19,7 +19,7 @@
         "cultureCostLikeCivV": true,
         // CvTreasury::DoGold
         "treasuryNeverNegative": true,
-        // CvPlayer::GetBuyPlotCost, CvCity::GetBuyPlotCost, CvCity::CanBuyPlot
+        // CvPlayer::GetBuyPlotCost, CvCity::GetBuyPlotCost, CvCity::CanBuyPlot, CvCity::GetBuyablePlotList
         "plotAcquisitionLikeCivV": true,
         // CvPlayer::GetUnhappinessFromOccupiedCities: UNHAPPINESS_PER_OCCUPIED_POPULATION, no flat term
         "annexedCityCitizenUnhappinessFactor": 1.34,

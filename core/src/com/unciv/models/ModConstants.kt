@@ -108,11 +108,13 @@ class ModConstants {
     // true: as in Civ V (CvTreasury::DoGold) it is set to 0 and the rest of the deficit is lost; a civilization never has negative gold
     var treasuryNeverNegative = false
 
-    // What buying a tile costs and how far it may lie. false: 50 x (distance - 1) + 5 x the tiles its city claimed, within the city's expand range.
-    // true: as in Civ V (CvPlayer::GetBuyPlotCost, CvCity::GetBuyPlotCost, CvCity::CanBuyPlot): (50 + 5 x the tiles the civilization bought, with the
-    // percentages of the "all cities" cost uniques added, x2 for a city-state) x (100 + 100/3 per point of the influence path beyond the city's cheapest
-    // tile) %, a resource -100 points, x game speed, x the percentages of the city's own uniques, rounded down to 5; within 3 tiles of the city.
-    // The step costs of the influence path are the `influenceCost` of the terrains
+    // How tiles are bought and which tile the border takes. false: a tile costs 50 x (distance - 1) + 5 x the tiles its city claimed, can be bought
+    // within the city's expand range, and the border takes the tile that [CityExpansionManager.rankTileForExpansion] ranks best.
+    // true: as in Civ V (CvPlayer::GetBuyPlotCost, CvCity::GetBuyPlotCost, CvCity::CanBuyPlot, CvCity::GetBuyablePlotList): (50 + 5 x the tiles the
+    // civilization bought, with the percentages of the "all cities" cost uniques added, x2 for a city-state) x (100 + 100/3 per point of the influence
+    // path beyond the city's cheapest tile) %, a resource -100 points, x game speed, x the percentages of the city's own uniques, rounded down to 5;
+    // within 3 tiles of the city; the border takes at random one of the tiles with the lowest influence score (path cost x 100, resources, water,
+    // yields, natural wonders, adjacent owned tile). The step costs of the influence path are the `influenceCost` of the terrains
     var plotAcquisitionLikeCivV = false
 
     // The happiness an annexed city of a conquered civilization costs. Default: its citizens count double, and the city costs 2 more ("Occupied City").

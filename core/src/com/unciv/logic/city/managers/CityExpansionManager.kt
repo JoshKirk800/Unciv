@@ -14,9 +14,12 @@ import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.ui.components.extensions.toPercent
 import com.unciv.utils.withItem
 import com.unciv.utils.withoutItem
+import yairm210.purity.annotations.LocalState
 import yairm210.purity.annotations.Readonly
+import com.unciv.logic.map.tile.RoadStatus
 import kotlin.math.max
 import kotlin.math.pow
+import kotlin.random.Random
 import kotlin.math.roundToInt
 
 class CityExpansionManager : IsPartOfGameInfoSerialization {
@@ -205,6 +208,7 @@ class CityExpansionManager : IsPartOfGameInfoSerialization {
 
     @Readonly
     fun chooseNewTileToOwn(): Tile? {
+        if (city.getRuleset().modOptions.constants.plotAcquisitionLikeCivV) return chooseNewTileToOwnLikeCivV()
         // Technically, in the original a random tile with the lowest score was selected
         // However, doing this requires either caching it, which is way more work,
         // or selecting all possible tiles and only choosing one when the border expands.
@@ -213,6 +217,104 @@ class CityExpansionManager : IsPartOfGameInfoSerialization {
         return getChoosableTiles().minByOrNull {
             rankTileForExpansion(it)
         }
+    }
+
+    /**
+     *  CvCity::GetNextBuyablePlot: one of the tiles of [getBuyablePlotList], picked at random, as the original does with the game's random
+     *  number. The pick is seeded by the city and by how many tiles its culture has gained, so that the tile the city screen shows as the next
+     *  one is the tile the border then takes (as long as the list stays the same).
+     */
+    @Readonly
+    private fun chooseNewTileToOwnLikeCivV(): Tile? {
+        val tiles = getBuyablePlotList()
+        if (tiles.isEmpty()) return null
+        val level = if (cultureLevel >= 0) cultureLevel else tilesClaimed()
+        return tiles[Random((city.location.x * 1000 + city.location.y) * 31 + level).nextInt(tiles.size)]
+    }
+
+    /**
+     *  CvCity::GetBuyablePlotList: of the unowned tiles within the expand range (MAXIMUM_ACQUIRE_PLOT_DISTANCE 5) that the influence path reaches
+     *  those with the lowest [plotInfluenceScore]; the border takes one of them.
+     */
+    @Readonly
+    fun getBuyablePlotList(): List<Tile> {
+        val center = city.getCenterTile()
+        val range = city.getExpandRange()
+        val candidates = center.getTilesInDistance(range).filter { it.getOwner() == null }.toList()
+        val pathCosts = PlotInfluence.distances(center, candidates, range)
+        var lowest = Int.MAX_VALUE
+        @LocalState val best = ArrayList<Tile>()
+        for (tile in candidates) {
+            val pathCost = pathCosts[tile] ?: continue
+            if (pathCost <= 0) continue
+            val score = plotInfluenceScore(tile, pathCost)
+            if (score > lowest) continue
+            if (score < lowest) {
+                lowest = score
+                best.clear()
+            }
+            best.add(tile)
+        }
+        return best
+    }
+
+    /**
+     *  The score CvCity::GetBuyablePlotList gives an unowned [tile] whose influence path from the city costs [pathCost] (lower: taken sooner):
+     *  the path cost x PLOT_INFLUENCE_DISTANCE_MULTIPLIER; a resource the civilization can see PLOT_INFLUENCE_RESOURCE_COST (a bonus resource
+     *  beyond the work range 0, within it one less), else water PLOT_INFLUENCE_WATER_COST and a tile beyond the work range
+     *  PLOT_INFLUENCE_RING_COST; an improvement PLOT_INFLUENCE_IMPROVEMENT_COST (a barbarian camp PLOT_INFLUENCE_RING_COST); a road
+     *  PLOT_INFLUENCE_ROUTE_COST; a natural wonder PLOT_INFLUENCE_NW_COST; each point of yield PLOT_INFLUENCE_YIELD_POINT_COST; each unowned
+     *  neighbor with a visible resource (a bonus one only within the work range) -1, with a natural wonder -1 (and a further -1 once if one of
+     *  those is within the work range); PLOT_INFLUENCE_NO_ADJACENT_OWNED_COST if no neighbor belongs to this city.
+     */
+    @Readonly
+    fun plotInfluenceScore(tile: Tile, pathCost: Int): Int {
+        val ai = city.getRuleset().ai
+        val civ = city.civ
+        val center = city.getCenterTile()
+        val ringRange = city.getWorkRange() // NUM_CITY_RINGS
+        val tileDistance = tile.aerialDistanceTo(center)
+        var score = pathCost * ai.define(AiDefine.PLOT_INFLUENCE_DISTANCE_MULTIPLIER)
+
+        val resource = tile.tileResource
+        if (civ.canSeeResource(resource)) {
+            score += ai.define(AiDefine.PLOT_INFLUENCE_RESOURCE_COST)
+            if (resource.resourceType == ResourceType.Bonus) {
+                if (tileDistance > ringRange) score -= ai.define(AiDefine.PLOT_INFLUENCE_RESOURCE_COST) // a distant bonus resource is not wanted
+                else score += 1
+            }
+        } else {
+            if (tile.isWater) score += ai.define(AiDefine.PLOT_INFLUENCE_WATER_COST)
+            if (tileDistance > ringRange) score += ai.define(AiDefine.PLOT_INFLUENCE_RING_COST)
+        }
+
+        if (tile.improvement != null)
+            score += ai.define(if (tile.isBarbarianEncampment()) AiDefine.PLOT_INFLUENCE_RING_COST else AiDefine.PLOT_INFLUENCE_IMPROVEMENT_COST)
+        if (tile.roadStatus != RoadStatus.None) score += ai.define(AiDefine.PLOT_INFLUENCE_ROUTE_COST)
+        if (tile.isNaturalWonder()) score += ai.define(AiDefine.PLOT_INFLUENCE_NW_COST)
+
+        // The tile's yields (CvPlot::getYield of the six yields; no happiness), as the civilization sees it
+        val yields = tile.stats.getTileStats(null, civ)
+        val yieldPoints = yields.food.toInt() + yields.production.toInt() + yields.gold.toInt() +
+            yields.science.toInt() + yields.culture.toInt() + yields.faith.toInt()
+        score += ai.define(AiDefine.PLOT_INFLUENCE_YIELD_POINT_COST) * yieldPoints
+
+        var wonderNearby = false
+        for (adjacent in tile.neighbors) {
+            if (adjacent.getOwner() != null) continue
+            val adjacentDistance = adjacent.aerialDistanceTo(center)
+            val adjacentResource = adjacent.tileResource
+            if (civ.canSeeResource(adjacentResource) &&
+                (adjacentDistance <= ringRange || adjacentResource.resourceType != ResourceType.Bonus)) score -= 1
+            if (adjacent.isNaturalWonder()) {
+                if (adjacentDistance <= ringRange) wonderNearby = true // grab for this city
+                score -= 1 // and grow towards it in any case
+            }
+        }
+        if (wonderNearby) score -= 1
+
+        if (tile.neighbors.none { it.getCity() == city }) score += ai.define(AiDefine.PLOT_INFLUENCE_NO_ADJACENT_OWNED_COST)
+        return score
     }
 
     // Ranks a tile for the expansion algorithm of cities
