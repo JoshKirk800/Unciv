@@ -185,4 +185,24 @@ class BattleDamageTest {
         assertTrue(defenceModifiers.isEmpty())
         assertEquals(0, defenceModifiers.sumValues())
     }
+
+    /** CvUnit::GetStrategicResourceCombatPenalty: floor(missing / used x -50) per missing resource, at most -50 */
+    @Test
+    fun `the penalty for missing strategic resources grows with the shortage and stops at minus 50`() {
+        defaultAttackerTile.militaryUnit = null
+        testGame.addCity(attackerCiv, testGame.getTile(-3, 0)).cityConstructions.addBuilding(testGame.createBuilding("Provides [1] [Horses]"))
+        val horsemen = listOf(testGame.getTile(0, 0), testGame.getTile(1, 1), testGame.getTile(2, 0)).map { testGame.addUnit("Horseman", attackerCiv, it) }
+        fun penalty(): Int {
+            attackerCiv.cache.updateCivResources()
+            val tile = horsemen[0].getTile()
+            return BattleDamage.getAttackModifiers(MapUnitCombatant(horsemen[0]), MapUnitCombatant(defaultDefenderUnit), tile)["Missing resource"]
+        }
+        // 3 horsemen use 3 Horses, 1 is supplied: missing 2 of 3 used = floor(-33.3) = -34
+        assertEquals(-34, penalty())
+        horsemen[2].destroy()
+        // 2 used, 1 supplied: -25 (half), and no more penalty than that for a unit that is not short of its own
+        assertEquals(-25, penalty())
+        horsemen[1].destroy()
+        assertEquals("1 used, 1 supplied", 0, penalty())
+    }
 }
