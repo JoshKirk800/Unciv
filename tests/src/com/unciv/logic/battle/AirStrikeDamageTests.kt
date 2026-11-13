@@ -84,4 +84,21 @@ class AirStrikeDamageTests {
 
         assertEquals(full, low)
     }
+
+    /** CvUnitCombat::GenerateAirSweepCombatInfo: against an air unit 5 XP for the attacker and 5 for the defender; a bombing mission 4 and 2 */
+    @Test
+    fun `an air sweep against an air unit gives 5 and 5 experience, a bombing mission 4 and 2`() {
+        game.addCity(them, game.getTile(3, 0))
+        val fighter = game.addUnit("Fighter", us, game.getTile(0, 0))
+        val enemyFighter = game.addUnit("Fighter", them, game.getTile(3, 0))
+        Battle.attack(MapUnitCombatant(fighter), MapUnitCombatant(enemyFighter))
+        assertEquals("attacker", 5, fighter.promotions.XP)
+        assertEquals("defender", 5, enemyFighter.promotions.XP)
+
+        val target = game.addDefaultMeleeUnitWithUniques(them, game.getTile(2, 0))
+        val xpBefore = bomber.promotions.XP
+        Battle.attack(MapUnitCombatant(bomber), MapUnitCombatant(target))
+        assertEquals("bomber", 4, bomber.promotions.XP - xpBefore)
+        assertEquals("target", 2, target.promotions.XP)
+    }
 }
