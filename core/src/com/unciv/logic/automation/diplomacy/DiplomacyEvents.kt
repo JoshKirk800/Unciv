@@ -177,17 +177,22 @@ object DiplomacyEvents {
         if (conqueror.isMajorCiv && city.foundingCivObject != conqueror) applyWarmongerPenalties(conqueror, loser, loser.cities.size - 1)
     }
 
-    /** CvDiplomacyAIHelpers::GetWarmongerOffset: 1000 × estimated cities on the map / (actual cities × cities the victim has left) */
-    fun warmongerOffset(conqueror: Civilization, numCitiesRemaining: Int): Int {
+    /**
+     *  CvDiplomacyAIHelpers::GetWarmongerOffset (SDK source): 1000 × estimated cities on the map / (actual cities × cities the victim has left),
+     *  scaled by WARMONGER_ON_CITY_STATE_MULTIPLIER percent when the victim is a City-State ("Minor power targeted, half penalty")
+     */
+    fun warmongerOffset(conqueror: Civilization, numCitiesRemaining: Int, victimIsCityState: Boolean): Int {
         val gameInfo = conqueror.gameInfo
-        val estimated = gameInfo.ruleset.ai.worldSize(gameInfo.tileMap.mapParameters.mapSize.getPredefinedOrNextSmaller().name).estimatedNumCities
+        val rules = gameInfo.ruleset.ai
+        val estimated = rules.worldSize(gameInfo.tileMap.mapParameters.mapSize.getPredefinedOrNextSmaller().name).estimatedNumCities
         val actual = gameInfo.civilizations.sumOf { it.cities.size }
-        return 1000 * estimated / (maxOf(actual, 1) * numCitiesRemaining)
+        val offset = 1000 * estimated / (maxOf(actual, 1) * numCitiesRemaining)
+        return if (victimIsCityState) offset * rules.define(AiDefine.WARMONGER_ON_CITY_STATE_MULTIPLIER) / 100 else offset
     }
 
     /** CvDiplomacyAIHelpers::ApplyWarmongerPenalties: every major that knows the conqueror, halved if it is at war with the loser too */
     fun applyWarmongerPenalties(conqueror: Civilization, loser: Civilization, loserCitiesLeft: Int) {
-        val offset = warmongerOffset(conqueror, maxOf(loserCitiesLeft, 1))
+        val offset = warmongerOffset(conqueror, maxOf(loserCitiesLeft, 1), loser.isCityState)
         for (observer in conqueror.gameInfo.civilizations) {
             if (!observer.isMajorCiv || observer == conqueror || !observer.isAlive() || !observer.knows(conqueror)) continue
             val penalty = if (observer.isAtWarWith(loser)) offset / 2 else offset
@@ -244,7 +249,7 @@ object DiplomacyEvents {
             }
         }
         // Negate the warmongering
-        val offset = warmongerOffset(liberator, maxOf(receiver.cities.size + 1, 1))
+        val offset = warmongerOffset(liberator, maxOf(receiver.cities.size + 1, 1), receiver.isCityState)
         for (observer in liberator.gameInfo.civilizations) {
             if (!observer.isMajorCiv || observer == liberator || !observer.isAlive() || !observer.knows(liberator)) continue
             val memory = observer.ai.diplomacy.memoryOf(liberator)
