@@ -449,13 +449,14 @@ class CityStats(val city: City) {
         }
 
         if (hasExtraAnnexUnhappiness())
-            unhappinessFromCitizens *= 2f
+            unhappinessFromCitizens *= civInfo.gameInfo.ruleset.modOptions.constants.annexedCityCitizenUnhappinessFactor
 
         if (unhappinessFromCitizens < 0) unhappinessFromCitizens = 0f
 
         newHappinessList["Population"] = -unhappinessFromCitizens * unhappinessModifier
 
-        if (hasExtraAnnexUnhappiness()) newHappinessList["Occupied City"] = -2f //annexed city
+        val annexedFlatUnhappiness = civInfo.gameInfo.ruleset.modOptions.constants.annexedCityFlatUnhappiness
+        if (hasExtraAnnexUnhappiness() && annexedFlatUnhappiness != 0f) newHappinessList["Occupied City"] = -annexedFlatUnhappiness //annexed city
 
         val happinessFromSpecialists = statsFromSpecialists.happiness.toInt().toFloat()
         if (happinessFromSpecialists > 0) newHappinessList["Specialists"] = happinessFromSpecialists
