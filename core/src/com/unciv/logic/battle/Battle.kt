@@ -633,7 +633,10 @@ object Battle {
             addXp(defender, defenderXp, attacker)
         }
         
-        if (attacker.isAirUnit()) addXp(4, 2)
+        // CvUnitCombat::GenerateAirSweepCombatInfo: a sweep against an air unit gives EXPERIENCE_ATTACKING_AIR_SWEEP (5) to the attacker and
+        // EXPERIENCE_DEFENDING_AIR_SWEEP_AIR (5) to the defender; a bombing mission (GenerateAirCombatInfo) 4 and 2
+        if (attacker.isAirUnit() && defender.isAirUnit()) addXp(5, 5)
+        else if (attacker.isAirUnit()) addXp(4, 2)
         else if (attacker.isRanged()) { // ranged attack
             if (defender.isCity()) addXp(3,2)
             else addXp(2, 2)
