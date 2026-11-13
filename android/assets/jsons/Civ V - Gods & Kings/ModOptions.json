@@ -8,6 +8,8 @@
         "unitMaintenanceExponentDivisor": 7,
         // CvCity::GetJONSCultureThreshold
         "cultureCostLikeCivV": true,
+        // CvTreasury::DoGold
+        "treasuryNeverNegative": true,
         // AssignStartingPlots:NormalizeStartLocation and NormalizeCityState
         "startNormalizerLikeCivV": true,
         // MapGenerator.lua GenerateCoasts: expansion_diceroll_table {4, 4}

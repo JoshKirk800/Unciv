@@ -399,7 +399,7 @@ class TurnManager(val civInfo: Civilization) {
 
         if (! civInfo.isBarbarian) {
             // CvTreasury::DoGold: when the treasury after this turn's income would be at or below the threshold (-5 gold), CvPlayer::DoDeficit
-            // disbands a unit, in half of the cases. The original also resets the treasury to 0; here the debt stays (it costs science)
+            // disbands a unit, in half of the cases. With treasuryNeverNegative the treasury is then set to 0 as in the original, else the debt stays (it costs science)
             val goldAfterTimes100 = civInfo.gold * 100 + (nextTurnStats.gold * 100).toInt()
             if (goldAfterTimes100 <= civInfo.gameInfo.ruleset.ai.define(AiDefine.DEFICIT_UNIT_DISBANDING_THRESHOLD) * 100) {
                 civInfo.ai.military.doDeficit(civInfo)
@@ -408,7 +408,11 @@ class TurnManager(val civInfo: Civilization) {
             }
         }
 
-        civInfo.addGold(nextTurnStats.gold.toInt() )
+        val goldChange = nextTurnStats.gold.toInt()
+        // CvTreasury::DoGold: a treasury that the income would take below zero is set to 0 (the rest of the deficit is lost)
+        if (civInfo.gameInfo.ruleset.modOptions.constants.treasuryNeverNegative && civInfo.gold + goldChange < 0)
+            civInfo.addGold(-civInfo.gold)
+        else civInfo.addGold(goldChange)
 
         if (civInfo.cities.isNotEmpty() && civInfo.gameInfo.ruleset.technologies.isNotEmpty())
             civInfo.tech.endTurn(nextTurnStats.science.toInt())

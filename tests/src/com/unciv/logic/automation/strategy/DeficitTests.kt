@@ -93,4 +93,25 @@ class DeficitTests {
         assertEquals(0, disbandingsOver(100, -50))
         assertFalse(unit.isDestroyed)
     }
+
+    @Test
+    fun `a treasury that the income would take below zero is set to 0 in the Civ V rulesets, and a debt remains in rulesets without the constant`() {
+        assertTrue(game.ruleset.modOptions.constants.treasuryNeverNegative)
+        // CvTreasury::DoGold: SetGold(0) when the gold after the turn's income is below zero
+        endTurnLeaving(-40, 1)
+        assertEquals(0, civ.gold)
+        // and it stays 0 turn after turn, however large the deficit
+        endTurnLeaving(-4000, 2)
+        assertEquals(0, civ.gold)
+
+        game.ruleset.modOptions.constants.treasuryNeverNegative = false
+        endTurnLeaving(-40, 3)
+        assertEquals("without the constant the debt stays", true, civ.gold < 0)
+    }
+
+    @Test
+    fun `a treasury that stays positive after the income is not touched`() {
+        endTurnLeaving(25, 1)
+        assertEquals(25, civ.gold)
+    }
 }
