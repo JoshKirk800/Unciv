@@ -108,6 +108,12 @@ class ModConstants {
     // true: as in Civ V (CvTreasury::DoGold) it is set to 0 and the rest of the deficit is lost; a civilization never has negative gold
     var treasuryNeverNegative = false
 
+    // How much a unit that can speed up construction of a building (the Great Engineer) adds. false: (300 + 30 x population) x production cost
+    // modifier of the game speed, at most what is left minus 1; offered even if the city completes it next turn anyway.
+    // true: as in Civ V (CvUnit::getMaxHurryProduction, getHurryProduction, canHurry): the same in whole numbers with the speed's percentage,
+    // at most all that is left to produce, and not offered when the production is completed next turn anyway.
+    var unitHurryLikeCivV = false
+
     // The happiness an annexed city of a conquered civilization costs. Default: its citizens count double, and the city costs 2 more ("Occupied City").
     // The Civ V rulesets: citizens x UNHAPPINESS_PER_OCCUPIED_POPULATION (1.34, CvPlayer::GetUnhappinessFromOccupiedCities) and no extra term
     var annexedCityCitizenUnhappinessFactor = 2f
