@@ -108,6 +108,16 @@ class ModConstants {
     // true: as in Civ V (CvTreasury::DoGold) it is set to 0 and the rest of the deficit is lost; a civilization never has negative gold
     var treasuryNeverNegative = false
 
+    // Whether a unit that "Withdraws before melee combat" does so as in Civ V (CvUnit::CanWithdrawFromMelee, DoWithdrawFromMelee). false: it
+    // withdraws when the chance of its unique comes up, to a random tile behind it. true: the chances of all its such uniques are added,
+    // lowered by withdrawModEnemyMoves for each move of the attacker above 2 and by withdrawModBlockedTile for each of the three tiles behind
+    // that it cannot retreat to, with no withdrawal at all if all three are blocked; it retreats to the tile straight behind it if it can
+    var withdrawLikeCivV = false
+    /** Percentage points added to the withdraw chance for each move the attacker has above 2 (WITHDRAW_MOD_ENEMY_MOVES); used if [withdrawLikeCivV] */
+    var withdrawModEnemyMoves = -20
+    /** Percentage points added to the withdraw chance for each blocked tile behind the unit (WITHDRAW_MOD_BLOCKED_TILE); used if [withdrawLikeCivV] */
+    var withdrawModBlockedTile = -20
+
     // Constants used to calculate Unit Upgrade gold Cost (can only be modded all-or-nothing)
     // This is a data class for one reason only: The equality implementation enables Gdx Json to omit it when default (otherwise only the individual fields are omitted)
     data class UnitUpgradeCost(

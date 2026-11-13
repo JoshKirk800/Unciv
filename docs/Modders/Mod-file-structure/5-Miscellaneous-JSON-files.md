@@ -270,6 +270,9 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | cityAirUnitCapacity                      | Int    | 6                             | [^W]  |
 | cultureCostLikeCivV                      | Boolean | false                        | [^V]  |
 | treasuryNeverNegative                    | Boolean | false                        | [^Treasury] |
+| withdrawLikeCivV                         | Boolean | false                        | [^Withdraw] |
+| withdrawModEnemyMoves                    | Integer | -20                          | [^Withdraw] |
+| withdrawModBlockedTile                   | Integer | -20                          | [^Withdraw] |
 | startNormalizerLikeCivV                  | Boolean | false                        | [^G]  |
 | coastExpansionDice                       | List<Int> | empty                      | [^T]  |
 | seaDepositsOfLandResource                | String  | empty                        | [^SeaOil] |
@@ -378,6 +381,7 @@ Legend:
     progress is the turn divided by the number of turns of the game speed, paidUnits is the number of units minus unitMaintenanceFreeUnits and the units made free by uniques.
     The Civ V rulesets use 0, 8 and 7.
 - [^V]: The culture a city needs for its next tile. false: 6 \* (tilesClaimed + 1.4813) ^ 1.3, the percentages of "Culture cost of natural border growth" multiplied.
+- [^Withdraw]: How units with "Withdraws before melee combat" withdraw. false: when the chance of the unique comes up, to a random tile behind them. true: as in Civ V (`CvUnit::CanWithdrawFromMelee`) the chances of all such uniques of the unit are added (a unique without a chance counts 100), `withdrawModEnemyMoves` is added for each move the attacker has above 2 and `withdrawModBlockedTile` for each of the three tiles behind the unit that it cannot retreat to, a unit with all three blocked does not withdraw, and one that does goes to the tile straight behind it if it can. The two modifiers do nothing unless `withdrawLikeCivV` is true.
 - [^Treasury]: What happens to the treasury when the turn's income would take it below zero. false: the civilization goes into debt, which costs science. true: as in Civ V (`CvTreasury::DoGold`) the treasury is set to 0 and the rest of the deficit is lost, so the gold of a civilization is never negative. Units are disbanded under a deficit in both cases.
     true: the formula of Civ V, 15 + (10 \* tilesGainedByCulture) ^ 1.1, times 1.5 for City-States, the percentages added up (at least -85), times the game speed, rounded down to a multiple of 5.
     The tiles gained by culture do not count tiles that were bought. The Civ V rulesets set true.
