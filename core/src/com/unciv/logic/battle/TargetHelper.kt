@@ -119,6 +119,9 @@ object TargetHelper {
 
         val tileCombatant = Battle.getMapCombatantOfTile(tile) ?: return false
         if (tileCombatant.getCivInfo() == combatant.getCivInfo()) return false
+        // CvCity::canRangeStrikeAt: "I don't want cities attacking each other directly"
+        if (combatant is CityCombatant && tileCombatant is CityCombatant
+            && !combatant.getCivInfo().gameInfo.ruleset.modOptions.constants.citiesCanBombardCities) return false
         // If the user automates units, one may capture the city before the user had a chance to decide what to do with it,
         //  and then the next unit should not attack that city
         if (tileCombatant is CityCombatant && tileCombatant.city.hasJustBeenConquered) return false

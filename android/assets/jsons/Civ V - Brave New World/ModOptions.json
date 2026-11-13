@@ -51,6 +51,8 @@
         "greatGeneralPercentInBorders": 100,
         // CvUnit::CanWithdrawFromMelee: WITHDRAW_MOD_ENEMY_MOVES -20, WITHDRAW_MOD_BLOCKED_TILE -20
         "withdrawLikeCivV": true,
+        // CvCity::canRangeStrikeAt
+        "citiesCanBombardCities": false,
         // AssignStartingPlots:NormalizeStartLocation and NormalizeCityState
         "startNormalizerLikeCivV": true,
         // MapGenerator.lua GenerateCoasts: expansion_diceroll_table {4, 4}

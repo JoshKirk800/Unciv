@@ -154,6 +154,9 @@ class ModConstants {
     var withdrawModEnemyMoves = -20
     /** Percentage points added to the withdraw chance for each blocked tile behind the unit (WITHDRAW_MOD_BLOCKED_TILE); used if [withdrawLikeCivV] */
     var withdrawModBlockedTile = -20
+    // Whether a city can bombard an enemy city within its range. false: it cannot, only the units outside cities, as in Civ V
+    // (CvCity::canRangeStrikeAt: "I don't want cities attacking each other directly")
+    var citiesCanBombardCities = true
 
     // Constants used to calculate Unit Upgrade gold Cost (can only be modded all-or-nothing)
     // This is a data class for one reason only: The equality implementation enables Gdx Json to omit it when default (otherwise only the individual fields are omitted)
