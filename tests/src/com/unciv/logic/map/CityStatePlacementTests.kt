@@ -45,6 +45,38 @@ class CityStatePlacementTests {
         }
     }
 
+    /** CanPlaceCityStateAt only refuses water, mountains and snow: the desert of a region that is not a desert region is a site as good as any */
+    @Test
+    fun `city states may be placed on the desert of a region that is not a desert region`() {
+        val game = TestGame(baseRuleset = BaseRuleset.Civ_V_BNW)
+        game.makeRectangularMap(newHeight = 40, newWidth = 40)
+        for (tile in game.tileMap.values) game.setTileTerrain(tile.position, "Desert")
+        // One tile that is not desert, in the middle of the map where no band of the region reaches before the last round
+        val middleColumn = game.tileMap.values.let { tiles -> (tiles.minOf { it.getColumn() } + tiles.maxOf { it.getColumn() }) / 2 }
+        val middleRow = game.tileMap.values.let { tiles -> (tiles.minOf { it.getRow() } + tiles.maxOf { it.getRow() }) / 2 }
+        game.setTileTerrain(game.tileMap.values.first { it.getColumn() == middleColumn && it.getRow() == middleRow }.position, "Grassland")
+        game.tileMap.assignContinents(TileMap.AssignContinentsMode.Reassign)
+        val regions = MapRegions(game.ruleset)
+        regions.generateRegions(game.tileMap, 1)
+        val region = regions.regions.single()
+        region.type = "Hybrid"
+        val tileData = TileDataMap(game.tileMap.values.size)
+        for (tile in game.tileMap.values) tileData[tile] = MapGenTileData(tile, region, game.ruleset)
+        assertTrue("desert is undesirable outside a desert region", tileData[game.tileMap.values.first()]!!.isJunk)
+        val civs = (1..4).map { game.addCiv(cityStateType = "Cultured") }
+
+        MinorCivPlacer.placeMinorCivs(regions.regions, game.tileMap, civs, tileData, game.ruleset)
+
+        val starts = game.tileMap.startingLocationsByNation.values.flatten()
+        assertEquals(4, starts.size)
+        val band = ceil(0.167 * max(region.rect.width, region.rect.height)).toInt()
+        for (start in starts) {
+            val column = start.getColumn() - region.rect.x.toInt()
+            assertTrue("city state in column $column of ${region.rect.width.toInt()}",
+                column < band || column >= region.rect.width.toInt() - band)
+        }
+    }
+
     private fun leftoverCityStateGoesTo(baseRuleset: BaseRuleset): Pair<Region, Region> {
         val game = TestGame(baseRuleset = baseRuleset)
         game.makeRectangularMap(newHeight = 40, newWidth = 40, baseTerrain = "Grassland")

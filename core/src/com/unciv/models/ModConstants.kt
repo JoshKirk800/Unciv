@@ -155,6 +155,9 @@ class ModConstants {
     // but forest or jungle, no resource and is no start. minorDepositFrequency: one deposit for this many tiles of that list (Civ V: 23)
     var minorDepositsOnFlatLandOnly = false
     var minorDepositFrequency = 30
+    // Where a city-state may be placed in its region. false: not on land that is undesirable for a start (desert outside desert regions, snow, mountains),
+    // not on tiles at the edge of the map. true: as AssignStartingPlots:CanPlaceCityStateAt: on any land tile that is no mountain and no snow
+    var cityStateSitesLikeCivV = false
 
     // The happiness an annexed city of a conquered civilization costs. Default: its citizens count double, and the city costs 2 more ("Occupied City").
     // The Civ V rulesets: citizens x UNHAPPINESS_PER_OCCUPIED_POPULATION (1.34, CvPlayer::GetUnhappinessFromOccupiedCities) and no extra term
