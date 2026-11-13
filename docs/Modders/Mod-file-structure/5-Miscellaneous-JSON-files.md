@@ -270,6 +270,8 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | cityAirUnitCapacity                      | Int    | 6                             | [^W]  |
 | cultureCostLikeCivV                      | Boolean | false                        | [^V]  |
 | treasuryNeverNegative                    | Boolean | false                        | [^Treasury] |
+| maxedUnitGoldPercent                     | Int     | 0                            | [^MaxedGold] |
+| maxedBuildingGoldPercent                 | Int     | 0                            | [^MaxedGold] |
 | startNormalizerLikeCivV                  | Boolean | false                        | [^G]  |
 | coastExpansionDice                       | List<Int> | empty                      | [^T]  |
 | seaDepositsOfLandResource                | String  | empty                        | [^SeaOil] |
@@ -381,6 +383,7 @@ Legend:
 - [^Treasury]: What happens to the treasury when the turn's income would take it below zero. false: the civilization goes into debt, which costs science. true: as in Civ V (`CvTreasury::DoGold`) the treasury is set to 0 and the rest of the deficit is lost, so the gold of a civilization is never negative. Units are disbanded under a deficit in both cases.
     true: the formula of Civ V, 15 + (10 \* tilesGainedByCulture) ^ 1.1, times 1.5 for City-States, the percentages added up (at least -85), times the game speed, rounded down to a multiple of 5.
     The tiles gained by culture do not count tiles that were bought. The Civ V rulesets set true.
+- [^MaxedGold]: The percentage of the production stored in a unit (`maxedUnitGoldPercent`) or non-wonder building (`maxedBuildingGoldPercent`) that is converted to gold when the construction can no longer be built because its limit was reached (`MaxNumberBuildable`), and of the production above the overflow cap (the cost of the item or the production of the city per turn, whichever is higher) when a unit or building is completed. 0: it is lost. Production put into a wonder that cannot be built any more is always converted to gold at 100%. Civ V (`CvCity::doCheckProduction`, `CvCity::popOrder`): both 100.
 - [^G]: Whether the start of a civilization or City-State is improved with the rules of Civ V (how many bonus resources, when a hill or a horse/iron is added, stone on grass starts).
     The rules name the terrains and resources of the Civ V rulesets (Grassland, Plains, Hill, Wheat, Cattle, ...), so it only fits them. false: the generic rules, which use the yields of the tiles.
 - [^T]: How the map generator widens the coast. Empty: `maxCoastExtension` passes, each ocean tile next to a coast tile becomes coast with 1 in 2. Otherwise ocean next to land becomes coast, then for each entry one pass in which an ocean tile next to a coast tile becomes coast with 1 in that number (Civ V: `[4, 4]`, so coast reaches 3 tiles from land at most).

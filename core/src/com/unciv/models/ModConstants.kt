@@ -108,6 +108,12 @@ class ModConstants {
     // true: as in Civ V (CvTreasury::DoGold) it is set to 0 and the rest of the deficit is lost; a civilization never has negative gold
     var treasuryNeverNegative = false
 
+    // The percentage of the production stored in a unit or non-wonder building that is converted to gold (as for wonders, always 100%) when its limit is reached
+    // and it can no longer be built, and of the production above the overflow cap when it is completed. 0: it is lost (Unciv).
+    // Civ V: GlobalDefines MAXED_UNIT_GOLD_PERCENT and MAXED_BUILDING_GOLD_PERCENT, both 100 (CvCity::doCheckProduction, CvCity::popOrder)
+    var maxedUnitGoldPercent = 0
+    var maxedBuildingGoldPercent = 0
+
     // Constants used to calculate Unit Upgrade gold Cost (can only be modded all-or-nothing)
     // This is a data class for one reason only: The equality implementation enables Gdx Json to omit it when default (otherwise only the individual fields are omitted)
     data class UnitUpgradeCost(
