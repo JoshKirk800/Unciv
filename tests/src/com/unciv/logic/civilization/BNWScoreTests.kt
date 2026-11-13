@@ -27,7 +27,8 @@ class BNWScoreTests {
     fun `BNW cities score eight per city before map scaling, and works four per occupied slot`() {
         val first = game.addCity(civ, game.getTile(0, 0))
         game.addCity(civ, game.getTile(0, 5))
-        val mapFactor = 1276.0 / game.tileMap.mapParameters.numberOfTiles()
+        // CvGame::DoCacheMapScoreMod: the standard world has 4160 tiles
+        val mapFactor = 4160.0 / game.tileMap.mapParameters.numberOfTiles()
         val adjustedFactor = (mapFactor - 1) / 3 + 1
         assertEquals(16 * adjustedFactor, civ.calculateScoreBreakdown()["Cities"]!!, 0.00001)
         assertEquals(8 * adjustedFactor, civ.calculateScoreBreakdown()["Population"]!!, 0.00001)
@@ -103,7 +104,8 @@ class BNWScoreTests {
             olderGame.makeHexagonalMap(8)
             val olderCiv = olderGame.addCiv()
             olderGame.addCity(olderCiv, olderGame.getTile(0, 0))
-            val mapFactor = 1276.0 / olderGame.tileMap.mapParameters.numberOfTiles()
+            val baseTiles = if (baseRuleset == BaseRuleset.Civ_V_GnK) 4160.0 else 1276.0  // Vanilla keeps Unciv's medium map
+            val mapFactor = baseTiles / olderGame.tileMap.mapParameters.numberOfTiles()
             assertEquals(10 * ((mapFactor - 1) / 3 + 1), olderCiv.calculateScoreBreakdown()["Cities"]!!, 0.00001)
             olderCiv.policies.freePolicies = 1
             olderCiv.policies.adopt(olderGame.ruleset.policyBranches["Tradition"]!!)
