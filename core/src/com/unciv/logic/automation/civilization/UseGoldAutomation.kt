@@ -101,10 +101,12 @@ object UseGoldAutomation {
 
     /**
      *  The base tile cost of a city - the original's player-level CvPlayer::GetBuyPlotCost, which its tile costs scale by distance.
-     *  Unciv prices tiles per city ([com.unciv.logic.city.managers.CityExpansionManager.getGoldCostOfTile]): this is the price of a
-     *  tile at distance 2, the closest one that can be bought.
+     *  With plotAcquisitionLikeCivV it is that: [Civilization.getBuyPlotCost]. Otherwise Unciv prices tiles per city
+     *  ([com.unciv.logic.city.managers.CityExpansionManager.getGoldCostOfTile]): this is the price of a tile at distance 2, the closest one
+     *  that can be bought.
      */
     fun baseTileCost(city: City): Int {
+        if (city.civ.gameInfo.ruleset.modOptions.constants.plotAcquisitionLikeCivV) return city.civ.getBuyPlotCost()
         val ringTwoTile = city.getCenterTile().getTilesAtDistance(2).firstOrNull() ?: city.getCenterTile()
         return city.expansion.getGoldCostOfTile(ringTwoTile)
     }
@@ -158,8 +160,11 @@ object UseGoldAutomation {
         var bestScore = -1
         var bestTile: Tile? = null
         var scoring: PlotScoring? = null
+        val likeCivV = city.civ.gameInfo.ruleset.modOptions.constants.plotAcquisitionLikeCivV
         for (tile in city.tilesInRange) {
             if (!city.expansion.canBuyTile(tile)) continue
+            // CvCity::CanBuyPlot without bIgnoreCost: only a tile the civilization can pay for counts
+            if (likeCivV && city.expansion.getGoldCostOfTile(tile) > city.civ.gold) continue
             val plotScoring = scoring ?: PlotScoring(city).also { scoring = it }
             val score = plotScoring.score(tile)
             if (score > bestScore) {

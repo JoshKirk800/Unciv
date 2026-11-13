@@ -48,7 +48,7 @@ class CityFounder {
             .sumOf { it.params[0].toInt() }
         for (i in 0 until extraTiles.coerceAtLeast(0)) {
             val nextTile = city.expansion.chooseNewTileToOwn() ?: break
-            city.expansion.takeOwnership(nextTile)
+            city.expansion.acquireTile(nextTile) // CvPlayer::found: CvCity::DoAcquirePlot
         }
 
 

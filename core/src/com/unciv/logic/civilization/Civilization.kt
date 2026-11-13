@@ -21,6 +21,7 @@ import com.unciv.models.metadata.BaseRuleset
 import com.unciv.models.metadata.GameParameters
 import com.unciv.models.ruleset.Building
 import com.unciv.models.ruleset.Policy
+import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.models.ruleset.nation.CityStateType
 import com.unciv.models.ruleset.nation.Difficulty
 import com.unciv.models.ruleset.nation.Nation
@@ -233,6 +234,8 @@ class Civilization : IsPartOfGameInfoSerialization {
     // This will NOT be an ArrayList in memory right after GameStarter - but save and reload or pass a next turn, and it will be.
     var cities = listOf<City>()
     var citiesCreated = 0
+    /** The tiles this civilization has bought with gold (CvPlayer::m_iNumPlotsBought); each one raises the price of the next by 5 under plotAcquisitionLikeCivV */
+    var plotsBought = 0
     /** Landmasses where the founded-city luxury trait has already granted a resource. */
     var uniqueLuxuryAreas = HashSet<Int>()
     /** Landmass of the original capital, even if that city is later captured. */
@@ -367,6 +370,7 @@ class Civilization : IsPartOfGameInfoSerialization {
         toReturn.notificationsLog.addAll(notificationsLog)
         toReturn.notificationCountAtStartTurn = notificationCountAtStartTurn
         toReturn.citiesCreated = citiesCreated
+        toReturn.plotsBought = plotsBought
         toReturn.uniqueLuxuryAreas.addAll(uniqueLuxuryAreas)
         toReturn.originalLuxuryArea = originalLuxuryArea
         toReturn.popupAlerts.addAll(popupAlerts)
@@ -523,6 +527,26 @@ class Civilization : IsPartOfGameInfoSerialization {
         contract { returns(true) implies(resource != null) }
         if (resource == null) return false
         return tech.isRevealed(resource)
+    }
+
+    /**
+     *  CvPlayer::GetBuyPlotCost: the price of a tile before its distance counts. PLOT_BASE_COST 50 + PLOT_ADDITIONAL_COST_PER_PLOT 5 for each tile
+     *  this civilization has bought ([extraPlots] more: the tiles a purchase of several would add), x (100 + the "in all cities" percentages of the
+     *  tile cost uniques) %, x MINOR_CIV_GOLD_PERCENT 200 % for a city-state; whole numbers at every step.
+     *  (The original's player-wide modifier is `GetPlotGoldCostMod`, from policies, traits and the global building modifier; the ones that are
+     *  not "in all cities" are the city's own, see CityExpansionManager.getGoldCostOfTile.)
+     */
+    @Readonly
+    fun getBuyPlotCost(extraPlots: Int = 0): Int {
+        val ai = gameInfo.ruleset.ai
+        var cost = ai.define(AiDefine.PLOT_BASE_COST) + ai.define(AiDefine.PLOT_ADDITIONAL_COST_PER_PLOT) * (plotsBought + extraPlots)
+        var percent = 0
+        forEachMatchingUnique(UniqueType.TileCostPercentage) { unique ->
+            if (unique.params[1] == "in all cities") percent += unique.params[0].toInt()
+        }
+        if (percent != 0) cost = cost * (100 + percent) / 100
+        if (isCityState) cost = cost * ai.define(AiDefine.MINOR_CIV_GOLD_PERCENT) / 100
+        return cost
     }
 
     /** Note that for stockpiled resources, this gives by how much it grows per turn, not current amount */
