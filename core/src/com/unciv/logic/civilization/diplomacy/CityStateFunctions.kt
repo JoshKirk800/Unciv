@@ -365,7 +365,7 @@ class CityStateFunctions(val civInfo: Civilization) {
         var cost = (500 * civInfo.gameInfo.speed.goldCostModifier).toInt()
         // Plus disband value of all units
         for (unit in civInfo.units.getCivUnits()) {
-            cost += unit.baseUnit.getDisbandGold(civInfo)
+            cost += unit.getScrapGold()
         }
         // Round to lower multiple of 5
         cost /= 5

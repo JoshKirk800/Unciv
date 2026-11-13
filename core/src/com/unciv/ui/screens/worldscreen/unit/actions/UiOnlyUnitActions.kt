@@ -33,7 +33,7 @@ object UiOnlyUnitActions {
 
     private fun getDisbandAction(unit: MapUnit): UiUnitAction {
         val question = if (unit.currentTile.getOwner() == unit.civ)
-            "Disband this unit for [${unit.baseUnit.getDisbandGold(unit.civ)}] gold?"
+            "Disband this unit for [${unit.getScrapGold()}] gold?"
         else "Do you really want to disband this unit?"
         return UiUnitAction(UiUnitActionType.DisbandUnit,
             confirmation = UnitActionConfirmation(question, "Disband unit"),

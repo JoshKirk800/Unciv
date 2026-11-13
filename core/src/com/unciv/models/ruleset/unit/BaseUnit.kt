@@ -211,7 +211,17 @@ class BaseUnit : RulesetObject(), INonPerpetualConstruction {
 
     override fun getStatBuyCost(city: City, stat: Stat): Int? = costFunctions.getStatBuyCost(city, stat)
 
-    @Readonly fun getDisbandGold(civInfo: Civilization) = getBaseGoldCost(civInfo, null).toInt() / 20
+    /** The gold for disbanding this unit with [healthPercent] of its health left, not counting what it carries: see ModConstants.disbandRefundPercent */
+    @Readonly
+    fun getDisbandGold(civInfo: Civilization, healthPercent: Int = 100): Int {
+        val refundPercent = civInfo.gameInfo.ruleset.modOptions.constants.disbandRefundPercent
+        if (refundPercent <= 0) return getBaseGoldCost(civInfo, null).toInt() / 20
+        // CvUnit::GetScrapGold, each step truncated
+        if (cost <= 0) return 0
+        var gold = cost * refundPercent / 100
+        gold = gold * healthPercent / 100
+        return (gold * civInfo.gameInfo.speed.productionCostModifier).toInt()
+    }
 
     override fun shouldBeDisplayed(cityConstructions: CityConstructions, queue: List<String>): Boolean {
         val rejectionReasons = getRejectionReasons(cityConstructions, queue)
