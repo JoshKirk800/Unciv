@@ -274,6 +274,7 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | annexedCityFlatUnhappiness               | Float   | 2                            | [^Annexed] |
 | nukeCivilianDeathDamage                  | Int     | 60                           | [^NukeCivilians] |
 | disbandRefundPercent                     | Int     | 0                            | [^Disband] |
+| featureOnHillsExtraMovement              | Int     | 0                            | [^HillFeature] |
 | startNormalizerLikeCivV                  | Boolean | false                        | [^G]  |
 | coastExpansionDice                       | List<Int> | empty                      | [^T]  |
 | seaDepositsOfLandResource                | String  | empty                        | [^SeaOil] |
@@ -387,6 +388,7 @@ Legend:
 - [^Annexed]: The happiness an annexed city of a conquered civilization costs (a puppet or a city of the civilization's own founding does not count): its citizens' unhappiness is multiplied by the factor, and the city costs the flat amount more as "Occupied City". The Civ V rulesets use 1.34 and 0, as `CvPlayer::GetUnhappinessFromOccupiedCities` does (`UNHAPPINESS_PER_OCCUPIED_POPULATION`).
 - [^NukeCivilians]: The damage, out of 100 hit points, from a nuclear blast at which a civilian unit dies. 60: it dies when its health is down to 40 or less. Civ V (`CvUnitCombat::ApplyNuclearExplosionDamage`) uses 6, which kills every civilian in the blast, because a blast does at least 30 damage.
 - [^Disband]: The gold a disbanded unit gives, in percent of its production cost, times the health it has left and the game speed, plus the same for every unit it carries (a transport). 0: a twentieth of its purchase price, whatever its health. Civ V (`CvUnit::GetScrapGold`, `DISBAND_UNIT_REFUND_PERCENT`): 25.
+- [^HillFeature]: Movement points extra for entering a hill that has a feature (forest, jungle, fallout) on top, in addition to the feature's own movement cost. 0: the feature's cost only. Civ V (`CvUnitMovement::GetCostsForMove`, `HILLS_EXTRA_MOVEMENT`): 1, so a forested hill costs 3.
     true: the formula of Civ V, 15 + (10 \* tilesGainedByCulture) ^ 1.1, times 1.5 for City-States, the percentages added up (at least -85), times the game speed, rounded down to a multiple of 5.
     The tiles gained by culture do not count tiles that were bought. The Civ V rulesets set true.
 - [^G]: Whether the start of a civilization or City-State is improved with the rules of Civ V (how many bonus resources, when a hill or a horse/iron is added, stone on grass starts).

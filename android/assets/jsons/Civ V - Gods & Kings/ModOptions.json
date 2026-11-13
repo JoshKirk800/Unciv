@@ -19,6 +19,8 @@
         "disbandRefundPercent": 25,
         // CvGame::DoCacheMapScoreMod: 80 x 52, the standard world size
         "scoreBaseMapTiles": 4160,
+        // CvUnitMovement::GetCostsForMove: HILLS_EXTRA_MOVEMENT
+        "featureOnHillsExtraMovement": 1,
         // AssignStartingPlots:NormalizeStartLocation and NormalizeCityState
         "startNormalizerLikeCivV": true,
         // MapGenerator.lua GenerateCoasts: expansion_diceroll_table {4, 4}

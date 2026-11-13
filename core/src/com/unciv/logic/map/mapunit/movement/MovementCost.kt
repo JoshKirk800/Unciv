@@ -87,7 +87,7 @@ object MovementCost {
 
         // Cities reduce terrain cost to 1
         val terrainCost = if (to.isCityCenter()) 1f
-            else to.lastTerrain.movementCost.toFloat()
+            else to.lastTerrain.movementCost.toFloat() + featureOnHillsExtraCost(to)
 
         if (unit.cache.noTerrainMovementUniques)
             return terrainCost + extraCost
@@ -122,6 +122,15 @@ object MovementCost {
             return terrainCost * 0.5f + extraCost
 
         return terrainCost + extraCost // no road or other movement cost reduction
+    }
+
+    /** CvUnitMovement::GetCostsForMove adds HILLS_EXTRA_MOVEMENT to the cost of the feature on a hill (a feature's cost replaces the terrain's, so
+     *  hills themselves already cost their own 2) */
+    @Readonly
+    private fun featureOnHillsExtraCost(tile: Tile): Float {
+        val hill = tile.getHillTerrain() ?: return 0f
+        if (tile.lastTerrain === hill) return 0f
+        return tile.tileMap.gameInfo.ruleset.modOptions.constants.featureOnHillsExtraMovement.toFloat()
     }
 
     @Readonly
