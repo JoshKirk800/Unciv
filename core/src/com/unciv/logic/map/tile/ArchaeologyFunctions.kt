@@ -239,7 +239,7 @@ object ArchaeologyFunctions {
      *
      * - No free Art/Artifact slot: a writing becomes culture, anything else a Landmark.
      * - Outside our lands: the artifact, but a Landmark in the land of a city-state when pursuing the diplomatic grand strategy, unless
-     *   we are at war with it or our approach to it is conquest.
+     *   our approach to it is conquest (CvPlayerCulture::GetArchaeologyChoice looks at nothing else: being at war is not a reason by itself).
      * - In our lands but outside the work radius of all our cities (CvPlot::getWorkingCity is null): the artifact.
      * - From the first era: a Landmark.
      * - Otherwise a Landmark (culture for a writing) if the other archaeologists and sites can fill all free Art/Artifact slots, else the artifact.
@@ -256,7 +256,7 @@ object ArchaeologyFunctions {
         var choice = when {
             freeArtSlots == 0 -> if (isWriting) ArchaeologyChoice.CultureBoost else ArchaeologyChoice.Landmark
             owner != civ -> {
-                if (owner?.isCityState == true && civ.ai.isGoingForDiploVictory() && !civ.isAtWarWith(owner)) {
+                if (owner?.isCityState == true && civ.ai.isGoingForDiploVictory()) {
                     if (civ.ai.minorCivApproaches[owner.civID] == MinorCivApproach.Conquest)
                         ArchaeologyChoice.ArtifactOfFirst
                     else ArchaeologyChoice.Landmark
