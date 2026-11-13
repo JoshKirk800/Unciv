@@ -399,6 +399,31 @@ class BattleTest(private val pathfindingAlgorithm: PathfindingAlgorithm) {
     }
 
     @Test
+    fun `a civilian in the blast dies when the damage reaches the ruleset's threshold`() {
+        // CvUnitCombat::ApplyNuclearExplosionDamage: with NUKE_NON_COMBAT_DEATH_THRESHOLD 6 every civilian in the blast dies
+        testGame.ruleset.modOptions.constants.nukeCivilianDeathDamage = 6
+        val worker = testGame.addUnit("Worker", defenderCiv, testGame.getTile(0,2))
+        testGame.addCity(attackerCiv, testGame.getTile(0,1))
+        val attackerUnit = testGame.addUnit("Atomic Bomb", attackerCiv, testGame.getTile(0,1))
+
+        Battle.attackOrNuke(MapUnitCombatant(attackerUnit), AttackableTile(attackerUnit.getTile(), defaultDefenderUnit.currentTile, 0f, null))
+
+        assertTrue(worker.isDestroyed)
+    }
+
+    @Test
+    fun `a civilian in the blast survives when the damage stays below the ruleset's threshold`() {
+        testGame.ruleset.modOptions.constants.nukeCivilianDeathDamage = 1000
+        val worker = testGame.addUnit("Worker", defenderCiv, testGame.getTile(0,2))
+        testGame.addCity(attackerCiv, testGame.getTile(0,1))
+        val attackerUnit = testGame.addUnit("Atomic Bomb", attackerCiv, testGame.getTile(0,1))
+
+        Battle.attackOrNuke(MapUnitCombatant(attackerUnit), AttackableTile(attackerUnit.getTile(), defaultDefenderUnit.currentTile, 0f, null))
+
+        assertFalse(worker.isDestroyed)
+    }
+
+    @Test
     fun `should damage ALL units in blast radius`() {
         // given
         val thirdCiv = testGame.addCiv()
