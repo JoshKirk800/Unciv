@@ -108,6 +108,11 @@ class ModConstants {
     // true: as in Civ V (CvTreasury::DoGold) it is set to 0 and the rest of the deficit is lost; a civilization never has negative gold
     var treasuryNeverNegative = false
 
+    // Which tile one step beyond a unit's sight range is seen. false: one that is taller than the tile the unit stands on (Unciv).
+    // true: as in Civ V (CvPlot::changeAdjacentSight, seeThroughLevel without forest and jungle): one taller than what blocks the line to it,
+    // whatever the unit stands on, so a unit on a hill sees a hill or mountain behind flat land, and a flat forest behind flat land is not seen
+    var sightBeyondRangeLikeCivV = false
+
     // The happiness an annexed city of a conquered civilization costs. Default: its citizens count double, and the city costs 2 more ("Occupied City").
     // The Civ V rulesets: citizens x UNHAPPINESS_PER_OCCUPIED_POPULATION (1.34, CvPlayer::GetUnhappinessFromOccupiedCities) and no extra term
     var annexedCityCitizenUnhappinessFactor = 2f
