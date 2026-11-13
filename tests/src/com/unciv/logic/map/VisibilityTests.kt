@@ -172,7 +172,7 @@ class VisibilityTests {
         val source = testGame.setTileTerrain(HexCoord.Zero, Constants.grassland)
         testGame.setTileTerrainAndFeatures(HexCoord(1,0), Constants.grassland, Constants.hill)
         val intermediate = testGame.setTileTerrainAndFeatures(HexCoord(2,0), Constants.grassland, Constants.hill)
-        val beyondSight = testGame.setTileTerrainAndFeatures(HexCoord(3,0), Constants.grassland, Constants.hill, Constants.forest)
+        val beyondSight = testGame.setTileTerrain(HexCoord(3,0), Constants.mountain)
 
         val viewableTiles = source.getViewableTilesList(2)
 
@@ -218,6 +218,62 @@ class VisibilityTests {
         val attackableTiles = testGame.tileMap.getViewableTiles(grassland.position, 2, true)
 
         assertTrue(attackableTiles.contains(mountain))
+    }
+
+    // CvPlot::changeAdjacentSight: the ring one beyond the range ignores forest and jungle (seeThroughLevel without shrubbery)
+    // and the height of the observer; the Civ V rulesets set sightBeyondRangeLikeCivV
+    @Test
+    fun cannotSeeHillForestBeyondRangeOverHill() {
+        val source = testGame.setTileTerrain(HexCoord.Zero, Constants.grassland)
+        testGame.setTileTerrainAndFeatures(HexCoord(1,0), Constants.grassland, Constants.hill)
+        testGame.setTileTerrainAndFeatures(HexCoord(2,0), Constants.grassland, Constants.hill)
+        val beyondSight = testGame.setTileTerrainAndFeatures(HexCoord(3,0), Constants.grassland, Constants.hill, Constants.forest)
+
+        assertFalse(source.getViewableTilesList(2).contains(beyondSight))
+    }
+
+    @Test
+    fun cannotSeeForestBeyondRangeOverFlatLand() {
+        val source = testGame.setTileTerrain(HexCoord.Zero, Constants.grassland)
+        testGame.setTileTerrain(HexCoord(1,0), Constants.grassland)
+        testGame.setTileTerrain(HexCoord(2,0), Constants.grassland)
+        val beyondSight = testGame.setTileTerrainAndFeatures(HexCoord(3,0), Constants.grassland, Constants.forest)
+
+        assertFalse(source.getViewableTilesList(2).contains(beyondSight))
+    }
+
+    @Test
+    fun hillObserverSeesHillBeyondRangeOverFlatLand() {
+        val source = testGame.setTileTerrainAndFeatures(HexCoord.Zero, Constants.grassland, Constants.hill)
+        testGame.setTileTerrain(HexCoord(1,0), Constants.grassland)
+        testGame.setTileTerrain(HexCoord(2,0), Constants.grassland)
+        val beyondSight = testGame.setTileTerrainAndFeatures(HexCoord(3,0), Constants.grassland, Constants.hill)
+
+        assertTrue(source.getViewableTilesList(2).contains(beyondSight))
+    }
+
+    @Test
+    fun hillObserverDoesNotSeeHillBeyondRangeOverHill() {
+        val source = testGame.setTileTerrainAndFeatures(HexCoord.Zero, Constants.grassland, Constants.hill)
+        testGame.setTileTerrain(HexCoord(1,0), Constants.grassland)
+        testGame.setTileTerrainAndFeatures(HexCoord(2,0), Constants.grassland, Constants.hill)
+        val beyondSight = testGame.setTileTerrainAndFeatures(HexCoord(3,0), Constants.grassland, Constants.hill)
+
+        assertFalse(source.getViewableTilesList(2).contains(beyondSight))
+    }
+
+    @Test
+    fun sightBeyondRangeKeepsUncivRuleWithoutTheConstant() {
+        testGame.ruleset.modOptions.constants.sightBeyondRangeLikeCivV = false
+        val source = testGame.setTileTerrainAndFeatures(HexCoord.Zero, Constants.grassland, Constants.hill)
+        testGame.setTileTerrain(HexCoord(1,0), Constants.grassland)
+        testGame.setTileTerrain(HexCoord(2,0), Constants.grassland)
+        val hill = testGame.setTileTerrainAndFeatures(HexCoord(3,0), Constants.grassland, Constants.hill)
+        val forest = testGame.setTileTerrainAndFeatures(HexCoord(0,3), Constants.grassland, Constants.forest)
+
+        val viewable = source.getViewableTilesList(2)
+        assertFalse(viewable.contains(hill))   // not taller than the hill the unit stands on
+        assertFalse(viewable.contains(forest))
     }
 
 }

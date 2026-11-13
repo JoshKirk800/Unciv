@@ -519,11 +519,14 @@ class TileMap(initialCapacity: Int = 10) : IsPartOfGameInfoSerialization {
 
     data class ViewableTile(val tile: Tile, val maxHeightSeenToTile: Int, val isVisible: Boolean, val isAttackable: Boolean)
 
-    /** @return List of tiles visible from location [position] for a unit with sight range [sightDistance] */
+    /** @return List of tiles visible from location [position] for a unit with sight range [sightDistance]
+     *  With `sightBeyondRangeLikeCivV` the ring one beyond the range is shown by CvPlot::changeAdjacentSight's rule:
+     *  a tile there is seen if its own height, without its forest or jungle, is above the highest thing between, wherever the observer stands */
     @Readonly
     fun getViewableTiles(position: HexCoord, sightDistance: Int, forAttack: Boolean = false): List<Tile> {
         val origin = get(position)
         val aUnitHeight = origin.unitHeight
+        val sightBeyondLikeCivV = ruleset?.modOptions?.constants?.sightBeyondRangeLikeCivV == true
         val viewableTiles = mutableListOf(ViewableTile(
             origin,
             aUnitHeight,
@@ -532,7 +535,8 @@ class TileMap(initialCapacity: Int = 10) : IsPartOfGameInfoSerialization {
         ))
         // maxHeightSeenToTile of the tiles of the layers done so far: a tile's neighbors nearer to us are all in the previous layer
         val maxHeightSeen = HashMap<Tile, Int>()
-        maxHeightSeen[origin] = aUnitHeight
+        // CvPlot::changeAdjacentSight starts the line of sight with level 0 at the observer, flat land being 1: here -1 (the observer's own height is compared separately)
+        maxHeightSeen[origin] = if (sightBeyondLikeCivV) -1 else aUnitHeight
 
         for (i in 1..sightDistance+1) { // in each layer,
             // This is so we don't use tiles in the same distance to "see over",
@@ -543,7 +547,8 @@ class TileMap(initialCapacity: Int = 10) : IsPartOfGameInfoSerialization {
                 val cTileHeight = cTile.tileHeight
 
                 // For the sightdistance+1 layer - that's "one out of sight" - it's only visible if it's higher than the current tile
-                if (i == sightDistance + 1 && (cTileHeight <= aUnitHeight || forAttack))
+                // (sightBeyondRangeLikeCivV: higher than what is in between, see below)
+                if (i == sightDistance + 1 && (forAttack || (!sightBeyondLikeCivV && cTileHeight <= aUnitHeight)))
                     return@forEachTileAtDistance
 
                 /*
@@ -562,10 +567,12 @@ class TileMap(initialCapacity: Int = 10) : IsPartOfGameInfoSerialization {
                     if (seen < bMinimumHighestSeenTerrainSoFar) bMinimumHighestSeenTerrainSoFar = seen
                 }
 
+                val isVisible = if (i == sightDistance + 1 && sightBeyondLikeCivV) cTile.unitHeight > bMinimumHighestSeenTerrainSoFar
+                    else aUnitHeight >= bMinimumHighestSeenTerrainSoFar || cTileHeight > bMinimumHighestSeenTerrainSoFar
                 tilesToAddInDistanceI.add(ViewableTile(
                     cTile,
                     max(cTileHeight, bMinimumHighestSeenTerrainSoFar),
-                    aUnitHeight >= bMinimumHighestSeenTerrainSoFar || cTileHeight > bMinimumHighestSeenTerrainSoFar,
+                    isVisible,
                     aUnitHeight >= bMinimumHighestSeenTerrainSoFar || cTile.unitHeight > bMinimumHighestSeenTerrainSoFar,
                 ))
             }
