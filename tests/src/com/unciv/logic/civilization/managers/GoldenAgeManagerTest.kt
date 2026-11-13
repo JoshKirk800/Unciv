@@ -144,4 +144,25 @@ class GoldenAgeManagerTest {
         // then
         assertEquals(15, goldenAgeManager.turnsLeftForCurrentGoldenAge)
     }
+
+    /** CvPlayer::GetGoldenAgeProgressThreshold: (500 + 250 per golden age) + 1% of it per city after the first, x GreatPeoplePercent, down to a multiple of 5 */
+    @Test
+    fun `the golden age threshold follows the original's integer arithmetic`() {
+        testGame.makeHexagonalMap(3)
+        testGame.addCity(civ, testGame.getTile(HexCoord.Zero))
+        assertEquals("one city, standard speed", 500, goldenAgeManager.happinessRequiredForNextGoldenAge())
+        testGame.addCity(civ, testGame.getTile(2, 0))
+        testGame.addCity(civ, testGame.getTile(-2, 0))
+        assertEquals("three cities: 500 + 10", 510, goldenAgeManager.happinessRequiredForNextGoldenAge())
+        goldenAgeManager.storedHappiness = goldenAgeManager.happinessRequiredForNextGoldenAge()
+        goldenAgeManager.endTurn(10) // the first golden age
+        // 750 + int(750 x 2 x 0.01) = 765
+        assertEquals(765, goldenAgeManager.happinessRequiredForNextGoldenAge())
+        testGame.setSpeed("Quick")
+        // 765 x 67 / 100 = 512, down to a multiple of 5
+        assertEquals(510, goldenAgeManager.happinessRequiredForNextGoldenAge())
+        testGame.setSpeed("Epic")
+        // 765 x 150 / 100 = 1147, down to a multiple of 5
+        assertEquals(1145, goldenAgeManager.happinessRequiredForNextGoldenAge())
+    }
 }
