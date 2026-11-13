@@ -698,6 +698,16 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
 
         if (!tileMap.mapParameters.worldWrap || distance <= tileMap.width / 2) return distance
 
+        if (tileMap.mapParameters.civVGridWrap) {
+            // The rows of the grid are not centred on the origin, so try the twin on either side and not the one nearest to the origin
+            val wrap = tileMap.wrapVector
+            val dxEast = xDelta - wrap.x
+            val dyEast = yDelta - wrap.y
+            val dxWest = xDelta + wrap.x
+            val dyWest = yDelta + wrap.y
+            return minOf(distance, maxOf(abs(dxEast), abs(dyEast), abs(dxEast - dyEast)), maxOf(abs(dxWest), abs(dyWest), abs(dxWest - dyWest)))
+        }
+
         val otherTileUnwrappedPos = tileMap.getUnwrappedPosition(otherPositionHexcoord)
         val xDeltaWrapped = positionHexcoord.x - otherTileUnwrappedPos.x
         val yDeltaWrapped = positionHexcoord.y - otherTileUnwrappedPos.y
