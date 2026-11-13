@@ -12,5 +12,7 @@ object BattleConstants {
     /** WOUNDED_DAMAGE_MULTIPLIER in the G&K GlobalDefines: a wounded unit loses this percentage of the damage it lost in health from its own damage */
     const val WOUNDED_DAMAGE_MULTIPLIER = 33
     const val DAMAGE_TO_CIVILIAN_UNIT = 40
+    /** MIN_CITY_STRIKE_DAMAGE in the BNW GlobalDefines: the least a city's strike or its defense against a bombing mission deals */
+    const val MIN_CITY_STRIKE_DAMAGE = 10
 
 }

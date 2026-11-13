@@ -282,9 +282,10 @@ object BattleDamage {
         return max(finalModifier, 0.1f)
     }
 
-    /** The original truncates the damage to whole hit points and deals at least 1 (CvUnit::getCombatDamage and the ranged and air versions) */
+    /** The original truncates the damage to whole hit points and deals at least 1 (CvUnit::getCombatDamage and the ranged and air versions);
+     *  a city's strike and its defense against a bombing mission deal at least MIN_CITY_STRIKE_DAMAGE (CvCity::rangeCombatDamage, GetAirStrikeDefenseDamage) */
     @Pure
-    private fun damageToInt(damage: Float): Int = max(damage.toInt(), 1)
+    private fun damageToInt(damage: Float, minimum: Int = 1): Int = max(damage.toInt(), minimum)
 
     /** @param fullHealthScale damage is proportional to the health left, as in the original's air strikes (GetAirCombatDamage,
      *  GetAirStrikeDefenseDamage, GetInterceptionDamage - a city's too); otherwise each 3 points of health lost reduce it by 1%,
@@ -354,7 +355,8 @@ object BattleDamage {
         if (defender.isCivilian()) return 0
         val ratio = getAttackingStrength(attacker, defender, tileToAttackFrom) / getDefendingStrength(
                 attacker, defender, tileToAttackFrom)
-        return damageToInt(damageModifier(ratio, true, randomnessFactor) * getHealthDependantDamageRatio(defender, fullHealthScale))
+        val minimum = if (defender is CityCombatant && isAirStrike(attacker, defender)) BattleConstants.MIN_CITY_STRIKE_DAMAGE else 1
+        return damageToInt(damageModifier(ratio, true, randomnessFactor) * getHealthDependantDamageRatio(defender, fullHealthScale), minimum)
     }
 
     @Readonly
@@ -370,7 +372,8 @@ object BattleDamage {
         if (defender.isCivilian()) return BattleConstants.DAMAGE_TO_CIVILIAN_UNIT
         val ratio = getAttackingStrength(attacker, defender, tileToAttackFrom) /
                 getDefendingStrength(attacker, defender, tileToAttackFrom)
-        return damageToInt(damageModifier(ratio, false, randomnessFactor) * getHealthDependantDamageRatio(attacker, fullHealthScale))
+        val minimum = if (attacker is CityCombatant) BattleConstants.MIN_CITY_STRIKE_DAMAGE else 1
+        return damageToInt(damageModifier(ratio, false, randomnessFactor) * getHealthDependantDamageRatio(attacker, fullHealthScale), minimum)
     }
 
     /** A melee attack on a unit rolls both damages up front and applies both (CvUnitCombat::GenerateMeleeCombatInfo). If that would kill
