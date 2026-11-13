@@ -12,7 +12,8 @@
         "[-2]% Strength <for [All] units> <for every [min(20, 0 - [Happiness])]>",
         "Cannot build [Settler] units <when below [-9] [Happiness]>",
         "Rebel units may spawn <when below [-19] [Happiness]>",
-        "[-1] Sight <for [Embarked] units>",
+        // CvUnit::visibilityRange: EMBARKED_VISIBILITY_RANGE is 0, the unit's own sight range of 2 is not used
+        "[-2] Sight <for [Embarked] units>",
 
         // TODO: Implement the uniques below
         // "[+20]% [Culture] [in all cities] <during a golden age>",

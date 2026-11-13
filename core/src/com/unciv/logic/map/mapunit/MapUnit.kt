@@ -467,7 +467,8 @@ class MapUnit : IsPartOfGameInfoSerialization {
                 getTile().getMatchingUniques(UniqueType.Sight, conditionalState)
         visibilityRange += relevantUniques.sumOf { it.params[0].toInt() }
 
-        if (visibilityRange < 1) visibilityRange = 1
+        val minimum = civ.gameInfo.ruleset.modOptions.constants.minimumSightRange
+        if (visibilityRange < minimum) visibilityRange = minimum
 
         return visibilityRange
     }

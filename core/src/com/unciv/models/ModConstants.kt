@@ -113,6 +113,11 @@ class ModConstants {
     // whatever the unit stands on, so a unit on a hill sees a hill or mountain behind flat land, and a flat forest behind flat land is not seen
     var sightBeyondRangeLikeCivV = false
 
+    // The least sight range a unit has, whatever its uniques add up to. 1: it always sees the tiles around it (Unciv).
+    // Civ V (CvUnit::visibilityRange): there is no least value, an embarked unit has EMBARKED_VISIBILITY_RANGE (0) plus what its promotions give,
+    // so with 0 nothing lifts it back to 1 (with sightBeyondRangeLikeCivV a unit of range 0 still sees the ring of tiles around it)
+    var minimumSightRange = 1
+
     // The happiness an annexed city of a conquered civilization costs. Default: its citizens count double, and the city costs 2 more ("Occupied City").
     // The Civ V rulesets: citizens x UNHAPPINESS_PER_OCCUPIED_POPULATION (1.34, CvPlayer::GetUnhappinessFromOccupiedCities) and no extra term
     var annexedCityCitizenUnhappinessFactor = 2f
