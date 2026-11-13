@@ -109,7 +109,9 @@
 		"name": "Iron",
 		"resourceType": "Strategic",
 		"revealedBy": "Iron Working",
-		"terrainsCanBeFoundOn": ["Grassland","Plains","Desert","Tundra","Snow","Hill","Marsh"],
+		// Forest, Jungle: AssignStartingPlots:PlaceStrategicAndBonusResources draws iron, coal and aluminum for every hill of hills_list, forested and jungle hills included;
+		// PlaceSmallQuantitiesOfStrategics puts iron on flat forest. MapRegionResources.placeResourcesInTiles tests the topmost terrain (the forest of a forested hill) against this list
+		"terrainsCanBeFoundOn": ["Grassland","Plains","Desert","Tundra","Snow","Hill","Marsh","Forest","Jungle"],
 		"production": 1,
 		"improvement": "Mine",
 		"uniques": ["Guaranteed with Strategic Balance resource option",
@@ -177,7 +179,8 @@
 		"name": "Aluminum",
 		"resourceType": "Strategic",
 		"revealedBy": "Electricity",
-		"terrainsCanBeFoundOn": ["Desert","Tundra","Hill","Snow","Jungle"],
+		// Forest: aluminum on forested hills, see Iron
+		"terrainsCanBeFoundOn": ["Desert","Tundra","Hill","Snow","Jungle","Forest"],
 		"production": 1,
 		"improvement": "Mine",
 		"improvementStats": {"production": 1},
