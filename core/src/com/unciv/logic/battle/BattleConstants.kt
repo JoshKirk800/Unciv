@@ -6,7 +6,8 @@ object BattleConstants {
     const val BOARDING_MALUS = -50
     const val ATTACKING_ACROSS_RIVER_MALUS = -20
     const val BASE_FLANKING_BONUS = 10f
-    const val MISSING_RESOURCES_MALUS = -25
+    /** STRATEGIC_RESOURCE_EXHAUSTED_PENALTY: the most a unit loses for missing strategic resources (CvUnit::GetStrategicResourceCombatPenalty) */
+    const val MISSING_RESOURCES_MALUS = -50
     const val EMBARKED_DEFENCE_BONUS = 100
     const val FORTIFICATION_BONUS = 20
     /** WOUNDED_DAMAGE_MULTIPLIER in the G&K GlobalDefines: a wounded unit loses this percentage of the damage it lost in health from its own damage */

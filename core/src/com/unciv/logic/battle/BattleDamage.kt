@@ -1,5 +1,6 @@
 package com.unciv.logic.battle
 
+import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.Counter
 import com.unciv.models.ruleset.GlobalUniques
@@ -14,6 +15,7 @@ import yairm210.purity.annotations.Pure
 import yairm210.purity.annotations.Readonly
 import yairm210.purity.annotations.ReturnsNewInstance
 import kotlin.collections.set
+import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -35,6 +37,27 @@ object BattleDamage {
         return "$source - $conditionalsText"
     }
 
+    /**
+     *  CvUnit::GetStrategicResourceCombatPenalty: for each resource the unit needs that the civilization has used more of than it has
+     *  (available below 0), floor(missing / used x STRATEGIC_RESOURCE_EXHAUSTED_PENALTY) percent, summed and at most -50. None for barbarians.
+     */
+    @Readonly
+    private fun getMissingResourcePenalty(combatant: MapUnitCombatant, civInfo: Civilization): Int {
+        if (civInfo.isBarbarian) return 0
+        val supply = civInfo.detailedCivResources // per origin: what is supplied (positive), what units and buildings use (negative)
+        val civResources = civInfo.getCivResourcesByName()
+        var penalty = 0
+        for (resource in combatant.unit.getResourceRequirementsPerTurn().keys) {
+            if (civResources[resource]!! >= 0) continue
+            val total = supply.filter { it.resource.name == resource && it.amount > 0 }.sumOf { it.amount }
+            val used = supply.filter { it.resource.name == resource && it.amount < 0 }.sumOf { -it.amount }
+            val missing = used - total
+            if (used <= 0 || missing <= 0) continue
+            penalty += floor(missing.toDouble() / used * BattleConstants.MISSING_RESOURCES_MALUS).toInt()
+        }
+        return max(penalty, BattleConstants.MISSING_RESOURCES_MALUS)
+    }
+
     @Readonly @ReturnsNewInstance
     private fun getGeneralModifiers(combatant: ICombatant, enemy: ICombatant, combatAction: CombatAction, tileToAttackFrom: Tile): Counter<String> {
         val modifiers = Counter<String>()
@@ -47,10 +70,8 @@ object BattleDamage {
             val unitUniqueModifiers = getUnitUniqueModifiers(combatant, enemy, conditionalState, tileToAttackFrom)
             modifiers.add(unitUniqueModifiers)
 
-            val civResources = civInfo.getCivResourcesByName()
-            for (resource in combatant.unit.getResourceRequirementsPerTurn().keys)
-                if (civResources[resource]!! < 0 && !civInfo.isBarbarian)
-                    modifiers["Missing resource"] = BattleConstants.MISSING_RESOURCES_MALUS
+            val missingResourcePenalty = getMissingResourcePenalty(combatant, civInfo)
+            if (missingResourcePenalty != 0) modifiers["Missing resource"] = missingResourcePenalty
 
             val (greatGeneralName, greatGeneralBonus) = GreatGeneralImplementation.getGreatGeneralBonus(combatant, enemy, combatAction)
             if (greatGeneralBonus != 0)
