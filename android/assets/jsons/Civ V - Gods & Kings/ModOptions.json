@@ -37,6 +37,9 @@
         "resourceDemandLikeCivV": true,
         // CvMap.cpp CvLandmass::isLake: LAKE_MAX_AREA_SIZE
         "maxLakeSize": 9,
+        // CvPlayer::createGreatGeneral: GREAT_GENERALS_THRESHOLD_INCREASE, and CvPlayer::recomputeGreatPeopleModifiers: COMBAT_EXPERIENCE_IN_BORDERS_PERCENT
+        "greatGeneralThresholdLikeCivV": true,
+        "greatGeneralPercentInBorders": 100,
         // AssignStartingPlots:NormalizeStartLocation and NormalizeCityState
         "startNormalizerLikeCivV": true,
         // MapGenerator.lua GenerateCoasts: expansion_diceroll_table {4, 4}

@@ -46,6 +46,9 @@
         "maxLakeSize": 9,
         // CvGame::GetTurnsBetweenMinorCivElections
         "cityStateElectionsScaleWithGameSpeed": true,
+        // CvPlayer::createGreatGeneral: GREAT_GENERALS_THRESHOLD_INCREASE, and CvPlayer::recomputeGreatPeopleModifiers: COMBAT_EXPERIENCE_IN_BORDERS_PERCENT
+        "greatGeneralThresholdLikeCivV": true,
+        "greatGeneralPercentInBorders": 100,
         // AssignStartingPlots:NormalizeStartLocation and NormalizeCityState
         "startNormalizerLikeCivV": true,
         // MapGenerator.lua GenerateCoasts: expansion_diceroll_table {4, 4}
