@@ -204,5 +204,25 @@ class BattleDamageTest {
         assertEquals(-25, penalty())
         horsemen[1].destroy()
         assertEquals("1 used, 1 supplied", 0, penalty())
+    /** CvCity::rangeCombatDamage and GetAirStrikeDefenseDamage: at least MIN_CITY_STRIKE_DAMAGE (10), where other attacks deal at least 1 */
+    @Test
+    fun `a city deals at least 10 damage however strong its target is`() {
+        val city = testGame.addCity(attackerCiv, testGame.getTile(-3, 0))
+        val megaWarrior = testGame.createBaseUnit("Sword").apply { strength = 1_000_000 }
+        val target = testGame.addUnit(megaWarrior.name, defenderCiv, testGame.getTile(2, 0))
+
+        val damage = BattleDamage.calculateDamageToDefender(CityCombatant(city), MapUnitCombatant(target), target.getTile(), 0f)
+
+        assertEquals(10, damage)
+    }
+
+    @Test
+    fun `a unit that is not a city still deals only 1 damage against a much stronger target`() {
+        val megaWarrior = testGame.createBaseUnit("Sword").apply { strength = 1_000_000 }
+        val target = testGame.addUnit(megaWarrior.name, defenderCiv, testGame.getTile(-2, 0))
+
+        val damage = BattleDamage.calculateDamageToDefender(MapUnitCombatant(defaultAttackerUnit), MapUnitCombatant(target), target.getTile(), 0f)
+
+        assertEquals(1, damage)
     }
 }
