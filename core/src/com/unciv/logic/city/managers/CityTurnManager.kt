@@ -52,11 +52,13 @@ class CityTurnManager(val city: City) {
 
     private fun setWltkResourceDemandCooldown(isNewCity: Boolean) {
         val rng = city.state.stateBasedRandom("CityTurnManager.setWltkResourceDemandCooldown")
+        val constants = city.civ.gameInfo.ruleset.modOptions.constants
         // Demand a new resource in ~20 turns on Standard speed
         var duration = 15 + rng.nextInt(10)
         if (isNewCity && city.isCapital())
-            duration += 10
-        city.setFlag(CityFlags.ResourceDemand, duration, true)
+            duration += if (constants.resourceDemandLikeCivV) 25 else 10
+        // CvCity::DoSeedResourceDemandedCountdown: RESOURCE_DEMAND_COUNTDOWN_CAPITAL_ADD 25, and the countdown is not scaled by the game speed
+        city.setFlag(CityFlags.ResourceDemand, duration, !constants.resourceDemandLikeCivV)
     }
 
     private fun tryWeLoveTheKing() {
@@ -64,7 +66,10 @@ class CityTurnManager(val city: City) {
         if (city.getAvailableResourceAmount(city.demandedResource) <= 0) return
 
         // manually adjust with game speed because of the +1 at the end
-        val duration = (20 * city.civ.gameInfo.speed.modifier).roundToInt() + 1 // +1 because it will be decremented by 1 in the same startTurn()
+        // CvCity::DoTestResourceDemanded: CITY_RESOURCE_WLTKD_TURNS 20, not scaled by the game speed
+        val baseDuration = if (city.civ.gameInfo.ruleset.modOptions.constants.resourceDemandLikeCivV) 20
+            else (20 * city.civ.gameInfo.speed.modifier).roundToInt()
+        val duration = baseDuration + 1 // +1 because it will be decremented by 1 in the same startTurn()
         city.setFlag(CityFlags.WeLoveTheKing, duration)
         // Otherwise ResourceDemand can expire mid-celebration, rewrite demandedResource,
         // and the Resources overview mislabels the active WLTKD (celebration is flag-based).
