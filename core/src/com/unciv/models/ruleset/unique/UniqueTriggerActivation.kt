@@ -1522,6 +1522,7 @@ object UniqueTriggerActivation {
                 val cityToAddTo = citiesWithAdjacentTiles.minByOrNull { cityPriority(it) }
                     ?: civInfo.cities.minBy { cityPriority(it) }
 
+                val constants = civInfo.gameInfo.ruleset.modOptions.constants
                 return {
                     val civsToNotify = mutableSetOf<Civilization>()
                     for (tileToTakeOver in tilesToTakeOver) {
@@ -1534,7 +1535,7 @@ object UniqueTriggerActivation {
                         if (otherCiv != null && otherCiv.isCityState) {
                             // create this varibale diplomacyCityState for more readability
                             val diplomacyCityState = otherCiv.getDiplomacyManagerOrMeet(civInfo)
-                            diplomacyCityState.addInfluence(-15f)
+                            if (!constants.cityStateInfluenceOncePerTilesTaken) diplomacyCityState.addInfluence(constants.cityStateInfluenceChangeForTilesTaken)
 
                             if (!diplomacyCityState.hasFlag(DiplomacyFlags.TilesStolen)) {
                                 civInfo.popupAlerts.add(PopupAlert(AlertType.TilesStolen, otherCiv.civID))
@@ -1543,6 +1544,11 @@ object UniqueTriggerActivation {
                         }
                         cityToAddTo.expansion.takeOwnership(tileToTakeOver)
                     }
+
+                    // CvUnit::PerformCultureBomb: each city-state of which tiles were taken loses its influence once
+                    if (constants.cityStateInfluenceOncePerTilesTaken)
+                        for (otherCiv in civsToNotify.filter { it.isCityState })
+                            otherCiv.getDiplomacyManagerOrMeet(civInfo).addInfluence(constants.cityStateInfluenceChangeForTilesTaken)
 
                     for (otherCiv in civsToNotify) {
                         otherCiv.addNotification("Your territory has been stolen by [$civInfo]!",

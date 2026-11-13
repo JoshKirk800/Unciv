@@ -53,6 +53,9 @@
         "withdrawLikeCivV": true,
         // CvCity::canRangeStrikeAt
         "citiesCanBombardCities": false,
+        // CvUnit::PerformCultureBomb: CULTURE_BOMB_MINOR_FRIENDSHIP_CHANGE
+        "cityStateInfluenceChangeForTilesTaken": -50,
+        "cityStateInfluenceOncePerTilesTaken": true,
         // AssignStartingPlots:NormalizeStartLocation and NormalizeCityState
         "startNormalizerLikeCivV": true,
         // MapGenerator.lua GenerateCoasts: expansion_diceroll_table {4, 4}
