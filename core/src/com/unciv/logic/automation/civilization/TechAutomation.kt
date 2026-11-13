@@ -28,6 +28,8 @@ object TechAutomation {
 
     /** HandicapInfos.TechNumOptionsConsidered of the original's Prince and higher handicaps, for rulesets without that data */
     private const val DEFAULT_NUM_OPTIONS_CONSIDERED = 2
+    /** A reweighted tech weight is at most this: the original's cast of a huge double to int is undefined (a negative weight on x86), and the sum of weights must fit an Int */
+    private const val MAX_REWEIGHTED_WEIGHT = Int.MAX_VALUE / 64
     /** Distance from the city within which unowned tiles count for [localeTechPriorities] (literal in CvPlayerTechs::SetLocalePriorities) */
     private const val LOCALE_UNOWNED_TILE_RANGE = 2
 
@@ -247,7 +249,7 @@ object TechAutomation {
      */
     fun chooseNextTech(civ: Civilization, freeTech: Boolean, random: Random): Technology? {
         val candidates = researchCandidates(civ, freeTech)
-        if (candidates.sumOf { it.second } <= 0) return null
+        if (candidates.sumOf { it.second.toLong() } <= 0L) return null
         val numOptions = civ.gameInfo.ruleset.ai.handicapValue(civ.gameInfo.getDifficulty().name, "TechNumOptionsConsidered")
             ?: DEFAULT_NUM_OPTIONS_CONSIDERED
         val top = min(numOptions, candidates.size)
@@ -306,7 +308,7 @@ object TechAutomation {
     /** CvTechAI::ReweightByCost: weight / turns^(AI_RESEARCH_WEIGHT_BASE_MOD + AI_RESEARCH_WEIGHT_MOD_PER_TURN_LEFT × turns) */
     private fun reweightByCost(weight: Int, turnsLeft: Int, baseMod: Double, modPerTurn: Double, needExpensiveTechs: Boolean): Int {
         val factor = turnsLeft.toDouble().pow(baseMod + modPerTurn * turnsLeft)
-        return (if (needExpensiveTechs) weight * factor else weight / factor).toInt()
+        return (if (needExpensiveTechs) weight * factor else weight / factor).coerceIn(0.0, MAX_REWEIGHTED_WEIGHT.toDouble()).toInt()
     }
     //endregion
 }
