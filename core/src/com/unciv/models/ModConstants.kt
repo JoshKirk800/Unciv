@@ -178,6 +178,8 @@ class ModConstants {
     var scoreFromPopulation = 3 // 4 in BNW
     var scoreFromWonders = 40 // 25 in BNW
     var scoreFromGreatWorks = 0 // 4 in BNW
+    // The map size at which Cities, Population and Land score at face value; smaller maps score more, larger maps less. 4160 (80 x 52) in Civ V
+    var scoreBaseMapTiles = 1276
 
     // Trade routes (CvTradeClasses.cpp and GlobalDefines.xml; the values are those of Brave New World)
     // Gold of a route for its origin: base + (the gold of the origin city divided by this + the same of the destination city) + bonuses,

@@ -969,9 +969,9 @@ class Civilization : IsPartOfGameInfoSerialization {
     @Readonly
     fun calculateScoreBreakdown(): HashMap<String, Double> {
         val scoreBreakdown = hashMapOf<String, Double>()
-        // 1276 is the number of tiles in a medium sized map. The original uses 4160 for this,
-        // but they have bigger maps
-        var mapSizeModifier = 1276 / gameInfo.tileMap.mapParameters.numberOfTiles().toDouble()
+        // CvGame::DoCacheMapScoreMod: the score is scaled by the size of a standard map over this map's size; Unciv's default
+        // is 1276, the size of its medium map, where Civ V uses 4160 (ModConstants.scoreBaseMapTiles)
+        var mapSizeModifier = gameInfo.ruleset.modOptions.constants.scoreBaseMapTiles / gameInfo.tileMap.mapParameters.numberOfTiles().toDouble()
         if (mapSizeModifier > 1)
             mapSizeModifier = (mapSizeModifier - 1) / 3 + 1
 

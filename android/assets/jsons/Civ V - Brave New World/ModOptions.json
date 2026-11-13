@@ -5,6 +5,8 @@
         "scoreFromPopulation": 4,
         "scoreFromWonders": 25,
         "scoreFromGreatWorks": 4,
+        // CvGame::DoCacheMapScoreMod: 80 x 52, the standard world size
+        "scoreBaseMapTiles": 4160,
         // CvMinorCivAI::CalculateBullyMetric: up to 75 for the military rank, up to 125 for the military near the City-State
         "tributeGlobalModifier": 75,
         "tributeLocalModifier": 125,
