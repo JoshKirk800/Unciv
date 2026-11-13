@@ -210,6 +210,21 @@ class DiplomacyAiTests {
     }
 
     @Test
+    fun `conquering a city-state city adds half of the warmonger offset a major's city would`() {
+        val cityState = game.addCiv(cityStateType = "Cultured")
+        game.addCity(cityState, game.getTile(HexCoord(0, 8)))
+        val lost = game.addCity(cityState, game.getTile(HexCoord(0, 4)))
+        meet(c, a)
+        val before = c.ai.diplomacy.memoryOf(a).warmongerAmount
+        val estimated = rules.worldSize(game.gameInfo.tileMap.mapParameters.mapSize.getPredefinedOrNextSmaller().name).estimatedNumCities
+        val allCities = game.gameInfo.civilizations.sumOf { it.cities.size }
+        // GetWarmongerOffset(1 city left, minor): 1000 * estimated / (cities in the world * 1), times WARMONGER_ON_CITY_STATE_MULTIPLIER (BNW XML: 50) / 100
+        val offset = 1000 * estimated / allCities * 50 / 100
+        DiplomacyEvents.onCityConquered(a, cityState, lost)
+        assertEquals(offset, c.ai.diplomacy.memoryOf(a).warmongerAmount - before)
+    }
+
+    @Test
     fun `killing a city-state's unit pleases the majors at war with that city-state, and only them`() {
         val cityState = game.addCiv(cityStateType = "Cultured")
         game.addCity(cityState, game.getTile(HexCoord(0, 8)))
