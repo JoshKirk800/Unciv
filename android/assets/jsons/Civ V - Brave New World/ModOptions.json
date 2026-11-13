@@ -37,6 +37,9 @@
         "rangedSupportFireUnitsGetNoFortification": true,
         // CvUnit::getMaxHurryProduction, getHurryProduction, canHurry
         "unitHurryLikeCivV": true,
+        // AssignStartingPlots:PlaceSmallQuantitiesOfStrategics(23, land_list)
+        "minorDepositsOnFlatLandOnly": true,
+        "minorDepositFrequency": 23,
         // CvPlayer::GetUnhappinessFromOccupiedCities: UNHAPPINESS_PER_OCCUPIED_POPULATION, no flat term
         "annexedCityCitizenUnhappinessFactor": 1.34,
         "annexedCityFlatUnhappiness": 0,

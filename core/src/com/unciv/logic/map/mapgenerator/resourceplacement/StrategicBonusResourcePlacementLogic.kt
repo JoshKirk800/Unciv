@@ -1,8 +1,8 @@
 package com.unciv.logic.map.mapgenerator.resourceplacement
 
 import com.unciv.logic.map.TileMap
+import com.unciv.Constants
 import com.unciv.logic.map.mapgenerator.mapregions.*
-import com.unciv.logic.map.mapgenerator.mapregions.MapRegions.Companion.baseMinorDepositFrequency
 import com.unciv.logic.map.mapgenerator.mapregions.MapRegions.ImpactType
 import com.unciv.logic.map.mapgenerator.mapregions.anonymizeUnique
 import com.unciv.logic.map.mapgenerator.mapregions.getTerrainRule
@@ -56,11 +56,13 @@ object StrategicBonusResourcePlacementLogic {
         val ruleLists = buildRuleLists(ruleset, tileMap, regions, fallbackStrategic, strategicResources) // For rule-based generation
         
         // Now go through the entire map to build lists
+        val flatLandOnly = ruleset.modOptions.constants.minorDepositsOnFlatLandOnly
+        val starts = if (flatLandOnly) tileMap.startingLocationsByNation.values.flatten().toSet() else emptySet()
         val rng = GameContext(gameInfo = tileMap.gameInfo).stateBasedRandom("StrategicBonusResourcePlacementLogic.placeStrategicAndBonuses")
         for (tile in tileMap.values.asSequence().shuffled(rng)) {
             val terrainCondition = GameContext(attackedTile = tile, region = regions.firstOrNull { tile in it.tiles })
             if (tile.getBaseTerrain().hasUnique(UniqueType.BlocksResources, terrainCondition)) continue // Don't count snow hills
-            if (tile.isLand) landList.add(tile)
+            if (tile.isLand && (!flatLandOnly || isFlatMinorDepositSite(tile, starts))) landList.add(tile)
             for ((rule, list) in ruleLists) {
                 if (rule.conditionalsApply(terrainCondition)) list.add(tile)
             }
@@ -75,7 +77,7 @@ object StrategicBonusResourcePlacementLogic {
         placeMajorDepositsOnLand(ruleset, ruleLists, totalPlaced, tileData, fallbackStrategic)
         if (extras != null) extras.addModernMinorStrategicsToCityStates()
         else placeSmallDepositsOfModernStrategicResourcesOnCityStates(ruleset, strategicResources, tileMap, totalPlaced, tileData)
-        placeMinorDepositsOnLand(bonusMultiplier, landList, tileData, strategicResources, fallbackStrategic, totalPlaced)
+        placeMinorDepositsOnLand(ruleset.modOptions.constants.minorDepositFrequency, bonusMultiplier, landList, tileData, strategicResources, fallbackStrategic, totalPlaced)
         placeSeaDepositsOfLandResource(ruleset, tileMap, tileData, totalPlaced)
         placeMajorDepositsOnWater(ruleset, ruleLists, totalPlaced, tileData, fallbackStrategic)
         if (extras != null) {
@@ -250,7 +252,17 @@ object StrategicBonusResourcePlacementLogic {
         }
     }
 
-    private fun placeMinorDepositsOnLand(
+    /** A tile of the original's land_list (AssignStartingPlots:GenerateGlobalResourcePlotLists): flat land without resource or start whose only
+     *  feature, if any, is forest or jungle. Hills, mountains, marsh, flood plains, oases and natural wonders are not on it. */
+    fun isFlatMinorDepositSite(tile: Tile, starts: Set<Tile>) =
+        tile.resource == null && tile !in starts && tile.naturalWonder == null &&
+            Constants.hill !in tile.terrainFeatures && tile.baseTerrain != Constants.mountain &&
+            tile.terrainFeatures.all { it == Constants.forest || it == Constants.jungle }
+
+    /** PlaceSmallQuantitiesOfStrategics: one deposit for every [baseFrequency] (times the bonus multiplier) tiles of [landList], plus one, on the tiles
+     *  of the list (in its order) that have no resource and no strategic impact; each a resource drawn by the weights of its minor deposit uniques */
+    fun placeMinorDepositsOnLand(
+        baseFrequency: Int,
         bonusMultiplier: Float,
         landList: ArrayList<Tile>,
         tileData: TileDataMap,
@@ -258,8 +270,9 @@ object StrategicBonusResourcePlacementLogic {
         fallbackStrategic: Boolean,
         totalPlaced: HashMap<TileResource, Int>
     ) {
+        if (landList.isEmpty()) return
         val rng = GameContext(gameInfo = landList[0].tileMap.gameInfo).stateBasedRandom("StrategicBonusResourcePlacementLogic.placeMinorDepositsOnLand")
-        val frequency = (baseMinorDepositFrequency * bonusMultiplier).toInt()
+        val frequency = (baseFrequency * bonusMultiplier).toInt()
         val minorDepositsToAdd =
             (landList.size / frequency) + 1 // I sometimes have division by zero errors on this line
         var minorDepositsAdded = 0
