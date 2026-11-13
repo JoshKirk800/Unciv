@@ -193,4 +193,17 @@ class TechAutomationTests {
         assertTrue(bestTwo.toString(), bestTwo.toSet() == setOf("Calendar", "Writing"))
         assertTrue(civ.tech.techsToResearch.toString(), civ.tech.techsToResearch.single() in bestTwo)
     }
+
+    @Test
+    fun `a civilization without science but with research overflow still chooses a tech`() {
+        val civ = withCity(civWith(Flavor.Religion to 10, Flavor.Gold to 10))
+        civ.stats.statsForNextTurn = Stats(science = 0f)
+        TechAutomation.rebuildWeights(civ)
+        civ.tech.addScience(14)   // overflow pending and no science: the research time is unbounded and the weights are multiplied
+        val candidates = TechAutomation.researchCandidates(civ, freeTech = false)
+        assertTrue(candidates.size >= 4)
+        assertTrue("no negative weight", candidates.all { it.second >= 0 })
+        // used to throw "Random range is empty" when the two best weights added up beyond Int.MAX_VALUE
+        assertTrue(TechAutomation.chooseNextTech(civ, freeTech = false, kotlin.random.Random(1)) != null)
+    }
 }
