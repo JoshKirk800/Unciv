@@ -73,8 +73,16 @@ class CityStateFunctions(val civInfo: Civilization) {
         return true
     }
 
+    /** The turns between two elections. With cityStateElectionsScaleWithGameSpeed as CvGame::GetTurnsBetweenMinorCivElections: ESPIONAGE_TURNS_BETWEEN_CITY_STATE_ELECTIONS times the game speed's MinorCivElectionFreqMod / 100 */
+    @Readonly
+    fun getTurnsBetweenElections(): Int {
+        val constants = civInfo.gameInfo.ruleset.modOptions.constants
+        if (!constants.cityStateElectionsScaleWithGameSpeed) return constants.cityStateElectionTurns
+        return (constants.cityStateElectionTurns * 100 * civInfo.gameInfo.speed.modifier).toInt() / 100
+    }
+
     fun holdElections() {
-        civInfo.addFlag(CivFlags.TurnsTillCityStateElection.name, civInfo.gameInfo.ruleset.modOptions.constants.cityStateElectionTurns)
+        civInfo.addFlag(CivFlags.TurnsTillCityStateElection.name, getTurnsBetweenElections())
         val capital = civInfo.getCapital() ?: return
 
         val spies = capital.espionage.getAllStationedSpies().filter { it.action == SpyAction.RiggingElections }

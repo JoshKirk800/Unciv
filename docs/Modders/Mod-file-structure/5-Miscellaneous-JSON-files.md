@@ -270,6 +270,8 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | cityAirUnitCapacity                      | Int    | 6                             | [^W]  |
 | cultureCostLikeCivV                      | Boolean | false                        | [^V]  |
 | treasuryNeverNegative                    | Boolean | false                        | [^Treasury] |
+| resourceDemandLikeCivV                   | Boolean | false                        | [^ResDemand] |
+| cityStateElectionsScaleWithGameSpeed     | Boolean | false                        | [^ElectionSpeed] |
 | startNormalizerLikeCivV                  | Boolean | false                        | [^G]  |
 | coastExpansionDice                       | List<Int> | empty                      | [^T]  |
 | seaDepositsOfLandResource                | String  | empty                        | [^SeaOil] |
@@ -381,6 +383,8 @@ Legend:
 - [^Treasury]: What happens to the treasury when the turn's income would take it below zero. false: the civilization goes into debt, which costs science. true: as in Civ V (`CvTreasury::DoGold`) the treasury is set to 0 and the rest of the deficit is lost, so the gold of a civilization is never negative. Units are disbanded under a deficit in both cases.
     true: the formula of Civ V, 15 + (10 \* tilesGainedByCulture) ^ 1.1, times 1.5 for City-States, the percentages added up (at least -85), times the game speed, rounded down to a multiple of 5.
     The tiles gained by culture do not count tiles that were bought. The Civ V rulesets set true.
+- [^ResDemand]: The countdowns of a city's demand for a resource. false: a new city demands one after 15 + random(10) turns (10 more in a new capital), and the We Love the King Day lasts 20 turns, both scaled by the game speed. true: as in Civ V (`CvCity::DoSeedResourceDemandedCountdown`, `DoTestResourceDemanded`) the capital adds 25 turns, and neither number is scaled by the game speed.
+- [^ElectionSpeed]: false: `cityStateElectionTurns` turns between city-state elections on every game speed. true: as in Civ V (`CvGame::GetTurnsBetweenMinorCivElections`) the number is multiplied by the modifier of the game speed (rounded down), so Marathon (3) has an election every 45 turns.
 - [^G]: Whether the start of a civilization or City-State is improved with the rules of Civ V (how many bonus resources, when a hill or a horse/iron is added, stone on grass starts).
     The rules name the terrains and resources of the Civ V rulesets (Grassland, Plains, Hill, Wheat, Cattle, ...), so it only fits them. false: the generic rules, which use the yields of the tiles.
 - [^T]: How the map generator widens the coast. Empty: `maxCoastExtension` passes, each ocean tile next to a coast tile becomes coast with 1 in 2. Otherwise ocean next to land becomes coast, then for each entry one pass in which an ocean tile next to a coast tile becomes coast with 1 in that number (Civ V: `[4, 4]`, so coast reaches 3 tiles from land at most).

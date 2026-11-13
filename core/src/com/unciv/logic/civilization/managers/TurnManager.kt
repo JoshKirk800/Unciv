@@ -393,7 +393,7 @@ class TurnManager(val civInfo: Civilization) {
             // May be called at game start or when migrating a game from an older version
             if (civInfo.gameInfo.isEspionageEnabled() && !civInfo.hasFlag(CivFlags.TurnsTillCityStateElection.name)) {
                 val rng = civInfo.state.stateBasedRandom("TurnManager.endTurn(Espianage)")
-                civInfo.addFlag(CivFlags.TurnsTillCityStateElection.name, rng.nextInt(civInfo.gameInfo.ruleset.modOptions.constants.cityStateElectionTurns + 1))
+                civInfo.addFlag(CivFlags.TurnsTillCityStateElection.name, rng.nextInt(civInfo.cityStateFunctions.getTurnsBetweenElections() + 1))
             }
         }
 

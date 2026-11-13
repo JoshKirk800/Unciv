@@ -10,6 +10,10 @@
         "cultureCostLikeCivV": true,
         // CvTreasury::DoGold
         "treasuryNeverNegative": true,
+        // CvCity::DoSeedResourceDemandedCountdown, CvCity::DoTestResourceDemanded
+        "resourceDemandLikeCivV": true,
+        // CvMap.cpp CvLandmass::isLake: LAKE_MAX_AREA_SIZE
+        "maxLakeSize": 9,
         // AssignStartingPlots:NormalizeStartLocation and NormalizeCityState
         "startNormalizerLikeCivV": true,
         // MapGenerator.lua GenerateCoasts: expansion_diceroll_table {4, 4}

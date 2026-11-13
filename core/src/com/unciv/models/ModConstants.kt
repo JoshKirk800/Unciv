@@ -108,6 +108,11 @@ class ModConstants {
     // true: as in Civ V (CvTreasury::DoGold) it is set to 0 and the rest of the deficit is lost; a civilization never has negative gold
     var treasuryNeverNegative = false
 
+    // The countdowns of a city's demand for a resource. false: the turns until a city demands a resource are 15 + random(10) + 10 in a new capital, and both
+    // that and the length of the We Love the King Day (20) are scaled by the game speed. true: as in Civ V (CvCity::DoSeedResourceDemandedCountdown, DoTestResourceDemanded)
+    // the capital adds 25 (RESOURCE_DEMAND_COUNTDOWN_CAPITAL_ADD) and neither is scaled by the game speed
+    var resourceDemandLikeCivV = false
+
     // Constants used to calculate Unit Upgrade gold Cost (can only be modded all-or-nothing)
     // This is a data class for one reason only: The equality implementation enables Gdx Json to omit it when default (otherwise only the individual fields are omitted)
     data class UnitUpgradeCost(
@@ -155,6 +160,9 @@ class ModConstants {
     var minimumWarDuration = 10
     var baseTurnsUntilRevolt = 4
     var cityStateElectionTurns = 15
+    // false: cityStateElectionTurns is the interval on every game speed. true: as in Civ V (CvGame::GetTurnsBetweenMinorCivElections) it is multiplied by the modifier of the game speed
+    // (MinorCivElectionFreqMod 67, 100, 150, 300 percent for Quick to Marathon, equal to the speed modifier of the Civ V rulesets), rounded down
+    var cityStateElectionsScaleWithGameSpeed = false
 
     // Economy
     var maxGoldTradeOffer = 10000
