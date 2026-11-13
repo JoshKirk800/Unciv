@@ -108,6 +108,10 @@ class ModConstants {
     // true: as in Civ V (CvTreasury::DoGold) it is set to 0 and the rest of the deficit is lost; a civilization never has negative gold
     var treasuryNeverNegative = false
 
+    // The share of the alive major civilizations that must know a technology for the city-states to get it for free.
+    // 0: more than half of them (Unciv). Civ V (CvTeam::DoMinorCivTech, GlobalDefines MINOR_CIV_TECH_PERCENT 40): at least max(1, majors x percent / 100)
+    var minorCivTechPercent = 0
+
     // Constants used to calculate Unit Upgrade gold Cost (can only be modded all-or-nothing)
     // This is a data class for one reason only: The equality implementation enables Gdx Json to omit it when default (otherwise only the individual fields are omitted)
     data class UnitUpgradeCost(
