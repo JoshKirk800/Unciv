@@ -563,8 +563,13 @@ class City : IsPartOfGameInfoSerialization, INamed {
     }
 
     @Readonly
-    fun getGoldForSellingBuilding(buildingName: String) =
-        getRuleset().buildings[buildingName]!!.cost / 10
+    fun getGoldForSellingBuilding(buildingName: String): Int {
+        val building = getRuleset().buildings[buildingName]!!
+        val divisor = getRuleset().modOptions.constants.buildingSaleDivisor
+        // CvCityBuildings::GetSellBuildingRefund: CvPlayer::getProductionNeeded(building) / BUILDING_SALE_DIVISOR.
+        // The default divisor keeps the raw cost of Unciv, the production cost is used where the divisor is set
+        return if (divisor == 10) building.cost / 10 else building.getProductionCost(civ, this) / divisor
+    }
 
     fun sellBuilding(buildingName: String) {
         sellBuilding(getRuleset().buildings[buildingName]!!)

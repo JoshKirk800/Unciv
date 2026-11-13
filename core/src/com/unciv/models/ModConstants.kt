@@ -121,6 +121,9 @@ class ModConstants {
     // Movement points extra for entering a hill that has a feature (forest, jungle, fallout...) on top, besides the feature's own cost.
     // 0: the feature's cost only. Civ V (CvUnitMovement::GetCostsForMove, HILLS_EXTRA_MOVEMENT): 1, so a forested hill costs 3
     var featureOnHillsExtraMovement = 0
+    // The divisor of the production cost of a building to get the gold for selling it. 10: the raw cost / 10 (Unciv).
+    // Civ V (CvCityBuildings::GetSellBuildingRefund): the production cost (game speed, era and modifiers included) / 4
+    var buildingSaleDivisor = 10
 
     // Constants used to calculate Unit Upgrade gold Cost (can only be modded all-or-nothing)
     // This is a data class for one reason only: The equality implementation enables Gdx Json to omit it when default (otherwise only the individual fields are omitted)

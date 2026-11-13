@@ -21,6 +21,8 @@
         "scoreBaseMapTiles": 4160,
         // CvUnitMovement::GetCostsForMove: HILLS_EXTRA_MOVEMENT
         "featureOnHillsExtraMovement": 1,
+        // CvCityBuildings::GetSellBuildingRefund: BUILDING_SALE_DIVISOR
+        "buildingSaleDivisor": 4,
         // AssignStartingPlots:NormalizeStartLocation and NormalizeCityState
         "startNormalizerLikeCivV": true,
         // MapGenerator.lua GenerateCoasts: expansion_diceroll_table {4, 4}
