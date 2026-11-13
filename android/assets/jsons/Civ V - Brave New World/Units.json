@@ -620,7 +620,8 @@
 		"requiredTech": "Civil Service",
 		"upgradesTo": "Rifleman",
 		"obsoleteTech": "Rifling",
-		"uniques": ["[+50]% Strength <vs [Mounted] units>", "Before engaging in combat performs an extra ranged attack with [50]% of melee combat strength"],
+		"uniques": ["[+50]% Strength <vs [Mounted] units>", "[+25]% Strength <vs [Gunpowder] units>", "Before engaging in combat performs an extra ranged attack with [50]% of melee combat strength"],
+		// XML: free promotions PROMOTION_ANTI_MOUNTED_I (+50 vs UNITCOMBAT_MOUNTED) and PROMOTION_ANTI_GUNPOWDER (Spear Throw: +25 vs UNITCOMBAT_GUN, RangedSupportFire)
 		"attackSound": "metalhit"
 	},
 	{

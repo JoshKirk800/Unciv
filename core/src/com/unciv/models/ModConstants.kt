@@ -108,6 +108,10 @@ class ModConstants {
     // true: as in Civ V (CvTreasury::DoGold) it is set to 0 and the rest of the deficit is lost; a civilization never has negative gold
     var treasuryNeverNegative = false
 
+    // Whether a unit with the unique "Before engaging in combat performs an extra ranged attack with [amount]% of melee combat strength" gets
+    // no combat bonus for being fortified. false: it does. true: CvUnit::fortifyModifier returns 0 for a unit with ranged support fire (the Impi).
+    var rangedSupportFireUnitsGetNoFortification = false
+
     // The happiness an annexed city of a conquered civilization costs. Default: its citizens count double, and the city costs 2 more ("Occupied City").
     // The Civ V rulesets: citizens x UNHAPPINESS_PER_OCCUPIED_POPULATION (1.34, CvPlayer::GetUnhappinessFromOccupiedCities) and no extra term
     var annexedCityCitizenUnhappinessFactor = 2f

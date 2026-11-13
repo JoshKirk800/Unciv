@@ -270,6 +270,7 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | cityAirUnitCapacity                      | Int    | 6                             | [^W]  |
 | cultureCostLikeCivV                      | Boolean | false                        | [^V]  |
 | treasuryNeverNegative                    | Boolean | false                        | [^Treasury] |
+| rangedSupportFireUnitsGetNoFortification | Boolean | false                        | [^SupportFire] |
 | annexedCityCitizenUnhappinessFactor      | Float   | 2                            | [^Annexed] |
 | annexedCityFlatUnhappiness               | Float   | 2                            | [^Annexed] |
 | nukeCivilianDeathDamage                  | Int     | 60                           | [^NukeCivilians] |
@@ -407,6 +408,7 @@ Legend:
 - [^CityBombard]: Whether a city can bombard an enemy city within its range. false: it can only bombard units outside cities, as in Civ V (`CvCity::canRangeStrikeAt`). This applies to the player's bombard action and to the AI alike.
 - [^TilesTaken]: The change of a city-state's influence with a civilization that takes tiles from it with "Gain control over [tileFilter] tiles in a [nonNegativeAmount]-tile radius" (the culture bomb of a Great Artist or a Citadel). false: `cityStateInfluenceChangeForTilesTaken` for each tile taken. true: as in Civ V (`CvUnit::PerformCultureBomb`, -50) once for each city-state tiles were taken from.
 - [^Treasury]: What happens to the treasury when the turn's income would take it below zero. false: the civilization goes into debt, which costs science. true: as in Civ V (`CvTreasury::DoGold`) the treasury is set to 0 and the rest of the deficit is lost, so the gold of a civilization is never negative. Units are disbanded under a deficit in both cases.
+- [^SupportFire]: Whether a unit with the unique "Before engaging in combat performs an extra ranged attack with [amount]% of melee combat strength" (the Zulu Impi) gets no strength bonus for being fortified. false: it gets the normal bonus. true: as in Civ V (`CvUnit::fortifyModifier`, which returns 0 for a unit with ranged support fire).
 - [^Annexed]: The happiness an annexed city of a conquered civilization costs (a puppet or a city of the civilization's own founding does not count): its citizens' unhappiness is multiplied by the factor, and the city costs the flat amount more as "Occupied City". The Civ V rulesets use 1.34 and 0, as `CvPlayer::GetUnhappinessFromOccupiedCities` does (`UNHAPPINESS_PER_OCCUPIED_POPULATION`).
 - [^NukeCivilians]: The damage, out of 100 hit points, from a nuclear blast at which a civilian unit dies. 60: it dies when its health is down to 40 or less. Civ V (`CvUnitCombat::ApplyNuclearExplosionDamage`) uses 6, which kills every civilian in the blast, because a blast does at least 30 damage.
 - [^Disband]: The gold a disbanded unit gives, in percent of its production cost, times the health it has left and the game speed, plus the same for every unit it carries (a transport). 0: a twentieth of its purchase price, whatever its health. Civ V (`CvUnit::GetScrapGold`, `DISBAND_UNIT_REFUND_PERCENT`): 25.

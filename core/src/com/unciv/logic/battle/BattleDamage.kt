@@ -280,7 +280,10 @@ object BattleDamage {
                 modifiers["Tile"] = (tileDefenceBonus * 100).toInt()
 
 
-            if (defender.unit.isFortified() || defender.unit.isGuarding())
+            // CvUnit::fortifyModifier: a unit with ranged support fire (the Impi) gets no bonus for being fortified
+            if ((defender.unit.isFortified() || defender.unit.isGuarding())
+                && !(defender.unit.civ.gameInfo.ruleset.modOptions.constants.rangedSupportFireUnitsGetNoFortification
+                    && defender.unit.hasUnique(UniqueType.ExtraRangedAttack)))
                 modifiers["Fortification"] = BattleConstants.FORTIFICATION_BONUS * defender.unit.getFortificationTurns()
         }
 

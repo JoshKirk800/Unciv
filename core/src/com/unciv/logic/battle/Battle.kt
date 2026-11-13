@@ -133,15 +133,19 @@ object Battle {
             if (attacker.isDefeated()) return interceptDamage
         } else interceptDamage = DamageDealt.None
 
-        if (hasWithdrawnFromMelee(attacker, defender, attackedTile)) return DamageDealt.None
-
         val isAlreadyDefeatedCity = defender is CityCombatant && defender.isDefeated()
 
+        // CvUnitCombat::Attack: the extra ranged attack of the Zulu "Spear Throw" comes first, before the defender may withdraw,
+        // and a defender it kills is not fought in melee: the attacker just moves in
         val extraRangedAttackDamage = tryExtraRangedAttack(attacker, defender, attackedTile)
+        val killedByExtraRangedAttack = extraRangedAttackDamage.attackerDealt > 0 && defender.isDefeated()
+
+        if (!killedByExtraRangedAttack && hasWithdrawnFromMelee(attacker, defender, attackedTile)) return extraRangedAttackDamage
 
         triggerCombatUniques(attacker, defender, attackedTile)
 
-        val damageDealt = takeDamage(attacker, defender) + extraRangedAttackDamage
+        val damageDealt = if (killedByExtraRangedAttack) extraRangedAttackDamage
+            else takeDamage(attacker, defender) + extraRangedAttackDamage
 
         // check if unit is captured by the attacker (prize ships unique)
         // As ravignir clarified in issue #4374, this only works for aggressor
@@ -952,10 +956,11 @@ object Battle {
             FakeUnitForExtraRangedAttack(attacker, baseRangedStrengthForExtraAttack)
         }.toList()
 
-    /** This has all the properties and methods of [mapUnitCombatant] (via delegation)
-     *  **except** for [isRanged] and [getAttackingStrength]
+    /** This is the unit of [mapUnitCombatant] **except** for [isRanged] and [getAttackingStrength]. It is a [MapUnitCombatant] so that the
+     *  modifiers of the unit apply to the extra attack as to any ranged attack of it (CvUnit::GetMaxRangedCombatStrength: the unit class
+     *  modifiers like the Impi's bonus against mounted units, the great general, the empire's unhappiness...).
      */
-    internal class FakeUnitForExtraRangedAttack(val mapUnitCombatant: MapUnitCombatant, val baseRangedStrength: Int) : ICombatant by mapUnitCombatant {
+    internal class FakeUnitForExtraRangedAttack(val mapUnitCombatant: MapUnitCombatant, val baseRangedStrength: Int) : MapUnitCombatant(mapUnitCombatant.unit) {
         override fun getAttackingStrength(defender: ICombatant?): Int {
             val state = GameContext(this, defender, this.getTile(), CombatAction.Attack)
             var extraStrength = 0
