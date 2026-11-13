@@ -192,4 +192,21 @@ class ArchaeologyParityDetailsTests {
         assertEquals("Landmark", find.improvement)
         assertEquals(previousInfluence + 50f, state.getDiplomacyManager(builder)!!.getInfluence(), 0.001f)
     }
+
+    @Test
+    fun `diplomatic victory AI builds a landmark in city state territory also while at war with it unless it plans to conquer it`() {
+        // CvPlayerCulture::GetArchaeologyChoice only looks at the minor civ approach, not at war
+        game.gameInfo.gameParameters.victoryTypes = ArrayList(game.ruleset.victories.keys)
+        builder.playerType = PlayerType.AI
+        builder.ai.grandStrategy = "AIGRANDSTRATEGY_UNITED_NATIONS"
+        val state = game.addCiv(cityStateType = game.ruleset.cityStateTypes.keys.first())
+        val stateCity = game.addCity(state, tile(-6, 2))
+        builder.diplomacyFunctions.makeCivilizationsMeet(state)
+        builder.getDiplomacyManager(state)!!.declareWar()
+        assertTrue(builder.isAtWarWith(state))
+        val find = site(-5, 2, stateCity)
+        assertEquals(ArchaeologyChoice.Landmark, ArchaeologyFunctions.chooseForAi(builder, find, 0, 0))
+        builder.ai.minorCivApproaches[state.civID] = MinorCivApproach.Conquest
+        assertEquals(ArchaeologyChoice.ArtifactOfFirst, ArchaeologyFunctions.chooseForAi(builder, find, 0, 0))
+    }
 }
