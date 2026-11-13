@@ -40,6 +40,9 @@ import kotlin.math.abs
 import kotlin.math.min
 import kotlin.random.Random
 
+/** NAVAL_PLOT_BLOCKADE_RANGE and the range CvCity::IsBlockaded uses: how close an enemy ship must be to blockade a water tile or a harbor */
+const val NAVAL_PLOT_BLOCKADE_RANGE = 2
+
 class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
     //region Serialized fields
     var militaryUnit: MapUnit? = null
@@ -501,13 +504,9 @@ class Tile : IsPartOfGameInfoSerialization, TileInterface<Tile> {
         if (isLand) // Only water tiles are blocked if empty
             return false
 
-        // For water tiles need also to check neighbors:
-        // enemy military naval units blockade all adjacent water tiles.
-        for (neighbor in neighbors.filter { it.isWater }) {
-            val neighborUnit = neighbor.militaryUnit ?: continue
-
-            // Embarked units do not blockade adjacent tiles
-            if (neighborUnit.civ.isAtWarWith(owner) && !neighborUnit.isEmbarked())
+        // CvCityCitizens::IsPlotBlockaded: a unit of a civilization at war with the owner on any water tile within NAVAL_PLOT_BLOCKADE_RANGE (2)
+        for (nearby in getTilesInDistance(NAVAL_PLOT_BLOCKADE_RANGE)) {
+            if (nearby.isWater && nearby.getUnits().any { it.civ.isAtWarWith(owner) })
                 return true
         }
         return false
