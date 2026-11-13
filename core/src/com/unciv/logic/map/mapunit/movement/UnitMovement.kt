@@ -176,6 +176,8 @@ class UnitMovement(val unit: MapUnit) {
         val cachedPath = pathfindingCache.getShortestPathCache(destination)
         if (cachedPath.isNotEmpty())
             return cachedPath
+        // A search that found no path has seen every tile the unit can reach: any destination outside that set has no path either
+        if (!avoidDamagingTerrain && pathfindingCache.isOutsideSearchedRegion(destination)) return listOf()
 
         val currentTile = unit.getTile()
         if (currentTile.position == destination.position) {
@@ -193,6 +195,8 @@ class UnitMovement(val unit: MapUnit) {
         val newTilesToCheck = ArrayList<Tile>()
         val visitedTilesBitset = BitSet(currentTile.tileMap.tileList.size)
         visitedTilesBitset.set(currentTile.zeroBasedIndex)
+        val seenTilesBitset = BitSet(currentTile.tileMap.tileList.size)  // every tile some step could reach, enterable or not
+        seenTilesBitset.set(currentTile.zeroBasedIndex)
         val civilization = unit.civ
 
         val passThroughCacheNew = ArrayList<Boolean?>(currentTile.tileMap.tileList.size)
@@ -247,6 +251,7 @@ class UnitMovement(val unit: MapUnit) {
                         return path
                     }
 
+                    seenTilesBitset.set(reachableTile.zeroBasedIndex)
                     if (movementTreeParents.containsKey(reachableTile)) continue // We cannot be faster than anything existing...
                     if (!isUnknownTileWeShouldAssumeToBePassable(reachableTile) &&
                         !canMoveToCache.getOrPut(reachableTile) { canMoveTo(reachableTile) })
@@ -260,6 +265,7 @@ class UnitMovement(val unit: MapUnit) {
             if (newTilesToCheck.isEmpty()) {
                 // there is NO PATH (eg blocked by enemy units)
                 pathfindingCache.setShortestPathCache(destination, emptyList())
+                if (!avoidDamagingTerrain) pathfindingCache.setSearchedRegion(seenTilesBitset)
                 return emptyList()
             }
 
@@ -1152,6 +1158,8 @@ class PathfindingCache(private val unit: MapUnit) {
     private var movement = -1f
     private var currentTile: Tile? = null
     private var distanceToTilesCache: PathsToTilesWithinTurn? = null
+    /** The tiles an exhausted shortest path search could reach (by zeroBasedIndex), valid like the other caches; null when no search was exhausted */
+    private var searchedRegion: BitSet? = null
 
     /** Check if the caches are valid (only checking if the unit has moved or consumed movement points;
      * the isPlayerCivilization check is performed in the functions because we want isValid() == false
@@ -1183,7 +1191,20 @@ class PathfindingCache(private val unit: MapUnit) {
         distanceToTilesCache = paths
     }
 
+    /** AI only. True when an exhausted search of this unit has already shown that [destination] cannot be reached */
+    fun isOutsideSearchedRegion(destination: Tile): Boolean {
+        if (unit.civ.isHuman() || !isValid()) return false
+        val region = searchedRegion ?: return false
+        return !region.get(destination.zeroBasedIndex)
+    }
+
+    fun setSearchedRegion(region: BitSet) {
+        if (unit.civ.isHuman() || !isValid()) return
+        searchedRegion = region
+    }
+
     fun clear() {
+        searchedRegion = null
         distanceToTilesCache = null
         movement = unit.currentMovement
         currentTile = unit.getTile()
