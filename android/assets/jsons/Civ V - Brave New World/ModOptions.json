@@ -33,6 +33,8 @@
         "uprisingCounterLikeCivV": true,
         // CvCity::GetLocalHappiness: the happiness of buildings, per-building policies and beliefs, garrison and river is capped by the population
         "localHappinessCappedByPopulation": true,
+        // CvUnit::fortifyModifier: no fortification bonus for a unit with ranged support fire (Zulu Impi)
+        "rangedSupportFireUnitsGetNoFortification": true,
         // CvPlayer::GetUnhappinessFromOccupiedCities: UNHAPPINESS_PER_OCCUPIED_POPULATION, no flat term
         "annexedCityCitizenUnhappinessFactor": 1.34,
         "annexedCityFlatUnhappiness": 0,
