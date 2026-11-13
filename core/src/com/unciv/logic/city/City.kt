@@ -19,6 +19,7 @@ import com.unciv.logic.map.pathingmap.PathingMap
 import com.unciv.logic.map.TileMap
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.mapunit.UnitPromotions
+import com.unciv.logic.map.tile.NAVAL_PLOT_BLOCKADE_RANGE
 import com.unciv.logic.map.tile.RoadStatus
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.Counter
@@ -284,10 +285,12 @@ class City : IsPartOfGameInfoSerialization, INamed {
     @Readonly fun isInResistance() = hasFlag(CityFlags.Resistance)
     @Readonly
     fun isBlockaded(): Boolean {
-        // Coastal cities are blocked if every adjacent water tile is blocked
-        if (!isCoastal()) return false
-        return getCenterTile().neighbors.filter { it.isWater }.all {
-            it.isBlockaded()
+        // CvCity::IsBlockaded: only a city with a building that allows water routes (a harbor) can be, and then an enemy defender
+        // visible to us on a water tile within 2 tiles is enough
+        if (!containsBuildingUnique(UniqueType.ConnectTradeRoutes)) return false
+        return getCenterTile().getTilesInDistance(NAVAL_PLOT_BLOCKADE_RANGE).any { tile ->
+            tile.isWater && tile.isVisible(civ) && tile.militaryUnit
+                ?.let { it.civ.isAtWarWith(civ) && !it.isEmbarked() } == true
         }
     }
 
