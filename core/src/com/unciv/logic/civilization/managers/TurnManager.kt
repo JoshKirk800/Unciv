@@ -301,11 +301,11 @@ class TurnManager(val civInfo: Civilization) {
         }
         if (eligible.isEmpty()) return null
 
-        // Local happiness in Civ V includes building, garrison, policy and religious effects
-        // capped at population. Unciv only separates building happiness in its city breakdown.
+        // CvCity::GetLocalHappiness: building, garrison, policy and religious effects capped at population
+        // (the cap is in [CityStats.localHappiness] when the ruleset has localHappinessCappedByPopulation, else it is applied here)
         val city = civInfo.cities.asSequence().filterNot { it.isCapital() }.maxByOrNull { candidate ->
             val population = candidate.population.population
-            val localHappiness = (candidate.cityStats.happinessList["Buildings"] ?: 0f)
+            val localHappiness = candidate.cityStats.localHappiness
                 .coerceAtLeast(0f).toInt().coerceAtMost(population)
             val center = candidate.getCenterTile()
             population - localHappiness + eligible.sumOf { (_, capital, dominance) ->

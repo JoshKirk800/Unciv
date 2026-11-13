@@ -193,6 +193,7 @@
       "[relativeAmount]% Gold given to enemy if city is captured",
       "Doubles Gold given to enemy if city is captured",
       "Removes extra unhappiness from annexed cities",
+      "Happiness from this building is not limited by the population of the city",
       "Connects trade routes over water",
       "Automatically built in all cities where it is buildable",
       "Creates a [improvementName] improvement on a specific tile",

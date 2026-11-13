@@ -291,7 +291,7 @@
 		"happiness": 5,
 		"culture": 1,
 		"isNationalWonder": true,
-		"uniques": ["Only available <if [Colosseum] is constructed in all [non-[Puppeted]] cities>", "Cost increases by [30] per owned city"],
+		"uniques": ["Happiness from this building is not limited by the population of the city", "Only available <if [Colosseum] is constructed in all [non-[Puppeted]] cities>", "Cost increases by [30] per owned city"],
 		"requiredTech": "Horseback Riding"
 	},
 	{
@@ -716,6 +716,7 @@
 		"happiness": 10,
 		"greatPersonPoints": {"Great Merchant": 1},
 		"isWonder": true,
+		"uniques": ["Happiness from this building is not limited by the population of the city"],
 		"requiredTech": "Physics",
 		"quote": "'Architecture has recorded the great ideas of the human race. Not only every religious symbol, but every human thought has its page in that vast book.' - Victor Hugo"
 	},
@@ -1120,7 +1121,7 @@
 		"happiness": 5,
 		"greatPersonPoints": {"Great Merchant": 2},
 		"isWonder": true,
-		"uniques": ["[+12] Tourism [in this city] <after discovering [Radio]>"],
+		"uniques": ["Happiness from this building is not limited by the population of the city", "[+12] Tourism [in this city] <after discovering [Radio]>"],
 		"requiredTech": "Radio",
 		"quote": "'We live only to discover beauty, all else is a form of waiting' - Kahlil Gibran"
 	},
@@ -1193,7 +1194,7 @@
 		"name": "Prora",
 		"happiness": 2,
 		"isWonder": true,
-		"uniques": ["Must be next to [Coast]", "[+1 Happiness] per [2] social policies adopted", "Free Social Policy", "Only available <after adopting [Autocracy]>"],
+		"uniques": ["Happiness from this building is not limited by the population of the city", "Must be next to [Coast]", "[+1 Happiness] per [2] social policies adopted", "Free Social Policy", "Only available <after adopting [Autocracy]>"],
 		"requiredTech": "Flight",
 		"quote": "'This loss (of freedom) means the fading from human life of values infinitely precious to it. There only remain ironbound conditions of employment and trivial amusements for leisure.' - A.N. Whitehead"
 	},

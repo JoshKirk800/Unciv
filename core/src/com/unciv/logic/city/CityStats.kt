@@ -96,6 +96,10 @@ class CityStats(val city: City) {
 
     var happinessList = LinkedHashMap<String, Float>()
 
+    /** The happiness of the city's buildings, policies and beliefs that [ModConstants.localHappinessCappedByPopulation] limits to the population
+     *  (CvCity::GetLocalHappiness). Without that constant: the happiness of the buildings, nothing is limited. */
+    var localHappiness = 0f
+
     var statsFromTiles = Stats()
 
     var currentCityStats: Stats = Stats()  // This is so we won't have to calculate this multiple times - takes a lot of time, especially on phones
@@ -461,7 +465,8 @@ class CityStats(val city: City) {
         val happinessFromSpecialists = statsFromSpecialists.happiness.toInt().toFloat()
         if (happinessFromSpecialists > 0) newHappinessList["Specialists"] = happinessFromSpecialists
 
-        newHappinessList["Buildings"] = statsFromBuildings.totalStats.happiness.toInt().toFloat()
+        val happinessFromBuildings = statsFromBuildings.totalStats.happiness.toInt().toFloat()
+        newHappinessList["Buildings"] = happinessFromBuildings
 
         newHappinessList["Tile yields"] = statsFromTiles.happiness
 
@@ -472,10 +477,68 @@ class CityStats(val city: City) {
                 newHappinessList[source] = newHappinessList[source]!! + stats.totalStats.happiness
             }
 
+        if (civInfo.gameInfo.ruleset.modOptions.constants.localHappinessCappedByPopulation) {
+            val local = calculateLocalHappiness()
+            val limit = getLocalHappinessLimit()
+            localHappiness = min(local, limit)
+            if (local > limit) newHappinessList["Population limit on local happiness"] = limit - local
+        } else localHappiness = happinessFromBuildings
+
         // we don't want to modify the existing happiness list because that leads
         // to concurrency problems if we iterate on it while changing
         happinessList = newHappinessList
     }
+
+    /**
+     * CvCity::GetLocalHappiness before its cap: the base happiness of the buildings (not those that say their happiness is unmodded, the
+     * original's UnmoddedHappiness of Circus Maximus, Notre Dame...), the happiness policies and beliefs give for each building of a kind,
+     * the garrison policy, and the beliefs' happiness per city and on rivers. Everything else of Unciv's happiness is civilization-wide there.
+     */
+    @Readonly
+    private fun calculateLocalHappiness(): Float {
+        var local = 0f
+        val buildings = city.cityConstructions.getBuiltBuildings().toList()
+        for (building in buildings)
+            if (!building.hasUnique(UniqueType.HappinessNotLimitedByPopulation)) local += building.happiness.toInt()
+
+        fun isPolicyOrBelief(unique: Unique) = unique.sourceObjectType == UniqueTarget.Policy
+            || unique.sourceObjectType == UniqueTarget.FollowerBelief || unique.sourceObjectType == UniqueTarget.FounderBelief
+
+        city.forEachMatchingUnique(UniqueType.StatsFromObject) { unique ->
+            if (unique.stats.happiness <= 0f || !isPolicyOrBelief(unique)) return@forEachMatchingUnique
+            for (building in buildings)
+                if (building.matchesFilter(unique.params[1], city.state)) local += unique.stats.happiness.toInt()
+        }
+        city.forEachMatchingUnique(UniqueType.StatsFromBuildings) { unique ->
+            if (unique.stats.happiness <= 0f || !isPolicyOrBelief(unique)) return@forEachMatchingUnique
+            for (building in buildings)
+                if (!building.isWonder && building.matchesFilter(unique.params[1], city.state)) local += unique.stats.happiness.toInt()
+        }
+        city.forEachMatchingUnique(UniqueType.StatsPerCity) { unique ->
+            if (unique.stats.happiness <= 0f || !city.matchesFilter(unique.params[1])) return@forEachMatchingUnique
+            // The garrison policy (HappinessPerGarrisonedUnit) and the beliefs (HappinessPerCity)
+            if (unique.sourceObjectType == UniqueTarget.FollowerBelief
+                || unique.sourceObjectType == UniqueTarget.Policy && unique.params[1] in garrisonCityFilters)
+                local += unique.stats.happiness.toInt()
+        }
+        city.forEachMatchingUnique(UniqueType.StatsFromCitiesOnSpecificTiles) { unique ->
+            if (unique.stats.happiness > 0f && unique.sourceObjectType == UniqueTarget.FollowerBelief
+                && city.getCenterTile().matchesTerrainFilter(unique.params[1], city.civ)) // RiverHappiness
+                local += unique.stats.happiness.toInt()
+        }
+        return local
+    }
+
+    /** The population, times 2/3 rounded for a civilization with a trait that changes the unhappiness of the number of cities (India) */
+    @Readonly
+    private fun getLocalHappinessLimit(): Float {
+        val population = city.population.population
+        var changesCityUnhappiness = false
+        city.civ.forEachMatchingUnique(UniqueType.UnhappinessFromCitiesPercentage) { if (it.params[0].toFloat() != 0f) changesCityUnhappiness = true }
+        return if (changesCityUnhappiness) ((population * 20 + 15) / 30).toFloat() else population.toFloat()
+    }
+
+    private val garrisonCityFilters = setOf("in all cities with a garrison", "Garrisoned")
 
     private fun updateBaseStatList(statsFromBuildings: StatTreeNode, statsFromSpecialists: Stats,
                                    statsFromUniquesBySource: StatTreeNode) {

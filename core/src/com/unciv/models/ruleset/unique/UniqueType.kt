@@ -510,6 +510,9 @@ enum class UniqueType(
     GoldFromCapturingCity("[relativeAmount]% Gold given to enemy if city is captured", UniqueTarget.Building),
 
     RemovesAnnexUnhappiness("Removes extra unhappiness from annexed cities", UniqueTarget.Building),
+    HappinessNotLimitedByPopulation("Happiness from this building is not limited by the population of the city", UniqueTarget.Building,
+        docDescription = "Only matters with the ModConstants `localHappinessCappedByPopulation`, which limits the happiness of the buildings of a city to its population. " +
+            "Civ V's `UnmoddedHappiness` buildings (Circus Maximus, Notre Dame, Eiffel Tower, Prora) are exempt from that."),
     ConnectTradeRoutes("Connects trade routes over water", UniqueTarget.Building),
     GreatWorkSlots("Has [positiveAmount] [greatWorkSlotType] Great Work slots", UniqueTarget.Building,
         docDescription = "Great Works of that type can be placed in the building, one in each slot. Several of these uniques add their slots together, in the order they are written"),
