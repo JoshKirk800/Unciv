@@ -2,6 +2,7 @@ package com.unciv.logic.civilization.diplomacy
 
 import com.unciv.Constants
 import com.unciv.logic.automation.civilization.NextTurnAutomation
+import com.unciv.logic.automation.civilization.ReligionAutomation
 import com.unciv.logic.automation.diplomacy.DiplomacyEvents
 import com.unciv.logic.battle.CityCombatant
 import com.unciv.logic.city.managers.SpyFleeReason
@@ -162,15 +163,17 @@ class CityStateFunctions(val civInfo: Civilization) {
                 return null
             return uniqueUnit
         }
-        @Readonly
+        /** CvGame::GetCompetitiveSpawnUnitType: the land combat units the receiver can build, without explorers, ranked by power
+         *  (CvUnitEntry::GetPower), then a roll among the best UNIT_SPAWN_NUM_CHOICES weighted by it */
         fun randomGiftableUnit() =
                 city.cityConstructions.getConstructableUnits()
-                .filter { !it.isCivilian() && it.isLandUnit && it.uniqueTo == null }
+                .filter { !it.isCivilian() && it.isLandUnit && it.uniqueTo == null && it.unitType != RECON_UNIT_TYPE }
                 // Does not make us go over any resource quota
                 .filter { unit -> unit.getResourceRequirementsPerTurn(receivingCiv.state).none {
                     it.value > 0 && receivingCiv.getResourceAmount(it.key) < it.value
                 } }
-                .toList().randomOrNull(rng)
+                .map { it to it.getAiPower() }.filter { it.second > 0 }
+                .toList().let { ReligionAutomation.chooseFromTopChoices(it, UNIT_SPAWN_NUM_CHOICES, rng) }
 
         val militaryUnit = giftableUniqueUnit() // If the receiving civ has discovered the required tech and not the obsolete tech for our unique, always give them the unique
             ?: randomGiftableUnit() // Otherwise pick at random
@@ -870,6 +873,10 @@ class CityStateFunctions(val civInfo: Civilization) {
     }
 
     companion object {
+        /** UNIT_SPAWN_NUM_CHOICES in the BNW GlobalDefines */
+        private const val UNIT_SPAWN_NUM_CHOICES = 4
+        /** The unit type of units whose default AI is UNITAI_EXPLORE (the Scout) */
+        private const val RECON_UNIT_TYPE = "Scout"
         @Readonly
         fun getCityStateBonuses(
             cityStateType: CityStateType,
