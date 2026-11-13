@@ -1,5 +1,6 @@
 package com.unciv.ui.screens.diplomacyscreen
 
+import com.unciv.logic.automation.diplomacy.IntrigueAi
 import com.unciv.logic.automation.diplomacy.DiplomacyTurn
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.scenes.scene2d.ui.Table
@@ -68,6 +69,8 @@ class MajorCivDiplomacyTable(private val diplomacyScreen: DiplomacyScreen) {
 
         if (!viewingCiv.isAtWarWith(otherCiv)) {
             diplomacyTable.add(getTradeButton(otherCiv)).row()
+            if (IntrigueAi.canShare(viewingCiv, otherCiv))
+                diplomacyTable.add(getShareIntrigueButton(otherCiv)).row()
 
 
             if (!diplomacyManager.hasFlag(DiplomacyFlags.DeclarationOfFriendship))
@@ -191,6 +194,22 @@ class MajorCivDiplomacyTable(private val diplomacyScreen: DiplomacyScreen) {
         }
         if (diplomacyScreen.isNotPlayersTurn()) tradeButton.disable()
         return tradeButton
+    }
+
+    /** DIPLO_UI_STATE_DISCUSS_HUMAN_INVOKED / FROM_UI_DIPLO_EVENT_HUMAN_DISCUSSION_SHARE_INTRIGUE: warn the AI of the plot our spies uncovered */
+    private fun getShareIntrigueButton(otherCiv: Civilization): TextButton {
+        val shareButton = "Share intrigue with [${otherCiv.civName}]".toTextButton()
+        shareButton.onClick {
+            val plotter = IntrigueAi.shareWithAi(viewingCiv, otherCiv) ?: return@onClick
+            diplomacyScreen.updateLeftSideTable(otherCiv)
+            diplomacyScreen.setRightSideFlavorText(
+                otherCiv,
+                "Thank you for bringing this [${plotter.civName}] plot to our attention. With this warning, we will be ready for whatever they may try. Your generous aid will be remembered.",
+                "Very well."
+            )
+        }
+        if (diplomacyScreen.isNotPlayersTurn()) shareButton.disable()
+        return shareButton
     }
 
     private fun getPromisesTable(

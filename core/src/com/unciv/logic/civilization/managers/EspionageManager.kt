@@ -26,6 +26,8 @@ class EspionageManager : IsPartOfGameInfoSerialization {
     var civOutOfTechTurn = HashMap<String, Int>()
     /** AI memory: whether the United Nations countdown already made every spy reconsider its post (CvEspionageAI::m_bUNCountdownStarted) */
     var unCountdownStarted = false
+    /** The intrigue we know, uncovered by our spies or told to us (CvPlayerEspionage::m_aIntrigueNotificationMessages) */
+    var intrigueMessages = ArrayList<IntrigueMessage>()
 
     @Transient
     lateinit var civInfo: Civilization
@@ -46,7 +48,13 @@ class EspionageManager : IsPartOfGameInfoSerialization {
         toReturn.lastBasePotential.putAll(lastBasePotential)
         toReturn.civOutOfTechTurn.putAll(civOutOfTechTurn)
         toReturn.unCountdownStarted = unCountdownStarted
+        intrigueMessages.mapTo(toReturn.intrigueMessages) { it.clone() }
         return toReturn
+    }
+
+    private companion object {
+        /** CvEspionageClasses.cpp: iIntrigueTurnsValid */
+        const val INTRIGUE_TURNS_VALID = 5
     }
 
     fun setTransients(civInfo: Civilization) {
@@ -68,6 +76,70 @@ class EspionageManager : IsPartOfGameInfoSerialization {
             spy.endTurn()
         }
     }
+
+    //region Intrigue
+    /**
+     * CvPlayerEspionage::AddIntrigueMessage: remember a piece of intrigue found out by [discoverer] ([civInfo] or an AI that told us), unless we
+     * know it already: a message of the same source, target and type within the last 30 turns (for Deception and the armies being built that
+     * is all that is compared, for the others the construction and the city too). A human gets the notification if [notify].
+     * Returns whether the message was added.
+     */
+    fun addIntrigueMessage(
+        discoverer: Civilization, source: Civilization, target: Civilization?, targetHidden: Boolean, construction: String?,
+        type: IntrigueType, city: City?, notify: Boolean, spy: Spy?
+    ): Boolean {
+        val turn = civInfo.gameInfo.turns
+        val cityLocation = city?.location
+        for (known in intrigueMessages) {
+            if (known.source != source.civID || known.target != target?.civID || known.targetHidden != targetHidden || known.type != type) continue
+            val withinTimer = turn - known.turn < 30
+            if (type == IntrigueType.Deception || type == IntrigueType.BuildingArmy || type == IntrigueType.BuildingAmphibiousArmy) {
+                if (withinTimer) return false
+            } else if (known.construction == construction && known.cityLocation == cityLocation && withinTimer) return false
+        }
+        val message = IntrigueMessage()
+        message.discoverer = discoverer.civID
+        message.source = source.civID
+        message.target = target?.civID
+        message.targetHidden = targetHidden
+        message.construction = construction
+        message.type = type
+        message.cityLocation = cityLocation
+        message.turn = turn
+        if (discoverer == civInfo && spy != null) message.spyName = spy.name
+        intrigueMessages.add(message)
+        if (notify) IntrigueFunctions.notify(civInfo, message)
+        return true
+    }
+
+    /** CvPlayerEspionage::GetRecentIntrigueInfo: the first message about [target] that is not shared yet and at most 5 turns old (iIntrigueTurnsValid) */
+    @Readonly
+    fun getRecentIntrigueInfo(target: Civilization): IntrigueMessage? =
+        intrigueMessages.firstOrNull { !it.shared && it.target == target.civID && it.turn >= civInfo.gameInfo.turns - INTRIGUE_TURNS_VALID }
+
+    /** CvPlayerEspionage::HasRecentIntrigueAbout */
+    @Readonly fun hasRecentIntrigueAbout(target: Civilization) = getRecentIntrigueInfo(target) != null
+
+    /** CvPlayerEspionage::HasSharedIntrigue: we found this out and told [target] about it within the last 30 turns */
+    @Readonly
+    fun hasSharedIntrigue(target: Civilization, source: Civilization, type: IntrigueType): Boolean =
+        intrigueMessages.any {
+            it.shared && it.discoverer == civInfo.civID && it.target == target.civID && it.source == source.civID && it.type == type &&
+                civInfo.gameInfo.turns - it.turn <= 30
+        }
+
+    /** CvPlayerEspionage::MarkRecentIntrigueAsShared: [target] knows now what we found out of this kind. Returns the number of messages marked. */
+    fun markRecentIntrigueAsShared(target: Civilization, source: Civilization, type: IntrigueType): Int {
+        var count = 0
+        for (message in intrigueMessages) {
+            if (message.shared || message.discoverer != civInfo.civID || message.target != target.civID ||
+                message.source != source.civID || message.type != type) continue
+            message.shared = true
+            count++
+        }
+        return count
+    }
+    //endregion
 
     @Readonly
     fun getSpyName(): String {

@@ -43,4 +43,6 @@ enum class DiploStatement {
     WeAttackedYourMinor, WeBulliedYourMinor, KilledYourSpy, KilledMySpy, CaughtYourSpy,
     TheySupportedOurHosting, WeLikedTheirProposal, WeDislikedTheirProposal, TheySupportedOurProposal, TheyFoiledOurProposal,
     StopConversions, StopDigging,
+    // After the offers (IntrigueAi)
+    ShareIntrigue,
 }

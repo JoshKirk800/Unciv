@@ -159,6 +159,8 @@ class MajorCivMemory : IsPartOfGameInfoSerialization {
     var numSpiesKilled = 0
     /** CvEspionageAI::m_aiTurnLastSpyDied: one of our spies died in their city, -1 = never */
     var turnLastSpyDied = -1
+    /** CvDiplomacyAI::m_paiNumTimesIntrigueSharedBy: how often they warned us of a plot against us (a human sharing what its spies uncovered) */
+    var numTimesIntrigueShared = 0
     /** CvDiplomacyAI::m_ppaaiOtherPlayerLastRoundWarValueLost for [theirWarValueLostToUs] (CacheOtherPlayerWarValuesLost) */
     var lastRoundTheirWarValueLostToUs = 0
     /** CvDiplomacyAI::m_pabSentAttackProtectedMinorTaunt: we told them we hurt a city-state they protect, by civID of that city-state */
@@ -221,6 +223,7 @@ class MajorCivMemory : IsPartOfGameInfoSerialization {
         copy.turnLastBulliedByUs = turnLastBulliedByUs
         copy.turnLastSpyCaught = turnLastSpyCaught; copy.turnLastSpyKilled = turnLastSpyKilled
         copy.numSpiesKilled = numSpiesKilled; copy.turnLastSpyDied = turnLastSpyDied
+        copy.numTimesIntrigueShared = numTimesIntrigueShared
         copy.lastRoundTheirWarValueLostToUs = lastRoundTheirWarValueLostToUs
         copy.sentAttackProtectedMinorTaunts.addAll(sentAttackProtectedMinorTaunts)
         copy.statementTurns.putAll(statementTurns); copy.lastContactTurn = lastContactTurn; copy.turnMet = turnMet

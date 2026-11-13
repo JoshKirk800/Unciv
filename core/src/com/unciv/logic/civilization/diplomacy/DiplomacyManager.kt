@@ -173,6 +173,7 @@ enum class DiplomaticModifiers(val text: String, val isOpinionTerm: Boolean = tr
     TradedWithUs("We have traded with you recently"),
     HelpedUs("You gave us what we asked for"),
     BuiltLandmarksForUs("You built Landmarks in our lands"),
+    SharedIntrigue("You warned us of plots against us"),
     ReturnedCapturedUnits("You returned captured units to us"),
     WeAdoptedTheirReligion("We have adopted your religion"),
     TheyAdoptedOurReligion("You have adopted our religion"),
