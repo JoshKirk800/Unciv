@@ -240,7 +240,8 @@ object Nuke {
                 else -> 20 + rng.nextInt(30)
             } * buildingModifier * damageModifierFromMissingResource + 1f.ulp).toInt()
             if (unit.isCivilian()) {
-                if (unit.health - damage <= 40) unit.destroy()  // Civ5: NUKE_NON_COMBAT_DEATH_THRESHOLD = 60
+                // CvUnitCombat::ApplyNuclearExplosionDamage: a non-combat unit is killed outright when the damage reaches NUKE_NON_COMBAT_DEATH_THRESHOLD
+                if (damage >= unit.civ.gameInfo.ruleset.modOptions.constants.nukeCivilianDeathDamage) unit.destroy()
             } else {
                 defender.takeDamage(damage)
             }

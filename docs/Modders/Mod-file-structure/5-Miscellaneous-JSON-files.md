@@ -270,6 +270,7 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | cityAirUnitCapacity                      | Int    | 6                             | [^W]  |
 | cultureCostLikeCivV                      | Boolean | false                        | [^V]  |
 | treasuryNeverNegative                    | Boolean | false                        | [^Treasury] |
+| nukeCivilianDeathDamage                  | Int     | 60                           | [^NukeCivilians] |
 | startNormalizerLikeCivV                  | Boolean | false                        | [^G]  |
 | coastExpansionDice                       | List<Int> | empty                      | [^T]  |
 | seaDepositsOfLandResource                | String  | empty                        | [^SeaOil] |
@@ -379,6 +380,7 @@ Legend:
     The Civ V rulesets use 0, 8 and 7.
 - [^V]: The culture a city needs for its next tile. false: 6 \* (tilesClaimed + 1.4813) ^ 1.3, the percentages of "Culture cost of natural border growth" multiplied.
 - [^Treasury]: What happens to the treasury when the turn's income would take it below zero. false: the civilization goes into debt, which costs science. true: as in Civ V (`CvTreasury::DoGold`) the treasury is set to 0 and the rest of the deficit is lost, so the gold of a civilization is never negative. Units are disbanded under a deficit in both cases.
+- [^NukeCivilians]: The damage, out of 100 hit points, from a nuclear blast at which a civilian unit dies. 60: it dies when its health is down to 40 or less. Civ V (`CvUnitCombat::ApplyNuclearExplosionDamage`) uses 6, which kills every civilian in the blast, because a blast does at least 30 damage.
     true: the formula of Civ V, 15 + (10 \* tilesGainedByCulture) ^ 1.1, times 1.5 for City-States, the percentages added up (at least -85), times the game speed, rounded down to a multiple of 5.
     The tiles gained by culture do not count tiles that were bought. The Civ V rulesets set true.
 - [^G]: Whether the start of a civilization or City-State is improved with the rules of Civ V (how many bonus resources, when a hill or a horse/iron is added, stone on grass starts).
