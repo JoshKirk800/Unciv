@@ -210,6 +210,8 @@ class BattleDamageTest {
         assertEquals(-25, penalty())
         horsemen[1].destroy()
         assertEquals("1 used, 1 supplied", 0, penalty())
+    }
+
     /** CvCity::rangeCombatDamage and GetAirStrikeDefenseDamage: at least MIN_CITY_STRIKE_DAMAGE (10), where other attacks deal at least 1 */
     @Test
     fun `a city deals at least 10 damage however strong its target is`() {
@@ -230,6 +232,8 @@ class BattleDamageTest {
         val damage = BattleDamage.calculateDamageToDefender(MapUnitCombatant(defaultAttackerUnit), MapUnitCombatant(target), target.getTile(), 0f)
 
         assertEquals(1, damage)
+    }
+
     /** CvUnit::GetGenericMaxStrengthModifier: the defender is flanked as well, by the attacker's side's units next to it */
     @Test
     fun `a defender gets the flanking bonus from its own units next to the melee attacker`() {
