@@ -165,7 +165,8 @@ class MajorCivMemory : IsPartOfGameInfoSerialization {
     var sentAttackProtectedMinorTaunts = HashSet<String>()
 
     /** The diplo log (DoAddNewStatementToDiploLog): game turn each statement was last sent */
-    var statementTurns = HashMap<DiploStatement, Int>()
+    // Insertion ordered: a HashMap keyed by an enum iterates in identity-hash order, which differs from run to run and made saves of equal games differ
+    var statementTurns = LinkedHashMap<DiploStatement, Int>()
     /** Turn of the last statement or offer to them (one per player per turn, DoContactPlayer) */
     var lastContactTurn = -1
     /** CvTeam::GetTurnsSinceMeetingTeam: game turn of first contact, -1 = before this port (counts as long ago) */
