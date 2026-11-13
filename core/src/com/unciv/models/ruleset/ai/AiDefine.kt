@@ -764,6 +764,11 @@ enum class AiDefine(val default: Float) {
     PLOT_ADDITIONAL_COST_PER_PLOT(5f),
     PLOT_BASE_COST(50f),
 
+    // CvAStar.cpp InfluenceCost (the influence path of CvMap::calculateInfluenceDistance): the cost of a step across a river and whether the first
+    // step out of the city pays the terrain cost too (0: it costs 1). The terrain costs are data: Terrain.influenceCost
+    INFLUENCE_RIVER_COST(1f),
+    USE_FIRST_RING_INFLUENCE_TERRAIN_COST(0f),
+
     // CvDangerPlots (plot danger read by CvTradeAI)
     AI_DANGER_MAJOR_APPROACH_WAR(1.0f),
     AI_DANGER_MAJOR_APPROACH_HOSTILE(0.2f),

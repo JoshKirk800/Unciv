@@ -2,6 +2,7 @@
 	// Base terrains
 	{
 		"name": "Ocean",
+		"influenceCost": 3,
 		"type": "Water",
 		"food": 1,
 		"gold": 1,
@@ -10,6 +11,7 @@
 	},
 	{
 		"name": "Coast",
+		"influenceCost": 2,
 		"type": "Water",
 		"food": 1,
         "gold": 1,
@@ -22,6 +24,7 @@
 	},
 	{
 		"name": "Grassland",
+		"influenceCost": 1,
 		"type": "Land",
 		"food": 2,
 		"movementCost": 1,
@@ -47,6 +50,7 @@
     },
 	{
 		"name": "Plains",
+		"influenceCost": 1,
 		"type": "Land",
 		"food": 1,
 		"production": 1,
@@ -75,6 +79,7 @@
 	},
 	{
 		"name": "Tundra",
+		"influenceCost": 2,
 		"type": "Land",
 		"food": 1,
 		"movementCost": 1,
@@ -93,6 +98,7 @@
 	},
 	{
 		"name": "Desert",
+		"influenceCost": 2,
 		"type": "Land",
 		"movementCost": 1,
 		"RGB": [230, 172, 0],
@@ -109,6 +115,7 @@
 	},
 	{
 		"name": "Lakes",
+		"influenceCost": 2,
 		"type": "Water",
 		"food": 2,
 		"gold": 1,
@@ -127,6 +134,7 @@
 	},
 	{
 		"name": "Mountain",
+		"influenceCost": 3,
 		"type": "Land",
 		"impassable": true,
 		"defenceBonus": 0.25,
@@ -140,6 +148,7 @@
 	},
 	{
 		"name": "Snow",
+		"influenceCost": 2,
 		"type": "Land",
 		"movementCost": 1,
 		"RGB": [230, 238, 255], //Darker229, 229, 255
@@ -159,6 +168,7 @@
 	// Terrain features
 	{
 		"name": "Hill",
+		"influenceCost": 2,
 		"type": "TerrainFeature",
 		"production": 2,
 		"movementCost": 2,
@@ -180,6 +190,7 @@
 	},
 	{
 		"name": "Forest",
+		"influenceCost": 1,
 		"type": "TerrainFeature",
 		"production": 1,
 		"food": 1,
@@ -204,6 +215,7 @@
 	},
 	{
 		"name": "Jungle",
+		"influenceCost": 1,
 		"type": "TerrainFeature",
 		"food": 2,
 		"movementCost": 2,
@@ -226,6 +238,7 @@
 	},
 	{
 		"name": "Marsh",
+		"influenceCost": 1,
 		"type": "TerrainFeature",
 		"food": -1,
 		"movementCost": 3,
@@ -250,6 +263,7 @@
 	},
 	{
 		"name": "Oasis",
+		"influenceCost": -1,
 		"type": "TerrainFeature",
 		"food": 3,
 		"gold": 1,
@@ -273,6 +287,7 @@
 	},
 	{
 		"name": "Flood plains",
+		"influenceCost": -1,
 		"type": "TerrainFeature",
 		"food": 2,
 		"movementCost": 1,
@@ -284,6 +299,7 @@
 	},
 	{
 		"name": "Ice",
+		"influenceCost": 3,
 		"type": "TerrainFeature",
 		"impassable": true,
 		"overrideStats": true,
@@ -294,6 +310,7 @@
 	},
 	{
 		"name": "Atoll",
+		"influenceCost": -1,
 		"type": "TerrainFeature",
 		"movementCost": 1,
 		"food": 1,
@@ -335,6 +352,7 @@
     // Natural Wonders
 	{
 		"name": "Great Barrier Reef",
+		"influenceCost": -3,
 		"type": "NaturalWonder",
 		"food": 2,
 		"production": 1,
@@ -352,6 +370,7 @@
 	},
 	{
 		"name": "Old Faithful",
+		"influenceCost": -3,
 		"type": "NaturalWonder",
 		"science": 2,
 		"occursOn": ["Grassland","Plains","Tundra","Mountain"],
@@ -367,6 +386,7 @@
 	},
 	{
 		"name": "El Dorado",
+		"influenceCost": -3,
 		"type": "NaturalWonder",
 		"culture": 5,
 		"overrideStats": true,
@@ -381,6 +401,7 @@
 	},
 	{ // This will count as "Fresh water" in civ 6
 		"name": "Fountain of Youth",
+		"influenceCost": -3,
 		"type": "NaturalWonder",
 		"overrideStats": true,
 		"occursOn": ["Plains"],
@@ -393,6 +414,7 @@
 	},
 	{
 		"name": "Grand Mesa",
+		"influenceCost": -3,
 		"type": "NaturalWonder",
 		"production": 2,
 		"gold": 3,
@@ -408,6 +430,7 @@
 	},
 	{
 		"name": "Mount Fuji",
+		"influenceCost": -3,
 		"type": "NaturalWonder",
 		"gold": 2,
 		"culture": 3,
@@ -427,6 +450,7 @@
 	},
 	{
 		"name": "Krakatoa",
+		"influenceCost": -3,
 		"type": "NaturalWonder",
 		"science": 5,
 		"occursOn": ["Ocean"],
@@ -440,6 +464,7 @@
 	},
 	{
 		"name": "Rock of Gibraltar",
+		"influenceCost": -3,
 		"type": "NaturalWonder",
 		"food": 2,
 		"gold": 5,
@@ -454,6 +479,7 @@
 	},
 	{
 		"name": "Cerro de Potosi",
+		"influenceCost": -3,
 		"type": "NaturalWonder",
 		"gold": 10,
 		"occursOn": ["Plains","Mountain"],
@@ -466,6 +492,7 @@
 	},
 	{
 		"name": "Barringer Crater",
+		"influenceCost": -3,
 		"type": "NaturalWonder",
 		"gold": 2,
 		"science": 3,
@@ -482,6 +509,7 @@
 	// G&K Wonders
 	{
 		"name": "Mount Kailash",
+		"influenceCost": -3,
 		"type": "NaturalWonder",
 		"faith": 6,
 		"happiness": 2,
@@ -497,6 +525,7 @@
 	},
 	{
 		"name": "Mount Sinai",
+		"influenceCost": -3,
 		"type": "NaturalWonder",
 		"faith": 8,
 		"occursOn": ["Desert","Plains"],
@@ -512,6 +541,7 @@
 	},
 	{
 		"name": "Sri Pada",
+		"influenceCost": -3,
 		"type": "NaturalWonder",
 		"food": 2,
 		"faith": 4,
@@ -528,6 +558,7 @@
 	},
 	{
 		"name": "Uluru",
+		"influenceCost": -3,
 		"type": "NaturalWonder",
 		"food": 2,
 		"faith": 6,
@@ -546,6 +577,7 @@
 	// BNW wonders
 	{
 		"name": "King Solomon's Mines",
+		"influenceCost": -3,
 		"type": "NaturalWonder",
 		"production": 6,
 		"overrideStats": true,
@@ -559,6 +591,7 @@
 	},
 	{// Will be introduced in Brave New World. Despite being a lake, it cannot be sailed on and it blocks line of sight like a mountain.
 		"name": "Lake Victoria",
+		"influenceCost": -3,
 		"type": "NaturalWonder",
 		"food": 6,
 		"occursOn": ["Plains"],
@@ -570,6 +603,7 @@
 	},
 	{
 		"name": "Mount Kilimanjaro",
+		"influenceCost": -3,
 		"type": "NaturalWonder",
 		"food": 3,
 		"culture": 2,

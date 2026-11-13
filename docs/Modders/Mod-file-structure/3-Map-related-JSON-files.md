@@ -21,6 +21,7 @@ Each terrain entry has the following structure:
 | impassable                 | Boolean                                                             | false    | No unit can enter unless it has a special unique                                              |
 | movementCost               | Integer                                                             | 1        | Base movement cost                                                                            |
 | defenceBonus               | Float                                                               | 0        | Combat bonus for units being attacked here                                                    |
+| influenceCost              | Integer                                                             | 0        | Civ V rules only: what this terrain adds to the step cost of a city's border path [^Influence] |
 | RGB                        | [List of 3× Integer](5-Miscellaneous-JSON-files.md#rgb-colors-list) | Gold     | RGB color for 'Default' tileset display                                                       |
 | uniques                    | List of Strings                                                     | empty    | List of [unique abilities](../uniques.md) this terrain has                                    |
 | civilopediaText            | List                                                                | empty    | See [civilopediaText chapter](5-Miscellaneous-JSON-files.md#civilopedia-text)                 |
@@ -30,6 +31,7 @@ Each terrain entry has the following structure:
       River should always be a TerrainFeature and have the same uniques the one in the vanilla rulesets has - if you change that, expect surprises.
 [^B]: A base ruleset mod is always expected to provide at least one Land and at least one Water terrain. We do not support Land-only or Water-only mods, even if they might be possible to pull off.
 [^C]: If set, the base terrain is changed to this after placing the Natural Wonder, and terrain features cleared. Otherwise, terrain features are reduced to only those present in occursOn.
+[^Influence]: The cost of one step of the path from a city center to a tile that decides the gold price and the pick of tiles a city takes (the original's `InfluenceCost` of terrains, features and wonders). The costs of the base terrain, the features and the natural wonder of the tile entered add up, then the step costs at least 1 and at most 3 (+15 if the tile belongs to another civilization). A tile whose base terrain has the unique `Occurs in chains at high elevations` (the mountain) counts only its base terrain. On the hill terrain it is the original's `INFLUENCE_HILL_COST`.
 
 ### Regions
 
