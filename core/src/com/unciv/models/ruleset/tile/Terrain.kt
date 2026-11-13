@@ -45,6 +45,12 @@ class Terrain : RulesetStatsObject() {
     var defenceBonus: Float = 0f
     var impassable = false
 
+    /** What a tile of this terrain adds to the step cost of the influence path that decides which tiles a city can acquire and what they cost
+     *  ([com.unciv.logic.city.managers.PlotInfluence]; Civ V `InfluenceCost` of terrains and features, `INFLUENCE_HILL_COST` for the hill,
+     *  `INFLUENCE_MOUNTAIN_COST` for the mountain). The terrains, features and natural wonder of a tile are summed, then the step is held within 1..3.
+     *  For a tile whose base terrain is a mountain (an `Occurs in chains` terrain) only the base terrain counts. */
+    var influenceCost = 0
+
     @Transient
     var damagePerTurn = 0
 

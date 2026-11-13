@@ -123,6 +123,8 @@ class EconomicMilitaryAiTests {
 
     @Test
     fun `plot score values a luxury the civilization lacks twice`() {
+        // Under the Civ V price of a tile a resource lowers it, which scales the score; Unciv's own price depends on the distance only
+        game.ruleset.modOptions.constants.plotAcquisitionLikeCivV = false
         val civ = neutralCiv()
         val city = game.addCity(civ, tile(0, 0))
         val plain = tile(2, 0)

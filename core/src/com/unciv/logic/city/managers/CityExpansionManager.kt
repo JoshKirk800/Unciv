@@ -10,12 +10,16 @@ import com.unciv.logic.map.HexCoord
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.ruleset.tile.ResourceType
 import com.unciv.models.ruleset.unique.UniqueType
+import com.unciv.models.ruleset.ai.AiDefine
 import com.unciv.ui.components.extensions.toPercent
 import com.unciv.utils.withItem
 import com.unciv.utils.withoutItem
+import yairm210.purity.annotations.LocalState
 import yairm210.purity.annotations.Readonly
+import com.unciv.logic.map.tile.RoadStatus
 import kotlin.math.max
 import kotlin.math.pow
+import kotlin.random.Random
 import kotlin.math.roundToInt
 
 class CityExpansionManager : IsPartOfGameInfoSerialization {
@@ -27,10 +31,15 @@ class CityExpansionManager : IsPartOfGameInfoSerialization {
      *  Negative in a saved game from before the counter existed; [setTransients] then derives it from the tiles. */
     var cultureLevel: Int = -1
 
+    /** CvCity::m_iCheapestPlotInfluence: the lowest influence distance of an unowned tile within the expand range at the city's last acquisition of a tile
+     *  (plotAcquisitionLikeCivV; it sets the price of a tile). Negative in a saved game from before the counter existed: then it is worked out on demand. */
+    var cheapestPlotInfluence = -1
+
     fun clone(): CityExpansionManager {
         val toReturn = CityExpansionManager()
         toReturn.cultureStored = cultureStored
         toReturn.cultureLevel = cultureLevel
+        toReturn.cheapestPlotInfluence = cheapestPlotInfluence
         return toReturn
     }
 
@@ -87,10 +96,16 @@ class CityExpansionManager : IsPartOfGameInfoSerialization {
             city.isPuppet || city.isBeingRazed -> false
             tile.getOwner() != null -> false
             city.isInResistance() -> false
-            tile !in city.tilesInRange -> false
+            tile.aerialDistanceTo(city.getCenterTile()) > buyRange() -> false
             else -> tile.neighbors.any { it.getCity() == city }
         }
     }
+
+    /** The range within which a tile can be bought: the city's expand range, or MAXIMUM_BUY_PLOT_DISTANCE under plotAcquisitionLikeCivV (CvCity::CanBuyPlot) */
+    @Readonly
+    private fun buyRange(): Int =
+        if (city.getRuleset().modOptions.constants.plotAcquisitionLikeCivV) city.getRuleset().ai.define(AiDefine.MAXIMUM_BUY_PLOT_DISTANCE)
+        else city.getExpandRange()
 
     fun buyTile(tile: Tile) {
         val goldCost = getGoldCostOfTile(tile)
@@ -104,7 +119,8 @@ class CityExpansionManager : IsPartOfGameInfoSerialization {
             throw NotEnoughGoldToBuyTileException("$city tried to buy $tile, but lacks gold (cost $goldCost, has ${city.civ.gold})")
 
         city.civ.addGold(-goldCost)
-        takeOwnership(tile)
+        city.civ.plotsBought++ // CvCity::BuyPlot: CvPlayer::ChangeNumPlotsBought
+        acquireTile(tile)
         // CvCity::BuyPlot: every foreign city within city radius of the tile notes it (AI_ChangeNumPlotsAcquiredByOtherPlayer)
         for (nearbyTile in tile.getTilesInDistance(3)) {
             val nearbyCity = nearbyTile.getCity() ?: continue
@@ -117,6 +133,8 @@ class CityExpansionManager : IsPartOfGameInfoSerialization {
 
     @Readonly
     fun getGoldCostOfTile(tile: Tile, extraTiles: Int = 0): Int {
+        if (city.getRuleset().modOptions.constants.plotAcquisitionLikeCivV) return getGoldCostOfTileLikeCivV(tile, extraTiles)
+
         val baseCost = 50
         val distanceFromCenter = tile.aerialDistanceTo(city.getCenterTile())
         var cost = baseCost * (distanceFromCenter - 1) + (tilesClaimed() + extraTiles) * 5.0
@@ -131,12 +149,66 @@ class CityExpansionManager : IsPartOfGameInfoSerialization {
         return cost.roundToInt()
     }
 
+    /**
+     *  CvCity::GetBuyPlotCost: the civilization's [Civilization.getBuyPlotCost] (with [extraTiles] more tiles bought) times
+     *  (PLOT_INFLUENCE_BASE_MULTIPLIER 100 + the influence distance of the tile less the city's cheapest, x PLOT_INFLUENCE_DISTANCE_MULTIPLIER 100 /
+     *  PLOT_INFLUENCE_DISTANCE_DIVISOR 3, and PLOT_BUY_RESOURCE_COST -100 for a resource the civilization can see) %, only where that is above 100,
+     *  x game speed gold percent, x (100 + the city's own tile cost percentages) %, rounded down to PLOT_COST_APPEARANCE_DIVISOR 5.
+     *  9999 for a tile beyond MAXIMUM_BUY_PLOT_DISTANCE. Every division truncates, as the original's integer arithmetic does.
+     */
+    @Readonly
+    private fun getGoldCostOfTileLikeCivV(tile: Tile, extraTiles: Int): Int {
+        val ai = city.getRuleset().ai
+        val center = city.getCenterTile()
+        val maxRange = ai.define(AiDefine.MAXIMUM_BUY_PLOT_DISTANCE)
+        if (tile.aerialDistanceTo(center) > maxRange) return 9999
+
+        var cost = city.civ.getBuyPlotCost(extraTiles)
+        // A tile the path cannot reach has distance -1, as in the original
+        val distance = PlotInfluence.distance(center, tile, maxRange) - effectiveCheapestPlotInfluence()
+        var factor = ai.define(AiDefine.PLOT_INFLUENCE_BASE_MULTIPLIER) +
+            distance * ai.define(AiDefine.PLOT_INFLUENCE_DISTANCE_MULTIPLIER) / ai.define(AiDefine.PLOT_INFLUENCE_DISTANCE_DIVISOR)
+        if (city.civ.canSeeResource(tile.tileResource)) factor += ai.define(AiDefine.PLOT_BUY_RESOURCE_COST)
+        if (factor > 100) cost = cost * factor / 100
+
+        cost = cost * (city.civ.gameInfo.speed.goldCostModifier * 100).roundToInt() / 100
+
+        var percent = 0
+        city.forEachMatchingUnique(UniqueType.TileCostPercentage) { unique ->
+            if (unique.params[1] != "in all cities" && city.matchesFilter(unique.params[1])) percent += unique.params[0].toInt()
+        }
+        cost = cost * (100 + percent) / 100
+
+        val divisor = ai.define(AiDefine.PLOT_COST_APPEARANCE_DIVISOR)
+        return cost / divisor * divisor
+    }
+
+    /** CvCity::GetCheapestPlotInfluence: what the city's cheapest unowned tile cost on the influence path when it last acquired a tile */
+    @Readonly
+    fun effectiveCheapestPlotInfluence(): Int = if (cheapestPlotInfluence >= 0) cheapestPlotInfluence else calculateCheapestPlotInfluence()
+
+    /**
+     *  CvCity::DoUpdateCheapestPlotInfluence: the lowest positive influence distance from the city to an unowned tile within the expand range
+     *  (MAXIMUM_ACQUIRE_PLOT_DISTANCE 5); Int.MAX_VALUE if there is none, as the original's INT_MAX.
+     */
+    @Readonly
+    private fun calculateCheapestPlotInfluence(): Int {
+        val center = city.getCenterTile()
+        val range = city.getExpandRange()
+        val unowned = center.getTilesInDistance(range).filter { it.getOwner() == null }.toList()
+        var lowest = Int.MAX_VALUE
+        for (distance in PlotInfluence.distances(center, unowned, range).values)
+            if (distance in 1..<lowest) lowest = distance
+        return lowest
+    }
+
     @Readonly
     fun getChoosableTiles() = city.getCenterTile().getTilesInDistance(city.getExpandRange())
         .filter { it.getOwner() == null }
 
     @Readonly
     fun chooseNewTileToOwn(): Tile? {
+        if (city.getRuleset().modOptions.constants.plotAcquisitionLikeCivV) return chooseNewTileToOwnLikeCivV()
         // Technically, in the original a random tile with the lowest score was selected
         // However, doing this requires either caching it, which is way more work,
         // or selecting all possible tiles and only choosing one when the border expands.
@@ -145,6 +217,104 @@ class CityExpansionManager : IsPartOfGameInfoSerialization {
         return getChoosableTiles().minByOrNull {
             rankTileForExpansion(it)
         }
+    }
+
+    /**
+     *  CvCity::GetNextBuyablePlot: one of the tiles of [getBuyablePlotList], picked at random, as the original does with the game's random
+     *  number. The pick is seeded by the city and by how many tiles its culture has gained, so that the tile the city screen shows as the next
+     *  one is the tile the border then takes (as long as the list stays the same).
+     */
+    @Readonly
+    private fun chooseNewTileToOwnLikeCivV(): Tile? {
+        val tiles = getBuyablePlotList()
+        if (tiles.isEmpty()) return null
+        val level = if (cultureLevel >= 0) cultureLevel else tilesClaimed()
+        return tiles[Random((city.location.x * 1000 + city.location.y) * 31 + level).nextInt(tiles.size)]
+    }
+
+    /**
+     *  CvCity::GetBuyablePlotList: of the unowned tiles within the expand range (MAXIMUM_ACQUIRE_PLOT_DISTANCE 5) that the influence path reaches
+     *  those with the lowest [plotInfluenceScore]; the border takes one of them.
+     */
+    @Readonly
+    fun getBuyablePlotList(): List<Tile> {
+        val center = city.getCenterTile()
+        val range = city.getExpandRange()
+        val candidates = center.getTilesInDistance(range).filter { it.getOwner() == null }.toList()
+        val pathCosts = PlotInfluence.distances(center, candidates, range)
+        var lowest = Int.MAX_VALUE
+        @LocalState val best = ArrayList<Tile>()
+        for (tile in candidates) {
+            val pathCost = pathCosts[tile] ?: continue
+            if (pathCost <= 0) continue
+            val score = plotInfluenceScore(tile, pathCost)
+            if (score > lowest) continue
+            if (score < lowest) {
+                lowest = score
+                best.clear()
+            }
+            best.add(tile)
+        }
+        return best
+    }
+
+    /**
+     *  The score CvCity::GetBuyablePlotList gives an unowned [tile] whose influence path from the city costs [pathCost] (lower: taken sooner):
+     *  the path cost x PLOT_INFLUENCE_DISTANCE_MULTIPLIER; a resource the civilization can see PLOT_INFLUENCE_RESOURCE_COST (a bonus resource
+     *  beyond the work range 0, within it one less), else water PLOT_INFLUENCE_WATER_COST and a tile beyond the work range
+     *  PLOT_INFLUENCE_RING_COST; an improvement PLOT_INFLUENCE_IMPROVEMENT_COST (a barbarian camp PLOT_INFLUENCE_RING_COST); a road
+     *  PLOT_INFLUENCE_ROUTE_COST; a natural wonder PLOT_INFLUENCE_NW_COST; each point of yield PLOT_INFLUENCE_YIELD_POINT_COST; each unowned
+     *  neighbor with a visible resource (a bonus one only within the work range) -1, with a natural wonder -1 (and a further -1 once if one of
+     *  those is within the work range); PLOT_INFLUENCE_NO_ADJACENT_OWNED_COST if no neighbor belongs to this city.
+     */
+    @Readonly
+    fun plotInfluenceScore(tile: Tile, pathCost: Int): Int {
+        val ai = city.getRuleset().ai
+        val civ = city.civ
+        val center = city.getCenterTile()
+        val ringRange = city.getWorkRange() // NUM_CITY_RINGS
+        val tileDistance = tile.aerialDistanceTo(center)
+        var score = pathCost * ai.define(AiDefine.PLOT_INFLUENCE_DISTANCE_MULTIPLIER)
+
+        val resource = tile.tileResource
+        if (civ.canSeeResource(resource)) {
+            score += ai.define(AiDefine.PLOT_INFLUENCE_RESOURCE_COST)
+            if (resource.resourceType == ResourceType.Bonus) {
+                if (tileDistance > ringRange) score -= ai.define(AiDefine.PLOT_INFLUENCE_RESOURCE_COST) // a distant bonus resource is not wanted
+                else score += 1
+            }
+        } else {
+            if (tile.isWater) score += ai.define(AiDefine.PLOT_INFLUENCE_WATER_COST)
+            if (tileDistance > ringRange) score += ai.define(AiDefine.PLOT_INFLUENCE_RING_COST)
+        }
+
+        if (tile.improvement != null)
+            score += ai.define(if (tile.isBarbarianEncampment()) AiDefine.PLOT_INFLUENCE_RING_COST else AiDefine.PLOT_INFLUENCE_IMPROVEMENT_COST)
+        if (tile.roadStatus != RoadStatus.None) score += ai.define(AiDefine.PLOT_INFLUENCE_ROUTE_COST)
+        if (tile.isNaturalWonder()) score += ai.define(AiDefine.PLOT_INFLUENCE_NW_COST)
+
+        // The tile's yields (CvPlot::getYield of the six yields; no happiness), as the civilization sees it
+        val yields = tile.stats.getTileStats(null, civ)
+        val yieldPoints = yields.food.toInt() + yields.production.toInt() + yields.gold.toInt() +
+            yields.science.toInt() + yields.culture.toInt() + yields.faith.toInt()
+        score += ai.define(AiDefine.PLOT_INFLUENCE_YIELD_POINT_COST) * yieldPoints
+
+        var wonderNearby = false
+        for (adjacent in tile.neighbors) {
+            if (adjacent.getOwner() != null) continue
+            val adjacentDistance = adjacent.aerialDistanceTo(center)
+            val adjacentResource = adjacent.tileResource
+            if (civ.canSeeResource(adjacentResource) &&
+                (adjacentDistance <= ringRange || adjacentResource.resourceType != ResourceType.Bonus)) score -= 1
+            if (adjacent.isNaturalWonder()) {
+                if (adjacentDistance <= ringRange) wonderNearby = true // grab for this city
+                score -= 1 // and grow towards it in any case
+            }
+        }
+        if (wonderNearby) score -= 1
+
+        if (tile.neighbors.none { it.getCity() == city }) score += ai.define(AiDefine.PLOT_INFLUENCE_NO_ADJACENT_OWNED_COST)
+        return score
     }
 
     // Ranks a tile for the expansion algorithm of cities
@@ -212,6 +382,7 @@ class CityExpansionManager : IsPartOfGameInfoSerialization {
     //region state-changing functions
     fun reset() {
         cultureLevel = 0
+        cheapestPlotInfluence = 0 // CvCity::reset: stays 0 until the city acquires its first tile
         for (tile in city.getTiles())
             relinquishOwnership(tile)
 
@@ -226,12 +397,19 @@ class CityExpansionManager : IsPartOfGameInfoSerialization {
         }
     }
 
+    /** CvCity::DoAcquirePlot: the tile becomes the city's, and (Civ V rules) the cheapest influence distance of its unowned tiles is worked out anew */
+    fun acquireTile(tile: Tile) {
+        takeOwnership(tile)
+        if (city.getRuleset().modOptions.constants.plotAcquisitionLikeCivV)
+            cheapestPlotInfluence = calculateCheapestPlotInfluence()
+    }
+
     private fun addNewTileWithCulture(): HexCoord? {
         val chosenTile = chooseNewTileToOwn()
         if (chosenTile != null) {
             cultureStored -= getCultureToNextTile()
             cultureLevel = (if (cultureLevel >= 0) cultureLevel else tilesClaimed()) + 1
-            takeOwnership(chosenTile)
+            acquireTile(chosenTile)
             return chosenTile.position
         }
         return null

@@ -233,8 +233,12 @@ object DealAi {
         return clamp(value)
     }
 
-    /** CvPlayer::GetBuyPlotCost: PLOT_BASE_COST + PLOT_ADDITIONAL_COST_PER_PLOT × plots bought (the tiles our cities claimed) */
+    /**
+     *  CvPlayer::GetBuyPlotCost: [Civilization.getBuyPlotCost] under plotAcquisitionLikeCivV. Otherwise PLOT_BASE_COST + PLOT_ADDITIONAL_COST_PER_PLOT
+     *  × plots bought, counting the tiles our cities claimed
+     */
     private fun buyPlotCost(civ: Civilization): Int {
+        if (civ.gameInfo.ruleset.modOptions.constants.plotAcquisitionLikeCivV) return civ.getBuyPlotCost()
         var plotsBought = 0
         for (city in civ.cities) plotsBought += city.expansion.tilesClaimed()
         return civ.define(AiDefine.PLOT_BASE_COST) + civ.define(AiDefine.PLOT_ADDITIONAL_COST_PER_PLOT) * plotsBought

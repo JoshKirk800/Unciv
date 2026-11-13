@@ -764,6 +764,30 @@ enum class AiDefine(val default: Float) {
     PLOT_ADDITIONAL_COST_PER_PLOT(5f),
     PLOT_BASE_COST(50f),
 
+    // CvAStar.cpp InfluenceCost (the influence path of CvMap::calculateInfluenceDistance): the cost of a step across a river and whether the first
+    // step out of the city pays the terrain cost too (0: it costs 1). The terrain costs are data: Terrain.influenceCost
+    INFLUENCE_RIVER_COST(1f),
+    USE_FIRST_RING_INFLUENCE_TERRAIN_COST(0f),
+
+    // CvCity::GetBuyPlotCost, CvPlayer::GetBuyPlotCost, CvCity::CanBuyPlot (PLOT_BASE_COST and PLOT_ADDITIONAL_COST_PER_PLOT are above)
+    PLOT_INFLUENCE_BASE_MULTIPLIER(100f),
+    PLOT_INFLUENCE_DISTANCE_MULTIPLIER(100f),
+    PLOT_INFLUENCE_DISTANCE_DIVISOR(3f),
+    PLOT_BUY_RESOURCE_COST(-100f),
+    PLOT_COST_APPEARANCE_DIVISOR(5f),
+    MAXIMUM_BUY_PLOT_DISTANCE(3f),
+    MINOR_CIV_GOLD_PERCENT(200f),
+
+    // CvCity::GetBuyablePlotList (PLOT_INFLUENCE_DISTANCE_MULTIPLIER is above)
+    PLOT_INFLUENCE_RING_COST(100f),
+    PLOT_INFLUENCE_WATER_COST(25f),
+    PLOT_INFLUENCE_IMPROVEMENT_COST(-5f),
+    PLOT_INFLUENCE_ROUTE_COST(0f),
+    PLOT_INFLUENCE_RESOURCE_COST(-105f),
+    PLOT_INFLUENCE_NW_COST(-105f),
+    PLOT_INFLUENCE_YIELD_POINT_COST(-1f),
+    PLOT_INFLUENCE_NO_ADJACENT_OWNED_COST(1000f),
+
     // CvDangerPlots (plot danger read by CvTradeAI)
     AI_DANGER_MAJOR_APPROACH_WAR(1.0f),
     AI_DANGER_MAJOR_APPROACH_HOSTILE(0.2f),
