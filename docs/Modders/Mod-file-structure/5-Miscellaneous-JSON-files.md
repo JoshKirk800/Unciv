@@ -310,6 +310,7 @@ and city distance in another. In case of conflicts, there is no guarantee which 
 | cityStateElectionTurns                   | Int    | 15                            | [^R]  |
 | maxImprovementTechErasForward            | Int    | None                          | [^S]  |
 | scoreFromGreatWorks                      | Int    | 0                             | Score for each Great Work. Brave New World uses 4 |
+| scoreBaseMapTiles                        | Int    | 1276                          | Map size, in tiles, at which the score from cities, population and land is not scaled; smaller maps score more of it (a third of the difference), larger maps less. Civ V uses 4160 |
 | greatWorkBaseCulture                     | Int    | 2                             | Culture each Great Work gives its city, before bonuses (see the unique `[stats] from each Great Work`) |
 | greatWorkBaseTourism                     | Int    | 2                             | Tourism each Great Work gives its city, before bonuses |
 | tourismModifierSharedReligion            | Int    | 25                            | Percent more tourism towards civilizations that follow the same religion. See the unique `[relativeAmount]% Tourism towards civilizations with [tourismRelation]` |
