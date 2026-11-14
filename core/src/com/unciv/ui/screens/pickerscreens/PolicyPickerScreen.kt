@@ -25,6 +25,7 @@ import com.unciv.ui.components.extensions.enable
 import com.unciv.ui.components.extensions.pad
 import com.unciv.ui.components.extensions.toGroup
 import com.unciv.ui.components.extensions.toLabel
+import com.unciv.ui.components.extensions.toTextButton
 import com.unciv.ui.components.input.KeyboardBinding
 import com.unciv.ui.components.input.keyShortcuts
 import com.unciv.ui.components.input.onActivation
@@ -145,10 +146,18 @@ private class PolicyButton(viewingCiv: Civilization, canChangeState: Boolean, va
 }
 
 
+/**
+ *  The social policies of a civilization. In a ruleset with ideologies they are a screen of their own: the ordinary branches on one,
+ *  the ideologies (wide boxes of up to seven tenet columns) on the other, with a button to go from one to the other.
+ *  @param select a policy or branch to open; its screen is shown
+ *  @param showIdeologies which of the two screens to show; null: the ideologies when one is to be chosen or free tenets are waiting
+ *         (or [select] is one), else the social policies
+ */
 class PolicyPickerScreen(
     val viewingCiv: Civilization,
     val canChangeState: Boolean,
-    select: String? = null
+    select: String? = null,
+    showIdeologies: Boolean? = null
 ) : PickerScreen(), RecreateOnResize {
 
     object Sizes {
@@ -157,10 +166,26 @@ class PolicyPickerScreen(
         const val paddingBetweenHor = 10f
         const val paddingBetweenVer = 20f
         const val iconSize = 50f
+        /** The tenets of an ideology: three boxes of seven columns have to fit the default screen width (about 1070) side by side */
+        const val ideologyIconSize = 36f
+        const val ideologyGap = 6f
     }
 
     private val policyNameToButton = HashMap<String, PolicyButton>()
     private var selectedPolicyButton: PolicyButton? = null
+
+    private val allBranches = viewingCiv.gameInfo.ruleset.policyBranches
+    private val hasIdeologies = allBranches.values.any { it.isIdeology }
+    private val hasOrdinaryBranches = allBranches.values.any { !it.isIdeology }
+    /** Whether this screen shows the ideologies; false in a ruleset that has none */
+    private val ideologyView = hasIdeologies && (showIdeologies ?: wantsIdeologyView(select))
+
+    private fun wantsIdeologyView(select: String?): Boolean {
+        val policies = viewingCiv.policies
+        val selected = allBranches[select] ?: allBranches.values.firstOrNull { branch -> branch.policies.any { it.name == select } }
+        if (selected != null) return selected.isIdeology
+        return policies.canChooseIdeology() || (policies.freeTenets > 0 && policies.freePolicies == 0)
+    }
 
     init {
         val branchToGroup = HashMap<String, BranchGroup>()
@@ -188,16 +213,23 @@ class PolicyPickerScreen(
         if (!canChangeState)
             rightSideButton.disable()
 
+        if (hasIdeologies && hasOrdinaryBranches) {
+            val switchButton = (if (ideologyView) "Social policies" else "Ideologies").toTextButton()
+            switchButton.onClick { game.replaceCurrentScreen { PolicyPickerScreen(viewingCiv, canChangeState, null, !ideologyView) } }
+            rightSideGroup.addActor(switchButton)
+        }
+
         topTable.row()
 
-        val branches = viewingCiv.gameInfo.ruleset.policyBranches
+        val branches = allBranches.filterValues { it.isIdeology == ideologyView }
         val branchesPerRow: Int
 
         // estimate how many branch boxes fit using average size (including pad)
         // TODO If we'd want to use scene2d correctly, this is supposed to happen inside an overridden layout() method
         val numBranchesY = scrollPane.height / 305f
             // Landscape - arrange in as few rows as looks nice
-        branchesPerRow = if (numBranchesY > 1.5f) {
+        branchesPerRow = if (ideologyView) branches.size  // the ideologies side by side, one row
+        else if (numBranchesY > 1.5f) {
             val numRows = if (numBranchesY < 2.9f) 2 else (numBranchesY + 0.1f).toInt()
             (branches.size + numRows - 1) / numRows
         } else branches.size
@@ -309,8 +341,13 @@ class PolicyPickerScreen(
             val maxCol = max(5, branch.policies.maxOf { it.column })
             val maxRow = branch.policies.maxOf { it.row }
 
-            val prefWidth = Sizes.paddingHorizontal * 2 + Sizes.iconSize * maxCol - (Sizes.iconSize - Sizes.paddingBetweenHor) * (maxCol - 1) / 2
-            val prefHeight = Sizes.paddingVertical * 2 + Sizes.iconSize * maxRow + Sizes.paddingBetweenVer * (maxRow - 1)
+            // An ideology fills adjacent columns of a row (up to seven), so its icons get a gap between them (and are a little smaller),
+            // where the other branches, using every other column, sit closer together
+            val iconSize = if (branch.isIdeology) Sizes.ideologyIconSize else Sizes.iconSize
+            val prefWidth = if (branch.isIdeology)
+                Sizes.paddingHorizontal * 2 + iconSize * maxCol + Sizes.ideologyGap * (maxCol - 1)
+            else Sizes.paddingHorizontal * 2 + iconSize * maxCol - (iconSize - Sizes.paddingBetweenHor) * (maxCol - 1) / 2
+            val prefHeight = Sizes.paddingVertical * 2 + iconSize * maxRow + Sizes.paddingBetweenVer * (maxRow - 1)
 
             // Main table
             bgColor = if (viewingCiv.policies.isAdopted(branch.name))
@@ -360,10 +397,10 @@ class PolicyPickerScreen(
 
             // Calculate grid points coordinates
             val startX = Sizes.paddingHorizontal
-            val endX = prefWidth - Sizes.paddingHorizontal - Sizes.iconSize
+            val endX = prefWidth - Sizes.paddingHorizontal - iconSize
             val deltaX = (endX - startX) / (maxCol - 1)
 
-            val startY = prefHeight - Sizes.paddingVertical - Sizes.iconSize
+            val startY = prefHeight - Sizes.paddingVertical - iconSize
             val endY = Sizes.paddingVertical
             val deltaY = (startY - endY) / (maxRow - 1)
 
@@ -394,7 +431,7 @@ class PolicyPickerScreen(
                 if (policy.policyBranchType == PolicyBranchType.BranchComplete)
                     continue
 
-                val button = getPolicyButton(policy)
+                val button = getPolicyButton(policy, iconSize)
                 group.addActor(button)
 
                 val policyX = coords[policy.row][policy.column].first
@@ -649,6 +686,8 @@ class PolicyPickerScreen(
             override fun sizeChanged() {
                 super.sizeChanged()
                 progress?.setSize(this.width * percentage, this.height)
+                // At the right end, whatever width the box gives the button (it was placed once, beside the label's minimum width)
+                lockIcon.setPosition(width - lockIcon.width - 12f, height / 2 - lockIcon.height / 2)
             }
 
         }
@@ -661,7 +700,6 @@ class PolicyPickerScreen(
         table.add(label).minHeight(30f).minWidth(150f).growX()
         table.addActor(lockIcon)
         table.pack()
-        lockIcon.setPosition(table.width, table.height / 2 - lockIcon.height/2)
 
         table.onClick {
             if (canSwitch) {
@@ -692,8 +730,8 @@ class PolicyPickerScreen(
         return table
     }
 
-    private fun getPolicyButton(policy: Policy): PolicyButton {
-        val button = PolicyButton(viewingCiv, canChangeState, policy, size = Sizes.iconSize)
+    private fun getPolicyButton(policy: Policy, size: Float): PolicyButton {
+        val button = PolicyButton(viewingCiv, canChangeState, policy, size)
         button.onClick { pickPolicy(button = button) }
         if (policy.isPickable(viewingCiv, canChangeState))
             button.onDoubleClick(UncivSound.Policy) { confirmAction() }
@@ -722,7 +760,7 @@ class PolicyPickerScreen(
     }
 
     override fun recreate(): BaseScreen {
-        val newScreen = PolicyPickerScreen(viewingCiv, canChangeState, selectedPolicyButton?.policy?.name)
+        val newScreen = PolicyPickerScreen(viewingCiv, canChangeState, selectedPolicyButton?.policy?.name, ideologyView)
         newScreen.scrollPane.scrollPercentX = scrollPane.scrollPercentX
         newScreen.scrollPane.scrollPercentY = scrollPane.scrollPercentY
         newScreen.scrollPane.updateVisualScroll()
